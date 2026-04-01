@@ -4,13 +4,18 @@
 /node_modules
 /.pnp
 .pnp.js
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
 
 # testing
 /coverage
+.nyc_output
 
 # next.js
 /.next/
 /out/
+/dist
 
 # production
 /build
@@ -18,15 +23,34 @@
 # misc
 .DS_Store
 *.pem
+Thumbs.db
+*.tmp
+*.swap
+
+# IDE and editor
+.vscode/
+.idea/
+.eslintcache
+*.swp
+*.swo
+*~
+.sublime-project
+.sublime-workspace
 
 # debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
 
 # local env files
-.env*.local
 .env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
 
 # vercel
 .vercel
@@ -34,3 +58,19 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# OS and runtime
+.cache/
+dist/
+build/
+
+# Editor backups
+*.bak
+
+# macOS
+.AppleDouble
+.LSOverride
+
+# Windows
+.idea/
+*.iml

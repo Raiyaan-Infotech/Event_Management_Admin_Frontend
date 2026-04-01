@@ -1,0 +1,204 @@
+﻿"use client";
+
+import { useState } from "react";
+import { Search, ChevronDown, ChevronRight, Puzzle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useModules } from "@/hooks/use-modules";
+import { useTranslation } from "@/hooks/use-translation";
+import React from "react";
+import { PermissionGuard } from "@/components/guards/permission-guard";
+import { PageLoader } from "@/components/common/page-loader";
+import { TablePagination } from "@/components/common/table-pagination";
+
+export function ModulesContent() {
+  const { t } = useTranslation();
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [expandedModules, setExpandedModules] = useState<Set<number>>(new Set());
+
+  const { data, isLoading } = useModules({ page, limit, search });
+
+  const toggleExpand = (moduleId: number) => {
+    setExpandedModules((prev) => {
+      const next = new Set(prev);
+      if (next.has(moduleId)) {
+        next.delete(moduleId);
+      } else {
+        next.add(moduleId);
+      }
+      return next;
+    });
+  };
+
+  return (
+    <PermissionGuard permission="modules.view">
+      <div className="space-y-6">
+
+        {/* Page Loader */}
+        <PageLoader open={isLoading} />
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Puzzle className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <CardTitle>Modules & Permissions</CardTitle>
+                  <CardDescription>System modules and their auto-generated permissions. Assign these to roles and configure approval requirements in Role Management.</CardDescription>
+                </div>
+              </div>
+              <div className="relative max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search modules..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+          </CardHeader>
+
+          <CardContent>
+
+            {!isLoading && (
+              <>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-8"></TableHead>
+                      <TableHead>Module Name</TableHead>
+                      <TableHead>Slug</TableHead>
+                      <TableHead>Permissions</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+
+                  <TableBody>
+                    {data?.data?.map((mod) => {
+                      const isExpanded = expandedModules.has(mod.id);
+
+                      return (
+                        <React.Fragment key={mod.id}>
+                          <TableRow
+                            className="cursor-pointer hover:bg-muted/50"
+                            onClick={() => toggleExpand(mod.id)}
+                          >
+                            <TableCell>
+                              {isExpanded ? (
+                                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                              )}
+                            </TableCell>
+
+                            <TableCell className="font-medium">
+                              {mod.name}
+                            </TableCell>
+
+                            <TableCell>
+                              <code className="text-sm bg-muted px-2 py-1 rounded">
+                                {mod.slug}
+                              </code>
+                            </TableCell>
+
+                            <TableCell>
+                              <Badge variant="secondary">
+                                {mod.permissions?.length || 0} permissions
+                              </Badge>
+                            </TableCell>
+
+                            <TableCell>
+                              {mod.is_active ? (
+                                <Badge
+                                  variant="outline"
+                                  className="text-green-600 border-green-600"
+                                >
+                                  Active
+                                </Badge>
+                              ) : (
+                                <Badge
+                                  variant="outline"
+                                  className="text-gray-500 border-gray-400"
+                                >
+                                  Inactive
+                                </Badge>
+                              )}
+                            </TableCell>
+                          </TableRow>
+
+                          {isExpanded &&
+                            mod.permissions &&
+                            mod.permissions.length > 0 && (
+                              <TableRow>
+                                <TableCell></TableCell>
+                                <TableCell colSpan={4}>
+                                  <div className="py-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                                    {mod.permissions.map((perm) => (
+                                      <div
+                                        key={perm.id}
+                                        className="flex items-center gap-2 px-3 py-2 rounded-md border bg-muted/30"
+                                      >
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-sm font-medium truncate">
+                                            {perm.name}
+                                          </p>
+                                          <code className="text-xs text-muted-foreground">
+                                            {perm.slug}
+                                          </code>
+                                        </div>
+
+                                        {perm.is_active && (
+                                          <Badge
+                                            variant="outline"
+                                            className="text-xs text-green-600 border-green-600"
+                                          >
+                                            Active
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            )}
+                        </React.Fragment>
+                      );
+                    })}
+
+                    {data?.data?.length === 0 && (
+                      <TableRow>
+                        <TableCell
+                          colSpan={5}
+                          className="text-center py-8 text-muted-foreground"
+                        >
+                          No modules found. Modules are system-defined master data.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+
+                {data?.pagination && <TablePagination pagination={{ ...data.pagination, limit }} onPageChange={setPage} onLimitChange={setLimit} />}
+              </>
+            )}
+
+          </CardContent>
+        </Card>
+      </div>
+    </PermissionGuard>
+  );
+}

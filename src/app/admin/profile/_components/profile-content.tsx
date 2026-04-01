@@ -1,0 +1,439 @@
+﻿"use client";
+
+import { useRef, useState } from "react";
+import { useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { useAuth, useUpdateProfile, useChangePassword } from "@/hooks";
+import { useUploadMedia } from "@/hooks/use-media";
+import { useTranslation } from "@/hooks/use-translation";
+import { useTimezones } from "@/hooks/use-timezones";
+import { Spinner } from "@/components/ui/spinner";
+import { User, Mail, Phone, Shield, Calendar, Camera, Eye, EyeOff, CheckCircle2, Circle } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { format } from "date-fns";
+import { PageLoader } from '@/components/common/page-loader';
+
+const profileSchema = z.object({
+  full_name: z.string().trim().min(2, "Full name must be at least 2 characters"),
+  email: z.string().trim().email("Please enter a valid email"),
+  phone: z.string().trim()
+    .refine(
+      (val) => !val || /^\+?[0-9\s\-(). ]{7,20}$/.test(val),
+      "Please enter a valid phone number (minimum 7 digits)"
+    )
+    .optional(),
+  timezone: z.string().optional(),
+});
+
+const passwordSchema = z
+  .object({
+    current_password: z.string().min(1, "Current password is required"),
+    new_password: z.string()
+      .min(8, "At least 8 characters required")
+      .regex(/[A-Z]/, "Must contain at least one uppercase letter")
+      .regex(/[a-z]/, "Must contain at least one lowercase letter")
+      .regex(/[0-9]/, "Must contain at least one number")
+      .regex(/[^a-zA-Z0-9]/, "Must contain at least one special character"),
+    confirm_password: z.string().min(1, "Please confirm your password"),
+  })
+  .refine((data) => data.new_password === data.confirm_password, {
+    message: "Passwords don't match",
+    path: ["confirm_password"],
+  })
+  .refine((data) => data.new_password !== data.current_password, {
+    message: "New password must be different from current password",
+    path: ["new_password"],
+  });
+
+type ProfileFormData = z.infer<typeof profileSchema>;
+type PasswordFormData = z.infer<typeof passwordSchema>;
+
+export function ProfileContent() {
+  const { t } = useTranslation();
+  const { user, isLoading } = useAuth();
+  const updateProfileMutation = useUpdateProfile();
+  const changePasswordMutation = useChangePassword();
+  const uploadMedia = useUploadMedia();
+  const { data: timezones = [] } = useTimezones();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const result = await uploadMedia.mutateAsync({
+        file,
+        folder: "avatars",
+      });
+      updateProfileMutation.mutate({ avatar: result.url });
+    }
+  };
+
+  const profileForm = useForm<ProfileFormData>({
+    resolver: zodResolver(profileSchema),
+    values: {
+      full_name: user?.full_name || "",
+      email: user?.email || "",
+      phone: user?.phone || "",
+      timezone: user?.timezone || "",
+    },
+  });
+
+  const passwordForm = useForm<PasswordFormData>({
+    resolver: zodResolver(passwordSchema),
+    mode: "onBlur",
+    reValidateMode: "onBlur",
+    defaultValues: {
+      current_password: "",
+      new_password: "",
+      confirm_password: "",
+    },
+  });
+
+  const newPassword = useWatch({ control: passwordForm.control, name: "new_password" });
+  const confirmPassword = useWatch({ control: passwordForm.control, name: "confirm_password" });
+
+  const passwordRules = [
+    { label: "At least 8 characters", met: newPassword.length >= 8 },
+    { label: "At least one uppercase letter", met: /[A-Z]/.test(newPassword) },
+    { label: "At least one lowercase letter", met: /[a-z]/.test(newPassword) },
+    { label: "At least one number", met: /[0-9]/.test(newPassword) },
+    { label: "At least one special character", met: /[^a-zA-Z0-9]/.test(newPassword) },
+  ];
+
+  const onProfileSubmit = (data: ProfileFormData) => {
+    const { email, ...updateData } = data;
+    updateProfileMutation.mutate(updateData);
+  };
+
+  const onPasswordSubmit = (data: PasswordFormData) => {
+    changePasswordMutation.mutate(
+      {
+        current_password: data.current_password,
+        new_password: data.new_password,
+      },
+      {
+        onSuccess: () => {
+          passwordForm.reset();
+        },
+      }
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      <PageLoader open={isLoading || updateProfileMutation.isPending || changePasswordMutation.isPending || uploadMedia.isPending} />
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-bold">{t('profile.title')}</h1>
+        <p className="text-muted-foreground mt-1">
+          {t('profile.description')}
+        </p>
+      </div>
+
+      {!isLoading && (
+        <div className="grid gap-6 md:grid-cols-3">
+          <Card className="md:col-span-1">
+            <CardHeader>
+              <CardTitle>{t('profile.account_info')}</CardTitle>
+              <CardDescription>{t('profile.account_details')}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-center">
+                <div
+                  className="relative w-24 h-24 rounded-full cursor-pointer group"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {user?.avatar ? (
+                    <img
+                      src={user.avatar}
+                      alt="Avatar"
+                      className="w-24 h-24 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center">
+                      <User className="w-12 h-12 text-primary" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Camera className="w-6 h-6 text-white" />
+                  </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarChange}
+                  />
+                  {uploadMedia.isPending && (
+                    <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
+                      <Spinner className="h-6 w-6 text-white" />
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="text-center">
+                <h3 className="font-semibold text-lg">
+                  {user?.full_name}
+                </h3>
+                <p className="text-sm text-muted-foreground">{user?.email}</p>
+              </div>
+              <Separator />
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <Shield className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-muted-foreground">{t('roles.role')}:</span>
+                  <Badge variant="outline">{user?.role?.name || "N/A"}</Badge>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Mail className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-muted-foreground">{t('common.status')}:</span>
+                  <Badge
+                    className={user?.is_active === 1
+                      ? "bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900 dark:text-green-100"
+                      : "bg-red-100 text-red-800 hover:bg-red-100 dark:bg-red-900 dark:text-red-100"
+                    }
+                  >
+                    {user?.is_active === 1 ? t('common.active') : t('common.inactive')}
+                  </Badge>
+                </div>
+                {user?.phone && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Phone className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">{t('profile.phone')}:</span>
+                    <span>{user.phone}</span>
+                  </div>
+                )}
+                {user?.last_login_at && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Calendar className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">{t('profile.last_login')}:</span>
+                    <span>{format(new Date(user.last_login_at), "MMM dd, yyyy")}</span>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="md:col-span-2 space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('profile.personal_info')}</CardTitle>
+                <CardDescription>{t('profile.personal_info_desc')}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="full_name">{t('profile.full_name')}</Label>
+                    <Input
+                      id="full_name"
+                      placeholder="John Doe"
+                      {...profileForm.register("full_name")}
+                    />
+                    {profileForm.formState.errors.full_name && (
+                      <p className="text-sm text-destructive">
+                        {profileForm.formState.errors.full_name.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="email">{t('common.email')}</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="john@example.com"
+                      disabled
+                      className="opacity-60 cursor-not-allowed"
+                      {...profileForm.register("email")}
+                    />
+                    {profileForm.formState.errors.email && (
+                      <p className="text-sm text-destructive">
+                        {profileForm.formState.errors.email.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">{t('profile.phone')}</Label>
+                    <Input
+                      id="phone"
+                      placeholder="+1234567890"
+                      {...profileForm.register("phone")}
+                    />
+                    {profileForm.formState.errors.phone && (
+                      <p className="text-sm text-destructive">
+                        {profileForm.formState.errors.phone.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="timezone">Timezone</Label>
+                    <Select
+                      value={profileForm.watch("timezone") || undefined}
+                      onValueChange={(val) => profileForm.setValue("timezone", val)}
+                    >
+                      <SelectTrigger id="timezone">
+                        <SelectValue placeholder="Use company default" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {timezones.map((tz) => (
+                          <SelectItem key={tz.value} value={tz.value}>
+                            {tz.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-sm text-muted-foreground">
+                      Personal timezone override (leave empty to use company default)
+                    </p>
+                  </div>
+
+                  <Button type="submit" disabled={updateProfileMutation.isPending}>
+                    {updateProfileMutation.isPending ? t('common.saving') : t('profile.update_profile')}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('profile.change_password')}</CardTitle>
+                <CardDescription>{t('profile.change_password_desc')}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="current_password">{t('profile.current_password')}</Label>
+                    <div className="relative">
+                      <Input
+                        id="current_password"
+                        type={showCurrentPassword ? "text" : "password"}
+                        placeholder={t('profile.enter_current_password')}
+                        className="pr-10"
+                        {...passwordForm.register("current_password")}
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-0 top-0 h-full px-3 text-muted-foreground hover:text-foreground transition-colors"
+                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                      >
+                        {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    {passwordForm.formState.errors.current_password && (
+                      <p className="text-sm text-destructive">
+                        {passwordForm.formState.errors.current_password.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="new_password">{t('profile.new_password')}</Label>
+                    <div className="relative">
+                      <Input
+                        id="new_password"
+                        type={showNewPassword ? "text" : "password"}
+                        placeholder={t('profile.enter_new_password')}
+                        className="pr-10"
+                        {...passwordForm.register("new_password")}
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-0 top-0 h-full px-3 text-muted-foreground hover:text-foreground transition-colors"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                      >
+                        {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    {passwordForm.formState.errors.new_password && (
+                      <p className="text-sm text-destructive">
+                        {passwordForm.formState.errors.new_password.message}
+                      </p>
+                    )}
+                    {newPassword.length > 0 && (
+                      <ul className="space-y-1 pt-1">
+                        {passwordRules.map((rule) => (
+                          <li key={rule.label} className="flex items-center gap-2 text-xs">
+                            {rule.met
+                              ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />
+                              : <Circle className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                            }
+                            <span className={rule.met ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}>
+                              {rule.label}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm_password">{t('profile.confirm_password')}</Label>
+                    <div className="relative">
+                      <Input
+                        id="confirm_password"
+                        type={showConfirmPassword ? "text" : "password"}
+                        placeholder={t('profile.confirm_new_password')}
+                        className="pr-10"
+                        {...passwordForm.register("confirm_password")}
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-0 top-0 h-full px-3 text-muted-foreground hover:text-foreground transition-colors"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      >
+                        {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    {passwordForm.formState.errors.confirm_password && (
+                      <p className="text-sm text-destructive">
+                        {passwordForm.formState.errors.confirm_password.message}
+                      </p>
+                    )}
+                    {confirmPassword.length > 0 && (
+                      <div className="flex items-center gap-2 text-xs pt-1">
+                        {confirmPassword === newPassword
+                          ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />
+                          : <Circle className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        }
+                        <span className={confirmPassword === newPassword ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}>
+                          Passwords match
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <Button type="submit" disabled={changePasswordMutation.isPending}>
+                    {changePasswordMutation.isPending ? t('common.changing') : t('profile.change_password')}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
