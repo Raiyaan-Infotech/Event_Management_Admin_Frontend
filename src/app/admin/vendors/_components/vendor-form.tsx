@@ -10,7 +10,7 @@ import { Building2, User, Landmark, Share2, Globe, Youtube, Facebook, Instagram,
 import { Input } from '@/components/ui/input';
 import { useCountries, useStates, useCities, useLocalities } from '@/hooks/use-locations';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SearchableSelect } from '@/components/common/searchable-select';
 import dynamic from 'next/dynamic';
 import { resolveMediaUrl } from '@/lib/utils';
 
@@ -114,23 +114,26 @@ export function VendorForm({ vendor }: Props) {
                 {
                     name: 'company_logo', label: 'Company Logo', type: 'image', colSpan: 2,
                     imageTitle: 'Company Logo', imageDescription: 'Upload company logo (recommended: 300×100px)',
-                    targetWidth: 300, targetHeight: 100, imageFolder: 'vendors',
+                    targetWidth: 300, targetHeight: 100, imageFolder: 'vendors', showMediaPicker: false,
                 },
-                { name: 'company_name', label: 'Company Name', type: 'text', placeholder: 'Acme Pvt Ltd', required: true },
-                { name: 'reg_no', label: 'Registration No.', type: 'text', placeholder: 'REG123456' },
-                { name: 'gst_no', label: 'GST No.', type: 'text', placeholder: '22AAAAA0000A1Z5' },
-                { name: 'company_contact', label: 'Company Contact', type: 'text', placeholder: '+91 9000000000' },
-                { name: 'landline', label: 'Landline', type: 'text', placeholder: '022-12345678' },
-                { name: 'company_email', label: 'Company Email', type: 'email', placeholder: 'info@company.com' },
-                { name: 'company_address', label: 'Company Address', type: 'textarea', placeholder: '123 Business Park, City', rows: 2, colSpan: 2 },
+                { name: 'company_name', label: 'Company Name', type: 'text', placeholder: 'Enter your company name', required: true },
+                { name: 'reg_no', label: 'Registration No.', type: 'text', placeholder: 'Enter your registration number' },
+                { name: 'gst_no', label: 'GST No.', type: 'text', placeholder: 'Enter your GST number' },
+                { name: 'company_contact', label: 'Company Contact', type: 'text', placeholder: 'Enter your company contact' },
+                { name: 'landline', label: 'Landline', type: 'text', placeholder: 'Enter your landline number' },
+                { name: 'company_email', label: 'Company Email', type: 'email', placeholder: 'Enter your company email' },
+                { name: 'company_address', label: 'Company Address', type: 'textarea', placeholder: 'Enter your company address', rows: 2, colSpan: 2 },
                 // Country
                 {
                     name: 'country_id', label: 'Country', type: 'custom',
                     render: ({ watch, setValue }) => (
                         <div className="space-y-2">
                             <Label>Country</Label>
-                            <Select
+                            <SearchableSelect
+                                options={countries.map(c => ({ value: c.id.toString(), label: c.name }))}
                                 value={watch('country_id')?.toString() || ''}
+                                placeholder="Select country"
+                                searchPlaceholder="Search country..."
                                 onValueChange={(v) => {
                                     const id   = parseInt(v);
                                     const name = countries.find(c => c.id === id)?.name || '';
@@ -143,14 +146,7 @@ export function VendorForm({ vendor }: Props) {
                                     setSelDistrictId(undefined); setSelDistrictName('');
                                     setSelCityName('');
                                 }}
-                            >
-                                <SelectTrigger><SelectValue placeholder="Select country" /></SelectTrigger>
-                                <SelectContent>
-                                    {countries.map(c => (
-                                        <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            />
                         </div>
                     ),
                 },
@@ -160,8 +156,12 @@ export function VendorForm({ vendor }: Props) {
                     render: ({ watch, setValue }) => (
                         <div className="space-y-2">
                             <Label>State</Label>
-                            <Select
+                            <SearchableSelect
+                                options={states.map(s => ({ value: s.id.toString(), label: s.name }))}
                                 value={watch('state_id')?.toString() || ''}
+                                placeholder="Select state"
+                                searchPlaceholder="Search state..."
+                                disabled={!selCountryId || states.length === 0}
                                 onValueChange={(v) => {
                                     const id   = parseInt(v);
                                     const name = states.find(s => s.id === id)?.name || '';
@@ -172,15 +172,7 @@ export function VendorForm({ vendor }: Props) {
                                     setSelDistrictId(undefined); setSelDistrictName('');
                                     setSelCityName('');
                                 }}
-                                disabled={!selCountryId || states.length === 0}
-                            >
-                                <SelectTrigger><SelectValue placeholder="Select state" /></SelectTrigger>
-                                <SelectContent>
-                                    {states.map(s => (
-                                        <SelectItem key={s.id} value={s.id.toString()}>{s.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            />
                         </div>
                     ),
                 },
@@ -190,8 +182,12 @@ export function VendorForm({ vendor }: Props) {
                     render: ({ watch, setValue }) => (
                         <div className="space-y-2">
                             <Label>District</Label>
-                            <Select
+                            <SearchableSelect
+                                options={districts.map(d => ({ value: d.id.toString(), label: d.name }))}
                                 value={watch('city_id')?.toString() || ''}
+                                placeholder="Select district"
+                                searchPlaceholder="Search district..."
+                                disabled={!selStateId || districts.length === 0}
                                 onValueChange={(v) => {
                                     const id   = parseInt(v);
                                     const name = districts.find(d => d.id === id)?.name || '';
@@ -200,15 +196,7 @@ export function VendorForm({ vendor }: Props) {
                                     setSelDistrictId(id); setSelDistrictName(name);
                                     setSelCityName('');
                                 }}
-                                disabled={!selStateId || districts.length === 0}
-                            >
-                                <SelectTrigger><SelectValue placeholder="Select district" /></SelectTrigger>
-                                <SelectContent>
-                                    {districts.map(d => (
-                                        <SelectItem key={d.id} value={d.id.toString()}>{d.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            />
                         </div>
                     ),
                 },
@@ -218,23 +206,19 @@ export function VendorForm({ vendor }: Props) {
                     render: ({ watch, setValue }) => (
                         <div className="space-y-2">
                             <Label>City</Label>
-                            <Select
+                            <SearchableSelect
+                                options={cityOptions.map(c => ({ value: c.id.toString(), label: c.name }))}
                                 value={watch('pincode_id')?.toString() || ''}
+                                placeholder="Select city"
+                                searchPlaceholder="Search city..."
+                                disabled={!selDistrictId || cityOptions.length === 0}
                                 onValueChange={(v) => {
                                     const id   = parseInt(v);
                                     const name = cityOptions.find(c => c.id === id)?.name || '';
                                     setValue('pincode_id', id);
                                     setSelCityName(name);
                                 }}
-                                disabled={!selDistrictId || cityOptions.length === 0}
-                            >
-                                <SelectTrigger><SelectValue placeholder="Select city" /></SelectTrigger>
-                                <SelectContent>
-                                    {cityOptions.map(c => (
-                                        <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            />
                         </div>
                     ),
                 },
@@ -269,11 +253,11 @@ export function VendorForm({ vendor }: Props) {
                 {
                     name: 'profile', label: 'Profile Photo', type: 'image', colSpan: 2,
                     imageTitle: 'Profile Photo', imageDescription: 'Upload vendor profile photo (square)',
-                    targetWidth: 200, targetHeight: 200, rounded: true, imageFolder: 'vendors',
+                    targetWidth: 200, targetHeight: 200, rounded: true, imageFolder: 'vendors', showMediaPicker: false,
                 },
-                { name: 'name', label: 'Vendor Name', type: 'text', placeholder: 'John Doe', required: true },
-                { name: 'contact', label: 'Contact', type: 'text', placeholder: '+91 9000000000' },
-                { name: 'email', label: 'Login Email', type: 'email', placeholder: 'vendor@example.com', required: true },
+                { name: 'name', label: 'Vendor Name', type: 'text', placeholder: 'Enter your vendor name', required: true },
+                { name: 'contact', label: 'Contact', type: 'text', placeholder: 'Enter your contact number' },
+                { name: 'email', label: 'Login Email', type: 'email', placeholder: 'Enter your login email', required: true },
                 {
                     name: 'membership', label: 'Membership', type: 'select',
                     options: [
@@ -283,7 +267,7 @@ export function VendorForm({ vendor }: Props) {
                         { value: 'platinum', label: 'Platinum' },
                     ],
                 },
-                { name: 'address', label: 'Address', type: 'textarea', placeholder: 'Vendor personal address', rows: 2, colSpan: 2 },
+                { name: 'address', label: 'Address', type: 'textarea', placeholder: 'Enter your address', rows: 2, colSpan: 2 },
                 {
                     name: 'password', label: isEdit ? 'Password (leave blank to keep current)' : 'Password',
                     type: 'password', placeholder: '••••••••', required: !isEdit,
@@ -298,11 +282,11 @@ export function VendorForm({ vendor }: Props) {
                 {
                     name: 'bank_logo', label: 'Bank Logo', type: 'image', colSpan: 2,
                     imageTitle: 'Bank Logo', imageDescription: 'Upload bank logo image',
-                    targetWidth: 300, targetHeight: 100, imageFolder: 'vendors',
+                    targetWidth: 300, targetHeight: 100, imageFolder: 'vendors', showMediaPicker: false,
                 },
-                { name: 'bank_name', label: 'Bank Name', type: 'text', placeholder: 'State Bank of India' },
-                { name: 'acc_no', label: 'Account Number', type: 'text', placeholder: '0123456789' },
-                { name: 'ifsc_code', label: 'IFSC Code', type: 'text', placeholder: 'SBIN0001234' },
+                { name: 'bank_name', label: 'Bank Name', type: 'text', placeholder: 'Enter your bank name' },
+                { name: 'acc_no', label: 'Account Number', type: 'text', placeholder: 'Enter your account number' },
+                { name: 'ifsc_code', label: 'IFSC Code', type: 'text', placeholder: 'Enter your IFSC code' },
                 {
                     name: 'acc_type', label: 'Account Type', type: 'select',
                     options: [
@@ -311,7 +295,7 @@ export function VendorForm({ vendor }: Props) {
                         { value: 'overdraft', label: 'Overdraft' },
                     ],
                 },
-                { name: 'branch', label: 'Branch', type: 'text', placeholder: 'MG Road Branch' },
+                { name: 'branch', label: 'Branch', type: 'text', placeholder: 'Enter your branch name' },
             ],
         },
         {
@@ -325,7 +309,7 @@ export function VendorForm({ vendor }: Props) {
                             <Label className="flex items-center gap-2 text-sm font-medium">
                                 <Globe className="h-4 w-4 text-gray-500" /> Website
                             </Label>
-                            <Input value={watch('website') || ''} onChange={e => setValue('website', e.target.value)} placeholder="https://company.com" />
+                            <Input value={watch('website') || ''} onChange={e => setValue('website', e.target.value)} placeholder="Enter your website URL" />
                         </div>
                     ),
                 },
@@ -336,7 +320,7 @@ export function VendorForm({ vendor }: Props) {
                             <Label className="flex items-center gap-2 text-sm font-medium">
                                 <Youtube className="h-4 w-4 text-red-500" /> YouTube
                             </Label>
-                            <Input value={watch('youtube') || ''} onChange={e => setValue('youtube', e.target.value)} placeholder="https://youtube.com/channel/..." />
+                            <Input value={watch('youtube') || ''} onChange={e => setValue('youtube', e.target.value)} placeholder="Enter your YouTube channel URL" />
                         </div>
                     ),
                 },
@@ -347,7 +331,7 @@ export function VendorForm({ vendor }: Props) {
                             <Label className="flex items-center gap-2 text-sm font-medium">
                                 <Facebook className="h-4 w-4 text-blue-600" /> Facebook
                             </Label>
-                            <Input value={watch('facebook') || ''} onChange={e => setValue('facebook', e.target.value)} placeholder="https://facebook.com/..." />
+                            <Input value={watch('facebook') || ''} onChange={e => setValue('facebook', e.target.value)} placeholder="Enter your Facebook page URL" />
                         </div>
                     ),
                 },
@@ -358,7 +342,7 @@ export function VendorForm({ vendor }: Props) {
                             <Label className="flex items-center gap-2 text-sm font-medium">
                                 <Instagram className="h-4 w-4 text-pink-500" /> Instagram
                             </Label>
-                            <Input value={watch('instagram') || ''} onChange={e => setValue('instagram', e.target.value)} placeholder="https://instagram.com/..." />
+                            <Input value={watch('instagram') || ''} onChange={e => setValue('instagram', e.target.value)} placeholder="Enter your Instagram profile URL" />
                         </div>
                     ),
                 },
@@ -369,7 +353,7 @@ export function VendorForm({ vendor }: Props) {
                             <Label className="flex items-center gap-2 text-sm font-medium">
                                 <Twitter className="h-4 w-4 text-sky-500" /> Twitter / X
                             </Label>
-                            <Input value={watch('twitter') || ''} onChange={e => setValue('twitter', e.target.value)} placeholder="https://x.com/..." />
+                            <Input value={watch('twitter') || ''} onChange={e => setValue('twitter', e.target.value)} placeholder="Enter your Twitter / X profile URL" />
                         </div>
                     ),
                 },
@@ -380,7 +364,7 @@ export function VendorForm({ vendor }: Props) {
                             <Label className="flex items-center gap-2 text-sm font-medium">
                                 <Linkedin className="h-4 w-4 text-blue-700" /> LinkedIn
                             </Label>
-                            <Input value={watch('linkedin') || ''} onChange={e => setValue('linkedin', e.target.value)} placeholder="https://linkedin.com/company/..." />
+                            <Input value={watch('linkedin') || ''} onChange={e => setValue('linkedin', e.target.value)} placeholder="Enter your LinkedIn page URL" />
                         </div>
                     ),
                 },
@@ -391,7 +375,7 @@ export function VendorForm({ vendor }: Props) {
                             <Label className="flex items-center gap-2 text-sm font-medium">
                                 <MessageCircle className="h-4 w-4 text-green-500" /> WhatsApp
                             </Label>
-                            <Input value={watch('whatsapp') || ''} onChange={e => setValue('whatsapp', e.target.value)} placeholder="+91 9000000000 or wa.me link" />
+                            <Input value={watch('whatsapp') || ''} onChange={e => setValue('whatsapp', e.target.value)} placeholder="Enter your WhatsApp number" />
                         </div>
                     ),
                 },
@@ -402,7 +386,7 @@ export function VendorForm({ vendor }: Props) {
                             <Label className="flex items-center gap-2 text-sm font-medium">
                                 <Music className="h-4 w-4 text-black dark:text-white" /> TikTok
                             </Label>
-                            <Input value={watch('tiktok') || ''} onChange={e => setValue('tiktok', e.target.value)} placeholder="https://tiktok.com/@..." />
+                            <Input value={watch('tiktok') || ''} onChange={e => setValue('tiktok', e.target.value)} placeholder="Enter your TikTok profile URL" />
                         </div>
                     ),
                 },
@@ -413,7 +397,7 @@ export function VendorForm({ vendor }: Props) {
                             <Label className="flex items-center gap-2 text-sm font-medium">
                                 <Send className="h-4 w-4 text-sky-400" /> Telegram
                             </Label>
-                            <Input value={watch('telegram') || ''} onChange={e => setValue('telegram', e.target.value)} placeholder="https://t.me/..." />
+                            <Input value={watch('telegram') || ''} onChange={e => setValue('telegram', e.target.value)} placeholder="Enter your Telegram link" />
                         </div>
                     ),
                 },
@@ -424,7 +408,7 @@ export function VendorForm({ vendor }: Props) {
                             <Label className="flex items-center gap-2 text-sm font-medium">
                                 <Bookmark className="h-4 w-4 text-red-600" /> Pinterest
                             </Label>
-                            <Input value={watch('pinterest') || ''} onChange={e => setValue('pinterest', e.target.value)} placeholder="https://pinterest.com/..." />
+                            <Input value={watch('pinterest') || ''} onChange={e => setValue('pinterest', e.target.value)} placeholder="Enter your Pinterest profile URL" />
                         </div>
                     ),
                 },

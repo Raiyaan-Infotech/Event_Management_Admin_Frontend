@@ -6,35 +6,23 @@ import {
   ChevronDown,
   LayoutDashboard,
   Settings,
-  Palette,
-  ShieldCheck,
-  Brush,
   Menu,
-  SlidersHorizontal,
   Building2,
   Users,
-  Shield,
-  Lock,
-  Mail,
-  Languages,
-  DollarSign,
-  FileText,
-  BookOpen,
-  Star,
   Megaphone,
-  BellRing,
   HelpCircle,
   FileQuestion,
-  MapPin,
-  Newspaper,
-  Phone,
   Image,
   CreditCard,
-  Tag,
-  FolderOpen,
   Store,
-  LayoutList,
-  Repeat,
+  Package,
+  Calendar,
+  BarChart2,
+  MessageSquare,
+  Bell,
+  Mail,
+  MessageCircle,
+  Phone,
 } from "lucide-react";
 import {
   Sidebar,
@@ -71,6 +59,7 @@ interface MenuItem {
   minLevel?: number;
   developerOnly?: boolean;
   pluginSlug?: string; // if set, item is hidden when plugin is inactive
+  badge?: string;
 }
 
 const menuItems: MenuItem[] = [
@@ -86,16 +75,52 @@ const menuItems: MenuItem[] = [
     developerOnly: true,
   },
   {
+    labelKey: "nav.vendors",
+    href: "/admin/vendors",
+    icon: Store,
+    permission: "vendors.view",
+  },
+  {
     labelKey: "nav.employees",
     href: "/admin/platform/users",
     icon: Users,
     permission: "employees.view",
   },
   {
-    labelKey: "nav.vendors",
-    href: "/admin/vendors",
-    icon: Store,
-    permission: "vendors.view",
+    labelKey: "nav.events",
+    icon: Calendar,
+    children: [
+      { labelKey: "nav.menus", href: "/admin/menus", icon: Menu, permission: "menus.view" },
+    ],
+  },
+  {
+    labelKey: "nav.reports",
+    href: "/admin/reports",
+    icon: BarChart2,
+    permission: "reports.view",
+  },
+  {
+    labelKey: "nav.marketing",
+    icon: Megaphone,
+    children: [
+      { labelKey: "nav.media", href: "/admin/media", icon: Image, permission: "media.view" },
+    ],
+  },
+  {
+    labelKey: "nav.communication",
+    icon: MessageSquare,
+    children: [
+      { labelKey: "nav.notifications", href: "/admin/notifications", icon: Bell, permission: "notifications.view" },
+      { labelKey: "nav.mail", href: "/admin/mail", icon: Mail, permission: "mail.view" },
+      { labelKey: "nav.support", href: "/admin/support", icon: MessageCircle, permission: "support.view" },
+      { labelKey: "nav.contact", href: "/admin/contact", icon: Phone, permission: "contact.view" },
+    ],
+  },
+  {
+    labelKey: "nav.subscriptions",
+    href: "/admin/subscriptions",
+    icon: Package,
+    permission: "subscriptions.view",
   },
   {
     labelKey: "nav.faqs",
@@ -108,30 +133,11 @@ const menuItems: MenuItem[] = [
     ],
   },
   {
-    labelKey: "nav.newsletters",
-    href: "/admin/newsletters",
-    icon: Newspaper,
-    permission: "newsletters.view",
-    pluginSlug: "newsletter",
-  },
-  {
-    labelKey: "nav.locations",
-    href: "/admin/locations",
-    icon: MapPin,
-    permission: "locations.view",
-    pluginSlug: "locations",
-  },
-  {
-    labelKey: "nav.media",
-    href: "/admin/media",
-    icon: Image,
-    permission: "media.view",
-  },
-  {
     labelKey: "nav.payments",
     href: "/admin/payments",
     icon: CreditCard,
     permission: "payments.view",
+    badge: "Coming Soon",
   },
   {
     labelKey: "nav.settings",
@@ -154,7 +160,8 @@ export function AppSidebar() {
   const logoHeight =
     settings?.find((s) => s.key === "logo_height")?.value || "40";
 
-  const isActive = (href?: string) => !!(href && pathname === href);
+  const isActive = (href?: string) =>
+    !!(href && (href === "/admin" ? pathname === href : pathname.startsWith(href)));
   const isChildActive = (children?: MenuItem[]) =>
     children?.some((child) => child.href && pathname.startsWith(child.href));
 
@@ -304,6 +311,11 @@ export function AppSidebar() {
                         <a href={item.href || "#"} className="flex items-center gap-2">
                           <item.icon className="h-4 w-4 shrink-0" />
                           <span className="truncate">{t(item.labelKey)}</span>
+                          {item.badge && (
+                            <span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground whitespace-nowrap">
+                              {item.badge}
+                            </span>
+                          )}
                         </a>
                       </SidebarMenuButton>
                     </SidebarMenuItem>

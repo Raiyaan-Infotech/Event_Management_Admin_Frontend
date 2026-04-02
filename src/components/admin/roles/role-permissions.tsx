@@ -42,7 +42,7 @@ const MODULE_TO_GROUP: Record<string, string> = {
   faqs: "content", faq_categories: "content", simple_sliders: "content",
   // Commerce & Marketing
   ads: "commerce", banners: "commerce", vendors: "commerce", payments: "commerce",
-  subscriptions: "commerce", menus: "commerce", newsletters: "commerce",
+  subscriptions: "commerce", menus: "commerce",
   // Communication
   contact: "communication", email_configs: "communication",
   email_templates: "communication", email_campaigns: "communication",

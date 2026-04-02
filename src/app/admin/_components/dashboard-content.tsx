@@ -315,20 +315,20 @@ function CompanyDashboard() {
           return (
             <Link key={stat.labelKey} href={stat.href}>
               <Card className="hover:shadow-md transition-shadow cursor-pointer">
-                <CardContent className="p-6">
-                  <div className="flex flex-wrap items-center justify-between gap-4">
+                <CardContent className="p-3 sm:p-6">
+                  <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-4">
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">
+                      <p className="text-xs sm:text-sm font-medium text-muted-foreground">
                         {t(stat.labelKey)}
                       </p>
-                      <p className="text-3xl font-bold mt-2">{stat.value}</p>
-                      <div className="flex items-center gap-1 mt-2">
+                      <p className="text-2xl sm:text-3xl font-bold mt-1 sm:mt-2">{stat.value}</p>
+                      <div className="flex items-center gap-1 mt-1 sm:mt-2">
                         <TrendingUp className="h-3 w-3 text-green-500" />
                         <span className="text-xs text-green-500">{stat.change}</span>
                       </div>
                     </div>
-                    <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <Icon className="h-6 w-6 text-primary" />
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                     </div>
                   </div>
                 </CardContent>
@@ -349,8 +349,8 @@ function CompanyDashboard() {
               const Icon = action.icon;
               return (
                 <Link key={action.label} href={action.href}>
-                  <Button variant="outline" className="w-full justify-start">
-                    <Icon className="mr-2 h-4 w-4 shrink-0" />
+                  <Button variant="outline" className="w-full justify-start text-xs sm:text-sm">
+                    <Icon className="mr-1.5 sm:mr-2 h-4 w-4 shrink-0" />
                     <span className="truncate">{action.label}</span>
                   </Button>
                 </Link>

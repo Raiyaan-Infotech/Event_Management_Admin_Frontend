@@ -39,6 +39,8 @@ interface ImageCropperProps {
   rounded?: boolean;
   /** If false, hides the Upload from device button (default: true) */
   showUpload?: boolean;
+  /** If false, hides the "Choose Image" media picker button (default: true) */
+  showMediaPicker?: boolean;
 }
 
 export function ImageCropper({
@@ -53,6 +55,7 @@ export function ImageCropper({
   skipCrop = false,
   rounded = false,
   showUpload = true,
+  showMediaPicker = true,
 }: ImageCropperProps) {
   const [showCropDialog, setShowCropDialog] = useState(false);
   const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
@@ -289,16 +292,18 @@ export function ImageCropper({
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-9 px-4 cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
-              onClick={() => setMediaPickerOpen(true)}
-            >
-              <Images className="mr-2 h-4 w-4" />
-              {currentImage ? "Change Image" : "Choose Image"}
-            </Button>
+            {showMediaPicker && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-9 px-4 cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+                onClick={() => setMediaPickerOpen(true)}
+              >
+                <Images className="mr-2 h-4 w-4" />
+                {currentImage ? "Change Image" : "Choose Image"}
+              </Button>
+            )}
 
             {showUpload && (
               <Button variant="ghost" size="sm" asChild className="h-9 px-3 text-muted-foreground cursor-pointer">

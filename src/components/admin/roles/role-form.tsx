@@ -104,7 +104,6 @@ function getModulesForGroup(groupSlug: string, allModules: string[]): string[] {
         "announcements",
         "faqs",
         "faq_categories",
-        "newsletters",
         "contact",
       ].includes(m),
     );
@@ -117,7 +116,7 @@ function getModulesForGroup(groupSlug: string, allModules: string[]): string[] {
     const assignedModules = [
       "settings",
       "employees", "roles", "permissions", "modules", "approvals", "companies",
-      "media", "translations", "languages", "pages", "blog", "blog_posts", "blog_categories", "blog_tags", "testimonials", "ads", "announcements", "faqs", "faq_categories", "newsletters", "contact",
+      "media", "translations", "languages", "pages", "blog", "blog_posts", "blog_categories", "blog_tags", "testimonials", "ads", "announcements", "faqs", "faq_categories", "contact",
 
       "locations", "currencies",
       "appearance"
@@ -245,7 +244,6 @@ export function RoleForm({ role, onSuccess }: RoleFormProps) {
     pages: "pages",
     ads: "ads",
     banners: "ads",
-    newsletters: "newsletter",
     contact: "contact-form",
     simple_sliders: "simple-slider",
     locations: "locations",

@@ -34,8 +34,6 @@ const ALL_DRIVERS = [
   { value: "cloudflare", label: "Cloudflare R2", plugin: "cloudflare-r2" },
   { value: "digitalocean", label: "DigitalOcean Spaces", plugin: "digitalocean-spaces" },
   { value: "wasabi", label: "Wasabi", plugin: "wasabi" },
-  { value: "bunnycdn", label: "BunnyCDN", plugin: null },
-  { value: "backblaze", label: "Backblaze B2", plugin: null },
 ];
 
 export function MediaContent() {

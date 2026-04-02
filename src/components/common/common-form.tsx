@@ -40,6 +40,7 @@ export interface CommonFormField {
     targetHeight?: number;
     rounded?: boolean;
     imageFolder?: string;
+    showMediaPicker?: boolean;
     // custom — render arbitrary JSX, receives form watch/setValue
     render?: (opts: { watch: any; setValue: any }) => React.ReactNode;
 }
@@ -163,6 +164,7 @@ export function CommonForm({
                             setImageKeys(prev => ({ ...prev, [field.name]: (prev[field.name] ?? 0) + 1 }));
                         }}
                         rounded={field.rounded}
+                        showMediaPicker={field.showMediaPicker}
                     />
                     {uploadingField === field.name && (
                         <p className="text-xs text-muted-foreground mt-1">Uploading...</p>

@@ -8,10 +8,13 @@ export interface Subscription {
     description: string | null;
     menu_ids: number[];
     price: number;
+    discounted_price: number | null;
     validity: number | null;
     features: string | null;
     sort_order: number;
     is_active: boolean | number;
+    is_custom: boolean | number;
+    vendor_id: number | null;
     company_id: number | null;
     created_at?: string;
     updated_at?: string;
@@ -22,10 +25,13 @@ export type CreateSubscriptionDto = {
     description?: string;
     menu_ids?: number[];
     price: number;
+    discounted_price?: number | null;
     validity?: number;
     features?: string;
     sort_order?: number;
     is_active: boolean;
+    is_custom?: boolean;
+    vendor_id?: number | null;
 };
 export type UpdateSubscriptionDto = Partial<CreateSubscriptionDto>;
 

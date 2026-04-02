@@ -60,6 +60,7 @@ import { useTranslation } from "@/hooks/use-translation";
 import { formatDistanceToNow } from "date-fns";
 import { PermissionGuard } from "@/components/guards/permission-guard";
 import { PageLoader } from '@/components/common/page-loader';
+import { DeleteDialog } from '@/components/common/delete-dialog';
 
 export function MissingTranslationsContent() {
   const { t } = useTranslation();
@@ -67,6 +68,7 @@ export function MissingTranslationsContent() {
   const [page, setPage] = useState(1);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedKey, setSelectedKey] = useState<MissingTranslationKey | null>(null);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
   const [createForm, setCreateForm] = useState({
     group: "common",
     description: "",
@@ -110,12 +112,6 @@ export function MissingTranslationsContent() {
   const handleCreateAll = () => {
     if (confirm(`This will create ${countData?.unresolved || 0} translation keys and auto-translate them. Continue?`)) {
       createAllMutation.mutate();
-    }
-  };
-
-  const handleDelete = (id: number) => {
-    if (confirm("Delete this missing key entry?")) {
-      deleteMutation.mutate(id);
     }
   };
 
@@ -276,7 +272,7 @@ export function MissingTranslationsContent() {
                             <Button
                               variant="destructive-outline"
                               size="icon"
-                              onClick={() => handleDelete(item.id)}
+                              onClick={() => setDeleteId(item.id)}
                               disabled={deleteMutation.isPending}
                               title="Delete"
                             >
@@ -390,6 +386,22 @@ export function MissingTranslationsContent() {
             </Dialog>
           </div>
         )}
+
+        <DeleteDialog
+          open={!!deleteId}
+          onOpenChange={(open) => !open && setDeleteId(null)}
+          title="Delete Missing Key"
+          description="Are you sure you want to delete this missing key entry? This action cannot be undone."
+          isDeleting={deleteMutation.isPending}
+          onConfirm={() => {
+            if (deleteId) {
+              deleteMutation.mutate(deleteId, {
+                onSuccess: () => setDeleteId(null),
+                onError: () => setDeleteId(null),
+              });
+            }
+          }}
+        />
       </>
     </PermissionGuard>
   );

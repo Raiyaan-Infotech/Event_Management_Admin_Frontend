@@ -174,7 +174,9 @@ export function TranslationProvider({
 
     // Check if translation exists
     const translationExists = key in translations;
-    let text = translationExists ? translations[key] : (defaultValue || key);
+    // Fallback: default value → human-readable key (last segment, title-cased)
+    const fallback = defaultValue || key.split('.').pop()!.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    let text = translationExists ? translations[key] : fallback;
 
     // Report missing key if not found (only after translations are loaded)
     if (!translationExists && isInitialized && !isLoading && Object.keys(translations).length > 0) {
