@@ -6,6 +6,16 @@ const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/
 const backendOrigin = rawApiUrl.replace(/\/api(\/v\d+)?\/?$/, "").replace(/\/$/, "") || "http://localhost:5000";
 
 const nextConfig: NextConfig = {
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      // Use axios pre-built browser bundle — no Node.js built-ins (http2/zlib/etc)
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        axios: require.resolve('axios/dist/browser/axios.cjs'),
+      };
+    }
+    return config;
+  },
   images: {
     remotePatterns: [
       {
