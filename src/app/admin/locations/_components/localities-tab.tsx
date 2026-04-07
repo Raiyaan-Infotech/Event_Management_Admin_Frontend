@@ -563,8 +563,8 @@ export function LocalitiesTab() {
             <div className="flex items-center justify-between pt-2 border-t">
               <p className="text-sm text-muted-foreground">~{csvTotalRows.toLocaleString()} total rows to import</p>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => { setCsvPreview(null); setCsvFile(null); }} disabled={csvImporting}>Cancel</Button>
-                <Button onClick={executeImport} disabled={csvImporting}>
+                <Button variant="outline" onClick={() => { setCsvPreview(null); setCsvFile(null); }} isLoading={csvImporting}>Cancel</Button>
+                <Button onClick={executeImport} isLoading={csvImporting}>
                   {csvImporting ? `Importing… ${csvProgress}%` : `Import ~${csvTotalRows.toLocaleString()} rows`}
                 </Button>
               </div>
@@ -761,7 +761,7 @@ export function LocalitiesTab() {
               <Button type="button" variant="outline" onClick={closeDialog}>
                 {t('common.cancel', 'Cancel')}
               </Button>
-              <Button type="submit" disabled={isPending}>
+              <Button type="submit" isLoading={isPending}>
                 {isPending
                   ? t('common.saving', 'Saving...')
                   : editItem

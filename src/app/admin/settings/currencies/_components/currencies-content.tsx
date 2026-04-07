@@ -252,7 +252,7 @@ export function CurrenciesContent() {
                               onClick={() =>
                                 handleDelete(currency.id)
                               }
-                              disabled={
+                              isLoading={
                                 deleteMutation.isPending ||
                                 Boolean(currency.is_default)
                               }

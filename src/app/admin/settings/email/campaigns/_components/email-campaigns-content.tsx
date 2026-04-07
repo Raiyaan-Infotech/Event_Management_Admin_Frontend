@@ -286,7 +286,7 @@ export function EmailCampaignsContent() {
                     variant="outline"
                     size="sm"
                     onClick={() => processQueueMutation.mutate()}
-                    disabled={
+                    isLoading={
                       processQueueMutation.isPending ||
                       (queueStats?.pending || 0) === 0
                     }
@@ -383,7 +383,7 @@ export function EmailCampaignsContent() {
                                   variant="ghost"
                                   size="icon"
                                   onClick={() => pauseMutation.mutate(campaign.id)}
-                                  disabled={pauseMutation.isPending}
+                                  isLoading={pauseMutation.isPending}
                                   title="Pause"
                                 >
                                   <Pause className="h-4 w-4" />
@@ -395,7 +395,7 @@ export function EmailCampaignsContent() {
                                   onClick={() =>
                                     activateMutation.mutate(campaign.id)
                                   }
-                                  disabled={activateMutation.isPending}
+                                  isLoading={activateMutation.isPending}
                                   title="Activate"
                                 >
                                   <Play className="h-4 w-4" />
@@ -405,7 +405,7 @@ export function EmailCampaignsContent() {
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => triggerMutation.mutate(campaign.id)}
-                                disabled={triggerMutation.isPending}
+                                isLoading={triggerMutation.isPending}
                                 title="Trigger Now"
                               >
                                 <Zap className="h-4 w-4" />
@@ -723,7 +723,7 @@ export function EmailCampaignsContent() {
                   </Button>
                   <Button
                     onClick={handleSubmit}
-                    disabled={
+                    isLoading={
                       createMutation.isPending ||
                       updateMutation.isPending ||
                       !form.name ||

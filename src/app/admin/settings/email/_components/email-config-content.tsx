@@ -421,7 +421,7 @@ export function EmailConfigContent() {
                                   variant="default"
                                   size="sm"
                                   onClick={() => openTestDialog(config)}
-                                  disabled={testMutation.isPending}
+                                  isLoading={testMutation.isPending}
                                   title="Test Connection"
                                   className="bg-blue-500 hover:bg-blue-600 text-white"
                                 >
@@ -608,7 +608,7 @@ export function EmailConfigContent() {
                   </Button>
                   <Button
                     onClick={handleSubmit}
-                    disabled={createMutation.isPending || updateMutation.isPending}
+                    isLoading={createMutation.isPending || updateMutation.isPending}
                   >
                     {editingConfig ? "Update" : "Create"}
                   </Button>
@@ -679,8 +679,8 @@ export function EmailConfigContent() {
                   <Button variant="outline" onClick={() => setTestDialogOpen(false)}>
                     Cancel
                   </Button>
-                  <Button onClick={handleTest} disabled={testMutation.isPending}>
-                    {testMutation.isPending ? "Testing..." : "Test Connection"}
+                  <Button onClick={handleTest} isLoading={testMutation.isPending}>
+                    Test Connection
                   </Button>
                 </DialogFooter>
               </DialogContent>

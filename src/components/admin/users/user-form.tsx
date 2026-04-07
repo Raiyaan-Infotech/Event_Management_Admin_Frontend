@@ -542,7 +542,7 @@ export function UserForm({ user, onSuccess }: UserFormProps) {
       </Card>}
 
       <div className="flex gap-3">
-        <Button type="submit" disabled={isPending}>
+        <Button type="submit" isLoading={isPending}>
           {isPending ? "Saving..." : user ? "Update Employee" : "Create Employee"}
         </Button>
         <Button type="button" variant="outline" onClick={() => onSuccess?.() ?? router.push("/admin/platform/users")}>

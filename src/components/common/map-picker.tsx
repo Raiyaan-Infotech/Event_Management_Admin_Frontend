@@ -306,11 +306,11 @@ export function MapPicker({ value, onChange, label = 'Office Location', flyToQue
                     onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleSearch())}
                     className="flex-1"
                 />
-                <Button type="button" variant="secondary" onClick={handleSearch} disabled={searching} className="shrink-0">
+                <Button type="button" variant="secondary" onClick={handleSearch} isLoading={searching} className="shrink-0">
                     <Search className="h-4 w-4" />
                     <span className="ml-1.5 hidden sm:inline">{searching ? 'Searching…' : 'Search'}</span>
                 </Button>
-                <Button type="button" variant="outline" onClick={handleLocate} disabled={locating} title="Use my current location" className="shrink-0 px-3">
+                <Button type="button" variant="outline" onClick={handleLocate} isLoading={locating} title="Use my current location" className="shrink-0 px-3">
                     <LocateFixed className={`h-4 w-4 ${locating ? 'animate-pulse text-primary' : ''}`} />
                 </Button>
             </div>

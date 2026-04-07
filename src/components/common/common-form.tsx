@@ -313,10 +313,8 @@ export function CommonForm({
 
             {/* Submit */}
             <div className="flex gap-3">
-                <Button type="submit" disabled={isPending}>
-                    {isPending
-                        ? (isEdit ? 'Saving...' : 'Creating...')
-                        : (isEdit ? 'Save Changes' : 'Create')}
+                <Button type="submit" isLoading={isPending}>
+                    {isEdit ? 'Save Changes' : 'Create'}
                 </Button>
                 <Button type="button" variant="outline" onClick={handleBack}>Cancel</Button>
             </div>

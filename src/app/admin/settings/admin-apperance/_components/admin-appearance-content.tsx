@@ -186,7 +186,7 @@ export function AdminAppearanceContent() {
                     </div>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="sm" disabled={bulkUpdateMutation.isPending}>
+                        <Button variant="ghost" size="sm" isLoading={bulkUpdateMutation.isPending}>
                           <RotateCcw className="h-4 w-4" />
                         </Button>
                       </AlertDialogTrigger>
@@ -242,7 +242,7 @@ export function AdminAppearanceContent() {
                     </div>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="sm" disabled={bulkUpdateMutation.isPending}>
+                        <Button variant="ghost" size="sm" isLoading={bulkUpdateMutation.isPending}>
                           <RotateCcw className="h-4 w-4" />
                         </Button>
                       </AlertDialogTrigger>
@@ -301,7 +301,7 @@ export function AdminAppearanceContent() {
                     </div>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="sm" disabled={bulkUpdateMutation.isPending}>
+                        <Button variant="ghost" size="sm" isLoading={bulkUpdateMutation.isPending}>
                           <RotateCcw className="h-4 w-4" />
                         </Button>
                       </AlertDialogTrigger>
@@ -357,7 +357,7 @@ export function AdminAppearanceContent() {
                     </div>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="sm" disabled={bulkUpdateMutation.isPending}>
+                        <Button variant="ghost" size="sm" isLoading={bulkUpdateMutation.isPending}>
                           <RotateCcw className="h-4 w-4" />
                         </Button>
                       </AlertDialogTrigger>
@@ -408,7 +408,7 @@ export function AdminAppearanceContent() {
             <div className="flex justify-end gap-2">
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="outline" disabled={bulkUpdateMutation.isPending}>
+                  <Button variant="outline" isLoading={bulkUpdateMutation.isPending}>
                     <RotateCcw className="mr-2 h-4 w-4" />
                     Reset All to Defaults
                   </Button>
@@ -428,7 +428,7 @@ export function AdminAppearanceContent() {
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
-              <Button onClick={handleSave} disabled={bulkUpdateMutation.isPending}>
+              <Button onClick={handleSave} isLoading={bulkUpdateMutation.isPending}>
                 <Save className="mr-2 h-4 w-4" />
                 Save Color Theme
               </Button>

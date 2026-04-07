@@ -252,7 +252,7 @@ export function CurrencyForm({ currency, onSuccess }: CurrencyFormProps) {
       <Button
         type="submit"
         className="w-full md:col-span-2"
-        disabled={isPending}
+        isLoading={isPending}
       >
         {isPending
           ? "Saving..."

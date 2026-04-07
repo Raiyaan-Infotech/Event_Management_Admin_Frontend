@@ -331,9 +331,9 @@ export function RolePermissions({ roleId, onSuccess }: RolePermissionsProps) {
         <Button
           type="button"
           onClick={handleSave}
-          disabled={assignPermissionsMutation.isPending}
+          isLoading={assignPermissionsMutation.isPending}
         >
-          {assignPermissionsMutation.isPending ? "Saving..." : "Save"}
+          Save
         </Button>
       </div>
     </div>

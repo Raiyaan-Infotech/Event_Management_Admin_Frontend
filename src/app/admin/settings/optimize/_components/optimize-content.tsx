@@ -159,7 +159,7 @@ export function OptimizeContent() {
               </div>
 
               <div className="pt-2">
-                <Button onClick={handleSaveOptimize} disabled={bulkUpdate.isPending}>
+                <Button onClick={handleSaveOptimize} isLoading={bulkUpdate.isPending}>
                   <Save className="mr-2 h-4 w-4" />
                   Save Image Settings
                 </Button>
@@ -198,7 +198,7 @@ export function OptimizeContent() {
                   </SelectContent>
                 </Select>
               </div>
-              <Button onClick={handleSavePagination} disabled={bulkUpdate.isPending}>
+              <Button onClick={handleSavePagination} isLoading={bulkUpdate.isPending}>
                 <Save className="mr-2 h-4 w-4" />
                 Save Pagination
               </Button>
@@ -249,13 +249,13 @@ export function OptimizeContent() {
                       'optimize.log_retention_days': values['optimize.log_retention_days'],
                     })
                   }
-                  disabled={bulkUpdate.isPending}
+                  isLoading={bulkUpdate.isPending}
                 >
                   <Save className="mr-2 h-4 w-4" />
                   Save Retention Setting
                 </Button>
 
-                <Button variant="destructive" disabled={clearLogs.isPending} onClick={() => setShowClearDialog(true)}>
+                <Button variant="destructive" isLoading={clearLogs.isPending} onClick={() => setShowClearDialog(true)}>
                   <Trash2 className="mr-2 h-4 w-4" />
                   {clearLogs.isPending
                     ? 'Clearing...'

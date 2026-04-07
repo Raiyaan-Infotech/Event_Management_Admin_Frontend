@@ -306,7 +306,7 @@ export function TranslationsContent() {
                       </Button>
                       <Button
                         onClick={handleCreateKey}
-                        disabled={createKeyMutation.isPending || !newKey.key || !newKey.default_value || !newKey.group || (newKey.group === "__custom__" && !customGroup)}
+                        isLoading={createKeyMutation.isPending || !newKey.key || !newKey.default_value || !newKey.group || (newKey.group === "__custom__" && !customGroup)}
                       >
                         {createKeyMutation.isPending ? t('common.loading') : t('common.create')}
                       </Button>
@@ -505,7 +505,7 @@ export function TranslationsContent() {
                                 size="icon"
                                 className="h-8 w-8"
                                 onClick={() => handleRetranslate(key.id)}
-                                disabled={retranslateAllMutation.isPending}
+                                isLoading={retranslateAllMutation.isPending}
                                 title={t('translations.retranslate', 'Re-translate all')}
                               >
                                 <RefreshCw className="h-4 w-4" />
@@ -524,7 +524,7 @@ export function TranslationsContent() {
                                 size="icon"
                                 className="h-8 w-8"
                                 onClick={() => handleDeleteKey(key.id)}
-                                disabled={deleteKeyMutation.isPending}
+                                isLoading={deleteKeyMutation.isPending}
                                 title={t('common.delete', 'Delete')}
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -596,7 +596,7 @@ export function TranslationsContent() {
                   <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
                     {t('common.cancel')}
                   </Button>
-                  <Button onClick={handleSaveTranslations} disabled={updateTranslationsMutation.isPending}>
+                  <Button onClick={handleSaveTranslations} isLoading={updateTranslationsMutation.isPending}>
                     {updateTranslationsMutation.isPending ? t('common.loading') : t('common.save')}
                   </Button>
                 </DialogFooter>

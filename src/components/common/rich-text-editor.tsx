@@ -219,7 +219,7 @@ export const RichTextEditor = React.forwardRef<RichTextEditorRef, RichTextEditor
                     variant="outline"
                     size="sm"
                     onClick={handleAddMedia}
-                    disabled={isUploading}
+                    isLoading={isUploading}
                     className="flex items-center gap-2"
                     title="Insert Image"
                 >
@@ -228,7 +228,7 @@ export const RichTextEditor = React.forwardRef<RichTextEditorRef, RichTextEditor
                     ) : (
                         <ImageIcon className="w-4 h-4" />
                     )}
-                    {isUploading ? "Uploading..." : "Add media"}
+                    Add media
                 </Button>
                 <span className="text-[11px] text-muted-foreground">Max 10MB</span>
                 {customButtons}

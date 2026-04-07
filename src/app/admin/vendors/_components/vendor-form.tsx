@@ -30,6 +30,7 @@ const baseSchema = z.object({
     latitude: z.number().nullable().optional(),
     longitude: z.number().nullable().optional(),
     company_address: z.string().trim().optional(),
+    about_us: z.string().trim().optional(),
     reg_no: z.string().trim().optional(),
     gst_no: z.string().trim().optional(),
     company_contact: z.string().trim().optional(),
@@ -268,6 +269,7 @@ export function VendorForm({ vendor }: Props) {
                     ],
                 },
                 { name: 'address', label: 'Address', type: 'textarea', placeholder: 'Enter your address', rows: 2, colSpan: 2 },
+                { name: 'about_us', label: 'About Us', type: 'textarea', placeholder: 'Write a brief description about the vendor...', rows: 4, colSpan: 2 },
                 {
                     name: 'password', label: isEdit ? 'Password (leave blank to keep current)' : 'Password',
                     type: 'password', placeholder: '••••••••', required: !isEdit,
@@ -435,6 +437,7 @@ export function VendorForm({ vendor }: Props) {
         pinterest: (vendor as any).pinterest || '', name: vendor.name,
         address: vendor.address || '', contact: vendor.contact || '',
         email: vendor.email, membership: vendor.membership,
+        about_us: (vendor as any).about_us || '',
         profile: vendor.profile || '', bank_logo: vendor.bank_logo || '',
         password: '', confirm_password: '',
         bank_name: vendor.bank_name || '', acc_no: vendor.acc_no || '',

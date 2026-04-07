@@ -1,3 +1,4 @@
+import { Loader2 } from 'lucide-react';
 import { useTranslation } from '@/hooks/use-translation';
 import {
     AlertDialog,
@@ -45,13 +46,14 @@ export function DeleteDialog({
                         {t('common.cancel', 'Cancel')}
                     </AlertDialogCancel>
                     <AlertDialogAction
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90 inline-flex items-center gap-2"
                         onClick={(e) => {
                             e.preventDefault();
                             onConfirm();
                         }}
                         disabled={isDeleting}
                     >
+                        {isDeleting && <Loader2 className="animate-spin h-4 w-4" />}
                         {isDeleting ? t('common.deleting', 'Deleting...') : (confirmText || t('common.delete', 'Delete'))}
                     </AlertDialogAction>
                 </AlertDialogFooter>

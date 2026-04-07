@@ -647,7 +647,7 @@ export function TemplatesContent() {
               </Button>
               <Button
                 onClick={handleSubmit}
-                disabled={createMutation.isPending || updateMutation.isPending}
+                isLoading={createMutation.isPending || updateMutation.isPending}
               >
                 {editingTemplate
                   ? "Update Template"
@@ -743,9 +743,9 @@ export function TemplatesContent() {
               </Button>
               <Button
                 onClick={handleSendTest}
-                disabled={!testEmail || sendMutation.isPending}
+                isLoading={!testEmail || sendMutation.isPending}
               >
-                {sendMutation.isPending ? "Sending..." : "Send Test"}
+                Send Test
               </Button>
             </DialogFooter>
           </DialogContent>

@@ -126,7 +126,7 @@ export function TimezoneContent() {
                       </FormItem>
                     )}
                   />
-                  <Button type="submit" disabled={updateCompany.isPending}>
+                  <Button type="submit" isLoading={updateCompany.isPending}>
                     Save Company Timezone
                   </Button>
                 </form>
@@ -179,7 +179,7 @@ export function TimezoneContent() {
                     </FormItem>
                   )}
                 />
-                <Button type="submit" disabled={updateProfile.isPending}>
+                <Button type="submit" isLoading={updateProfile.isPending}>
                   Save My Timezone
                 </Button>
               </form>

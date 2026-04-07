@@ -325,7 +325,7 @@ export function LanguagesContent() {
                               onClick={() =>
                                 handleTranslateAll(language.id, language.name)
                               }
-                              disabled={translateAllMutation.isPending}
+                              isLoading={translateAllMutation.isPending}
                               title={t("languages.translate_all", "Translate all keys")}
                               className="bg-blue-500 hover:bg-blue-600 text-white"
                             >
@@ -337,7 +337,7 @@ export function LanguagesContent() {
                               <Button
                                 size="sm"
                                 onClick={() => handleSetDefault(language.id)}
-                                disabled={setDefaultMutation.isPending}
+                                isLoading={setDefaultMutation.isPending}
                                 title={t("languages.set_default", "Set as default")}
                                 className="bg-yellow-500 hover:bg-blue-600 text-white"
                               >
@@ -366,7 +366,7 @@ export function LanguagesContent() {
                             <Button
                               variant="destructive-outline"
                               onClick={() => handleDelete(language.id)}
-                              disabled={
+                              isLoading={
                                 deleteLanguageMutation.isPending ||
                                 language.is_default
                               }

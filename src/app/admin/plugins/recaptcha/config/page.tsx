@@ -182,7 +182,7 @@ export default function RecaptchaConfigPage() {
                             </Card>
 
                             <div className="flex justify-end">
-                                <Button onClick={handleSave} disabled={bulkUpdateMutation.isPending}>
+                                <Button onClick={handleSave} isLoading={bulkUpdateMutation.isPending}>
                                     <Save className="mr-2 h-4 w-4" />
                                     Save reCAPTCHA Settings
                                 </Button>

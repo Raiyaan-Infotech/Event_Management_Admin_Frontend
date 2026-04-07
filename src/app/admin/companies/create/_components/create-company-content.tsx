@@ -359,8 +359,8 @@ export function CreateCompanyContent() {
                 Cancel
               </Button>
             </Link>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Creating...' : 'Create Company'}
+            <Button type="submit" isLoading={isSubmitting}>
+              Create Company
             </Button>
           </div>
         </form>

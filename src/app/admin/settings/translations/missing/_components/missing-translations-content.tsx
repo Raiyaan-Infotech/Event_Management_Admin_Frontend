@@ -158,7 +158,7 @@ export function MissingTranslationsContent() {
                 </div>
               </div>
               {countData && countData.unresolved > 0 && (
-                <Button onClick={handleCreateAll} disabled={createAllMutation.isPending}>
+                <Button onClick={handleCreateAll} isLoading={createAllMutation.isPending}>
                   <Sparkles className="mr-2 h-4 w-4" />
                   {createAllMutation.isPending
                     ? "Creating..."
@@ -262,7 +262,7 @@ export function MissingTranslationsContent() {
                                   variant="ghost"
                                   size="icon"
                                   onClick={() => handleIgnore(item.id)}
-                                  disabled={ignoreMutation.isPending}
+                                  isLoading={ignoreMutation.isPending}
                                   title="Ignore (mark as resolved)"
                                 >
                                   <EyeOff className="h-4 w-4" />
@@ -273,7 +273,7 @@ export function MissingTranslationsContent() {
                               variant="destructive-outline"
                               size="icon"
                               onClick={() => setDeleteId(item.id)}
-                              disabled={deleteMutation.isPending}
+                              isLoading={deleteMutation.isPending}
                               title="Delete"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -377,9 +377,9 @@ export function MissingTranslationsContent() {
                   </Button>
                   <Button
                     onClick={handleConfirmCreate}
-                    disabled={createFromMissingMutation.isPending}
+                    isLoading={createFromMissingMutation.isPending}
                   >
-                    {createFromMissingMutation.isPending ? "Creating..." : "Create & Translate"}
+                    Create & Translate
                   </Button>
                 </DialogFooter>
               </DialogContent>

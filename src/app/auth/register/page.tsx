@@ -193,9 +193,9 @@ export default function RegisterPage() {
               <Button
                 type="submit"
                 className="w-full bg-indigo-600 text-white hover:bg-indigo-700 font-medium"
-                disabled={registerMutation.isPending}
+                isLoading={registerMutation.isPending}
               >
-                {registerMutation.isPending ? "Creating account..." : "Create Account"}
+                Create Account
               </Button>
 
               {/* Login Link */}

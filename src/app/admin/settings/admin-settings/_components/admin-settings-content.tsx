@@ -456,7 +456,7 @@ export function AdminSettingsContent() {
             <div className="flex justify-end">
               <Button
                 onClick={handleSave}
-                disabled={isSaving || bulkUpdateMutation.isPending}
+                isLoading={isSaving || bulkUpdateMutation.isPending}
                 size="lg"
               >
                 <Save className="mr-2 h-4 w-4" />

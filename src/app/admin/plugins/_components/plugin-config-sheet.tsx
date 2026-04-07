@@ -70,8 +70,8 @@ function GoogleOAuthForm() {
                 <p className="text-xs text-muted-foreground">Add this to Authorized Redirect URIs in Google Cloud Console.</p>
             </div>
             <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 flex items-center gap-1">Get credentials <ExternalLink className="h-3 w-3" /></a>
-            <Button className="w-full" onClick={() => bulkUpdate.mutate({ group: "social_login", ...v, google_enabled: v.google_enabled.toString() })} disabled={bulkUpdate.isPending}>
-                <Save className="mr-2 h-4 w-4" />{bulkUpdate.isPending ? "Saving..." : "Save Google OAuth"}
+            <Button className="w-full" onClick={() => bulkUpdate.mutate({ group: "social_login", ...v, google_enabled: v.google_enabled.toString() })} isLoading={bulkUpdate.isPending}>
+                <Save className="mr-2 h-4 w-4" />Save Google OAuth
             </Button>
         </div>
     );
@@ -117,8 +117,8 @@ function FacebookOAuthForm() {
                 <Input id="fb_redir" type="url" placeholder="https://yourdomain.com/auth/facebook/callback" value={v.facebook_redirect_uri} onChange={(e) => setV({ ...v, facebook_redirect_uri: e.target.value })} />
             </div>
             <a href="https://developers.facebook.com/apps" target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 flex items-center gap-1">Get credentials <ExternalLink className="h-3 w-3" /></a>
-            <Button className="w-full" onClick={() => bulkUpdate.mutate({ group: "social_login", ...v, facebook_enabled: v.facebook_enabled.toString() })} disabled={bulkUpdate.isPending}>
-                <Save className="mr-2 h-4 w-4" />{bulkUpdate.isPending ? "Saving..." : "Save Facebook OAuth"}
+            <Button className="w-full" onClick={() => bulkUpdate.mutate({ group: "social_login", ...v, facebook_enabled: v.facebook_enabled.toString() })} isLoading={bulkUpdate.isPending}>
+                <Save className="mr-2 h-4 w-4" />Save Facebook OAuth
             </Button>
         </div>
     );
@@ -188,8 +188,8 @@ function AnalyticsForm({ slug }: { slug: string }) {
                 </div>
             )}
 
-            <Button className="w-full" onClick={() => bulkUpdate.mutate({ group: "analytics", tracking_type: v.tracking_type, gtm_container_id: v.gtm_container_id, enable_gtm_debug: String(v.enable_gtm_debug), enable_gtm_events: String(v.enable_gtm_events), ga4_measurement_id: v.ga4_measurement_id })} disabled={bulkUpdate.isPending}>
-                <Save className="mr-2 h-4 w-4" />{bulkUpdate.isPending ? "Saving..." : "Save Analytics Settings"}
+            <Button className="w-full" onClick={() => bulkUpdate.mutate({ group: "analytics", tracking_type: v.tracking_type, gtm_container_id: v.gtm_container_id, enable_gtm_debug: String(v.enable_gtm_debug), enable_gtm_events: String(v.enable_gtm_events), ga4_measurement_id: v.ga4_measurement_id })} isLoading={bulkUpdate.isPending}>
+                <Save className="mr-2 h-4 w-4" />Save Analytics Settings
             </Button>
         </div>
     );
@@ -269,8 +269,8 @@ function StorageForm({ slug }: { slug: string }) {
                     <Input id="s_ep" type="url" placeholder="https://..." value={v.aws_endpoint} onChange={(e) => setV({ ...v, aws_endpoint: e.target.value })} />
                 </div>
             )}
-            <Button className="w-full" onClick={() => bulkUpdate.mutate({ group: "media", ...v })} disabled={bulkUpdate.isPending}>
-                <Save className="mr-2 h-4 w-4" />{bulkUpdate.isPending ? "Saving..." : "Save Storage Settings"}
+            <Button className="w-full" onClick={() => bulkUpdate.mutate({ group: "media", ...v })} isLoading={bulkUpdate.isPending}>
+                <Save className="mr-2 h-4 w-4" />Save Storage Settings
             </Button>
         </div>
     );
@@ -326,8 +326,8 @@ function GoogleMapsForm() {
                 </div>
             </div>
             <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 flex items-center gap-1">Get API Key <ExternalLink className="h-3 w-3" /></a>
-            <Button className="w-full" onClick={() => bulkUpdate.mutate({ group: "google_maps", ...v, google_maps_enabled: v.google_maps_enabled.toString() })} disabled={bulkUpdate.isPending}>
-                <Save className="mr-2 h-4 w-4" />{bulkUpdate.isPending ? "Saving..." : "Save Maps Settings"}
+            <Button className="w-full" onClick={() => bulkUpdate.mutate({ group: "google_maps", ...v, google_maps_enabled: v.google_maps_enabled.toString() })} isLoading={bulkUpdate.isPending}>
+                <Save className="mr-2 h-4 w-4" />Save Maps Settings
             </Button>
         </div>
     );
@@ -390,8 +390,8 @@ function StripeForm() {
                 <Input id="st_cur" maxLength={3} placeholder="USD" value={v.stripe_currency} onChange={(e) => setV({ ...v, stripe_currency: e.target.value.toUpperCase() })} />
             </div>
             <a href="https://dashboard.stripe.com/apikeys" target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 flex items-center gap-1">Stripe Dashboard <ExternalLink className="h-3 w-3" /></a>
-            <Button className="w-full" onClick={() => bulkUpdate.mutate({ group: "stripe", ...v, stripe_enabled: v.stripe_enabled.toString(), stripe_test_mode: v.stripe_test_mode.toString() })} disabled={bulkUpdate.isPending}>
-                <Save className="mr-2 h-4 w-4" />{bulkUpdate.isPending ? "Saving..." : "Save Stripe Settings"}
+            <Button className="w-full" onClick={() => bulkUpdate.mutate({ group: "stripe", ...v, stripe_enabled: v.stripe_enabled.toString(), stripe_test_mode: v.stripe_test_mode.toString() })} isLoading={bulkUpdate.isPending}>
+                <Save className="mr-2 h-4 w-4" />Save Stripe Settings
             </Button>
         </div>
     );
@@ -445,8 +445,8 @@ function RecaptchaForm() {
                 </div>
             )}
             <a href="https://www.google.com/recaptcha/admin" target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 flex items-center gap-1">reCAPTCHA Admin <ExternalLink className="h-3 w-3" /></a>
-            <Button className="w-full" onClick={() => bulkUpdate.mutate({ group: "recaptcha", ...v, recaptcha_enabled: v.recaptcha_enabled.toString() })} disabled={bulkUpdate.isPending}>
-                <Save className="mr-2 h-4 w-4" />{bulkUpdate.isPending ? "Saving..." : "Save reCAPTCHA Settings"}
+            <Button className="w-full" onClick={() => bulkUpdate.mutate({ group: "recaptcha", ...v, recaptcha_enabled: v.recaptcha_enabled.toString() })} isLoading={bulkUpdate.isPending}>
+                <Save className="mr-2 h-4 w-4" />Save reCAPTCHA Settings
             </Button>
         </div>
     );
@@ -504,8 +504,8 @@ function TwilioForm() {
                 <Input id="tw_msid" placeholder="MGxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" value={v.twilio_messaging_service_sid} onChange={(e) => setV({ ...v, twilio_messaging_service_sid: e.target.value })} />
             </div>
             <a href="https://console.twilio.com/" target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 flex items-center gap-1">Twilio Console <ExternalLink className="h-3 w-3" /></a>
-            <Button className="w-full" onClick={() => bulkUpdate.mutate({ group: "twilio", ...v, twilio_enabled: v.twilio_enabled.toString(), twilio_test_mode: v.twilio_test_mode.toString() })} disabled={bulkUpdate.isPending}>
-                <Save className="mr-2 h-4 w-4" />{bulkUpdate.isPending ? "Saving..." : "Save Twilio Settings"}
+            <Button className="w-full" onClick={() => bulkUpdate.mutate({ group: "twilio", ...v, twilio_enabled: v.twilio_enabled.toString(), twilio_test_mode: v.twilio_test_mode.toString() })} isLoading={bulkUpdate.isPending}>
+                <Save className="mr-2 h-4 w-4" />Save Twilio Settings
             </Button>
         </div>
     );
@@ -555,8 +555,8 @@ function PayPalForm() {
                 </div>
             </div>
             <a href="https://developer.paypal.com/dashboard/applications" target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 flex items-center gap-1">PayPal Developer Dashboard <ExternalLink className="h-3 w-3" /></a>
-            <Button className="w-full" onClick={() => bulkUpdate.mutate({ group: "paypal", ...v, paypal_enabled: v.paypal_enabled.toString(), paypal_live_mode: v.paypal_live_mode.toString() })} disabled={bulkUpdate.isPending}>
-                <Save className="mr-2 h-4 w-4" />{bulkUpdate.isPending ? "Saving..." : "Save PayPal Settings"}
+            <Button className="w-full" onClick={() => bulkUpdate.mutate({ group: "paypal", ...v, paypal_enabled: v.paypal_enabled.toString(), paypal_live_mode: v.paypal_live_mode.toString() })} isLoading={bulkUpdate.isPending}>
+                <Save className="mr-2 h-4 w-4" />Save PayPal Settings
             </Button>
         </div>
     );
@@ -593,8 +593,8 @@ function MollieForm() {
                 <Input id="mol_wh" type="password" placeholder="••••••••••••••••••••" value={v.mollie_webhook_secret} onChange={(e) => setV({ ...v, mollie_webhook_secret: e.target.value })} />
             </div>
             <a href="https://my.mollie.com/dashboard/developers/api-keys" target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 flex items-center gap-1">Mollie Dashboard <ExternalLink className="h-3 w-3" /></a>
-            <Button className="w-full" onClick={() => bulkUpdate.mutate({ group: "mollie", ...v, mollie_enabled: v.mollie_enabled.toString() })} disabled={bulkUpdate.isPending}>
-                <Save className="mr-2 h-4 w-4" />{bulkUpdate.isPending ? "Saving..." : "Save Mollie Settings"}
+            <Button className="w-full" onClick={() => bulkUpdate.mutate({ group: "mollie", ...v, mollie_enabled: v.mollie_enabled.toString() })} isLoading={bulkUpdate.isPending}>
+                <Save className="mr-2 h-4 w-4" />Save Mollie Settings
             </Button>
         </div>
     );
@@ -636,8 +636,8 @@ function PaystackForm() {
                 </div>
             </div>
             <a href="https://dashboard.paystack.com/#/settings/developers" target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 flex items-center gap-1">Paystack Dashboard <ExternalLink className="h-3 w-3" /></a>
-            <Button className="w-full" onClick={() => bulkUpdate.mutate({ group: "paystack", ...v, paystack_enabled: v.paystack_enabled.toString() })} disabled={bulkUpdate.isPending}>
-                <Save className="mr-2 h-4 w-4" />{bulkUpdate.isPending ? "Saving..." : "Save Paystack Settings"}
+            <Button className="w-full" onClick={() => bulkUpdate.mutate({ group: "paystack", ...v, paystack_enabled: v.paystack_enabled.toString() })} isLoading={bulkUpdate.isPending}>
+                <Save className="mr-2 h-4 w-4" />Save Paystack Settings
             </Button>
         </div>
     );
@@ -693,8 +693,8 @@ function RazorpayForm() {
                 <Input id="rz_wh" type="password" placeholder="••••••••••••••••••••" value={v.razorpay_webhook_secret} onChange={(e) => setV({ ...v, razorpay_webhook_secret: e.target.value })} />
             </div>
             <a href="https://dashboard.razorpay.com/app/keys" target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 flex items-center gap-1">Razorpay Dashboard <ExternalLink className="h-3 w-3" /></a>
-            <Button className="w-full" onClick={() => bulkUpdate.mutate({ group: "razorpay", ...v, razorpay_enabled: v.razorpay_enabled.toString() })} disabled={bulkUpdate.isPending}>
-                <Save className="mr-2 h-4 w-4" />{bulkUpdate.isPending ? "Saving..." : "Save Razorpay Settings"}
+            <Button className="w-full" onClick={() => bulkUpdate.mutate({ group: "razorpay", ...v, razorpay_enabled: v.razorpay_enabled.toString() })} isLoading={bulkUpdate.isPending}>
+                <Save className="mr-2 h-4 w-4" />Save Razorpay Settings
             </Button>
         </div>
     );
@@ -746,8 +746,8 @@ function FlutterwaveForm() {
                 <p className="text-xs text-muted-foreground">Required for standard (redirect) payments.</p>
             </div>
             <a href="https://dashboard.flutterwave.com/dashboard/settings/apis" target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 flex items-center gap-1">Flutterwave Dashboard <ExternalLink className="h-3 w-3" /></a>
-            <Button className="w-full" onClick={() => bulkUpdate.mutate({ group: "flutterwave", ...v, flutterwave_enabled: v.flutterwave_enabled.toString() })} disabled={bulkUpdate.isPending}>
-                <Save className="mr-2 h-4 w-4" />{bulkUpdate.isPending ? "Saving..." : "Save Flutterwave Settings"}
+            <Button className="w-full" onClick={() => bulkUpdate.mutate({ group: "flutterwave", ...v, flutterwave_enabled: v.flutterwave_enabled.toString() })} isLoading={bulkUpdate.isPending}>
+                <Save className="mr-2 h-4 w-4" />Save Flutterwave Settings
             </Button>
         </div>
     );

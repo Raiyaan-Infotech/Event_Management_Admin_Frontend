@@ -256,10 +256,8 @@ export function CommonFormDialog({
                         <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>
                             Cancel
                         </Button>
-                        <Button type="submit" disabled={isPending}>
-                            {isPending
-                                ? (isEdit ? 'Saving...' : 'Creating...')
-                                : (submitLabel || (isEdit ? 'Save Changes' : 'Create'))}
+                        <Button type="submit" isLoading={isPending}>
+                            {submitLabel || (isEdit ? 'Save Changes' : 'Create')}
                         </Button>
                     </DialogFooter>
                 </form>

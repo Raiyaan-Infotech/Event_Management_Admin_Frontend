@@ -402,7 +402,7 @@ export function GeneralSettingsContent() {
 
             {/* Save Site Settings */}
             <div className="flex justify-end">
-              <Button onClick={handleSaveSite} disabled={isSaving || bulkUpdateAppearanceMutation.isPending} size="lg">
+              <Button onClick={handleSaveSite} isLoading={isSaving || bulkUpdateAppearanceMutation.isPending} size="lg">
                 <Save className="mr-2 h-4 w-4" />
                 Save Site Settings
               </Button>
@@ -449,7 +449,7 @@ export function GeneralSettingsContent() {
             {/* Save Maintenance Settings */}
             <Can permission="general_settings.edit">
               <div className="flex justify-end">
-                <Button onClick={handleSaveGeneral} disabled={bulkUpdateGeneralMutation.isPending}>
+                <Button onClick={handleSaveGeneral} isLoading={bulkUpdateGeneralMutation.isPending}>
                   <Save className="mr-2 h-4 w-4" />
                   Save Maintenance Settings
                 </Button>

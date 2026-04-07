@@ -292,7 +292,7 @@ export function EmailTemplatesContent() {
                 </div>
 
                 <div className="flex gap-4 pt-4">
-                  <Button type="submit" disabled={isPending}>
+                  <Button type="submit" isLoading={isPending}>
                     {isPending
                       ? "Saving..."
                       : selectedTemplate
@@ -364,9 +364,9 @@ export function EmailTemplatesContent() {
               <div className="flex gap-4 pt-2">
                 <Button
                   onClick={handleSendTestSubmit}
-                  disabled={!testEmail || sendMutation.isPending}
+                  isLoading={!testEmail || sendMutation.isPending}
                 >
-                  {sendMutation.isPending ? "Sending..." : "Send Test"}
+                  Send Test
                 </Button>
                 <Button
                   variant="outline"

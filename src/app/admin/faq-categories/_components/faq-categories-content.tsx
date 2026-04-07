@@ -209,7 +209,7 @@ export function FaqCategoriesContent() {
                         </div>
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={closeDialog}>{t('common.cancel', 'Cancel')}</Button>
-                            <Button type="submit" disabled={isPending}>
+                            <Button type="submit" isLoading={isPending}>
                                 {isPending ? t('common.saving', 'Saving...') : t('common.save', 'Save')}
                             </Button>
                         </DialogFooter>

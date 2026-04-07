@@ -158,9 +158,9 @@ export default function LoginPage() {
               <Button
                 type="submit"
                 className="w-full bg-indigo-600 text-white hover:bg-indigo-700 font-medium"
-                disabled={loginMutation.isPending}
+                isLoading={loginMutation.isPending}
               >
-                {loginMutation.isPending ? "Signing in..." : "Sign In"}
+                Sign In
               </Button>
 
               {/* Register Link */}

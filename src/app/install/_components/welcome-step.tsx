@@ -83,7 +83,7 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
           variant="outline"
           size="sm"
           onClick={() => runChecks()}
-          disabled={isPending}
+          isLoading={isPending}
           className="gap-2"
         >
           {isPending ? (

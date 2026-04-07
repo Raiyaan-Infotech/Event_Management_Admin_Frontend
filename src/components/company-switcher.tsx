@@ -61,7 +61,7 @@ export function CompanySwitcher() {
           <CommandInput placeholder="Search company..." />
           <CommandList>
             <CommandEmpty>
-              {isLoading ? 'Loading companies...' : 'No company found.'}
+              No company found.
             </CommandEmpty>
             
             {/* System Level Option */}

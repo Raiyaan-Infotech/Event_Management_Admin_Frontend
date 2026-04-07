@@ -357,7 +357,7 @@ export function MediaLibraryContent() {
                             accept="image/*,video/*,audio/*,application/pdf"
                         />
                         <div className="flex items-center gap-2">
-                            <Button onClick={() => fileInputRef.current?.click()} disabled={uploadMutation.isPending}>
+                            <Button onClick={() => fileInputRef.current?.click()} isLoading={uploadMutation.isPending}>
                                 <Upload className="mr-2 h-4 w-4" />
                                 {uploadMutation.isPending ? t('media.uploading', 'Uploading...') : t('media.upload', 'Upload')}
                             </Button>
@@ -371,7 +371,7 @@ export function MediaLibraryContent() {
                         </Button>
 
                         {/* Refresh */}
-                        <Button variant="ghost" size="icon" onClick={() => refetch()} disabled={isFetching}>
+                        <Button variant="ghost" size="icon" onClick={() => refetch()} isLoading={isFetching}>
                             <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
                         </Button>
                     </div>
@@ -757,7 +757,7 @@ export function MediaLibraryContent() {
                         />
                         <DialogFooter>
                             <Button variant="outline" onClick={() => setNewFolderOpen(false)}>{t('common.cancel', 'Cancel')}</Button>
-                            <Button onClick={handleCreateFolder} disabled={!newFolderName.trim() || createFolderMutation.isPending}>
+                            <Button onClick={handleCreateFolder} isLoading={!newFolderName.trim() || createFolderMutation.isPending}>
                                 <Plus className="mr-2 h-4 w-4" /> {t('common.create', 'Create')}
                             </Button>
                         </DialogFooter>
@@ -790,7 +790,7 @@ export function MediaLibraryContent() {
                         />
                         <DialogFooter>
                             <Button variant="outline" onClick={() => setRenameTarget(null)}>{t('common.cancel', 'Cancel')}</Button>
-                            <Button onClick={handleRename} disabled={!renameName.trim() || renameMutation.isPending || renameName === renameTarget?.name}>
+                            <Button onClick={handleRename} isLoading={!renameName.trim() || renameMutation.isPending || renameName === renameTarget?.name}>
                                 {t('common.rename', 'Rename')}
                             </Button>
                         </DialogFooter>
@@ -821,7 +821,7 @@ export function MediaLibraryContent() {
 
                         <DialogFooter>
                             <Button variant="outline" onClick={() => setMoveTarget(null)}>{t('common.close', 'Close')}</Button>
-                            <Button onClick={handleMove} disabled={moveMutation.isPending || moveTargetFolder === ''}>
+                            <Button onClick={handleMove} isLoading={moveMutation.isPending || moveTargetFolder === ''}>
                                 <FolderOpen className="mr-2 h-4 w-4" /> Move here
                             </Button>
                         </DialogFooter>

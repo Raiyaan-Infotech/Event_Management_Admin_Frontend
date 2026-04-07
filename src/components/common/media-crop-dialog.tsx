@@ -266,15 +266,15 @@ export function MediaCropDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={isSaving}>
+          <Button variant="outline" onClick={onClose} isLoading={isSaving}>
             Cancel
           </Button>
           <Button
             onClick={handleCropAndSave}
-            disabled={!completedCrop || isSaving}
+            isLoading={!completedCrop || isSaving}
           >
             <Crop className="mr-2 h-4 w-4" />
-            {isSaving ? "Saving..." : "Crop & Save"}
+            Crop & Save
           </Button>
         </DialogFooter>
       </DialogContent>

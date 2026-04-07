@@ -97,7 +97,7 @@ export function EditCompanyContent({ companyId }: { companyId: number }) {
 
   return (
     <>
-      <PageLoader open={isLoading || isSubmitting} text={isLoading ? "Loading company..." : "Saving..."} />
+      <PageLoader open={isLoading || isSubmitting} text="Saving..." />
       {!isLoading && company && <PermissionGuard developerOnly>
         <div className="space-y-6">
           {/* Header */}
@@ -350,7 +350,7 @@ export function EditCompanyContent({ companyId }: { companyId: number }) {
                     Cancel
                   </Button>
                 </Link>
-                <Button type="submit" disabled={isSubmitting}>
+                <Button type="submit" isLoading={isSubmitting}>
                   Save Changes
                 </Button>
               </div>

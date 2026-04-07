@@ -310,7 +310,7 @@ export function ProfileContent() {
                     </p>
                   </div>
 
-                  <Button type="submit" disabled={updateProfileMutation.isPending}>
+                  <Button type="submit" isLoading={updateProfileMutation.isPending}>
                     {updateProfileMutation.isPending ? t('common.saving') : t('profile.update_profile')}
                   </Button>
                 </form>
@@ -425,7 +425,7 @@ export function ProfileContent() {
                     )}
                   </div>
 
-                  <Button type="submit" disabled={changePasswordMutation.isPending}>
+                  <Button type="submit" isLoading={changePasswordMutation.isPending}>
                     {changePasswordMutation.isPending ? t('common.changing') : t('profile.change_password')}
                   </Button>
                 </form>

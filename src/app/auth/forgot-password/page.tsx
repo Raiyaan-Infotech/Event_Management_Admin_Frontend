@@ -167,9 +167,9 @@ export default function ForgotPasswordPage() {
                   <Button
                     type="submit"
                     className="w-full bg-indigo-600 text-white hover:bg-indigo-700"
-                    disabled={forgotPasswordMutation.isPending}
+                    isLoading={forgotPasswordMutation.isPending}
                   >
-                    {forgotPasswordMutation.isPending ? "Sending..." : "Send OTP"}
+                    Send OTP
                   </Button>
                 </form>
               </>
@@ -208,9 +208,9 @@ export default function ForgotPasswordPage() {
                   <Button
                     type="submit"
                     className="w-full bg-indigo-600 text-white hover:bg-indigo-700"
-                    disabled={verifyOTPMutation.isPending}
+                    isLoading={verifyOTPMutation.isPending}
                   >
-                    {verifyOTPMutation.isPending ? "Verifying..." : "Verify OTP"}
+                    Verify OTP
                   </Button>
 
                   <div className="text-center">
@@ -218,10 +218,10 @@ export default function ForgotPasswordPage() {
                       type="button"
                       variant="link"
                       onClick={handleResendOTP}
-                      disabled={forgotPasswordMutation.isPending}
+                      isLoading={forgotPasswordMutation.isPending}
                       className="text-indigo-600 hover:text-indigo-500"
                     >
-                      {forgotPasswordMutation.isPending ? "Sending..." : "Resend OTP"}
+                      Resend OTP
                     </Button>
                   </div>
 
@@ -287,9 +287,9 @@ export default function ForgotPasswordPage() {
                   <Button
                     type="submit"
                     className="w-full bg-indigo-600 text-white hover:bg-indigo-700"
-                    disabled={resetPasswordMutation.isPending}
+                    isLoading={resetPasswordMutation.isPending}
                   >
-                    {resetPasswordMutation.isPending ? "Resetting..." : "Reset Password"}
+                    Reset Password
                   </Button>
                 </form>
               </>

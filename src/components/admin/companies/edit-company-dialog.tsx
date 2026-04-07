@@ -275,8 +275,8 @@ export function EditCompanyDialog({
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? 'Saving...' : 'Save Changes'}
+                <Button type="submit" isLoading={isSubmitting}>
+                  Save Changes
                 </Button>
               </DialogFooter>
             </form>

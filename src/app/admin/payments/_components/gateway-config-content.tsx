@@ -273,7 +273,7 @@ export default function GatewayConfigContent({ slug }: { slug: string }) {
                                 <AlertCircle className="w-3 h-3" /> Setup Required
                             </Badge>
                         )}
-                        <Button onClick={handleSave} disabled={bulkUpdate.isPending} className="gap-2">
+                        <Button onClick={handleSave} isLoading={bulkUpdate.isPending} className="gap-2">
                             <Save className="w-4 h-4" />
                             {bulkUpdate.isPending ? "Saving…" : "Save Changes"}
                         </Button>
@@ -387,7 +387,7 @@ export default function GatewayConfigContent({ slug }: { slug: string }) {
                             <Link href="/admin/payments">
                                 <Button variant="outline">Cancel</Button>
                             </Link>
-                            <Button onClick={handleSave} disabled={bulkUpdate.isPending} className="gap-2 min-w-32">
+                            <Button onClick={handleSave} isLoading={bulkUpdate.isPending} className="gap-2 min-w-32">
                                 <Save className="w-4 h-4" />
                                 {bulkUpdate.isPending ? "Saving…" : "Save Changes"}
                             </Button>

@@ -895,14 +895,14 @@ export function RoleForm({ role, onSuccess }: RoleFormProps) {
 
       {/* Action Buttons */}
       <div className="flex items-center gap-3">
-        <Button type="submit" disabled={isPending}>
+        <Button type="submit" isLoading={isPending}>
           {isPending ? "Saving..." : role ? "Update Role" : "Create Role"}
         </Button>
         <Button
           type="button"
           variant="outline"
           onClick={handleCancel}
-          disabled={isPending}
+          isLoading={isPending}
         >
           Cancel
         </Button>

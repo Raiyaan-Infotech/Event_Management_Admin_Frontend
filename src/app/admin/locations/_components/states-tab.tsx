@@ -490,7 +490,7 @@ export function StatesTab() {
             </div>
 
             {/* Submit */}
-            <Button type="submit" className="w-full" disabled={isPending}>
+            <Button type="submit" className="w-full" isLoading={isPending}>
               {isPending
                 ? "Saving..."
                 : editItem
@@ -605,11 +605,11 @@ export function StatesTab() {
                 <Button
                   variant="outline"
                   onClick={() => setCsvPreview(null)}
-                  disabled={csvImporting}
+                  isLoading={csvImporting}
                 >
                   Cancel
                 </Button>
-                <Button onClick={executeImport} disabled={csvImporting}>
+                <Button onClick={executeImport} isLoading={csvImporting}>
                   {csvImporting
                     ? "Importing..."
                     : `Import ${csvPreview.length} rows`}

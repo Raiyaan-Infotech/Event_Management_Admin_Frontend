@@ -294,7 +294,7 @@ export function ApprovalDetailDialog({
                   type="button"
                   variant="destructive"
                   onClick={handleReject}
-                  disabled={isSubmitting}
+                  isLoading={isSubmitting}
                 >
                   <XCircle className="mr-2 h-4 w-4" />
                   Reject
@@ -302,10 +302,10 @@ export function ApprovalDetailDialog({
                 <Button
                   type="button"
                   onClick={handleApprove}
-                  disabled={isSubmitting}
+                  isLoading={isSubmitting}
                 >
                   <CheckCircle className="mr-2 h-4 w-4" />
-                  {isSubmitting ? 'Approving...' : 'Approve'}
+                  Approve
                 </Button>
               </>
             ) : (
