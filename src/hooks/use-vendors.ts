@@ -29,11 +29,21 @@ export interface Vendor {
     youtube: string | null;
     facebook: string | null;
     instagram: string | null;
+    twitter: string | null;
+    linkedin: string | null;
+    whatsapp: string | null;
+    tiktok: string | null;
+    telegram: string | null;
+    pinterest: string | null;
+    about_us: string | null;
     // Vendor Info
     name: string;
     profile: string | null;
     address: string | null;
+    alt_address: string | null;
     contact: string | null;
+    alt_contact: string | null;
+    alt_email: string | null;
     email: string;
     membership: 'basic' | 'silver' | 'gold' | 'platinum';
     // Bank Info
