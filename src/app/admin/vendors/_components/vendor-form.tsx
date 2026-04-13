@@ -31,6 +31,8 @@ const baseSchema = z.object({
     longitude: z.number().nullable().optional(),
     company_address: z.string().trim().optional(),
     about_us: z.string().trim().optional(),
+    company_information: z.string().trim().optional(),
+    short_description: z.string().trim().optional(),
     reg_no: z.string().trim().optional(),
     gst_no: z.string().trim().optional(),
     company_contact: z.string().trim().optional(),
@@ -124,6 +126,8 @@ export function VendorForm({ vendor }: Props) {
                 { name: 'landline', label: 'Landline', type: 'text', placeholder: 'Enter your landline number' },
                 { name: 'company_email', label: 'Company Email', type: 'email', placeholder: 'Enter your company email' },
                 { name: 'company_address', label: 'Company Address', type: 'textarea', placeholder: 'Enter your company address', rows: 2, colSpan: 2 },
+                { name: 'short_description', label: 'Short Description', type: 'textarea', placeholder: 'Enter a short description of the company...', rows: 2, colSpan: 2 },
+                { name: 'company_information', label: 'Company Information', type: 'textarea', placeholder: 'Enter detailed company information...', rows: 4, colSpan: 2 },
                 // Country
                 {
                     name: 'country_id', label: 'Country', type: 'custom',
@@ -438,6 +442,8 @@ export function VendorForm({ vendor }: Props) {
         address: vendor.address || '', contact: vendor.contact || '',
         email: vendor.email, membership: vendor.membership,
         about_us: vendor.about_us || '',
+        company_information: vendor.company_information || '',
+        short_description: vendor.short_description || '',
         profile: vendor.profile || '', bank_logo: vendor.bank_logo || '',
         password: '', confirm_password: '',
         bank_name: vendor.bank_name || '', acc_no: vendor.acc_no || '',

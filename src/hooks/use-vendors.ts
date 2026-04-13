@@ -36,6 +36,8 @@ export interface Vendor {
     telegram: string | null;
     pinterest: string | null;
     about_us: string | null;
+    company_information: string | null;
+    short_description: string | null;
     // Vendor Info
     name: string;
     profile: string | null;
