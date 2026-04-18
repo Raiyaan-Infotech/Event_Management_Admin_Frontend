@@ -299,4 +299,13 @@ export const queryKeys = {
     details: () => [...queryKeys.faqCategories.all, 'detail'] as const,
     detail: (id: number | string) => [...queryKeys.faqCategories.details(), id] as const,
   },
+
+  // Themes
+  themes: {
+    all: ['themes'] as const,
+    lists: () => [...queryKeys.themes.all, 'list'] as const,
+    list: (params: Record<string, unknown>) => [...queryKeys.themes.lists(), params] as const,
+    details: () => [...queryKeys.themes.all, 'detail'] as const,
+    detail: (id: number | string) => [...queryKeys.themes.details(), id] as const,
+  },
 };

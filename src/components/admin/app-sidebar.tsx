@@ -145,6 +145,12 @@ const menuItems: MenuItem[] = [
     icon: Settings,
     permission: "settings.view",
   },
+  {
+    labelKey: "nav.themes",
+    href: "/admin/themes",
+    icon: Image,
+    //permission: "themes.view",
+  }
 ];
 
 export function AppSidebar() {
