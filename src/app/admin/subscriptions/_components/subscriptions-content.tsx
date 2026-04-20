@@ -47,6 +47,7 @@ const schema = z.object({
     validity: z.coerce.number().int().min(0).default(0),
     features: z.string().default(''),
     sort_order: z.coerce.number().int().min(0).default(0),
+    label_color: z.string().default(''),
     is_active: z.boolean().default(true),
     is_custom: z.boolean().default(false),
     vendor_id: z.preprocess(
@@ -104,7 +105,7 @@ export function SubscriptionsContent() {
         defaultValues: {
             name: '', description: '', menu_ids: [], price: undefined,
             discounted_price: null, validity: 0, features: '', sort_order: 0,
-            is_active: true, is_custom: false, vendor_id: null,
+            label_color: '', is_active: true, is_custom: false, vendor_id: null,
         },
     });
 
@@ -122,7 +123,7 @@ export function SubscriptionsContent() {
         form.reset({
             name: '', description: '', menu_ids: [], price: undefined,
             discounted_price: null, validity: 0, features: '', sort_order: 0,
-            is_active: true, is_custom: false, vendor_id: null,
+            label_color: '', is_active: true, is_custom: false, vendor_id: null,
         });
         setDialogOpen(true);
     };
@@ -139,6 +140,7 @@ export function SubscriptionsContent() {
             validity: item.validity ?? 0,
             features: item.features || '',
             sort_order: item.sort_order ?? 0,
+            label_color: item.label_color ?? '',
             is_active: Number(item.is_active) === 1,
             is_custom: Number(item.is_custom) === 1,
             vendor_id: item.vendor_id ?? null,
@@ -178,6 +180,12 @@ export function SubscriptionsContent() {
             sortable: true,
             render: (row) => (
                 <div className="flex items-center gap-2 flex-wrap">
+                    {row.label_color && (
+                        <span
+                            className="inline-block w-3 h-3 rounded-full flex-shrink-0 ring-1 ring-black/10"
+                            style={{ backgroundColor: row.label_color }}
+                        />
+                    )}
                     <span className="font-medium">{row.name}</span>
                     {Number(row.is_custom) === 1 && (
                         <Badge variant="outline" className="text-xs border-primary/40 text-primary">Custom</Badge>
@@ -424,7 +432,7 @@ export function SubscriptionsContent() {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-3 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="validity">Validity (days)</Label>
                                 <Input id="validity" type="number" min={0} {...form.register('validity')} placeholder="e.g. 30, 365" />
@@ -438,6 +446,24 @@ export function SubscriptionsContent() {
                                 ) : (
                                     <p className="text-[11px] text-muted-foreground">Lower number = higher in list</p>
                                 )}
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="label_color">Label Color</Label>
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        id="label_color"
+                                        type="color"
+                                        {...form.register('label_color')}
+                                        className="h-10 w-10 cursor-pointer rounded border border-input bg-background p-0.5"
+                                    />
+                                    <Input
+                                        value={form.watch('label_color') || ''}
+                                        onChange={(e) => form.setValue('label_color', e.target.value)}
+                                        placeholder="#3b82f6"
+                                        className="flex-1 font-mono text-sm"
+                                    />
+                                </div>
+                                <p className="text-[11px] text-muted-foreground">Color shown in plan lists</p>
                             </div>
                         </div>
 

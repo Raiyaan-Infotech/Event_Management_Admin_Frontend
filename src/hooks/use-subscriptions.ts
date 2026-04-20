@@ -16,6 +16,7 @@ export interface Subscription {
     is_custom: boolean | number;
     vendor_id: number | null;
     company_id: number | null;
+    label_color: string | null;
     created_at?: string;
     updated_at?: string;
 }
@@ -32,6 +33,7 @@ export type CreateSubscriptionDto = {
     is_active: boolean;
     is_custom?: boolean;
     vendor_id?: number | null;
+    label_color?: string | null;
 };
 export type UpdateSubscriptionDto = Partial<CreateSubscriptionDto>;
 
