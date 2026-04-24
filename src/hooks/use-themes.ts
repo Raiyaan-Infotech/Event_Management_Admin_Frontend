@@ -7,19 +7,21 @@ export interface Theme {
     id: number;
     company_id: number;
     name: string;
+    plans?: string[] | number[];
     header_color: string | null;
     footer_color: string | null;
     primary_color: string | null;
     secondary_color: string | null;
     hover_color: string | null;
     text_color: string | null;
+    home_blocks?: any;
     is_active: boolean | number;
     created_at?: string;
     updated_at?: string;
 }
 
 export type CreateThemeDto = Omit<Theme, 'id' | 'company_id' | 'created_at' | 'updated_at'>;
-export type UpdateThemeDto = Partial<CreateThemeDto>;
+export type UpdateThemeDto = Partial<CreateThemeDto> & { home_blocks?: any };
 
 const themesApi = {
     getAll: async (params?: Record<string, any>): Promise<{ data: Theme[]; pagination: any }> => {
@@ -40,6 +42,10 @@ const themesApi = {
     },
     delete: async (id: number): Promise<void> => {
         await apiClient.delete(`/themes/${id}`);
+    },
+    getByPlan: async (planId: number): Promise<Theme | null> => {
+        const response = await apiClient.get(`/themes/by-plan/${planId}`);
+        return response.data.data?.theme || null;
     },
 };
 

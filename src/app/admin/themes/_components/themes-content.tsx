@@ -17,6 +17,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { PageLoader } from '@/components/common/page-loader';
 import { TablePagination } from '@/components/common/table-pagination';
 import { DeleteDialog } from '@/components/common/delete-dialog';
+import { useSubscriptions } from '@/hooks/use-subscriptions';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const schema = z.object({
     name: z.string().trim().min(1, 'Name is required'),
@@ -27,6 +29,7 @@ const schema = z.object({
     hover_color: z.string().optional().nullable(),
     text_color: z.string().optional().nullable(),
     is_active: z.boolean().default(true),
+    plans: z.array(z.number()).default([]),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -58,7 +61,7 @@ export function ThemesContent() {
 
     const form = useForm<FormData>({
         resolver: zodResolver(schema),
-        defaultValues: { name: '', header_color: '#ffffff', footer_color: '#ffffff', primary_color: '#3b82f6', secondary_color: '#64748b', hover_color: '#2563eb', text_color: '#0f172a', is_active: true },
+        defaultValues: { name: '', header_color: '#ffffff', footer_color: '#ffffff', primary_color: '#3b82f6', secondary_color: '#64748b', hover_color: '#2563eb', text_color: '#0f172a', is_active: true, plans: [] },
     });
 
     const closeDialog = () => {
@@ -77,7 +80,8 @@ export function ThemesContent() {
             secondary_color: '#64748b',
             hover_color: '#2563eb',
             text_color: '#0f172a',
-            is_active: true
+            is_active: true,
+            plans: []
         });
         setDialogOpen(true);
     };
@@ -93,9 +97,13 @@ export function ThemesContent() {
             hover_color: item.hover_color || '#2563eb',
             text_color: item.text_color || '#0f172a',
             is_active: Number(item.is_active) === 1,
+            plans: Array.isArray(item.plans) ? item.plans.map((p: any) => Number(p)) : []
         });
         setDialogOpen(true);
     };
+
+    const { data: plansRes } = useSubscriptions({ page: 1, limit: 100 });
+    const subPlans = useMemo(() => plansRes?.data ?? [], [plansRes]);
 
     const onSubmit = (data: FormData) => {
         const payload: any = { ...data, is_active: data.is_active ? 1 : 0 };
@@ -133,6 +141,24 @@ export function ThemesContent() {
                 </div>
             )
         },
+        {
+            key: 'layout',
+            header: 'Layout',
+            render: (row) => (
+                <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="text-xs"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        // Import useRouter normally dynamically or via window location for now 
+                        window.location.href = `/admin/theme-builder?themeId=${row.id}`;
+                    }}
+                >
+                    Edit Layout
+                </Button>
+            )
+        }
     ];
 
     const isPending = createTheme.isPending || updateTheme.isPending;
@@ -188,6 +214,30 @@ export function ThemesContent() {
                             <Label htmlFor="name">{t('themes.name', 'Theme Name')} <span className="text-destructive">*</span></Label>
                             <Input id="name" {...form.register('name')} placeholder="e.g. Ocean Blue" />
                             {form.formState.errors.name && <p className="text-xs text-destructive">{form.formState.errors.name.message}</p>}
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Assigned Plan</Label>
+                            <Controller
+                                control={form.control}
+                                name="plans"
+                                render={({ field }) => (
+                                    <Select 
+                                        value={field.value[0]?.toString() || "unassigned"} 
+                                        onValueChange={(val) => field.onChange(val === "unassigned" ? [] : [Number(val)])}
+                                    >
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="Assign a plan..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="unassigned" className="text-muted-foreground italic">-- No Plan Assigned --</SelectItem>
+                                            {subPlans.map((plan: any) => (
+                                                <SelectItem key={plan.id} value={plan.id.toString()}>{plan.name}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                            />
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">

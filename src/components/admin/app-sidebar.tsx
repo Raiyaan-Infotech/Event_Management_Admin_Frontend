@@ -23,6 +23,9 @@ import {
   Mail,
   MessageCircle,
   Phone,
+  Palette,
+  Globe,
+  Component,
 } from "lucide-react";
 import {
   Sidebar,
@@ -146,11 +149,22 @@ const menuItems: MenuItem[] = [
     permission: "settings.view",
   },
   {
-    labelKey: "nav.themes",
-    href: "/admin/themes",
-    icon: Image,
-    //permission: "themes.view",
-  }
+    labelKey: "Website Management",
+    icon: Globe,
+    children: [
+      { labelKey: "Color Palette", href: "/admin/color-palettes", icon: Palette },
+      {
+        labelKey: "UI Blocks",
+        icon: Component,
+        children: [
+          { labelKey: "UI Blocks", href: "/admin/ui-blocks", icon: Component },
+          { labelKey: "Category", href: "/admin/ui-block-categories", icon: Package },
+        ]
+      },
+      { labelKey: "Home Settings", href: "/admin/theme-builder", icon: LayoutDashboard },
+      { labelKey: "Appearance", href: "/admin/appearance", icon: Settings },
+    ]
+  },
 ];
 
 export function AppSidebar() {
@@ -291,19 +305,56 @@ export function AppSidebar() {
                           </CollapsibleTrigger>
                           <CollapsibleContent>
                             <SidebarMenuSub>
-                              {visibleChildren.map((child) => (
-                                <SidebarMenuSubItem key={child.labelKey}>
-                                  <SidebarMenuSubButton
-                                    asChild
-                                    isActive={isActive(child.href)}
-                                  >
-                                    <a href={child.href || "#"} className="flex items-center gap-2">
-                                      <child.icon className="h-4 w-4 shrink-0" />
-                                      <span className="truncate">{t(child.labelKey)}</span>
-                                    </a>
-                                  </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                              ))}
+                              {visibleChildren.map((child) => {
+                                const grandChildren = getVisibleChildren(child.children);
+                                if (grandChildren.length > 0) {
+                                  // 2nd level collapsible (e.g. UI Blocks inside Website Management)
+                                  return (
+                                    <Collapsible
+                                      key={child.labelKey}
+                                      defaultOpen={isChildActive(grandChildren)}
+                                      className="group/sub-collapsible"
+                                    >
+                                      <SidebarMenuSubItem>
+                                        <CollapsibleTrigger asChild>
+                                          <SidebarMenuSubButton className="cursor-pointer">
+                                            <child.icon className="h-4 w-4 shrink-0" />
+                                            <span className="truncate">{t(child.labelKey)}</span>
+                                            <ChevronDown className="ml-auto h-3 w-3 transition-transform group-data-[state=open]/sub-collapsible:rotate-180" />
+                                          </SidebarMenuSubButton>
+                                        </CollapsibleTrigger>
+                                        <CollapsibleContent>
+                                          <SidebarMenuSub className="ml-2 border-l pl-2">
+                                            {grandChildren.map((grand) => (
+                                              <SidebarMenuSubItem key={grand.labelKey}>
+                                                <SidebarMenuSubButton asChild isActive={isActive(grand.href)}>
+                                                  <a href={grand.href || '#'} className="flex items-center gap-2">
+                                                    <grand.icon className="h-3.5 w-3.5 shrink-0" />
+                                                    <span className="truncate">{t(grand.labelKey)}</span>
+                                                  </a>
+                                                </SidebarMenuSubButton>
+                                              </SidebarMenuSubItem>
+                                            ))}
+                                          </SidebarMenuSub>
+                                        </CollapsibleContent>
+                                      </SidebarMenuSubItem>
+                                    </Collapsible>
+                                  );
+                                }
+                                return (
+                                  <SidebarMenuSubItem key={child.labelKey}>
+                                    <SidebarMenuSubButton
+                                      asChild
+                                      isActive={isActive(child.href)}
+                                    >
+                                      <a href={child.href || "#"} className="flex items-center gap-2">
+                                        <child.icon className="h-4 w-4 shrink-0" />
+                                        <span className="truncate">{t(child.labelKey)}</span>
+                                      </a>
+                                    </SidebarMenuSubButton>
+                                  </SidebarMenuSubItem>
+                                );
+                              })}
                             </SidebarMenuSub>
                           </CollapsibleContent>
                         </SidebarMenuItem>

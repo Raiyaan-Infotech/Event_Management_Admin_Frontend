@@ -308,4 +308,13 @@ export const queryKeys = {
     details: () => [...queryKeys.themes.all, 'detail'] as const,
     detail: (id: number | string) => [...queryKeys.themes.details(), id] as const,
   },
+
+  // Color Palettes
+  colorPalettes: {
+    all: ['colorPalettes'] as const,
+    lists: () => [...queryKeys.colorPalettes.all, 'list'] as const,
+    list: (params: Record<string, unknown>) => [...queryKeys.colorPalettes.lists(), params] as const,
+    details: () => [...queryKeys.colorPalettes.all, 'detail'] as const,
+    detail: (id: number | string) => [...queryKeys.colorPalettes.details(), id] as const,
+  },
 };
