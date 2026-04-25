@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { useThemes, useUpdateTheme, useDeleteTheme, Theme } from '@/hooks/use-themes';
+import { useState, useMemo, useRef } from 'react';
+import { useThemes, useUpdateTheme, useDeleteTheme, useUploadThemePreviewImage, Theme } from '@/hooks/use-themes';
 import { useRouter } from 'next/navigation';
-import { Palette, LayoutDashboard, Trash2, CheckCircle2, Circle } from 'lucide-react';
+import { Palette, LayoutDashboard, Trash2, CheckCircle2, Circle, ImagePlus, Loader2, LayoutTemplate } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PageLoader } from '@/components/common/page-loader';
@@ -11,6 +11,35 @@ import { DeleteDialog } from '@/components/common/delete-dialog';
 import { TablePagination } from '@/components/common/table-pagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSubscriptions } from '@/hooks/use-subscriptions';
+
+// Mini browser mock — same as vendor portal InternalThemePreview
+const InternalThemePreview = ({ theme }: { theme: Theme }) => {
+    const blocks = Array.isArray(theme.home_blocks) ? theme.home_blocks : (typeof theme.home_blocks === 'string' ? JSON.parse(theme.home_blocks) : []);
+    return (
+        <div className="relative w-full h-full rounded-2xl overflow-hidden border border-gray-100 dark:border-white/5 bg-white dark:bg-[#121212] shadow-inner flex flex-col p-3">
+            <div className="flex items-center gap-1.5 mb-3 border-b pb-2 dark:border-gray-800">
+                <div className="h-2 w-2 rounded-full bg-red-400" />
+                <div className="h-2 w-2 rounded-full bg-yellow-400" />
+                <div className="h-2 w-2 rounded-full bg-green-400" />
+            </div>
+            <div className="space-y-3 opacity-80 flex-1">
+                <div className="h-4 w-full rounded-md" style={{ backgroundColor: theme.header_color || '#e5e7eb' }} />
+                <div className="h-16 w-full rounded-lg" style={{ backgroundColor: theme.primary_color || '#d1d5db' }} />
+                <div className="grid grid-cols-3 gap-2">
+                    <div className="h-12 col-span-2 rounded-lg" style={{ backgroundColor: theme.secondary_color || '#d1d5db' }} />
+                    <div className="h-12 col-span-1 border rounded-lg dark:border-gray-700" />
+                </div>
+                <div className="text-[10px] text-muted-foreground mt-2 border-t pt-2 dark:border-gray-800 flex items-center justify-between">
+                    <span className="flex items-center gap-1"><LayoutTemplate className="w-3 h-3" /> {blocks.length} Blocks</span>
+                    <div className="flex gap-1">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.primary_color || '#ccc' }} />
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.secondary_color || '#ccc' }} />
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 export function AppearanceContent() {
     const router = useRouter();
@@ -38,7 +67,17 @@ export function AppearanceContent() {
 
     const update = useUpdateTheme();
     const del = useDeleteTheme();
+    const uploadPreview = useUploadThemePreviewImage();
     const [deleteId, setDeleteId] = useState<number | null>(null);
+    const [uploadingId, setUploadingId] = useState<number | null>(null);
+    const fileInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
+
+    const handlePreviewUpload = (themeId: number, file: File) => {
+        setUploadingId(themeId);
+        uploadPreview.mutate({ id: themeId, file }, {
+            onSettled: () => setUploadingId(null),
+        });
+    };
 
     const colorSwatches = (theme: Theme) => [
         { color: theme.primary_color, label: 'Primary' },
@@ -109,11 +148,37 @@ export function AppearanceContent() {
                                     key={theme.id}
                                     className={`relative rounded-2xl border bg-card shadow-sm overflow-hidden transition-all hover:shadow-md ${isActive ? 'ring-2 ring-primary' : ''}`}
                                 >
-                                    {/* Color Preview Bar */}
-                                    <div className="h-3 flex w-full">
-                                        {swatches.slice(0, 4).map((s, i) => (
-                                            <div key={i} className="flex-1 h-full" style={{ backgroundColor: s.color || '#e5e7eb' }} />
-                                        ))}
+                                    {/* Preview Image — clickable to upload, with hover overlay & InternalThemePreview fallback */}
+                                    <div
+                                        className="relative w-full h-44 bg-muted/40 border-b cursor-pointer group overflow-hidden"
+                                        onClick={() => fileInputRefs.current[theme.id]?.click()}
+                                    >
+                                        {theme.preview_image ? (
+                                            <img src={theme.preview_image} alt={theme.name} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <div className="w-full h-full p-3">
+                                                <InternalThemePreview theme={theme} />
+                                            </div>
+                                        )}
+
+                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-xs font-medium">
+                                            {uploadingId === theme.id
+                                                ? <><Loader2 className="h-4 w-4 animate-spin" /> Uploading...</>
+                                                : <><ImagePlus className="h-4 w-4" /> {theme.preview_image ? 'Change Image' : 'Upload Image'}</>
+                                            }
+                                        </div>
+
+                                        <input
+                                            ref={el => { fileInputRefs.current[theme.id] = el; }}
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={e => {
+                                                const file = e.target.files?.[0];
+                                                if (file) handlePreviewUpload(theme.id, file);
+                                                e.target.value = '';
+                                            }}
+                                        />
                                     </div>
 
                                     <div className="p-5 space-y-4">

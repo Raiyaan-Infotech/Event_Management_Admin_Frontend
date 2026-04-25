@@ -19,11 +19,8 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Eye, EyeOff, X, ChevronDown, Settings } from "lucide-react";
-import { BLOCK_CATALOG, type HomeBlock } from "@/types/home-blocks";
+import { type HomeBlock, type BlockCatalogEntry, resolveIcon } from "@/types/home-blocks";
 import { cn } from "@/lib/utils";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from "@/components/ui/sheet";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
 
 // Minimal shape used for header/footer preview placeholders (admin has no vendor context)
 type NavMenuChild = { page_id: number | string; label: string };
@@ -67,14 +64,6 @@ function SiteHeaderPreview({ vendor }: { vendor?: VendorAbout }) {
 
   return (
     <div className="border rounded-lg bg-white dark:bg-zinc-900 shadow-sm">
-      {/* label strip */}
-      {/* <div className="px-3 py-1.5 bg-muted/50 border-b rounded-t-lg flex items-center gap-2">
-        <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-          Header
-        </span>
-        <span className="text-[10px] text-muted-foreground">— fixed, not editable here</span>
-      </div> */}
-
       {/* header preview row */}
       <div className="flex items-center px-4 py-3 gap-4">
         {/* Logo + company info */}
@@ -160,11 +149,15 @@ function SortableRow({
   onToggleVisibility,
   onRemove,
   onUpdateVariant,
+  onOpenEditPicker,
+  catalog,
 }: {
   block: HomeBlock;
   onToggleVisibility: () => void;
   onRemove: () => void;
   onUpdateVariant: (variant: string) => void;
+  onOpenEditPicker: (blockType: string, currentVariant: string) => void;
+  catalog: BlockCatalogEntry[];
 }) {
   const {
     attributes,
@@ -181,8 +174,8 @@ function SortableRow({
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const entry = BLOCK_CATALOG.find((c) => c.block_type === block.block_type);
-  const Icon = entry?.icon;
+  const entry = catalog.find((c) => c.block_type === block.block_type);
+  const Icon = entry ? resolveIcon(entry.icon) : null;
 
   return (
     <div
@@ -220,44 +213,15 @@ function SortableRow({
         )}
       </div>
 
-      <Sheet>
-        <SheetTrigger asChild>
-          <button
-            id={`settings-block-${block.block_type}`}
-            className="p-1 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
-            aria-label="Settings"
-          >
-            <Settings className="size-4" />
-          </button>
-        </SheetTrigger>
-        <SheetContent>
-          <SheetHeader>
-            <SheetTitle>{entry?.label ?? block.block_type} Settings</SheetTitle>
-            <SheetDescription>Configure the style and variant for this block.</SheetDescription>
-          </SheetHeader>
-          <div className="py-6 space-y-4">
-            <div className="space-y-2.5">
-              <Label>Visual Variant</Label>
-              <Select
-                value={block.variant || "variant_1"}
-                onValueChange={(val) => onUpdateVariant(val)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select variant" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(entry?.variants ?? []).map(v => (
-                    <SelectItem key={v.id} value={v.id}>{v.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground mt-1">
-                Change the design variant for this block.
-              </p>
-            </div>
-          </div>
-        </SheetContent>
-      </Sheet>
+      {/* Settings — opens the full VariantPicker with iframe preview */}
+      <button
+        id={`settings-block-${block.block_type}`}
+        onClick={() => onOpenEditPicker(block.block_type, block.variant || "variant_1")}
+        className="p-1 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+        aria-label="Change variant"
+      >
+        <Settings className="size-4" />
+      </button>
 
       <button
         id={`toggle-visibility-${block.block_type}`}
@@ -304,14 +268,6 @@ function SiteFooterPreview({ vendor }: { vendor?: VendorAbout }) {
 
   return (
     <div className="border rounded-lg bg-white dark:bg-zinc-900 shadow-sm">
-      {/* label strip */}
-      {/* <div className="px-3 py-1.5 bg-muted/50 border-b rounded-t-lg flex items-center gap-2">
-        <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-          Footer
-        </span>
-        <span className="text-[10px] text-muted-foreground">— fixed, not editable here</span>
-      </div> */}
-
       {/* footer body — horizontal columns */}
       <div className="flex flex-row gap-5 px-5 py-5 items-start">
 
@@ -410,9 +366,11 @@ function SiteFooterPreview({ vendor }: { vendor?: VendorAbout }) {
 interface ComposedListProps {
   blocks: HomeBlock[];
   onChange: (updated: HomeBlock[]) => void;
+  catalog: BlockCatalogEntry[];
+  onOpenEditPicker: (blockType: string, currentVariant: string) => void;
 }
 
-export default function ComposedList({ blocks, onChange }: ComposedListProps) {
+export default function ComposedList({ blocks, onChange, catalog, onOpenEditPicker }: ComposedListProps) {
   const sensors = useSensors(useSensor(PointerSensor));
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -471,6 +429,8 @@ export default function ComposedList({ blocks, onChange }: ComposedListProps) {
                 <SortableRow
                   key={block.block_type}
                   block={block}
+                  catalog={catalog}
+                  onOpenEditPicker={onOpenEditPicker}
                   onToggleVisibility={() => toggleVisibility(block.block_type)}
                   onRemove={() => removeBlock(block.block_type)}
                   onUpdateVariant={(variant) => updateVariant(block.block_type, variant)}

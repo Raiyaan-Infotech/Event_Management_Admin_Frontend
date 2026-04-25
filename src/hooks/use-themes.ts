@@ -14,6 +14,7 @@ export interface Theme {
     secondary_color: string | null;
     hover_color: string | null;
     text_color: string | null;
+    preview_image: string | null;
     home_blocks?: any;
     is_active: boolean | number;
     created_at?: string;
@@ -42,6 +43,14 @@ const themesApi = {
     },
     delete: async (id: number): Promise<void> => {
         await apiClient.delete(`/themes/${id}`);
+    },
+    uploadPreviewImage: async ({ id, file }: { id: number; file: File }): Promise<string> => {
+        const form = new FormData();
+        form.append('file', file);
+        const response = await apiClient.post(`/themes/${id}/preview-image`, form, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        return response.data.data?.preview_image;
     },
     getByPlan: async (planId: number): Promise<Theme | null> => {
         const response = await apiClient.get(`/themes/by-plan/${planId}`);
@@ -90,6 +99,20 @@ export function useUpdateTheme() {
         },
         onError: (error: any) => {
             toast.error(error.response?.data?.message || 'Failed to update theme');
+        },
+    });
+}
+
+export function useUploadThemePreviewImage() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: themesApi.uploadPreviewImage,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.themes.all });
+            toast.success('Preview image uploaded');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || 'Upload failed');
         },
     });
 }

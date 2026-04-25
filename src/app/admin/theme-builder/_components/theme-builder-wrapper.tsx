@@ -50,6 +50,7 @@ export default function ThemeBuilderWrapper() {
     header_color: "#ffffff",
     footer_color: "#f9fafb",
     hover_color: "#eff6ff",
+    preview_image: null as string | null,
     home_blocks: [] as HomeBlock[],
   });
 
@@ -70,6 +71,7 @@ export default function ThemeBuilderWrapper() {
       header_color: found.header_color || "#ffffff",
       footer_color: found.footer_color || "#f9fafb",
       hover_color: found.hover_color || "#eff6ff",
+      preview_image: found.preview_image || null,
       home_blocks: Array.isArray(found.home_blocks)
         ? found.home_blocks
         : (typeof found.home_blocks === "string" ? JSON.parse(found.home_blocks) : []),
@@ -246,35 +248,10 @@ export default function ThemeBuilderWrapper() {
                 </PopoverContent>
               </Popover>
             </div>
-
-            {/* Field 4: Displaying Theme Colors */}
-            <div className="space-y-1.5 shrink-0 px-2">
-              <Label className="text-xs uppercase text-muted-foreground ml-1">Theme Colors</Label>
-              <div className="flex items-center gap-2 h-11 border rounded-md px-3 bg-muted/10 shadow-sm border-black/5">
-                {formData.primary_color && (
-                  <div title="Primary Color" className="w-5 h-5 rounded-full border border-black/10 shadow-sm" style={{ backgroundColor: formData.primary_color }} />
-                )}
-                {formData.secondary_color && (
-                  <div title="Secondary Color" className="w-5 h-5 rounded-full border border-black/10 shadow-sm" style={{ backgroundColor: formData.secondary_color }} />
-                )}
-                {formData.header_color && (
-                  <div title="Header Color" className="w-5 h-5 rounded-full border border-black/10 shadow-sm" style={{ backgroundColor: formData.header_color }} />
-                )}
-                {formData.footer_color && (
-                  <div title="Footer Color" className="w-5 h-5 rounded-full border border-black/10 shadow-sm" style={{ backgroundColor: formData.footer_color }} />
-                )}
-                {(!formData.primary_color && !formData.secondary_color && !formData.header_color && !formData.footer_color) && (
-                  <span className="text-[10px] text-muted-foreground">No colors...</span>
-                )}
-              </div>
-            </div>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
-           <Button variant="outline" className="gap-2 h-11" onClick={() => window.open(`${process.env.NEXT_PUBLIC_VENDOR_URL}/preview?themeId=${editingThemeId}`, '_blank')} disabled={!editingThemeId}>
-              <Eye className="size-4" /> Live Preview
-           </Button>
            <Button className="gap-2 h-11 px-6 shadow-lg shadow-primary/20" onClick={handleSave}>
               <Save className="size-4" /> {editingThemeId ? "Save Changes" : "Create Theme"}
            </Button>

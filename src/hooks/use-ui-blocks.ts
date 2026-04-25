@@ -73,3 +73,21 @@ export function useDeleteUiBlock() {
         onError: (e: any) => toast.error(e.response?.data?.message || 'Failed to delete UI Block'),
     });
 }
+
+import { BlockCatalogEntry } from '@/types/home-blocks';
+
+export function useUiBlocksCatalog() {
+    return useQuery({
+        queryKey: [...KEYS.all, 'catalog'],
+        queryFn: async (): Promise<BlockCatalogEntry[]> => {
+            const { data } = await api.getAll({ limit: 100 });
+            return data.map((block: any) => ({
+                ...block,
+                variants: Array.isArray(block.variants)
+                    ? block.variants.map((v: string, i: number) => ({ id: `variant_${i+1}`, label: v }))
+                    : []
+            }));
+        },
+        staleTime: 5 * 60 * 1000
+    });
+}

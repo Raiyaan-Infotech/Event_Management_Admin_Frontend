@@ -4,26 +4,31 @@ import React from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { BLOCK_CATALOG } from "@/types/home-blocks";
-import { Check } from "lucide-react";
+import { type BlockCatalogEntry } from "@/types/home-blocks";
+import { Check, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface VariantPickerProps {
   blockType: string | null;
   onConfirm: (blockType: string, variantId: string) => void;
   onClose: () => void;
+  catalog: BlockCatalogEntry[];
+  /** Pre-select this variant (used in edit mode) */
+  initialVariant?: string;
+  /** When true, shows "Save Changes" button label instead of "Add Block" */
+  isEditMode?: boolean;
 }
 
-export default function VariantPicker({ blockType, onConfirm, onClose }: VariantPickerProps) {
-  const [selected, setSelected] = React.useState<string>("variant_1");
+export default function VariantPicker({ blockType, onConfirm, onClose, catalog, initialVariant, isEditMode }: VariantPickerProps) {
+  const [selected, setSelected] = React.useState<string>(initialVariant || "variant_1");
 
-  const entry = BLOCK_CATALOG.find(c => c.block_type === blockType);
+  const entry = catalog.find(c => c.block_type === blockType);
   const vendorUrl = process.env.NEXT_PUBLIC_VENDOR_URL || "";
 
-  // Reset selection when block type changes
+  // When block type changes or initialVariant changes, sync selection
   React.useEffect(() => {
-    setSelected("variant_1");
-  }, [blockType]);
+    setSelected(initialVariant || "variant_1");
+  }, [blockType, initialVariant]);
 
   const handleConfirm = () => {
     if (!blockType) return;
@@ -35,8 +40,9 @@ export default function VariantPicker({ blockType, onConfirm, onClose }: Variant
     <Sheet open={!!blockType} onOpenChange={open => !open && onClose()}>
       <SheetContent side="right" className="w-full sm:max-w-2xl flex flex-col gap-0 p-0">
         <SheetHeader className="px-6 py-5 border-b shrink-0">
-          <SheetTitle className="text-base">
-            Choose Variant — <span className="text-primary">{entry?.label}</span>
+          <SheetTitle className="text-base flex items-center gap-2">
+            {isEditMode ? <Pencil className="size-4 text-primary" /> : null}
+            {isEditMode ? "Edit Variant" : "Choose Variant"} — <span className="text-primary">{entry?.label}</span>
           </SheetTitle>
           <p className="text-xs text-muted-foreground mt-0.5">{entry?.description}</p>
         </SheetHeader>
@@ -103,7 +109,7 @@ export default function VariantPicker({ blockType, onConfirm, onClose }: Variant
         <div className="shrink-0 border-t px-6 py-4 flex items-center justify-between gap-3">
           <Button variant="ghost" onClick={onClose}>Cancel</Button>
           <Button onClick={handleConfirm} className="gap-2 px-8">
-            <Check className="size-4" /> Add Block
+            <Check className="size-4" /> {isEditMode ? "Save Changes" : "Add Block"}
           </Button>
         </div>
       </SheetContent>
