@@ -84,7 +84,10 @@ export function useUiBlocksCatalog() {
             return data.map((block: any) => ({
                 ...block,
                 variants: Array.isArray(block.variants)
-                    ? block.variants.map((v: string, i: number) => ({ id: `variant_${i+1}`, label: v }))
+                    ? block.variants.map((v: any) => {
+                        if (typeof v === 'string') return { id: v, label: v, preview_image: null };
+                        return { id: v.key || v, label: v.label || v.key || v, preview_image: v.preview_image || null };
+                    })
                     : []
             }));
         },

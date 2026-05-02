@@ -30,8 +30,17 @@ export default function HomeSettingBuilder({ initialBlocks, onBlocksChange }: Ho
   const { data: catalog = [], isLoading: catalogLoading } = useUiBlocksCatalog();
 
   useEffect(() => {
-    if (initialBlocks) setBlocks(initialBlocks);
-  }, [initialBlocks]);
+    if (!initialBlocks) return;
+    // Ensure header is always first and footer always last
+    const withHeader = initialBlocks.some(b => b.block_type === "header")
+      ? initialBlocks
+      : [{ block_type: "header", variant: "variant_1", is_visible: true }, ...initialBlocks];
+    const withFooter = withHeader.some(b => b.block_type === "footer")
+      ? withHeader
+      : [...withHeader, { block_type: "footer", variant: "variant_1", is_visible: true }];
+    setBlocks(withFooter);
+    onBlocksChange?.(withFooter);
+  }, [initialBlocks]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Add flow ──────────────────────────────────────────────────────────────
   const handleAdd = (blockType: string, variantId: string) => {
@@ -55,7 +64,16 @@ export default function HomeSettingBuilder({ initialBlocks, onBlocksChange }: Ho
     onBlocksChange?.(updated);
   };
 
-  const addedTypes = useMemo(() => new Set(blocks.map(b => b.block_type)), [blocks]);
+  const addedTypes = useMemo(() => {
+    const set = new Set(blocks.map(b => b.block_type));
+    // If either slider is added, consider both "added" for the palette (mutual exclusion)
+    if (set.has("simple_slider") || set.has("advance_slider") || set.has("slider")) {
+      set.add("simple_slider");
+      set.add("advance_slider");
+      set.add("slider");
+    }
+    return set;
+  }, [blocks]);
 
   if (catalogLoading) {
     return <Skeleton className="h-[400px] w-full rounded-xl" />;
@@ -85,6 +103,7 @@ export default function HomeSettingBuilder({ initialBlocks, onBlocksChange }: Ho
         onConfirm={handleAdd}
         onClose={() => setPickerBlockType(null)}
         catalog={catalog}
+        currentBlocks={blocks}
       />
 
       {/* Edit picker */}
@@ -95,6 +114,7 @@ export default function HomeSettingBuilder({ initialBlocks, onBlocksChange }: Ho
         onConfirm={handleEditVariant}
         onClose={() => setEditPicker(null)}
         catalog={catalog}
+        currentBlocks={blocks}
       />
     </>
   );

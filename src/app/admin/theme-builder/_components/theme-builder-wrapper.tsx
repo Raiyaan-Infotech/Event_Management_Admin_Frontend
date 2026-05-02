@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
-import { useThemes, useCreateTheme, useUpdateTheme } from "@/hooks/use-themes";
+import React, { useEffect, useMemo, useState } from "react";
+import { useThemes, useTheme, useCreateTheme, useUpdateTheme } from "@/hooks/use-themes";
 import { useColorPalettes, type ColorPalette } from "@/hooks/use-color-palettes";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Save, Eye, Palette, Check, X } from "lucide-react";
+import { Save, Palette, Check, AlertTriangle } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
@@ -18,6 +18,7 @@ import type { HomeBlock } from "@/types/home-blocks";
 import { PageLoader } from "@/components/common/page-loader";
 import { useSearchParams } from "next/navigation";
 import { useSubscriptions } from "@/hooks/use-subscriptions";
+import { normalizeHomeBlocks, safeParseArray } from "@/lib/safe-json";
 
 export default function ThemeBuilderWrapper() {
   const { data: themesRes, isLoading: themesLoading } = useThemes({ page: 1, limit: 100 });
@@ -28,16 +29,26 @@ export default function ThemeBuilderWrapper() {
 
   const searchParams = useSearchParams();
   const queryThemeId = searchParams.get("themeId") || null;
+  const editingThemeId = useMemo(() => {
+    if (!queryThemeId) return null;
+    const parsed = Number.parseInt(queryThemeId, 10);
+    return Number.isNaN(parsed) ? null : parsed;
+  }, [queryThemeId]);
 
-  // The ONLY theme that will be UPDATED on save — comes from URL only (Appearance → Edit Layout)
-  // If null, Save always CREATES a new theme, no exceptions.
-  const [editingThemeId] = useState<number | null>(
-    queryThemeId ? parseInt(queryThemeId, 10) : null
-  );
+  // Fetch the full theme detail (includes home_blocks) when editing — list endpoint omits home_blocks
+  const { data: editingTheme, isLoading: editingThemeLoading } = useTheme(editingThemeId ?? 0);
 
   const { data: plansRes } = useSubscriptions({ page: 1, limit: 100 });
   const subPlans  = useMemo(() => plansRes?.data ?? [], [plansRes]);
   const palettes  = useMemo(() => palettesRes?.data ?? [], [palettesRes]);
+  const normalizedHomeBlocks = useMemo(
+    () => normalizeHomeBlocks(editingTheme?.home_blocks) as HomeBlock[],
+    [editingTheme?.home_blocks]
+  );
+  const builderKey = useMemo(
+    () => `${editingThemeId ?? "new"}-${normalizedHomeBlocks.map((block) => `${block.block_type}:${block.variant}:${block.is_visible}`).join("|")}`,
+    [editingThemeId, normalizedHomeBlocks]
+  );
 
   // Local Form State
   const [formData, setFormData] = useState({
@@ -54,29 +65,32 @@ export default function ThemeBuilderWrapper() {
     home_blocks: [] as HomeBlock[],
   });
 
-  const themes = useMemo(() => themesRes?.data ?? [], [themesRes]);
+  // header + footer are always rendered structurally (PublicNavbar/PublicFooter)
+  // Only content blocks that need explicit inclusion are required.
+  const REQUIRED_BLOCKS: string[] = [];
+  const missingBlocks = useMemo(
+    () => REQUIRED_BLOCKS.filter(r => !formData.home_blocks.some(b => b.block_type === r)),
+    [formData.home_blocks]
+  );
 
-  // EDIT MODE: pre-fill form only from URL param (editingThemeId)
+  // EDIT MODE: pre-fill form from the detail endpoint (includes home_blocks)
   useEffect(() => {
-    if (!editingThemeId || themes.length === 0) return;
-    const found = themes.find(t => t.id === editingThemeId);
-    if (!found) return;
+    if (!editingThemeId || !editingTheme) return;
+    const t = editingTheme;
     setFormData({
-      name: found.name || "",
-      plans: Array.isArray(found.plans) ? found.plans.map(p => Number(p)) : [],
-      palette_id: (found as any).palette_id ?? null,
-      primary_color: found.primary_color || "#3b82f6",
-      secondary_color: found.secondary_color || "#1e40af",
-      text_color: found.text_color || "#1f2937",
-      header_color: found.header_color || "#ffffff",
-      footer_color: found.footer_color || "#f9fafb",
-      hover_color: found.hover_color || "#eff6ff",
-      preview_image: found.preview_image || null,
-      home_blocks: Array.isArray(found.home_blocks)
-        ? found.home_blocks
-        : (typeof found.home_blocks === "string" ? JSON.parse(found.home_blocks) : []),
+      name: t.name || "",
+      plans: safeParseArray<number | string>(t.plans).map((p) => Number(p)),
+      palette_id: (t as any).palette_id ?? null,
+      primary_color: t.primary_color || "#3b82f6",
+      secondary_color: t.secondary_color || "#1e40af",
+      text_color: t.text_color || "#1f2937",
+      header_color: t.header_color || "#ffffff",
+      footer_color: t.footer_color || "#f9fafb",
+      hover_color: t.hover_color || "#eff6ff",
+      preview_image: t.preview_image || null,
+      home_blocks: normalizedHomeBlocks,
     });
-  }, [editingThemeId, themes]);
+  }, [editingThemeId, editingTheme, normalizedHomeBlocks]);
 
   // When a palette is selected, copy its colors into the form and track palette_id
   const handlePaletteSelect = (paletteId: string) => {
@@ -110,7 +124,7 @@ export default function ThemeBuilderWrapper() {
     }
   };
 
-  if (themesLoading) {
+  if (themesLoading || (editingThemeId && editingThemeLoading)) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-12 w-full rounded-xl" />
@@ -251,10 +265,16 @@ export default function ThemeBuilderWrapper() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-           <Button className="gap-2 h-11 px-6 shadow-lg shadow-primary/20" onClick={handleSave}>
-              <Save className="size-4" /> {editingThemeId ? "Save Changes" : "Create Theme"}
-           </Button>
+        <div className="flex flex-col items-end gap-2">
+          {missingBlocks.length > 0 && (
+            <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg px-3 py-1.5">
+              <AlertTriangle className="size-3.5 shrink-0" />
+              <span>Missing required blocks: <strong>{missingBlocks.join(', ')}</strong></span>
+            </div>
+          )}
+          <Button className="gap-2 h-11 px-6 shadow-lg shadow-primary/20" onClick={handleSave}>
+            <Save className="size-4" /> {editingThemeId ? "Save Changes" : "Create Theme"}
+          </Button>
         </div>
       </div>
 
@@ -270,7 +290,8 @@ export default function ThemeBuilderWrapper() {
            
            <div className="p-6">
               <HomeSettingBuilder
-                initialBlocks={formData.home_blocks}
+                key={builderKey}
+                initialBlocks={editingThemeId && normalizedHomeBlocks.length > 0 ? normalizedHomeBlocks : formData.home_blocks}
                 onBlocksChange={(blocks) => setFormData(p => ({ ...p, home_blocks: blocks }))}
               />
            </div>

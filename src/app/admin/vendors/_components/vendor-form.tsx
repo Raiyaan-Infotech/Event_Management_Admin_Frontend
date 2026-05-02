@@ -1,23 +1,26 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 import { useCreateVendor, useUpdateVendor, Vendor } from '@/hooks/use-vendors';
-import { isApprovalRequired } from '@/lib/api-client';
+import { useSubscriptions } from '@/hooks/use-subscriptions';
+import { useThemes } from '@/hooks/use-themes';
+import { isApprovalRequired, apiClient } from '@/lib/api-client';
 import { CommonForm, CommonFormSection } from '@/components/common/common-form';
-import { Building2, User, Landmark, Share2, Globe, Youtube, Facebook, Instagram, Twitter, Linkedin, MessageCircle, Music, Send, Bookmark } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { Building2, User, Landmark, Share2 } from 'lucide-react';
 import { useCountries, useStates, useCities, useLocalities } from '@/hooks/use-locations';
 import { Label } from '@/components/ui/label';
 import { SearchableSelect } from '@/components/common/searchable-select';
 import dynamic from 'next/dynamic';
 import { resolveMediaUrl } from '@/lib/utils';
+import { VendorSocialLinksManager, PendingSocialLink } from './vendor-social-links-manager';
 
 const MapPicker = dynamic(
     () => import('@/components/common/map-picker').then(m => m.MapPicker),
     { ssr: false }
 );
+
 // ─── Schemas ─────────────────────────────────────────────────────────────────
 
 const baseSchema = z.object({
@@ -38,21 +41,12 @@ const baseSchema = z.object({
     company_contact: z.string().trim().optional(),
     landline: z.string().trim().optional(),
     company_email: z.string().trim().email('Invalid email').optional().or(z.literal('')),
-    website: z.string().trim().optional(),
-    youtube: z.string().trim().optional(),
-    facebook: z.string().trim().optional(),
-    instagram: z.string().trim().optional(),
-    twitter: z.string().trim().optional(),
-    linkedin: z.string().trim().optional(),
-    whatsapp: z.string().trim().optional(),
-    tiktok: z.string().trim().optional(),
-    telegram: z.string().trim().optional(),
-    pinterest: z.string().trim().optional(),
     name: z.string().trim().min(1, 'Vendor name is required'),
     address: z.string().trim().optional(),
     contact: z.string().trim().optional(),
     email: z.string().trim().email('Invalid email'),
-    membership: z.enum(['basic', 'silver', 'gold', 'platinum']).default('basic'),
+    membership: z.string().optional().default('basic'),
+    theme_id: z.number().optional().nullable(),
     bank_name: z.string().trim().optional(),
     acc_no: z.string().trim().optional(),
     ifsc_code: z.string().trim().optional(),
@@ -80,21 +74,25 @@ export function VendorForm({ vendor }: Props) {
     const create = useCreateVendor();
     const update = useUpdateVendor();
 
-    // Location cascading — IDs drive hook deps, names drive map flyTo
     const [selCountryId,   setSelCountryId]   = useState<number | undefined>(vendor?.country_id ?? undefined);
     const [selStateId,     setSelStateId]     = useState<number | undefined>(vendor?.state_id ?? undefined);
     const [selDistrictId,  setSelDistrictId]  = useState<number | undefined>(vendor?.city_id ?? undefined);
-
     const [selCountryName,  setSelCountryName]  = useState('');
     const [selStateName,    setSelStateName]    = useState('');
     const [selDistrictName, setSelDistrictName] = useState('');
     const [selCityName,     setSelCityName]     = useState('');
-
-    // Map pin state
     const [mapCoords, setMapCoords] = useState<{ lat: number; lng: number } | null>(
         vendor?.latitude != null && vendor?.longitude != null
             ? { lat: vendor.latitude, lng: vendor.longitude }
             : null
+    );
+
+    // Pending social links collected in create mode
+    const pendingSocialLinks = useRef<PendingSocialLink[]>([]);
+
+    // Plan + theme cascading state
+    const [selectedPlanName, setSelectedPlanName] = useState<string>(
+        (vendor as any)?.membership || ''
     );
 
     const { data: countries   = [] } = useCountries();
@@ -102,10 +100,14 @@ export function VendorForm({ vendor }: Props) {
     const { data: districts   = [] } = useCities(selStateId || 0);
     const { data: cityOptions = [] } = useLocalities(selDistrictId || 0);
 
-    // Build the geocode query from the most-specific known location name
-    const mapFlyQuery = [selCityName, selDistrictName, selStateName, selCountryName]
-        .filter(Boolean)
-        .join(', ');
+    const { data: plansRes } = useSubscriptions({ page: 1, limit: 100, is_active: 1 });
+    const plans = useMemo(() => (plansRes?.data ?? []).filter((p: any) => !p.is_custom), [plansRes]);
+
+    const selectedPlan = useMemo(() => plans.find((p: any) => p.name === selectedPlanName), [plans, selectedPlanName]);
+    const { data: themesRes } = useThemes({ plan_id: selectedPlan?.id, limit: 100 });
+    const themes = useMemo(() => themesRes?.data ?? [], [themesRes]);
+
+    const mapFlyQuery = [selCityName, selDistrictName, selStateName, selCountryName].filter(Boolean).join(', ');
 
     // ─── Sections ──────────────────────────────────────────────────────────────
 
@@ -128,7 +130,6 @@ export function VendorForm({ vendor }: Props) {
                 { name: 'company_address', label: 'Company Address', type: 'textarea', placeholder: 'Enter your company address', rows: 2, colSpan: 2 },
                 { name: 'short_description', label: 'Short Description', type: 'textarea', placeholder: 'Enter a short description of the company...', rows: 2, colSpan: 2 },
                 { name: 'company_information', label: 'Company Information', type: 'textarea', placeholder: 'Enter detailed company information...', rows: 4, colSpan: 2 },
-                // Country
                 {
                     name: 'country_id', label: 'Country', type: 'custom',
                     render: ({ watch, setValue }) => (
@@ -140,22 +141,18 @@ export function VendorForm({ vendor }: Props) {
                                 placeholder="Select country"
                                 searchPlaceholder="Search country..."
                                 onValueChange={(v) => {
-                                    const id   = parseInt(v);
+                                    const id = parseInt(v);
                                     const name = countries.find(c => c.id === id)?.name || '';
                                     setValue('country_id', id);
-                                    setValue('state_id',   undefined);
-                                    setValue('city_id',    undefined);
-                                    setValue('pincode_id', undefined);
-                                    setSelCountryId(id);     setSelCountryName(name);
-                                    setSelStateId(undefined);    setSelStateName('');
-                                    setSelDistrictId(undefined); setSelDistrictName('');
-                                    setSelCityName('');
+                                    setValue('state_id', undefined); setValue('city_id', undefined); setValue('pincode_id', undefined);
+                                    setSelCountryId(id); setSelCountryName(name);
+                                    setSelStateId(undefined); setSelStateName('');
+                                    setSelDistrictId(undefined); setSelDistrictName(''); setSelCityName('');
                                 }}
                             />
                         </div>
                     ),
                 },
-                // State
                 {
                     name: 'state_id', label: 'State', type: 'custom',
                     render: ({ watch, setValue }) => (
@@ -168,20 +165,16 @@ export function VendorForm({ vendor }: Props) {
                                 searchPlaceholder="Search state..."
                                 disabled={!selCountryId || states.length === 0}
                                 onValueChange={(v) => {
-                                    const id   = parseInt(v);
+                                    const id = parseInt(v);
                                     const name = states.find(s => s.id === id)?.name || '';
-                                    setValue('state_id',   id);
-                                    setValue('city_id',    undefined);
-                                    setValue('pincode_id', undefined);
-                                    setSelStateId(id);       setSelStateName(name);
-                                    setSelDistrictId(undefined); setSelDistrictName('');
-                                    setSelCityName('');
+                                    setValue('state_id', id); setValue('city_id', undefined); setValue('pincode_id', undefined);
+                                    setSelStateId(id); setSelStateName(name);
+                                    setSelDistrictId(undefined); setSelDistrictName(''); setSelCityName('');
                                 }}
                             />
                         </div>
                     ),
                 },
-                // District
                 {
                     name: 'city_id', label: 'District', type: 'custom',
                     render: ({ watch, setValue }) => (
@@ -194,18 +187,15 @@ export function VendorForm({ vendor }: Props) {
                                 searchPlaceholder="Search district..."
                                 disabled={!selStateId || districts.length === 0}
                                 onValueChange={(v) => {
-                                    const id   = parseInt(v);
+                                    const id = parseInt(v);
                                     const name = districts.find(d => d.id === id)?.name || '';
-                                    setValue('city_id',    id);
-                                    setValue('pincode_id', undefined);
-                                    setSelDistrictId(id); setSelDistrictName(name);
-                                    setSelCityName('');
+                                    setValue('city_id', id); setValue('pincode_id', undefined);
+                                    setSelDistrictId(id); setSelDistrictName(name); setSelCityName('');
                                 }}
                             />
                         </div>
                     ),
                 },
-                // City
                 {
                     name: 'pincode_id', label: 'City', type: 'custom',
                     render: ({ watch, setValue }) => (
@@ -218,21 +208,16 @@ export function VendorForm({ vendor }: Props) {
                                 searchPlaceholder="Search city..."
                                 disabled={!selDistrictId || cityOptions.length === 0}
                                 onValueChange={(v) => {
-                                    const id   = parseInt(v);
+                                    const id = parseInt(v);
                                     const name = cityOptions.find(c => c.id === id)?.name || '';
-                                    setValue('pincode_id', id);
-                                    setSelCityName(name);
+                                    setValue('pincode_id', id); setSelCityName(name);
                                 }}
                             />
                         </div>
                     ),
                 },
-                // Map picker — after City, full width
                 {
-                    name: 'map_location',
-                    label: 'Office Location on Map',
-                    type: 'custom',
-                    colSpan: 2,
+                    name: 'map_location', label: 'Office Location on Map', type: 'custom', colSpan: 2,
                     render: ({ setValue, watch }) => (
                         <MapPicker
                             label="Office Location on Map"
@@ -243,7 +228,7 @@ export function VendorForm({ vendor }: Props) {
                             city={selCityName || selDistrictName || selStateName || undefined}
                             onChange={(coords) => {
                                 setMapCoords(coords);
-                                setValue('latitude',  coords?.lat ?? null);
+                                setValue('latitude', coords?.lat ?? null);
                                 setValue('longitude', coords?.lng ?? null);
                             }}
                         />
@@ -263,14 +248,45 @@ export function VendorForm({ vendor }: Props) {
                 { name: 'name', label: 'Vendor Name', type: 'text', placeholder: 'Enter your vendor name', required: true },
                 { name: 'contact', label: 'Contact', type: 'text', placeholder: 'Enter your contact number' },
                 { name: 'email', label: 'Login Email', type: 'email', placeholder: 'Enter your login email', required: true },
+                // Subscription Plan
                 {
-                    name: 'membership', label: 'Membership', type: 'select',
-                    options: [
-                        { value: 'basic', label: 'Basic' },
-                        { value: 'silver', label: 'Silver' },
-                        { value: 'gold', label: 'Gold' },
-                        { value: 'platinum', label: 'Platinum' },
-                    ],
+                    name: 'membership', label: 'Subscription Plan', type: 'custom',
+                    render: ({ watch, setValue }) => (
+                        <div className="space-y-2">
+                            <Label>Subscription Plan</Label>
+                            <SearchableSelect
+                                options={plans.map((p: any) => ({ value: p.name, label: `${p.name} — ₹${p.price}` }))}
+                                value={watch('membership') || ''}
+                                placeholder="Select plan..."
+                                searchPlaceholder="Search plan..."
+                                onValueChange={(v) => {
+                                    setValue('membership', v);
+                                    setSelectedPlanName(v);
+                                    setValue('theme_id', null);
+                                }}
+                            />
+                        </div>
+                    ),
+                },
+                // Cascading Theme dropdown
+                {
+                    name: 'theme_id', label: 'Theme', type: 'custom',
+                    render: ({ watch, setValue }) => (
+                        <div className="space-y-2">
+                            <Label>Theme</Label>
+                            {selectedPlan ? (
+                                <SearchableSelect
+                                    options={themes.map((t: any) => ({ value: t.id.toString(), label: t.name }))}
+                                    value={watch('theme_id')?.toString() || ''}
+                                    placeholder="Select theme for this plan..."
+                                    searchPlaceholder="Search theme..."
+                                    onValueChange={(v) => setValue('theme_id', parseInt(v))}
+                                />
+                            ) : (
+                                <p className="text-sm text-muted-foreground h-9 flex items-center px-3 border rounded-md bg-muted/30">Select a plan first</p>
+                            )}
+                        </div>
+                    ),
                 },
                 { name: 'address', label: 'Address', type: 'textarea', placeholder: 'Enter your address', rows: 2, colSpan: 2 },
                 { name: 'about_us', label: 'About Us', type: 'textarea', placeholder: 'Write a brief description about the vendor...', rows: 4, colSpan: 2 },
@@ -305,125 +321,23 @@ export function VendorForm({ vendor }: Props) {
             ],
         },
         {
-            title: 'Social Media',
+            title: 'Social Links',
             icon: Share2,
             fields: [
                 {
-                    name: 'website', label: 'Website', type: 'custom',
-                    render: ({ watch, setValue }) => (
-                        <div className="space-y-1.5">
-                            <Label className="flex items-center gap-2 text-sm font-medium">
-                                <Globe className="h-4 w-4 text-gray-500" /> Website
-                            </Label>
-                            <Input value={watch('website') || ''} onChange={e => setValue('website', e.target.value)} placeholder="Enter your website URL" />
-                        </div>
-                    ),
-                },
-                {
-                    name: 'youtube', label: 'YouTube', type: 'custom',
-                    render: ({ watch, setValue }) => (
-                        <div className="space-y-1.5">
-                            <Label className="flex items-center gap-2 text-sm font-medium">
-                                <Youtube className="h-4 w-4 text-red-500" /> YouTube
-                            </Label>
-                            <Input value={watch('youtube') || ''} onChange={e => setValue('youtube', e.target.value)} placeholder="Enter your YouTube channel URL" />
-                        </div>
-                    ),
-                },
-                {
-                    name: 'facebook', label: 'Facebook', type: 'custom',
-                    render: ({ watch, setValue }) => (
-                        <div className="space-y-1.5">
-                            <Label className="flex items-center gap-2 text-sm font-medium">
-                                <Facebook className="h-4 w-4 text-blue-600" /> Facebook
-                            </Label>
-                            <Input value={watch('facebook') || ''} onChange={e => setValue('facebook', e.target.value)} placeholder="Enter your Facebook page URL" />
-                        </div>
-                    ),
-                },
-                {
-                    name: 'instagram', label: 'Instagram', type: 'custom',
-                    render: ({ watch, setValue }) => (
-                        <div className="space-y-1.5">
-                            <Label className="flex items-center gap-2 text-sm font-medium">
-                                <Instagram className="h-4 w-4 text-pink-500" /> Instagram
-                            </Label>
-                            <Input value={watch('instagram') || ''} onChange={e => setValue('instagram', e.target.value)} placeholder="Enter your Instagram profile URL" />
-                        </div>
-                    ),
-                },
-                {
-                    name: 'twitter', label: 'Twitter / X', type: 'custom',
-                    render: ({ watch, setValue }) => (
-                        <div className="space-y-1.5">
-                            <Label className="flex items-center gap-2 text-sm font-medium">
-                                <Twitter className="h-4 w-4 text-sky-500" /> Twitter / X
-                            </Label>
-                            <Input value={watch('twitter') || ''} onChange={e => setValue('twitter', e.target.value)} placeholder="Enter your Twitter / X profile URL" />
-                        </div>
-                    ),
-                },
-                {
-                    name: 'linkedin', label: 'LinkedIn', type: 'custom',
-                    render: ({ watch, setValue }) => (
-                        <div className="space-y-1.5">
-                            <Label className="flex items-center gap-2 text-sm font-medium">
-                                <Linkedin className="h-4 w-4 text-blue-700" /> LinkedIn
-                            </Label>
-                            <Input value={watch('linkedin') || ''} onChange={e => setValue('linkedin', e.target.value)} placeholder="Enter your LinkedIn page URL" />
-                        </div>
-                    ),
-                },
-                {
-                    name: 'whatsapp', label: 'WhatsApp', type: 'custom',
-                    render: ({ watch, setValue }) => (
-                        <div className="space-y-1.5">
-                            <Label className="flex items-center gap-2 text-sm font-medium">
-                                <MessageCircle className="h-4 w-4 text-green-500" /> WhatsApp
-                            </Label>
-                            <Input value={watch('whatsapp') || ''} onChange={e => setValue('whatsapp', e.target.value)} placeholder="Enter your WhatsApp number" />
-                        </div>
-                    ),
-                },
-                {
-                    name: 'tiktok', label: 'TikTok', type: 'custom',
-                    render: ({ watch, setValue }) => (
-                        <div className="space-y-1.5">
-                            <Label className="flex items-center gap-2 text-sm font-medium">
-                                <Music className="h-4 w-4 text-black dark:text-white" /> TikTok
-                            </Label>
-                            <Input value={watch('tiktok') || ''} onChange={e => setValue('tiktok', e.target.value)} placeholder="Enter your TikTok profile URL" />
-                        </div>
-                    ),
-                },
-                {
-                    name: 'telegram', label: 'Telegram', type: 'custom',
-                    render: ({ watch, setValue }) => (
-                        <div className="space-y-1.5">
-                            <Label className="flex items-center gap-2 text-sm font-medium">
-                                <Send className="h-4 w-4 text-sky-400" /> Telegram
-                            </Label>
-                            <Input value={watch('telegram') || ''} onChange={e => setValue('telegram', e.target.value)} placeholder="Enter your Telegram link" />
-                        </div>
-                    ),
-                },
-                {
-                    name: 'pinterest', label: 'Pinterest', type: 'custom',
-                    render: ({ watch, setValue }) => (
-                        <div className="space-y-1.5">
-                            <Label className="flex items-center gap-2 text-sm font-medium">
-                                <Bookmark className="h-4 w-4 text-red-600" /> Pinterest
-                            </Label>
-                            <Input value={watch('pinterest') || ''} onChange={e => setValue('pinterest', e.target.value)} placeholder="Enter your Pinterest profile URL" />
-                        </div>
-                    ),
+                    name: 'social_links_manager', label: '', type: 'custom' as const, colSpan: 2 as const,
+                    render: () => <VendorSocialLinksManager
+                        vendorId={isEdit && vendor ? vendor.id : null}
+                        onLocalChange={links => { pendingSocialLinks.current = links; }}
+                    />,
                 },
             ],
         },
     ];
 
     const defaultValues = vendor ? {
-        company_name: vendor.company_name, company_logo: vendor.company_logo || '',
+        company_name: vendor.company_name,
+        company_logo: vendor.company_logo || '',
         country_id: vendor.country_id ?? undefined,
         state_id: vendor.state_id ?? undefined,
         city_id: vendor.city_id ?? undefined,
@@ -431,39 +345,58 @@ export function VendorForm({ vendor }: Props) {
         latitude: vendor.latitude ?? null,
         longitude: vendor.longitude ?? null,
         reg_no: vendor.reg_no || '',
-        gst_no: vendor.gst_no || '', company_address: vendor.company_address || '',
-        company_contact: vendor.company_contact || '', landline: vendor.landline || '',
-        company_email: vendor.company_email || '', website: vendor.website || '',
-        youtube: vendor.youtube || '', facebook: vendor.facebook || '',
-        instagram: vendor.instagram || '', twitter: vendor.twitter || '',
-        linkedin: vendor.linkedin || '', whatsapp: vendor.whatsapp || '',
-        tiktok: vendor.tiktok || '', telegram: vendor.telegram || '',
-        pinterest: vendor.pinterest || '', name: vendor.name,
-        address: vendor.address || '', contact: vendor.contact || '',
-        email: vendor.email, membership: vendor.membership,
+        gst_no: vendor.gst_no || '',
+        company_address: vendor.company_address || '',
+        company_contact: vendor.company_contact || '',
+        landline: vendor.landline || '',
+        company_email: vendor.company_email || '',
+        name: vendor.name,
+        address: vendor.address || '',
+        contact: vendor.contact || '',
+        email: vendor.email,
+        membership: (vendor as any).membership || 'basic',
+        theme_id: (vendor as any).theme_id ?? null,
         about_us: vendor.about_us || '',
         company_information: vendor.company_information || '',
         short_description: vendor.short_description || '',
-        profile: vendor.profile || '', bank_logo: vendor.bank_logo || '',
-        password: '', confirm_password: '',
-        bank_name: vendor.bank_name || '', acc_no: vendor.acc_no || '',
-        ifsc_code: vendor.ifsc_code || '', acc_type: vendor.acc_type || undefined,
+        profile: vendor.profile || '',
+        bank_logo: vendor.bank_logo || '',
+        password: '',
+        confirm_password: '',
+        bank_name: vendor.bank_name || '',
+        acc_no: vendor.acc_no || '',
+        ifsc_code: vendor.ifsc_code || '',
+        acc_type: vendor.acc_type || undefined,
         branch: vendor.branch || '',
     } : { membership: 'basic' };
 
     const handleSubmit = (data: any) => {
-        const { confirm_password, map_location, ...payload } = data;
+        const { confirm_password, map_location, social_links_manager, ...payload } = data;
         if (!payload.password) delete payload.password;
-
-        // Always use the live mapCoords state so the values are current
-        payload.latitude = mapCoords?.lat ?? null;
+        payload.latitude  = mapCoords?.lat ?? null;
         payload.longitude = mapCoords?.lng ?? null;
 
         const onError = (e: any) => { if (isApprovalRequired(e)) router.push('/admin/vendors'); };
         if (isEdit && vendor) {
-            update.mutate({ id: vendor.id, data: payload }, { onSuccess: () => router.push('/admin/vendors'), onError });
+            // Update: stay on edit page (no redirect) so social links remain accessible
+            update.mutate({ id: vendor.id, data: payload }, { onError });
         } else {
-            create.mutate(payload, { onSuccess: () => router.push('/admin/vendors'), onError });
+            // Create: save vendor → batch-POST social links → go to edit page
+            create.mutate(payload, {
+                onSuccess: async (res: any) => {
+                    const newId = res?.data?.data?.id ?? res?.data?.id;
+                    // batch create pending social links
+                    if (newId && pendingSocialLinks.current.length > 0) {
+                        for (const link of pendingSocialLinks.current) {
+                            try {
+                                await apiClient.post(`/vendors/${newId}/social-links`, link);
+                            } catch { /* non-fatal */ }
+                        }
+                    }
+                    router.push(newId ? `/admin/vendors/${newId}/edit` : '/admin/vendors');
+                },
+                onError,
+            });
         }
     };
 

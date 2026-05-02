@@ -9,6 +9,7 @@ export interface HomeBlock {
 export interface BlockVariant {
   id: string;
   label: string;
+  preview_image?: string | null;
 }
 
 export interface BlockCatalogEntry {

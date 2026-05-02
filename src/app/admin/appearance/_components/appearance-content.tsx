@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo } from 'react';
 import { useThemes, useUpdateTheme, useDeleteTheme, useUploadThemePreviewImage, Theme } from '@/hooks/use-themes';
 import { useRouter } from 'next/navigation';
-import { Palette, LayoutDashboard, Trash2, CheckCircle2, Circle, ImagePlus, Loader2, LayoutTemplate } from 'lucide-react';
+import { Palette, LayoutDashboard, Trash2, CheckCircle2, Circle, LayoutTemplate } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PageLoader } from '@/components/common/page-loader';
@@ -11,10 +11,13 @@ import { DeleteDialog } from '@/components/common/delete-dialog';
 import { TablePagination } from '@/components/common/table-pagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSubscriptions } from '@/hooks/use-subscriptions';
+import { ImageCropper } from '@/components/common/image-cropper';
+import { safeParseArray } from '@/lib/safe-json';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // Mini browser mock — same as vendor portal InternalThemePreview
 const InternalThemePreview = ({ theme }: { theme: Theme }) => {
-    const blocks = Array.isArray(theme.home_blocks) ? theme.home_blocks : (typeof theme.home_blocks === 'string' ? JSON.parse(theme.home_blocks) : []);
+    const blocks = safeParseArray(theme.home_blocks);
     return (
         <div className="relative w-full h-full rounded-2xl overflow-hidden border border-gray-100 dark:border-white/5 bg-white dark:bg-[#121212] shadow-inner flex flex-col p-3">
             <div className="flex items-center gap-1.5 mb-3 border-b pb-2 dark:border-gray-800">
@@ -58,9 +61,7 @@ export function AppearanceContent() {
     const themes = useMemo(() => {
         if (planFilter === 'all') return allThemes;
         return allThemes.filter(t => {
-            const plans = Array.isArray(t.plans)
-                ? t.plans.map(Number)
-                : (typeof t.plans === 'string' ? JSON.parse(t.plans).map(Number) : []);
+            const plans = safeParseArray(t.plans).map(Number);
             return plans.includes(Number(planFilter));
         });
     }, [allThemes, planFilter]);
@@ -70,13 +71,16 @@ export function AppearanceContent() {
     const uploadPreview = useUploadThemePreviewImage();
     const [deleteId, setDeleteId] = useState<number | null>(null);
     const [uploadingId, setUploadingId] = useState<number | null>(null);
-    const fileInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
 
     const handlePreviewUpload = (themeId: number, file: File) => {
         setUploadingId(themeId);
         uploadPreview.mutate({ id: themeId, file }, {
             onSettled: () => setUploadingId(null),
         });
+    };
+
+    const handlePreviewRemove = (themeId: number) => {
+        update.mutate({ id: themeId, data: { preview_image: null } });
     };
 
     const colorSwatches = (theme: Theme) => [
@@ -92,7 +96,7 @@ export function AppearanceContent() {
         return (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {Array.from({ length: 6 }).map((_, i) => (
-                    <div key={i} className="h-52 rounded-2xl bg-muted animate-pulse" />
+                    <Skeleton key={i} className="h-52 rounded-2xl" />
                 ))}
             </div>
         );
@@ -100,7 +104,7 @@ export function AppearanceContent() {
 
     return (
         <div className="space-y-6">
-            <PageLoader open={update.isPending || del.isPending} />
+            <PageLoader open={update.isPending || del.isPending || uploadPreview.isPending} />
 
             {/* Plan Filter Bar */}
             <div className="flex items-center gap-3">
@@ -148,10 +152,9 @@ export function AppearanceContent() {
                                     key={theme.id}
                                     className={`relative rounded-2xl border bg-card shadow-sm overflow-hidden transition-all hover:shadow-md ${isActive ? 'ring-2 ring-primary' : ''}`}
                                 >
-                                    {/* Preview Image — clickable to upload, with hover overlay & InternalThemePreview fallback */}
+                                    {/* Preview image with InternalThemePreview fallback */}
                                     <div
-                                        className="relative w-full h-44 bg-muted/40 border-b cursor-pointer group overflow-hidden"
-                                        onClick={() => fileInputRefs.current[theme.id]?.click()}
+                                        className="relative w-full h-44 bg-muted/40 border-b overflow-hidden"
                                     >
                                         {theme.preview_image ? (
                                             <img src={theme.preview_image} alt={theme.name} className="w-full h-full object-cover" />
@@ -161,24 +164,6 @@ export function AppearanceContent() {
                                             </div>
                                         )}
 
-                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-xs font-medium">
-                                            {uploadingId === theme.id
-                                                ? <><Loader2 className="h-4 w-4 animate-spin" /> Uploading...</>
-                                                : <><ImagePlus className="h-4 w-4" /> {theme.preview_image ? 'Change Image' : 'Upload Image'}</>
-                                            }
-                                        </div>
-
-                                        <input
-                                            ref={el => { fileInputRefs.current[theme.id] = el; }}
-                                            type="file"
-                                            accept="image/*"
-                                            className="hidden"
-                                            onChange={e => {
-                                                const file = e.target.files?.[0];
-                                                if (file) handlePreviewUpload(theme.id, file);
-                                                e.target.value = '';
-                                            }}
-                                        />
                                     </div>
 
                                     <div className="p-5 space-y-4">
@@ -205,6 +190,20 @@ export function AppearanceContent() {
                                                 />
                                             ))}
                                         </div>
+
+                                        <ImageCropper
+                                            title={`${theme.name} preview`}
+                                            description="Upload and crop the theme preview image."
+                                            targetWidth={1200}
+                                            targetHeight={800}
+                                            currentImage={theme.preview_image || ''}
+                                            onImageCropped={(file) => handlePreviewUpload(theme.id, file)}
+                                            onRemove={() => handlePreviewRemove(theme.id)}
+                                            showMediaPicker={false}
+                                        />
+                                        {uploadingId === theme.id && (
+                                            <p className="text-xs text-muted-foreground">Uploading preview image...</p>
+                                        )}
 
                                         {/* Actions */}
                                         <div className="flex items-center gap-2 pt-1">

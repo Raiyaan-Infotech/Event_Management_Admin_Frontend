@@ -13,6 +13,7 @@ interface VariantPickerProps {
   onConfirm: (blockType: string, variantId: string) => void;
   onClose: () => void;
   catalog: BlockCatalogEntry[];
+  currentBlocks?: any[];
   /** Pre-select this variant (used in edit mode) */
   initialVariant?: string;
   /** When true, shows "Save Changes" button label instead of "Add Block" */
@@ -23,7 +24,6 @@ export default function VariantPicker({ blockType, onConfirm, onClose, catalog, 
   const [selected, setSelected] = React.useState<string>(initialVariant || "variant_1");
 
   const entry = catalog.find(c => c.block_type === blockType);
-  const vendorUrl = process.env.NEXT_PUBLIC_VENDOR_URL || "";
 
   // When block type changes or initialVariant changes, sync selection
   React.useEffect(() => {
@@ -50,9 +50,7 @@ export default function VariantPicker({ blockType, onConfirm, onClose, catalog, 
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {entry?.variants.map(v => {
             const isSelected = selected === v.id;
-            const previewSrc = vendorUrl
-              ? `${vendorUrl}/preview?block=${blockType}&variant=${v.id}&vendorId=1`
-              : "";
+
 
             return (
               <div
@@ -84,20 +82,19 @@ export default function VariantPicker({ blockType, onConfirm, onClose, catalog, 
                   </Badge>
                 </div>
 
-                {/* iframe preview */}
-                {previewSrc ? (
-                  <div className="relative w-full bg-muted/10" style={{ height: 260 }}>
-                    <iframe
-                      src={previewSrc}
-                      title={`${entry?.label} — ${v.label}`}
-                      className="absolute inset-0 w-full h-full border-0 pointer-events-none"
-                      style={{ transform: "scale(0.65)", transformOrigin: "top left", width: "154%", height: "154%" }}
-                      loading="lazy"
+                {/* variant preview image */}
+                {v.preview_image ? (
+                  <div className="w-full overflow-hidden bg-muted/20 flex items-center justify-center" style={{ minHeight: 120, maxHeight: 280 }}>
+                    <img
+                      src={v.preview_image}
+                      alt={`${entry?.label} — ${v.label}`}
+                      className="w-full h-auto object-contain"
                     />
                   </div>
                 ) : (
-                  <div className="h-40 flex items-center justify-center text-xs text-muted-foreground bg-muted/20">
-                    Set NEXT_PUBLIC_VENDOR_URL to see preview
+                  <div className="h-40 flex flex-col items-center justify-center gap-1 text-xs text-muted-foreground bg-muted/20">
+                    <span className="font-semibold">No preview image</span>
+                    <span>Upload a preview image in UI Blocks settings</span>
                   </div>
                 )}
               </div>
