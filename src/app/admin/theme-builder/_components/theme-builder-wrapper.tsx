@@ -40,6 +40,7 @@ export default function ThemeBuilderWrapper() {
 
   const { data: plansRes } = useSubscriptions({ page: 1, limit: 100 });
   const subPlans  = useMemo(() => plansRes?.data ?? [], [plansRes]);
+  const validPlanIds = useMemo(() => new Set(subPlans.map((plan) => plan.id)), [subPlans]);
   const palettes  = useMemo(() => palettesRes?.data ?? [], [palettesRes]);
   const normalizedHomeBlocks = useMemo(
     () => normalizeHomeBlocks(editingTheme?.home_blocks) as HomeBlock[],
@@ -79,7 +80,9 @@ export default function ThemeBuilderWrapper() {
     const t = editingTheme;
     setFormData({
       name: t.name || "",
-      plans: safeParseArray<number | string>(t.plans).map((p) => Number(p)),
+      plans: safeParseArray<number | string>(t.plans)
+        .map((p) => Number(p))
+        .filter((planId) => validPlanIds.has(planId)),
       palette_id: (t as any).palette_id ?? null,
       primary_color: t.primary_color || "#3b82f6",
       secondary_color: t.secondary_color || "#1e40af",
@@ -90,7 +93,7 @@ export default function ThemeBuilderWrapper() {
       preview_image: t.preview_image || null,
       home_blocks: normalizedHomeBlocks,
     });
-  }, [editingThemeId, editingTheme, normalizedHomeBlocks]);
+  }, [editingThemeId, editingTheme, normalizedHomeBlocks, validPlanIds]);
 
   // When a palette is selected, copy its colors into the form and track palette_id
   const handlePaletteSelect = (paletteId: string) => {
@@ -149,18 +152,7 @@ export default function ThemeBuilderWrapper() {
           
           <div className="flex flex-row items-end gap-5 mt-3 flex-wrap">
 
-            {/* Field 1: Edit Mode Banner */}
-            {editingThemeId && (
-              <div className="space-y-1.5 flex-1 min-w-[200px]">
-                <Label className="text-xs uppercase text-muted-foreground">Editing Theme</Label>
-                <div className="h-11 flex items-center px-3 rounded-md border bg-primary/5 border-primary/20 text-sm font-bold text-primary gap-2">
-                  <Palette className="size-4 shrink-0" />
-                  {formData.name || "Loading..."}
-                </div>
-              </div>
-            )}
-
-            {/* Field 1b: Color Palette picker — always visible */}
+            {/* Field 1: Color Palette picker */}
             <div className="space-y-1.5 flex-1 min-w-[200px]">
               <Label className="text-xs uppercase text-muted-foreground">Color Palette</Label>
               <Select
@@ -195,7 +187,7 @@ export default function ThemeBuilderWrapper() {
                 value={formData.name}
                 onChange={(e) => setFormData(prev => ({...prev, name: e.target.value}))}
                 placeholder="e.g. Ocean Blue"
-                className="w-full h-11 font-bold text-foreground text-base"
+                className="w-full h-11 font-medium text-foreground text-sm"
               />
             </div>
 
@@ -207,25 +199,33 @@ export default function ThemeBuilderWrapper() {
                   <Button
                     variant="outline"
                     role="combobox"
-                    className="w-full justify-between h-11 bg-muted/20 hover:bg-muted/30"
+                    className="w-full justify-between h-11 bg-background font-medium hover:bg-muted/20"
                   >
-                    <div className="flex flex-wrap gap-1 items-center max-w-[90%] overflow-hidden">
+                    <div className="flex flex-wrap gap-1.5 items-center max-w-[90%] overflow-hidden">
                       {formData.plans.length > 0 ? (
                         formData.plans.map(id => {
                           const plan = subPlans.find(p => p.id === id);
+                          if (!plan) return null;
                           return (
-                            <Badge key={id} variant="secondary" className="text-[10px] h-6">
-                              {plan?.name || id}
+                            <Badge
+                              key={id}
+                              variant="secondary"
+                              className="h-6 rounded-full border border-border/60 bg-muted px-2.5 text-[10px] font-semibold text-foreground shadow-none"
+                            >
+                              {plan.name}
                             </Badge>
                           );
                         })
                       ) : (
-                        <span className="text-muted-foreground text-sm italic">Assign plans...</span>
+                        <span className="text-sm text-muted-foreground">Assign plans...</span>
                       )}
                     </div>
+                    <span className="ml-3 text-xs font-semibold text-muted-foreground">
+                      {formData.plans.length > 0 ? `${formData.plans.length} selected` : ""}
+                    </span>
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="p-0 w-[300px]" align="start">
+                <PopoverContent className="w-[340px] p-0" align="start">
                   <Command>
                     <CommandInput placeholder="Search plans..." />
                     <CommandList>
@@ -236,6 +236,7 @@ export default function ThemeBuilderWrapper() {
                           return (
                             <CommandItem
                               key={plan.id}
+                              className="flex items-center gap-2 px-3 py-2.5"
                               onSelect={() => {
                                 setFormData(prev => ({
                                   ...prev,
@@ -251,7 +252,7 @@ export default function ThemeBuilderWrapper() {
                               )}>
                                 <Check className={cn("h-3 w-3")} />
                               </div>
-                              <span>{plan.name}</span>
+                              <span className="font-medium">{plan.name}</span>
                               <span className="ml-auto text-xs text-muted-foreground">${plan.price}</span>
                             </CommandItem>
                           );

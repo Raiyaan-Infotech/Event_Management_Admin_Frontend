@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
@@ -106,10 +106,23 @@ export function CommonForm({
         return urls;
     });
 
-    const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<any>({
+    const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<any>({
         resolver: zodResolver(schema),
         defaultValues,
     });
+
+    useEffect(() => {
+        if (!defaultValues) return;
+        reset(defaultValues);
+
+        const urls: Record<string, string> = {};
+        sections.forEach((section) => section.fields.forEach((field) => {
+            if (field.type === 'image' && defaultValues[field.name]) {
+                urls[field.name] = defaultValues[field.name];
+            }
+        }));
+        setImageUrls(urls);
+    }, [defaultValues, reset, sections]);
 
     const handleImageUpload = async (file: File, fieldName: string, folder = 'uploads') => {
         setUploadingField(fieldName);

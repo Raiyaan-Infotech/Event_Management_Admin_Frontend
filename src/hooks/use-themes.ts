@@ -7,6 +7,7 @@ export interface Theme {
     id: number;
     company_id: number;
     name: string;
+    palette_id?: number | null;
     plans?: string[] | number[];
     header_color: string | null;
     footer_color: string | null;

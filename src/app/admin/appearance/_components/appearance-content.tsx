@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useThemes, useUpdateTheme, useDeleteTheme, useUploadThemePreviewImage, Theme } from '@/hooks/use-themes';
 import { useRouter } from 'next/navigation';
-import { Palette, LayoutDashboard, Trash2, CheckCircle2, Circle, LayoutTemplate } from 'lucide-react';
+import { Palette, LayoutDashboard, Trash2, CheckCircle2, Circle, LayoutTemplate, Eye, Power } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PageLoader } from '@/components/common/page-loader';
@@ -11,6 +11,7 @@ import { DeleteDialog } from '@/components/common/delete-dialog';
 import { TablePagination } from '@/components/common/table-pagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSubscriptions } from '@/hooks/use-subscriptions';
+import { useColorPalettes } from '@/hooks/use-color-palettes';
 import { ImageCropper } from '@/components/common/image-cropper';
 import { safeParseArray } from '@/lib/safe-json';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -56,6 +57,8 @@ export function AppearanceContent() {
 
     const { data: plansRes } = useSubscriptions({ page: 1, limit: 100 });
     const subPlans = useMemo(() => plansRes?.data ?? [], [plansRes]);
+    const { data: palettesRes } = useColorPalettes({ page: 1, limit: 100 });
+    const palettes = useMemo(() => palettesRes?.data ?? [], [palettesRes]);
 
     // Filter themes client-side by plan
     const themes = useMemo(() => {
@@ -71,6 +74,17 @@ export function AppearanceContent() {
     const uploadPreview = useUploadThemePreviewImage();
     const [deleteId, setDeleteId] = useState<number | null>(null);
     const [uploadingId, setUploadingId] = useState<number | null>(null);
+    const [selectedThemeId, setSelectedThemeId] = useState<number | null>(null);
+
+    useEffect(() => {
+        if (!themes.length) {
+            setSelectedThemeId(null);
+            return;
+        }
+        if (!themes.some((theme) => theme.id === selectedThemeId)) {
+            setSelectedThemeId(themes[0].id);
+        }
+    }, [themes, selectedThemeId]);
 
     const handlePreviewUpload = (themeId: number, file: File) => {
         setUploadingId(themeId);
@@ -83,6 +97,32 @@ export function AppearanceContent() {
         update.mutate({ id: themeId, data: { preview_image: null } });
     };
 
+    const handlePaletteChange = (theme: Theme, value: string) => {
+        if (value === 'none') {
+            update.mutate({
+                id: theme.id,
+                data: { palette_id: null },
+            });
+            return;
+        }
+
+        const palette = palettes.find((item) => item.id === Number(value));
+        if (!palette) return;
+
+        update.mutate({
+            id: theme.id,
+            data: {
+                palette_id: palette.id,
+                primary_color: palette.primary_color,
+                secondary_color: palette.secondary_color,
+                header_color: palette.header_color,
+                footer_color: palette.footer_color,
+                hover_color: palette.hover_color,
+                text_color: palette.text_color,
+            },
+        });
+    };
+
     const colorSwatches = (theme: Theme) => [
         { color: theme.primary_color, label: 'Primary' },
         { color: theme.secondary_color, label: 'Secondary' },
@@ -91,6 +131,11 @@ export function AppearanceContent() {
         { color: theme.hover_color, label: 'Hover' },
         { color: theme.text_color, label: 'Text' },
     ].filter(s => s.color);
+
+    const selectedTheme = themes.find((theme) => theme.id === selectedThemeId) || null;
+    const selectedPalette = selectedTheme?.palette_id
+        ? palettes.find((palette) => palette.id === Number(selectedTheme.palette_id)) || null
+        : null;
 
     if (isLoading) {
         return (
@@ -143,107 +188,182 @@ export function AppearanceContent() {
                 </div>
             ) : (
                 <>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {themes.map((theme) => {
-                            const isActive = Number(theme.is_active) === 1;
-                            const swatches = colorSwatches(theme);
-                            return (
-                                <div
-                                    key={theme.id}
-                                    className={`relative rounded-2xl border bg-card shadow-sm overflow-hidden transition-all hover:shadow-md ${isActive ? 'ring-2 ring-primary' : ''}`}
-                                >
-                                    {/* Preview image with InternalThemePreview fallback */}
-                                    <div
-                                        className="relative w-full h-44 bg-muted/40 border-b overflow-hidden"
+                    <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] gap-6 items-start">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                            {themes.map((theme) => {
+                                const isActive = Number(theme.is_active) === 1;
+                                const isSelected = selectedThemeId === theme.id;
+                                const swatches = colorSwatches(theme).slice(0, 5);
+                                return (
+                                    <button
+                                        key={theme.id}
+                                        type="button"
+                                        onClick={() => setSelectedThemeId(theme.id)}
+                                        className={`relative text-left rounded-2xl border bg-card shadow-sm overflow-hidden transition-all hover:shadow-md focus:outline-none ${
+                                            isSelected
+                                                ? 'ring-2 ring-primary border-primary/40'
+                                                : 'border-border hover:border-primary/30'
+                                        }`}
                                     >
-                                        {theme.preview_image ? (
-                                            <img src={theme.preview_image} alt={theme.name} className="w-full h-full object-cover" />
-                                        ) : (
-                                            <div className="w-full h-full p-3">
-                                                <InternalThemePreview theme={theme} />
+                                        <div className="relative h-[320px] border-b bg-muted/30">
+                                            <div className="absolute inset-0">
+                                                {theme.preview_image ? (
+                                                    <img src={theme.preview_image} alt={theme.name} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <div className="w-full h-full p-4">
+                                                        <InternalThemePreview theme={theme} />
+                                                    </div>
+                                                )}
                                             </div>
-                                        )}
 
-                                    </div>
+                                            <div className="absolute right-3 top-3">
+                                                {isActive
+                                                    ? <Badge className="gap-1 text-[10px] shrink-0 shadow-sm"><CheckCircle2 className="h-3 w-3" /> Active</Badge>
+                                                    : <Badge variant="outline" className="gap-1 text-[10px] shrink-0 bg-background/90 backdrop-blur text-muted-foreground"><Circle className="h-3 w-3" /> Inactive</Badge>
+                                                }
+                                            </div>
+                                        </div>
 
-                                    <div className="p-5 space-y-4">
-                                        {/* Header */}
-                                        <div className="flex items-start justify-between gap-2">
+                                        <div className="flex min-h-[108px] items-center justify-between gap-4 px-5 py-4">
+                                            <div className="min-w-0">
+                                                <h3 className="truncate font-bold text-base leading-tight">{theme.name}</h3>
+                                                <p className="text-[11px] text-muted-foreground mt-1">Theme ID #{theme.id}</p>
+                                            </div>
+                                            <div className="flex items-center gap-2 shrink-0">
+                                                {swatches.map((s, i) => (
+                                                    <div
+                                                        key={i}
+                                                        title={`${s.label}: ${s.color}`}
+                                                        className="h-8 w-8 rounded-full border border-black/10 shadow-sm"
+                                                        style={{ backgroundColor: s.color || '#ccc' }}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        <div className="xl:sticky xl:top-6">
+                            <div className="rounded-2xl border bg-card p-5 shadow-sm space-y-4">
+                                {selectedTheme ? (
+                                    <>
+                                        <div className="space-y-1">
+                                            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Selected Theme</p>
                                             <div>
-                                                <h3 className="font-bold text-base leading-tight">{theme.name}</h3>
-                                                <p className="text-[11px] text-muted-foreground mt-0.5">ID: {theme.id}</p>
+                                                <h3 className="text-lg font-bold leading-tight">{selectedTheme.name}</h3>
                                             </div>
-                                            {isActive
-                                                ? <Badge className="gap-1 text-[10px] shrink-0"><CheckCircle2 className="h-3 w-3" /> Active</Badge>
-                                                : <Badge variant="outline" className="gap-1 text-[10px] shrink-0 text-muted-foreground"><Circle className="h-3 w-3" /> Inactive</Badge>
-                                            }
                                         </div>
 
-                                        {/* Color Swatches */}
-                                        <div className="flex items-center gap-1.5 flex-wrap">
-                                            {swatches.map((s, i) => (
-                                                <div
-                                                    key={i}
-                                                    title={`${s.label}: ${s.color}`}
-                                                    className="w-6 h-6 rounded-full border border-black/10 shadow-sm"
-                                                    style={{ backgroundColor: s.color || '#ccc' }}
-                                                />
-                                            ))}
-                                        </div>
+                                        <div className="space-y-3 pt-1">
+                                            <ImageCropper
+                                                title={`${selectedTheme.name} preview`}
+                                                description="Upload and crop the theme preview image."
+                                                targetWidth={1200}
+                                                targetHeight={800}
+                                                currentImage={selectedTheme.preview_image || ''}
+                                                onImageCropped={(file) => handlePreviewUpload(selectedTheme.id, file)}
+                                                onRemove={() => handlePreviewRemove(selectedTheme.id)}
+                                                showMediaPicker={false}
+                                            />
+                                            {uploadingId === selectedTheme.id && (
+                                                <p className="text-xs text-muted-foreground">Uploading preview image...</p>
+                                            )}
 
-                                        <ImageCropper
-                                            title={`${theme.name} preview`}
-                                            description="Upload and crop the theme preview image."
-                                            targetWidth={1200}
-                                            targetHeight={800}
-                                            currentImage={theme.preview_image || ''}
-                                            onImageCropped={(file) => handlePreviewUpload(theme.id, file)}
-                                            onRemove={() => handlePreviewRemove(theme.id)}
-                                            showMediaPicker={false}
-                                        />
-                                        {uploadingId === theme.id && (
-                                            <p className="text-xs text-muted-foreground">Uploading preview image...</p>
-                                        )}
-
-                                        {/* Actions */}
-                                        <div className="flex items-center gap-2 pt-1">
                                             <Button
-                                                size="sm"
                                                 variant="outline"
-                                                className="flex-1 gap-1.5 text-xs h-8"
-                                                onClick={() => router.push(`/admin/theme-builder?themeId=${theme.id}`)}
+                                                className="w-full justify-start gap-2"
+                                                onClick={() => router.push(`/admin/theme-builder?themeId=${selectedTheme.id}`)}
                                             >
-                                                <LayoutDashboard className="h-3.5 w-3.5" /> Edit Layout
+                                                <LayoutDashboard className="h-4 w-4" /> Edit Theme
                                             </Button>
+
+                                            <div className="space-y-2">
+                                                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Color Palette</p>
+                                                <Select
+                                                    value={selectedTheme.palette_id ? selectedTheme.palette_id.toString() : 'none'}
+                                                    onValueChange={(value) => handlePaletteChange(selectedTheme, value)}
+                                                >
+                                                    <SelectTrigger className="w-full h-12">
+                                                        <div className="flex w-full items-center justify-between gap-3">
+                                                            <div className="min-w-0 text-left">
+                                                                <p className="truncate text-sm font-medium leading-none">
+                                                                    {selectedPalette?.name || 'No palette'}
+                                                                </p>
+                                                            </div>
+                                                            <div className="flex items-center gap-1.5 shrink-0">
+                                                                {colorSwatches(selectedTheme).slice(0, 3).map((s, i) => (
+                                                                    <span
+                                                                        key={i}
+                                                                        className="h-4 w-4 rounded-full border border-black/10 shadow-sm"
+                                                                        style={{ backgroundColor: s.color || '#ccc' }}
+                                                                    />
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="none">
+                                                            <span className="italic text-muted-foreground">No palette</span>
+                                                        </SelectItem>
+                                                        {palettes.map((palette) => (
+                                                            <SelectItem key={palette.id} value={palette.id.toString()}>
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        {[palette.primary_color, palette.secondary_color, palette.header_color]
+                                                                            .filter(Boolean)
+                                                                            .slice(0, 3)
+                                                                            .map((color, i) => (
+                                                                                <span
+                                                                                    key={i}
+                                                                                    className="h-4 w-4 rounded-full border border-black/10"
+                                                                                    style={{ backgroundColor: color || '#ccc' }}
+                                                                                />
+                                                                            ))}
+                                                                    </div>
+                                                                    <span>{palette.name}</span>
+                                                                </div>
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+
                                             <Button
-                                                size="sm"
                                                 variant="outline"
-                                                className="flex-1 gap-1.5 text-xs h-8"
-                                                onClick={() => router.push(`/admin/themes?edit=${theme.id}`)}
+                                                className="w-full justify-start gap-2"
+                                                onClick={() => update.mutate({ id: selectedTheme.id, data: { is_active: Number(selectedTheme.is_active) === 1 ? 0 : 1 } })}
                                             >
-                                                <Palette className="h-3.5 w-3.5" /> Edit Colors
+                                                <Power className="h-4 w-4" />
+                                                {Number(selectedTheme.is_active) === 1 ? 'Set as Inactive' : 'Set as Active'}
                                             </Button>
+
                                             <Button
-                                                size="sm"
-                                                variant="ghost"
-                                                className="h-8 w-8 p-0 text-destructive hover:text-destructive shrink-0"
-                                                onClick={() => setDeleteId(theme.id)}
+                                                variant="destructive"
+                                                className="w-full justify-start gap-2"
+                                                onClick={() => setDeleteId(selectedTheme.id)}
                                             >
-                                                <Trash2 className="h-3.5 w-3.5" />
+                                                <Trash2 className="h-4 w-4" /> Delete
+                                            </Button>
+
+                                            <Button
+                                                variant="outline"
+                                                className="w-full justify-start gap-2"
+                                                onClick={() => router.push(`/admin/theme-builder?themeId=${selectedTheme.id}`)}
+                                            >
+                                                <Eye className="h-4 w-4" /> Preview
                                             </Button>
                                         </div>
-
-                                        {/* Toggle Active */}
-                                        <button
-                                            onClick={() => update.mutate({ id: theme.id, data: { is_active: isActive ? 0 : 1 } })}
-                                            className={`w-full text-xs py-1.5 rounded-lg border transition-colors ${isActive ? 'border-primary/30 bg-primary/5 text-primary hover:bg-primary/10' : 'border-border bg-muted/30 text-muted-foreground hover:bg-muted'}`}
-                                        >
-                                            {isActive ? 'Set as Inactive' : 'Set as Active'}
-                                        </button>
+                                    </>
+                                ) : (
+                                    <div className="py-16 text-center text-muted-foreground space-y-3">
+                                        <LayoutTemplate className="mx-auto h-10 w-10 opacity-20" />
+                                        <p className="text-sm font-medium">Select a theme to manage it</p>
                                     </div>
-                                </div>
-                            );
-                        })}
+                                )}
+                            </div>
+                        </div>
                     </div>
 
                     {pagination && (

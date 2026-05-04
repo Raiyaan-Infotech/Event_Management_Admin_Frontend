@@ -68,6 +68,8 @@ const editSchema = baseSchema.extend({
 
 interface Props { vendor?: Vendor; }
 
+const normalizePlanName = (value?: string | null) => (value || '').trim().toLowerCase();
+
 export function VendorForm({ vendor }: Props) {
     const router = useRouter();
     const isEdit = !!vendor;
@@ -92,7 +94,7 @@ export function VendorForm({ vendor }: Props) {
 
     // Plan + theme cascading state
     const [selectedPlanName, setSelectedPlanName] = useState<string>(
-        (vendor as any)?.membership || ''
+        ((vendor as any)?.membership || '').trim()
     );
 
     const { data: countries   = [] } = useCountries();
@@ -102,8 +104,19 @@ export function VendorForm({ vendor }: Props) {
 
     const { data: plansRes } = useSubscriptions({ page: 1, limit: 100, is_active: 1 });
     const plans = useMemo(() => (plansRes?.data ?? []).filter((p: any) => !p.is_custom), [plansRes]);
+    const planOptions = useMemo(
+        () => plans.map((p: any) => ({
+            value: p.name,
+            label: `${p.name} - Rs ${p.price}`,
+            plan: p,
+        })),
+        [plans]
+    );
 
-    const selectedPlan = useMemo(() => plans.find((p: any) => p.name === selectedPlanName), [plans, selectedPlanName]);
+    const selectedPlan = useMemo(
+        () => planOptions.find((option) => normalizePlanName(option.value) === normalizePlanName(selectedPlanName))?.plan,
+        [planOptions, selectedPlanName]
+    );
     const { data: themesRes } = useThemes({ plan_id: selectedPlan?.id, limit: 100 });
     const themes = useMemo(() => themesRes?.data ?? [], [themesRes]);
 
@@ -255,7 +268,7 @@ export function VendorForm({ vendor }: Props) {
                         <div className="space-y-2">
                             <Label>Subscription Plan</Label>
                             <SearchableSelect
-                                options={plans.map((p: any) => ({ value: p.name, label: `${p.name} — ₹${p.price}` }))}
+                                options={planOptions}
                                 value={watch('membership') || ''}
                                 placeholder="Select plan..."
                                 searchPlaceholder="Search plan..."
@@ -354,7 +367,7 @@ export function VendorForm({ vendor }: Props) {
         address: vendor.address || '',
         contact: vendor.contact || '',
         email: vendor.email,
-        membership: (vendor as any).membership || 'basic',
+        membership: ((vendor as any).membership || '').trim(),
         theme_id: (vendor as any).theme_id ?? null,
         about_us: vendor.about_us || '',
         company_information: vendor.company_information || '',
@@ -368,7 +381,7 @@ export function VendorForm({ vendor }: Props) {
         ifsc_code: vendor.ifsc_code || '',
         acc_type: vendor.acc_type || undefined,
         branch: vendor.branch || '',
-    } : { membership: 'basic' };
+    } : { membership: '' };
 
     const handleSubmit = (data: any) => {
         const { confirm_password, map_location, social_links_manager, ...payload } = data;
@@ -378,8 +391,13 @@ export function VendorForm({ vendor }: Props) {
 
         const onError = (e: any) => { if (isApprovalRequired(e)) router.push('/admin/vendors'); };
         if (isEdit && vendor) {
-            // Update: stay on edit page (no redirect) so social links remain accessible
-            update.mutate({ id: vendor.id, data: payload }, { onError });
+            update.mutate(
+                { id: vendor.id, data: payload },
+                {
+                    onSuccess: () => router.push('/admin/vendors'),
+                    onError,
+                }
+            );
         } else {
             // Create: save vendor → batch-POST social links → go to edit page
             create.mutate(payload, {
