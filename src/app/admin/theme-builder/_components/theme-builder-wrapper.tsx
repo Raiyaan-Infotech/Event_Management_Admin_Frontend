@@ -21,6 +21,8 @@ import { useSearchParams } from "next/navigation";
 import { useSubscriptions } from "@/hooks/use-subscriptions";
 import { normalizeHomeBlocks, safeParseArray } from "@/lib/safe-json";
 
+const PREVIEW_VENDOR_ID = "1";
+
 export default function ThemeBuilderWrapper() {
   const { isLoading: themesLoading } = useThemes({ page: 1, limit: 100 });
   const { data: palettesRes } = useColorPalettes({ limit: 100, is_active: 1 });
@@ -123,7 +125,10 @@ export default function ThemeBuilderWrapper() {
       variant: b.variant || "variant_1",
       is_visible: b.is_visible !== false,
     }));
-    const params = new URLSearchParams({ themeId: editingThemeId.toString() });
+    const params = new URLSearchParams({
+      themeId: editingThemeId.toString(),
+      vendorId: PREVIEW_VENDOR_ID,
+    });
     if (blocks.length) params.set("blocks", btoa(JSON.stringify(blocks)));
     if (formData.primary_color)   params.set("primary",   formData.primary_color);
     if (formData.secondary_color) params.set("secondary", formData.secondary_color);
