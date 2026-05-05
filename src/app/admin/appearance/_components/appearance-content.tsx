@@ -12,6 +12,7 @@ import { TablePagination } from '@/components/common/table-pagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSubscriptions } from '@/hooks/use-subscriptions';
 import { useColorPalettes } from '@/hooks/use-color-palettes';
+import { useVendors } from '@/hooks/use-vendors';
 import { ImageCropper } from '@/components/common/image-cropper';
 import { safeParseArray } from '@/lib/safe-json';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -59,6 +60,8 @@ export function AppearanceContent() {
     const subPlans = useMemo(() => plansRes?.data ?? [], [plansRes]);
     const { data: palettesRes } = useColorPalettes({ page: 1, limit: 100 });
     const palettes = useMemo(() => palettesRes?.data ?? [], [palettesRes]);
+    const { data: vendorsRes } = useVendors({ page: 1, limit: 500 });
+    const vendors = useMemo(() => vendorsRes?.data ?? [], [vendorsRes]);
 
     // Filter themes client-side by plan
     const themes = useMemo(() => {
@@ -75,6 +78,7 @@ export function AppearanceContent() {
     const [deleteId, setDeleteId] = useState<number | null>(null);
     const [uploadingId, setUploadingId] = useState<number | null>(null);
     const [selectedThemeId, setSelectedThemeId] = useState<number | null>(null);
+    const [previewVendorId, setPreviewVendorId] = useState<string>('');
 
     useEffect(() => {
         if (!themes.length) {
@@ -347,10 +351,40 @@ export function AppearanceContent() {
                                                 <Trash2 className="h-4 w-4" /> Delete
                                             </Button>
 
+                                            <div className="space-y-2">
+                                                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Preview Vendor</p>
+                                                <Select value={previewVendorId} onValueChange={setPreviewVendorId}>
+                                                    <SelectTrigger className="w-full h-10">
+                                                        <SelectValue placeholder="Select a vendor..." />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {vendors.map((vendor: any) => (
+                                                            <SelectItem key={vendor.id} value={vendor.id.toString()}>
+                                                                {vendor.company_name || vendor.name}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+
                                             <Button
                                                 variant="outline"
                                                 className="w-full justify-start gap-2"
-                                                onClick={() => router.push(`/admin/theme-builder?themeId=${selectedTheme.id}`)}
+                                                disabled={!previewVendorId}
+                                                onClick={() => {
+                                                    if (!previewVendorId || !selectedTheme) return;
+                                                    const blocks = safeParseArray(selectedTheme.home_blocks).map((b: any) => ({
+                                                        block_type: b.block_type,
+                                                        variant: b.variant || 'variant_1',
+                                                        is_visible: true,
+                                                    }));
+                                                    const params = new URLSearchParams({
+                                                        themeId: selectedTheme.id.toString(),
+                                                        vendorId: previewVendorId,
+                                                        blocks: btoa(JSON.stringify(blocks)),
+                                                    });
+                                                    window.open(`http://localhost:3001/preview?${params.toString()}`, '_blank', 'noopener,noreferrer');
+                                                }}
                                             >
                                                 <Eye className="h-4 w-4" /> Preview
                                             </Button>

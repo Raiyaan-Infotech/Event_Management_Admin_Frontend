@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useThemes, useTheme, useCreateTheme, useUpdateTheme } from "@/hooks/use-themes";
 import { useColorPalettes, type ColorPalette } from "@/hooks/use-color-palettes";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -9,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Save, Palette, Check, AlertTriangle } from "lucide-react";
+import { Save, Palette, Check, AlertTriangle, Eye } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
@@ -21,7 +22,7 @@ import { useSubscriptions } from "@/hooks/use-subscriptions";
 import { normalizeHomeBlocks, safeParseArray } from "@/lib/safe-json";
 
 export default function ThemeBuilderWrapper() {
-  const { data: themesRes, isLoading: themesLoading } = useThemes({ page: 1, limit: 100 });
+  const { isLoading: themesLoading } = useThemes({ page: 1, limit: 100 });
   const { data: palettesRes } = useColorPalettes({ limit: 100, is_active: 1 });
 
   const createTheme = useCreateTheme();
@@ -114,6 +115,24 @@ export default function ThemeBuilderWrapper() {
       hover_color:     found.hover_color     || prev.hover_color,
     }));
   };
+
+  const previewUrl = useMemo(() => {
+    if (!editingThemeId) return null;
+    const blocks = formData.home_blocks.map(b => ({
+      block_type: b.block_type,
+      variant: b.variant || "variant_1",
+      is_visible: b.is_visible !== false,
+    }));
+    const params = new URLSearchParams({ themeId: editingThemeId.toString() });
+    if (blocks.length) params.set("blocks", btoa(JSON.stringify(blocks)));
+    if (formData.primary_color)   params.set("primary",   formData.primary_color);
+    if (formData.secondary_color) params.set("secondary", formData.secondary_color);
+    if (formData.header_color)    params.set("header",    formData.header_color);
+    if (formData.footer_color)    params.set("footer",    formData.footer_color);
+    if (formData.text_color)      params.set("text",      formData.text_color);
+    if (formData.hover_color)     params.set("hover",     formData.hover_color);
+    return `http://localhost:3001/preview?${params.toString()}`;
+  }, [editingThemeId, formData]);
 
   const handleSave = () => {
     const payload = { ...formData, is_active: 1, palette_id: formData.palette_id ?? null };
@@ -273,9 +292,21 @@ export default function ThemeBuilderWrapper() {
               <span>Missing required blocks: <strong>{missingBlocks.join(', ')}</strong></span>
             </div>
           )}
-          <Button className="gap-2 h-11 px-6 shadow-lg shadow-primary/20" onClick={handleSave}>
-            <Save className="size-4" /> {editingThemeId ? "Save Changes" : "Create Theme"}
-          </Button>
+          <div className="flex items-center gap-2">
+            {previewUrl && (
+              <Link
+                href={previewUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 h-11 px-5 rounded-md border border-border bg-background text-sm font-medium hover:bg-muted/50 transition-colors"
+              >
+                <Eye className="size-4" /> Preview
+              </Link>
+            )}
+            <Button className="gap-2 h-11 px-6 shadow-lg shadow-primary/20" onClick={handleSave}>
+              <Save className="size-4" /> {editingThemeId ? "Save Changes" : "Create Theme"}
+            </Button>
+          </div>
         </div>
       </div>
 

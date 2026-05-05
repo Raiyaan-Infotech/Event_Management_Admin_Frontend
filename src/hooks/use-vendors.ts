@@ -38,6 +38,7 @@ export interface Vendor {
     about_us: string | null;
     company_information: string | null;
     short_description: string | null;
+    theme_id?: number | null;
     // Vendor Info
     name: string;
     profile: string | null;
