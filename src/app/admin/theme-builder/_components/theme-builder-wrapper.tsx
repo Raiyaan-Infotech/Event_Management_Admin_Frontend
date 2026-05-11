@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useThemes, useTheme, useCreateTheme, useUpdateTheme } from "@/hooks/use-themes";
 import { useColorPalettes, type ColorPalette } from "@/hooks/use-color-palettes";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -10,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Save, Palette, Check, AlertTriangle, Eye } from "lucide-react";
+import { Save, Palette, Check, AlertTriangle, Eye, Monitor, Tablet, Smartphone, RefreshCw, PanelRightOpen, PanelRightClose } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
@@ -24,11 +25,18 @@ import { normalizeHomeBlocks, safeParseArray } from "@/lib/safe-json";
 const PREVIEW_VENDOR_ID = "1";
 
 export default function ThemeBuilderWrapper() {
+  const router = useRouter();
   const { isLoading: themesLoading } = useThemes({ page: 1, limit: 100 });
   const { data: palettesRes } = useColorPalettes({ limit: 100, is_active: 1 });
 
   const createTheme = useCreateTheme();
   const updateTheme = useUpdateTheme();
+
+  // ── Live preview state ────────────────────────────────────────────────────
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewDevice, setPreviewDevice] = useState<"desktop" | "tablet" | "mobile">("desktop");
+  const [livePreviewUrl, setLivePreviewUrl] = useState<string | null>(null);
+  const [iframeKey, setIframeKey] = useState(0);
 
   const searchParams = useSearchParams();
   const queryThemeId = searchParams.get("themeId") || null;
@@ -119,16 +127,14 @@ export default function ThemeBuilderWrapper() {
   };
 
   const previewUrl = useMemo(() => {
-    if (!editingThemeId) return null;
+    if (!formData.home_blocks.length) return null;
     const blocks = formData.home_blocks.map(b => ({
       block_type: b.block_type,
       variant: b.variant || "variant_1",
       is_visible: b.is_visible !== false,
     }));
-    const params = new URLSearchParams({
-      themeId: editingThemeId.toString(),
-      vendorId: PREVIEW_VENDOR_ID,
-    });
+    const params = new URLSearchParams({ vendorId: PREVIEW_VENDOR_ID });
+    if (editingThemeId) params.set("themeId", editingThemeId.toString());
     if (blocks.length) params.set("blocks", btoa(JSON.stringify(blocks)));
     if (formData.primary_color)   params.set("primary",   formData.primary_color);
     if (formData.secondary_color) params.set("secondary", formData.secondary_color);
@@ -139,15 +145,31 @@ export default function ThemeBuilderWrapper() {
     return `http://localhost:3001/preview?${params.toString()}`;
   }, [editingThemeId, formData]);
 
+  // Debounce live preview URL — refresh iframe 1.2s after any change
+  useEffect(() => {
+    if (!showPreview || !previewUrl) return;
+    const t = setTimeout(() => setLivePreviewUrl(previewUrl), 1200);
+    return () => clearTimeout(t);
+  }, [previewUrl, showPreview]);
+
+  const deviceWidth: Record<string, string> = {
+    desktop: "100%",
+    tablet:  "768px",
+    mobile:  "390px",
+  };
+
   const handleSave = () => {
     const payload = { ...formData, is_active: 1, palette_id: formData.palette_id ?? null };
 
     if (editingThemeId) {
-      // EDIT MODE — always update the specific theme from URL
       updateTheme.mutate({ id: editingThemeId, data: payload });
     } else {
-      // CREATE MODE — always create new, no exceptions
-      createTheme.mutate(payload);
+      createTheme.mutate(payload, {
+        onSuccess: (data: any) => {
+          const newId = data?.id;
+          if (newId) router.push(`/admin/theme-builder?themeId=${newId}`);
+        },
+      });
     }
   };
 
@@ -308,6 +330,17 @@ export default function ThemeBuilderWrapper() {
                 <Eye className="size-4" /> Preview
               </Link>
             )}
+            <Button
+              variant="outline"
+              className="gap-2 h-11 px-5"
+              onClick={() => {
+                setShowPreview(v => !v);
+                if (!showPreview && previewUrl) setLivePreviewUrl(previewUrl);
+              }}
+            >
+              {showPreview ? <PanelRightClose className="size-4" /> : <PanelRightOpen className="size-4" />}
+              {showPreview ? "Close Preview" : "Live Preview"}
+            </Button>
             <Button className="gap-2 h-11 px-6 shadow-lg shadow-primary/20" onClick={handleSave}>
               <Save className="size-4" /> {editingThemeId ? "Save Changes" : "Create Theme"}
             </Button>
@@ -315,25 +348,125 @@ export default function ThemeBuilderWrapper() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-8 items-start">
-        {/* --- HOME BLOCK BUILDER --- */}
-        <div className="bg-card p-1 rounded-2xl border shadow-sm overflow-hidden min-h-[800px]">
-           <div className="p-5 border-b bg-muted/30 flex items-center justify-between">
-              <div>
-                <h3 className="font-bold">Home Page Layout</h3>
-                <p className="text-xs text-muted-foreground">Arrange visual blocks for this theme</p>
-              </div>
-           </div>
-           
-           <div className="p-6">
+      {showPreview ? (
+        /* ── SPLIT-SCREEN: Builder left, Live Preview right ── */
+        <div className="grid grid-cols-[1fr_1fr] gap-4 items-start" style={{ minHeight: "calc(100vh - 280px)" }}>
+          {/* Left — block builder */}
+          <div className="bg-card rounded-2xl border shadow-sm overflow-hidden">
+            <div className="p-5 border-b bg-muted/30">
+              <h3 className="font-bold">Home Page Layout</h3>
+              <p className="text-xs text-muted-foreground">Arrange visual blocks for this theme</p>
+            </div>
+            <div className="p-6">
               <HomeSettingBuilder
                 key={builderKey}
                 initialBlocks={editingThemeId && normalizedHomeBlocks.length > 0 ? normalizedHomeBlocks : formData.home_blocks}
                 onBlocksChange={(blocks) => setFormData(p => ({ ...p, home_blocks: blocks }))}
               />
-           </div>
+            </div>
+          </div>
+
+          {/* Right — live iframe */}
+          <div className="sticky top-4 rounded-2xl border shadow-sm overflow-hidden flex flex-col bg-card" style={{ height: "calc(100vh - 120px)" }}>
+            {/* Toolbar */}
+            <div className="flex items-center gap-2 px-4 py-2.5 border-b bg-muted/30 shrink-0">
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mr-1">Live Preview</span>
+
+              {/* Device buttons */}
+              <div className="flex items-center gap-1 ml-auto">
+                {(["desktop", "tablet", "mobile"] as const).map((d) => {
+                  const Icon = d === "desktop" ? Monitor : d === "tablet" ? Tablet : Smartphone;
+                  return (
+                    <button
+                      key={d}
+                      onClick={() => setPreviewDevice(d)}
+                      className={cn(
+                        "p-1.5 rounded-md transition-colors",
+                        previewDevice === d
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                      )}
+                      title={d.charAt(0).toUpperCase() + d.slice(1)}
+                    >
+                      <Icon className="size-4" />
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="w-px h-4 bg-border mx-1" />
+
+              {/* Refresh */}
+              <button
+                onClick={() => { setLivePreviewUrl(previewUrl); setIframeKey(k => k + 1); }}
+                className="p-1.5 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                title="Refresh preview"
+              >
+                <RefreshCw className="size-4" />
+              </button>
+
+              {/* Open in tab */}
+              {previewUrl && (
+                <Link
+                  href={previewUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-1.5 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                  title="Open in new tab"
+                >
+                  <Eye className="size-4" />
+                </Link>
+              )}
+            </div>
+
+            {/* iframe container */}
+            <div className="flex-1 overflow-hidden flex items-start justify-center bg-muted/20 p-3">
+              {livePreviewUrl ? (
+                <iframe
+                  key={iframeKey}
+                  src={livePreviewUrl}
+                  style={{
+                    width: deviceWidth[previewDevice],
+                    maxWidth: "100%",
+                    height: "100%",
+                    border: "none",
+                    borderRadius: "8px",
+                    background: "white",
+                    transition: "width 0.3s ease",
+                    boxShadow: "0 4px 24px rgba(0,0,0,0.10)",
+                  }}
+                  title="Live Preview"
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center gap-3 text-muted-foreground h-full">
+                  <Monitor className="size-10 opacity-20" />
+                  <p className="text-sm font-medium">Waiting for changes…</p>
+                  <p className="text-xs">Preview auto-refreshes 1.2s after any edit</p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-8 items-start">
+          {/* --- HOME BLOCK BUILDER --- */}
+          <div className="bg-card p-1 rounded-2xl border shadow-sm overflow-hidden min-h-[800px]">
+            <div className="p-5 border-b bg-muted/30 flex items-center justify-between">
+              <div>
+                <h3 className="font-bold">Home Page Layout</h3>
+                <p className="text-xs text-muted-foreground">Arrange visual blocks for this theme</p>
+              </div>
+            </div>
+            <div className="p-6">
+              <HomeSettingBuilder
+                key={builderKey}
+                initialBlocks={editingThemeId && normalizedHomeBlocks.length > 0 ? normalizedHomeBlocks : formData.home_blocks}
+                onBlocksChange={(blocks) => setFormData(p => ({ ...p, home_blocks: blocks }))}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

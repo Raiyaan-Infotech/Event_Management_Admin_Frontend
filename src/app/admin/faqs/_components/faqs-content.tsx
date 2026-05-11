@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { Plus, HelpCircle } from 'lucide-react';
 import { useFaqs, useCreateFaq, useUpdateFaq, useDeleteFaq, Faq } from '@/hooks/use-faqs';
 import { isApprovalRequired } from '@/lib/api-client';
+import { stripHtml } from '@/lib/utils';
 import { useFaqCategories } from '@/hooks/use-faq-categories';
 import { useTranslation } from '@/hooks/use-translation';
 import { CommonTable, type CommonColumn } from '@/components/common/common-table';
@@ -31,7 +32,6 @@ import { Badge } from '@/components/ui/badge';
 import { useIsPluginActive } from '@/hooks/use-plugins';
 import { PluginDisabledState } from '@/components/common/plugin-disabled';
 
-const stripHtml = (html: string) => html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
 
 const schema = z.object({
     faq_category_id: z.preprocess((val) => Number(val), z.number().min(1, 'Category is required')),

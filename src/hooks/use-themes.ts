@@ -131,3 +131,20 @@ export function useDeleteTheme() {
         },
     });
 }
+
+export function useDuplicateTheme() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (id: number): Promise<Theme> => {
+            const response = await apiClient.post(`/themes/${id}/duplicate`);
+            return response.data.data?.theme || response.data.theme;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.themes.all });
+            toast.success('Theme duplicated successfully');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || 'Failed to duplicate theme');
+        },
+    });
+}

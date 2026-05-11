@@ -1,53 +1,55 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-/**
- * API Proxy Route for cross-domain cookie handling
- * 
- * Forwards all requests to the backend (Render) and properly handles Set-Cookie headers.
- * By proxying through the same domain (Vercel), cookies are set on the Vercel domain
- * and can be read by Next.js middleware.
- * 
- * Usage:
- * - Frontend calls: /api/proxy/v1/auth/login
- * - Proxy forwards to: {NEXT_PUBLIC_API_URL}/v1/auth/login
- * - Cookies set on backend are returned to browser on Vercel domain
- */
-
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+const PORTAL_TYPE = 'admin';
+const ALLOWED_COOKIE_NAMES = new Set(["access_token","refresh_token"]);
+const PROXY_TIMEOUT_MS = 25000;
 
 async function forwardRequest(request: NextRequest, path: string, method: string) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), PROXY_TIMEOUT_MS);
+
   try {
-    // Construct the full backend URL
-    // Strip leading "v1/" from path because NEXT_PUBLIC_API_URL already ends in /v1
-    // e.g. path = "v1/auth/login" → strippedPath = "auth/login"
-    // Final URL: https://backend.onrender.com/api/v1/auth/login  ✓
     const strippedPath = path.startsWith('v1/') ? path.slice(3) : path;
     const searchParams = request.nextUrl.search;
     const backendUrl = `${BACKEND_URL}/${strippedPath}${searchParams}`;
 
-    // Get request body if present
     let body: BodyInit | undefined;
-    try {
-      if (method !== 'GET' && method !== 'HEAD') {
-        body = await request.arrayBuffer();
-      }
-    } catch {
-      body = undefined;
+    if (method !== 'GET' && method !== 'HEAD') {
+      body = await request.blob();
     }
 
-    // Forward headers (exclude host-specific headers)
     const headers = new Headers(request.headers);
     headers.delete('host');
     headers.delete('connection');
-    headers.delete('content-length'); // CRITICAL: Fetch recalculates this. Old length causes backend hangs.
+    headers.delete('content-length');
 
-    // Make the request to backend
+    // Force backend mail/auth context for this frontend app.
+    headers.set('x-portal-type', PORTAL_TYPE);
+
+    // localhost shares cookies across ports. Forward only this portal's auth cookies.
+    const portalCookies = request.cookies
+      .getAll()
+      .filter((cookie) => ALLOWED_COOKIE_NAMES.has(cookie.name));
+
+    if (portalCookies.length > 0) {
+      headers.set('cookie', portalCookies.map((cookie) => `${cookie.name}=${cookie.value}`).join('; '));
+    } else {
+      headers.delete('cookie');
+    }
+
     const backendResponse = await fetch(backendUrl, {
       method,
       headers,
-      body: body || undefined,
+      body,
       credentials: 'include',
+      cache: 'no-store',
+      signal: controller.signal,
     });
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[Proxy:${PORTAL_TYPE}] Forwarding ${method} to ${backendUrl}`);
+    }
 
     const responseHeaders = new Headers();
     backendResponse.headers.forEach((value, key) => {
@@ -59,14 +61,10 @@ async function forwardRequest(request: NextRequest, path: string, method: string
 
     const setCookieHeaders = backendResponse.headers.getSetCookie?.();
     if (setCookieHeaders && setCookieHeaders.length > 0) {
-      setCookieHeaders.forEach(cookie => {
-        responseHeaders.append('Set-Cookie', cookie);
-      });
+      setCookieHeaders.forEach((cookie) => responseHeaders.append('Set-Cookie', cookie));
     }
 
-    // Read full body and create response (avoids streaming hangs in Next.js)
-    const responseData = await backendResponse.arrayBuffer();
-
+    const responseData = await backendResponse.blob();
     return new NextResponse(responseData, {
       status: backendResponse.status,
       statusText: backendResponse.statusText,
@@ -78,68 +76,42 @@ async function forwardRequest(request: NextRequest, path: string, method: string
       { success: false, message: 'Proxy request failed: Backend unreachable or timed out' },
       { status: 504 }
     );
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   const { path: pathArray } = await params;
-  const path = pathArray.join('/');
-  return forwardRequest(request, path, 'GET');
+  return forwardRequest(request, pathArray.join('/'), 'GET');
 }
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   const { path: pathArray } = await params;
-  const path = pathArray.join('/');
-  return forwardRequest(request, path, 'POST');
+  return forwardRequest(request, pathArray.join('/'), 'POST');
 }
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
-) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   const { path: pathArray } = await params;
-  const path = pathArray.join('/');
-  return forwardRequest(request, path, 'PUT');
+  return forwardRequest(request, pathArray.join('/'), 'PUT');
 }
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
-) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   const { path: pathArray } = await params;
-  const path = pathArray.join('/');
-  return forwardRequest(request, path, 'PATCH');
+  return forwardRequest(request, pathArray.join('/'), 'PATCH');
 }
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
-) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   const { path: pathArray } = await params;
-  const path = pathArray.join('/');
-  return forwardRequest(request, path, 'DELETE');
+  return forwardRequest(request, pathArray.join('/'), 'DELETE');
 }
 
-export async function HEAD(
-  request: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
-) {
+export async function HEAD(request: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   const { path: pathArray } = await params;
-  const path = pathArray.join('/');
-  return forwardRequest(request, path, 'HEAD');
+  return forwardRequest(request, pathArray.join('/'), 'HEAD');
 }
 
-export async function OPTIONS(
-  request: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
-) {
+export async function OPTIONS(request: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   const { path: pathArray } = await params;
-  const path = pathArray.join('/');
-  return forwardRequest(request, path, 'OPTIONS');
+  return forwardRequest(request, pathArray.join('/'), 'OPTIONS');
 }

@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { useThemes, useUpdateTheme, useDeleteTheme, useUploadThemePreviewImage, Theme } from '@/hooks/use-themes';
+import { useThemes, useUpdateTheme, useDeleteTheme, useUploadThemePreviewImage, useDuplicateTheme, Theme } from '@/hooks/use-themes';
 import { useRouter } from 'next/navigation';
-import { Palette, LayoutDashboard, Trash2, CheckCircle2, Circle, LayoutTemplate, Eye, Power } from 'lucide-react';
+import { Palette, LayoutDashboard, Trash2, CheckCircle2, Circle, LayoutTemplate, Eye, Power, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PageLoader } from '@/components/common/page-loader';
@@ -73,6 +73,7 @@ export function AppearanceContent() {
 
     const update = useUpdateTheme();
     const del = useDeleteTheme();
+    const duplicate = useDuplicateTheme();
     const uploadPreview = useUploadThemePreviewImage();
     const [deleteId, setDeleteId] = useState<number | null>(null);
     const [uploadingId, setUploadingId] = useState<number | null>(null);
@@ -151,7 +152,7 @@ export function AppearanceContent() {
 
     return (
         <div className="space-y-6">
-            <PageLoader open={update.isPending || del.isPending || uploadPreview.isPending} />
+            <PageLoader open={update.isPending || del.isPending || duplicate.isPending || uploadPreview.isPending} />
 
             {/* Plan Filter Bar */}
             <div className="flex items-center gap-3">
@@ -195,7 +196,7 @@ export function AppearanceContent() {
                             {themes.map((theme) => {
                                 const isActive = Number(theme.is_active) === 1;
                                 const isSelected = selectedThemeId === theme.id;
-                                const swatches = colorSwatches(theme).slice(0, 5);
+                                const swatches = colorSwatches(theme);
                                 return (
                                     <button
                                         key={theme.id}
@@ -339,6 +340,15 @@ export function AppearanceContent() {
                                             >
                                                 <Power className="h-4 w-4" />
                                                 {Number(selectedTheme.is_active) === 1 ? 'Set as Inactive' : 'Set as Active'}
+                                            </Button>
+
+                                            <Button
+                                                variant="outline"
+                                                className="w-full justify-start gap-2"
+                                                onClick={() => duplicate.mutate(selectedTheme.id)}
+                                                disabled={duplicate.isPending}
+                                            >
+                                                <Copy className="h-4 w-4" /> Duplicate
                                             </Button>
 
                                             <Button

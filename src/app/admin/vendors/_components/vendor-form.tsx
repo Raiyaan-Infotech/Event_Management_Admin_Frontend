@@ -55,7 +55,8 @@ const baseSchema = z.object({
 });
 
 const createSchema = baseSchema.extend({
-    password: z.string().min(6, 'Password must be at least 6 characters'),
+    membership: z.string().trim().min(1, 'Subscription plan is required'),
+    password: z.string().trim().min(6, 'Password must be at least 6 characters'),
     confirm_password: z.string().min(1, 'Please confirm password'),
 }).refine(d => d.password === d.confirm_password, { message: 'Passwords do not match', path: ['confirm_password'] });
 
