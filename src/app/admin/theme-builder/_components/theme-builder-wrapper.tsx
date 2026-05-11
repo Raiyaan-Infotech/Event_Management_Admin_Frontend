@@ -142,7 +142,8 @@ export default function ThemeBuilderWrapper() {
     if (formData.footer_color)    params.set("footer",    formData.footer_color);
     if (formData.text_color)      params.set("text",      formData.text_color);
     if (formData.hover_color)     params.set("hover",     formData.hover_color);
-    return `http://localhost:3001/preview?${params.toString()}`;
+    const vendorBaseUrl = process.env.NEXT_PUBLIC_VENDOR_URL || "http://localhost:3001";
+    return `${vendorBaseUrl}/preview?${params.toString()}`;
   }, [editingThemeId, formData]);
 
   // Debounce live preview URL — refresh iframe 1.2s after any change
