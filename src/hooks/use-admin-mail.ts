@@ -59,7 +59,7 @@ export interface AdminMail {
   bcc: string | null;
   subject: string;
   body: string;
-  folder: 'drafts' | 'sent';
+  folder: 'drafts' | 'sent' | 'inbox';
   status: 'draft' | 'sent' | 'failed';
   custom_folder_id: number | null;
   is_active: number;
@@ -183,7 +183,7 @@ const flattenInboxRow = (row: MailRecipientRow & { mail: MailApiData; recipientR
     to_email: `From: ${SENDER_LABEL[row.mail.sender_type] ?? row.mail.sender_type}`,
     cc: null, bcc: null,
     subject: row.mail.subject, body: row.mail.body,
-    folder: 'sent', status: row.mail.status,
+    folder: 'inbox', status: row.mail.status,
     custom_folder_id: recipient.custom_folder_id,
     is_active: recipient.is_active,
     is_read: recipient.is_read,
@@ -198,7 +198,7 @@ const flattenTrashRow = (row: MailRecipientRow & { mail?: MailApiData }): AdminM
   to_email: row.mail ? `From: ${SENDER_LABEL[row.mail.sender_type] ?? row.mail.sender_type}` : '',
   cc: null, bcc: null,
   subject: row.mail?.subject ?? '', body: row.mail?.body ?? '',
-  folder: 'sent', status: row.mail?.status ?? 'sent',
+  folder: 'inbox', status: row.mail?.status ?? 'sent',
   custom_folder_id: row.custom_folder_id,
   is_active: row.is_active, is_read: row.is_read,
   label: row.label, sent_at: row.mail?.sent_at ?? null,
@@ -233,6 +233,17 @@ export const useAdminMailTrash = () => {
 };
 
 // ─── Contacts ─────────────────────────────────────────────────────────────────
+
+export const useAdminMail = (id?: number) =>
+  useQuery({
+    queryKey: [...MAIL_KEY, 'single', id],
+    queryFn: async () =>
+      (await apiClient.get(`/mail/${id}`)).data.data as {
+        mail: MailApiData & { recipients?: MailRecipientRow[] };
+        recipientRow: MailRecipientRow | null;
+      },
+    enabled: !!id,
+  });
 
 export const useMailContacts = () =>
   useQuery({

@@ -1,14 +1,13 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   CheckSquare, RotateCw, MailOpen, Star, ChevronDown, X, Folder, Search, Trash2,
 } from "lucide-react";
 import { AdminMailSidebar } from "./_components/AdminMailSidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
-  useAdminMails, useAdminMailTrash,
+  useAdminMails, useAdminMailTrash, useAdminMail,
   useSaveAdminDraft, useUpdateAdminDraft, useSendAdminDraft, useSendAdminMail,
   useBulkDeleteAdminMail, useBulkMarkAdminRead,
   useRestoreAdminMail, usePermanentDeleteAdminMail,
@@ -23,7 +22,6 @@ import { RichTextEditor } from "@/components/common/rich-text-editor";
 import { stripHtml } from "@/lib/utils";
 
 const LIMITS = { to: 25, cc: 10, bcc: 5 };
-const parse  = (v: string) => v.split(",").map((s) => s.trim()).filter(Boolean);
 
 const LABELS = [
   { key: "label-social",     label: "Social",     color: "text-primary" },
@@ -251,8 +249,10 @@ export default function AdminMailPage() {
   const [selectAll, setSelectAll]       = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [moveOpen, setMoveOpen]           = useState(false);
+  const [selectedMailId, setSelectedMailId] = useState<number | null>(null);
 
   const { data: mails = [], isLoading, refetch } = useAdminMails();
+  const { data: mailDetail, isLoading: detailLoading } = useAdminMail(selectedMailId ?? undefined);
   const { data: trashMails = [], refetch: refetchTrash } = useAdminMailTrash();
   const { data: folders = [] } = useAdminMailFolders();
   const bulkDelete  = useBulkDeleteAdminMail();
@@ -267,7 +267,7 @@ export default function AdminMailPage() {
   const customFolders = folders.filter((f) => f.is_active === 1);
 
   const filtered = useMemo<AdminMail[]>(() => {
-    if (activeFolder === "inbox")            return mails.filter((m) => m.folder !== "sent" && m.folder !== "drafts" && m.is_active === 1 && !m.label && !m.custom_folder_id);
+    if (activeFolder === "inbox")            return mails.filter((m) => m.folder === "inbox" && m.is_active === 1 && !m.label && !m.custom_folder_id);
     if (activeFolder === "sent")             return mails.filter((m) => m.folder === "sent"   && m.is_active === 1 && !m.label && !m.custom_folder_id);
     if (activeFolder === "drafts")           return mails.filter((m) => m.folder === "drafts" && m.is_active === 1 && !m.label && !m.custom_folder_id);
     if (activeFolder === "all")              return mails.filter((m) => m.is_active === 1);
@@ -318,7 +318,7 @@ export default function AdminMailPage() {
     return (
       <div className="flex gap-5 h-[calc(100vh-120px)]">
         <AdminMailSidebar activeFolder={activeFolder} onFolderChange={changeFolder} />
-        <ComposePanel onDone={() => changeFolder("sent")} initialRecipients={initRecipients} />
+        <ComposePanel onDone={() => changeFolder("sent")} initialRecipients={initRecipients} draft={editingDraft} />
       </div>
     );
   }
@@ -361,7 +361,8 @@ export default function AdminMailPage() {
     <div className="flex gap-5 h-[calc(100vh-120px)]">
       <AdminMailSidebar activeFolder={activeFolder} onFolderChange={changeFolder} />
 
-      <div className="flex-1 min-w-0 bg-card rounded-[5px] border border-border shadow-sm flex flex-col overflow-hidden">
+      <div className={`flex gap-5 flex-1 min-w-0 overflow-hidden transition-all duration-300`}>
+      <div className={`bg-card rounded-[5px] border border-border shadow-sm flex flex-col overflow-hidden transition-all duration-300 ${selectedMailId ? "w-[42%] shrink-0" : "flex-1"}`}>
         <div className="p-5 pb-4">
           <h2 className="text-xl font-bold text-foreground uppercase tracking-tight">{currentLabel}</h2>
         </div>
@@ -430,7 +431,10 @@ export default function AdminMailPage() {
             const time = new Date(mail.sent_at || mail.created_at).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
             const labelColor = LABELS.find((l) => l.key === `label-${mail.label}`)?.color;
             return (
-              <div key={mail.id} onClick={() => { if (mail.folder === "drafts") { setEditingDraft(mail); changeFolder("compose"); } }} className={`group flex items-start gap-4 pt-5 pb-4 pl-5 pr-5 border-b border-border transition-all cursor-pointer ${isSelected ? "bg-primary/5" : isRead ? "bg-card hover:bg-muted/20" : "bg-muted/10 hover:bg-muted/30"}`}>
+              <div key={mail.id} onClick={() => {
+                if (mail.folder === "drafts") { setEditingDraft(mail); changeFolder("compose"); return; }
+                setSelectedMailId(mail.id === selectedMailId ? null : mail.id);
+              }} className={`group flex items-start gap-4 pt-5 pb-4 pl-5 pr-5 border-b border-border transition-all cursor-pointer ${mail.id === selectedMailId ? "bg-primary/10 border-l-2 border-l-primary" : isSelected ? "bg-primary/5" : isRead ? "bg-card hover:bg-muted/20" : "bg-muted/10 hover:bg-muted/30"}`}>
                 <div className="flex items-center gap-4 shrink-0 mt-[1px]">
                   <label className="cursor-pointer" onClick={(e) => e.stopPropagation()}>
                     <div className={`flex items-center justify-center w-[16px] h-[16px] rounded-[3px] border ${isSelected ? "bg-primary border-primary" : "bg-transparent border-[#c4c9d7] hover:border-primary"} transition-all`}>
@@ -461,6 +465,57 @@ export default function AdminMailPage() {
             );
           })}
         </div>
+      </div>
+
+      {/* Mail detail panel */}
+      {selectedMailId && (
+        <div className="flex-1 bg-card rounded-[5px] border border-border shadow-sm flex flex-col overflow-hidden">
+          {detailLoading ? (
+            <div className="flex-1 flex items-center justify-center text-sm font-bold text-muted-foreground">Loading...</div>
+          ) : mailDetail ? (
+            <>
+              <div className="p-5 border-b border-border flex items-start justify-between gap-4 shrink-0">
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-1">
+                    {mailDetail.recipientRow
+                      ? `From: ${mailDetail.mail.sender_type.charAt(0).toUpperCase() + mailDetail.mail.sender_type.slice(1)}`
+                      : `To: ${(mailDetail.mail.recipients ?? []).filter(r => r.role === "to").length} recipient(s)`}
+                  </p>
+                  <h3 className="text-[16px] font-black text-foreground leading-snug break-words">{mailDetail.mail.subject}</h3>
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    {mailDetail.mail.sent_at
+                      ? new Date(mailDetail.mail.sent_at).toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })
+                      : new Date(mailDetail.mail.createdAt).toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSelectedMailId(null)}
+                  className="w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-all shrink-0"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+              {!mailDetail.recipientRow && (mailDetail.mail.recipients ?? []).length > 0 && (
+                <div className="px-5 py-2.5 border-b border-border bg-muted/30 shrink-0 flex flex-wrap gap-1.5">
+                  {(mailDetail.mail.recipients ?? []).map((r) => (
+                    <span key={r.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[3px] bg-muted text-[11px] font-bold text-foreground capitalize">
+                      <span className="text-muted-foreground">{r.role.toUpperCase()}:</span> {r.recipient_type}#{r.recipient_id}
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className="flex-1 overflow-y-auto p-5">
+                <div
+                  className="prose prose-sm dark:prose-invert max-w-none text-[14px] text-foreground leading-relaxed"
+                  dangerouslySetInnerHTML={{ __html: mailDetail.mail.body }}
+                />
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-sm font-bold text-muted-foreground">Mail not found.</div>
+          )}
+        </div>
+      )}
       </div>
 
       {confirmDelete && (
