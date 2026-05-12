@@ -374,7 +374,8 @@ export function AppearanceContent() {
                                                         vendorId: PREVIEW_VENDOR_ID,
                                                         blocks: btoa(JSON.stringify(blocks)),
                                                     });
-                                                    window.open(`http://localhost:3001/preview?${params.toString()}`, '_blank', 'noopener,noreferrer');
+                                                    const vendorBaseUrl = process.env.NEXT_PUBLIC_VENDOR_URL || 'http://localhost:3001';
+                                                    window.open(`${vendorBaseUrl}/preview?${params.toString()}`, '_blank', 'noopener,noreferrer');
                                                 }}
                                             >
                                                 <Eye className="h-4 w-4" /> Preview
