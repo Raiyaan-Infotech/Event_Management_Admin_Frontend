@@ -58,10 +58,16 @@ const createSchema = baseSchema.extend({
     membership: z.string().trim().min(1, 'Subscription plan is required'),
     password: z.string().trim().min(6, 'Password must be at least 6 characters'),
     confirm_password: z.string().min(1, 'Please confirm password'),
-}).refine(d => d.password === d.confirm_password, { message: 'Passwords do not match', path: ['confirm_password'] });
+})
+.superRefine((d, ctx) => {
+    if (d.membership && !d.theme_id) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Theme is required', path: ['theme_id'] });
+    }
+})
+.refine(d => d.password === d.confirm_password, { message: 'Passwords do not match', path: ['confirm_password'] });
 
 const editSchema = baseSchema.extend({
-    password: z.string().min(6).optional().or(z.literal('')),
+    password: z.string().trim().min(6, 'Password must be at least 6 characters').optional().or(z.literal('')),
     confirm_password: z.string().optional().or(z.literal('')),
 }).refine(d => !d.password || d.password === d.confirm_password, { message: 'Passwords do not match', path: ['confirm_password'] });
 
@@ -264,15 +270,16 @@ export function VendorForm({ vendor }: Props) {
                 { name: 'email', label: 'Login Email', type: 'email', placeholder: 'Enter your login email', required: true },
                 // Subscription Plan
                 {
-                    name: 'membership', label: 'Subscription Plan', type: 'custom',
-                    render: ({ watch, setValue }) => (
+                    name: 'membership', label: 'Subscription Plan', type: 'custom', required: true,
+                    render: ({ watch, setValue, errors }) => (
                         <div className="space-y-2">
-                            <Label>Subscription Plan</Label>
+                            <Label>Subscription Plan <span className="text-destructive">*</span></Label>
                             <SearchableSelect
                                 options={planOptions}
                                 value={watch('membership') || ''}
                                 placeholder="Select plan..."
                                 searchPlaceholder="Search plan..."
+                                className={errors?.membership ? 'border-destructive' : ''}
                                 onValueChange={(v) => {
                                     setValue('membership', v);
                                     setSelectedPlanName(v);
@@ -284,16 +291,19 @@ export function VendorForm({ vendor }: Props) {
                 },
                 // Cascading Theme dropdown
                 {
-                    name: 'theme_id', label: 'Theme', type: 'custom',
-                    render: ({ watch, setValue }) => (
+                    name: 'theme_id', label: 'Theme', type: 'custom', required: true,
+                    render: ({ watch, setValue, errors }) => (
                         <div className="space-y-2">
-                            <Label>Theme</Label>
+                            <Label>
+                                Theme {selectedPlan && <span className="text-destructive">*</span>}
+                            </Label>
                             {selectedPlan ? (
                                 <SearchableSelect
                                     options={themes.map((t: any) => ({ value: t.id.toString(), label: t.name }))}
                                     value={watch('theme_id')?.toString() || ''}
                                     placeholder="Select theme for this plan..."
                                     searchPlaceholder="Search theme..."
+                                    className={errors?.theme_id ? 'border-destructive' : ''}
                                     onValueChange={(v) => setValue('theme_id', parseInt(v))}
                                 />
                             ) : (

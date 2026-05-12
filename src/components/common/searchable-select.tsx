@@ -20,6 +20,7 @@ interface SearchableSelectProps {
     searchPlaceholder?: string;
     emptyText?: string;
     disabled?: boolean;
+    className?: string;
 }
 
 export function SearchableSelect({
@@ -30,20 +31,21 @@ export function SearchableSelect({
     searchPlaceholder = 'Search...',
     emptyText = 'No results found.',
     disabled = false,
+    className,
 }: SearchableSelectProps) {
     const [open, setOpen] = React.useState(false);
 
     const selectedLabel = options.find((o) => o.value === value)?.label;
 
     return (
-        <Popover open={open} onOpenChange={setOpen}>
+        <Popover open={open} onOpenChange={setOpen} modal={false}>
             <PopoverTrigger asChild>
                 <Button
                     variant="outline"
                     role="combobox"
                     aria-expanded={open}
                     disabled={disabled}
-                    className="w-full justify-between font-normal"
+                    className={cn("w-full justify-between font-normal", className)}
                 >
                     <span className="truncate">{selectedLabel || placeholder}</span>
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -58,10 +60,12 @@ export function SearchableSelect({
                             {options.map((option) => (
                                 <CommandItem
                                     key={option.value}
-                                    value={option.label}
-                                    onSelect={() => {
+                                    value={option.value}
+                                    keywords={[option.label]}
+                                    onPointerDown={(e) => {
                                         onValueChange(option.value);
                                         setOpen(false);
+                                        e.preventDefault();
                                     }}
                                 >
                                     <Check

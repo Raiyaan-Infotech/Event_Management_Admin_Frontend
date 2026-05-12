@@ -282,7 +282,7 @@ export function CommonTable<
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => { if (!(disableEdit?.(row) ?? false)) onEdit(row); }}
+                              onClick={(e) => { e.stopPropagation(); if (!(disableEdit?.(row) ?? false)) onEdit(row); }}
                               title="Edit"
                               disabled={disableEdit?.(row) ?? false}
                               className="h-8 w-8 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 active:scale-95 transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed disabled:pointer-events-none"
@@ -294,7 +294,7 @@ export function CommonTable<
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => { if (!(disableDelete?.(row) ?? false)) onDelete(row); }}
+                              onClick={(e) => { e.stopPropagation(); if (!(disableDelete?.(row) ?? false)) onDelete(row); }}
                               title="Delete"
                               disabled={disableDelete?.(row) ?? false}
                               className="h-8 w-8 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 active:scale-95 transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed disabled:pointer-events-none"

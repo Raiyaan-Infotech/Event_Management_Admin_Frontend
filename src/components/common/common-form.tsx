@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
@@ -41,8 +41,8 @@ export interface CommonFormField {
     rounded?: boolean;
     imageFolder?: string;
     showMediaPicker?: boolean;
-    // custom — render arbitrary JSX, receives form watch/setValue
-    render?: (opts: { watch: any; setValue: any }) => React.ReactNode;
+    // custom — render arbitrary JSX, receives form watch/setValue/errors
+    render?: (opts: { watch: any; setValue: any; errors: any }) => React.ReactNode;
 }
 
 export interface CommonFormSection {
@@ -111,10 +111,17 @@ export function CommonForm({
         defaultValues,
     });
 
+    // Only reset the form when defaultValues actually changes in content,
+    // not on every re-render (sections re-creates on every parent render).
+    const prevDefaultsJsonRef = useRef<string>('');
+
     useEffect(() => {
         if (!defaultValues) return;
-        reset(defaultValues);
+        const json = JSON.stringify(defaultValues);
+        if (json === prevDefaultsJsonRef.current) return;
+        prevDefaultsJsonRef.current = json;
 
+        reset(defaultValues);
         const urls: Record<string, string> = {};
         sections.forEach((section) => section.fields.forEach((field) => {
             if (field.type === 'image' && defaultValues[field.name]) {
@@ -122,7 +129,9 @@ export function CommonForm({
             }
         }));
         setImageUrls(urls);
-    }, [defaultValues, reset, sections]);
+    // sections is used inside but must not be a dep — it changes reference every parent render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [defaultValues, reset]);
 
     const handleImageUpload = async (file: File, fieldName: string, folder = 'uploads') => {
         setUploadingField(fieldName);
@@ -189,7 +198,20 @@ export function CommonForm({
         if (field.type === 'custom' && field.render) {
             return (
                 <div key={field.name} className={spanClass}>
-                    {field.render({ watch, setValue })}
+                    {/* Hidden registered input — only for required custom fields so RHF can scroll to them on error */}
+                    {field.required && (
+                        <input
+                            type="text"
+                            {...register(field.name)}
+                            aria-hidden="true"
+                            tabIndex={-1}
+                            style={{ position: 'absolute', opacity: 0, height: 0, width: 0, pointerEvents: 'none' }}
+                        />
+                    )}
+                    {field.render({ watch, setValue, errors })}
+                    {errors[field.name] && (
+                        <p className="text-sm text-destructive mt-1">{(errors[field.name] as any)?.message}</p>
+                    )}
                 </div>
             );
         }

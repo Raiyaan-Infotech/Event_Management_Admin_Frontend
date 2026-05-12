@@ -157,8 +157,8 @@ const menuItems: MenuItem[] = [
         labelKey: "UI Blocks",
         icon: Component,
         children: [
-          { labelKey: "UI Blocks", href: "/admin/ui-blocks", icon: Component },
-          { labelKey: "Category", href: "/admin/ui-block-categories", icon: Package },
+          { labelKey: "UI Blocks", href: "/admin/website-management/ui-blocks", icon: Component },
+          { labelKey: "Category", href: "/admin/website-management/ui-block-categories", icon: Package },
         ]
       },
       { labelKey: "Home Settings", href: "/admin/theme-builder", icon: LayoutDashboard },
@@ -182,8 +182,12 @@ export function AppSidebar() {
 
   const isActive = (href?: string) =>
     !!(href && (href === "/admin" ? pathname === href : pathname.startsWith(href)));
-  const isChildActive = (children?: MenuItem[]) =>
-    children?.some((child) => child.href && pathname.startsWith(child.href));
+  const isChildActive = (children?: MenuItem[]): boolean =>
+    !!children?.some(
+      (child) =>
+        (child.href && pathname.startsWith(child.href)) ||
+        isChildActive(child.children),
+    );
 
   // Use shared permission check hook
   const { hasPermission, isDeveloper, hasMinLevel } = usePermissionCheck();

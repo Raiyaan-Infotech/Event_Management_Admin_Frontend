@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { useThemes, useTheme, useCreateTheme, useUpdateTheme } from "@/hooks/use-themes";
 import { useColorPalettes, type ColorPalette } from "@/hooks/use-color-palettes";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -160,6 +161,11 @@ export default function ThemeBuilderWrapper() {
   };
 
   const handleSave = () => {
+    if (!formData.name.trim()) {
+      toast.error('Theme name is required.');
+      document.getElementById('theme-name-input')?.focus();
+      return;
+    }
     const payload = { ...formData, is_active: 1, palette_id: formData.palette_id ?? null };
 
     if (editingThemeId) {
@@ -229,8 +235,9 @@ export default function ThemeBuilderWrapper() {
 
             {/* Field 2: Editable Theme Name Input */}
             <div className="space-y-1.5 flex-1 min-w-[200px]">
-              <Label className="text-xs uppercase text-muted-foreground">Theme Name</Label>
-              <Input 
+              <Label className="text-xs uppercase text-muted-foreground">Theme Name <span className="text-destructive">*</span></Label>
+              <Input
+                id="theme-name-input"
                 value={formData.name}
                 onChange={(e) => setFormData(prev => ({...prev, name: e.target.value}))}
                 placeholder="e.g. Ocean Blue"
