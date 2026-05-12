@@ -374,6 +374,12 @@ export function AppearanceContent() {
                                                         vendorId: PREVIEW_VENDOR_ID,
                                                         blocks: btoa(JSON.stringify(blocks)),
                                                     });
+                                                    if (selectedTheme.primary_color)   params.set('primary',   selectedTheme.primary_color);
+                                                    if (selectedTheme.secondary_color) params.set('secondary', selectedTheme.secondary_color);
+                                                    if (selectedTheme.header_color)    params.set('header',    selectedTheme.header_color);
+                                                    if (selectedTheme.footer_color)    params.set('footer',    selectedTheme.footer_color);
+                                                    if (selectedTheme.text_color)      params.set('text',      selectedTheme.text_color);
+                                                    if (selectedTheme.hover_color)     params.set('hover',     selectedTheme.hover_color);
                                                     const vendorBaseUrl = process.env.NEXT_PUBLIC_VENDOR_URL || 'http://localhost:3001';
                                                     window.open(`${vendorBaseUrl}/preview?${params.toString()}`, '_blank', 'noopener,noreferrer');
                                                 }}
