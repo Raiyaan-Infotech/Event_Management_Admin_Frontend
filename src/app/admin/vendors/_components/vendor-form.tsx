@@ -267,7 +267,7 @@ export function VendorForm({ vendor }: Props) {
                 },
                 { name: 'name', label: 'Vendor Name', type: 'text', placeholder: 'Enter your vendor name', required: true },
                 { name: 'contact', label: 'Contact', type: 'text', placeholder: 'Enter your contact number' },
-                { name: 'email', label: 'Login Email', type: 'email', placeholder: 'Enter your login email', required: true },
+                { name: 'email', label: 'Login Email', type: 'email', placeholder: 'Enter your login email', required: !isEdit, disabled: isEdit },
                 // Subscription Plan
                 {
                     name: 'membership', label: 'Subscription Plan', type: 'custom', required: true,

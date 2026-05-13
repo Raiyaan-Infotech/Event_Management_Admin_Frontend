@@ -98,7 +98,7 @@ export interface MailNotification {
   mail_id: number;
   is_read: number;
   created_at: string;
-  mail?: Pick<AdminMail, 'id' | 'subject' | 'sent_at'>;
+  mail?: { id: number; subject: string; sender_type: string; sent_at: string | null };
 }
 
 // ─── Keys ────────────────────────────────────────────────────────────────────

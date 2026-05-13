@@ -67,10 +67,9 @@ export default function HomeSettingBuilder({ initialBlocks, onBlocksChange }: Ho
   const addedTypes = useMemo(() => {
     const set = new Set(blocks.map(b => b.block_type));
     // If either slider is added, consider both "added" for the palette (mutual exclusion)
-    if (set.has("simple_slider") || set.has("advance_slider") || set.has("slider")) {
+    if (set.has("simple_slider") || set.has("advance_slider")) {
       set.add("simple_slider");
       set.add("advance_slider");
-      set.add("slider");
     }
     return set;
   }, [blocks]);
