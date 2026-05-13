@@ -98,7 +98,7 @@ export default function AdminNavbar() {
                   {mailNotifs.length === 0 ? (
                     <div className="py-8 text-center text-muted-foreground text-xs">No notifications</div>
                   ) : mailNotifs.map((notif) => (
-                    <Link key={notif.id} href="/admin/notifications"
+                    <Link key={notif.id} href={`/admin/mail?mailId=${notif.mail_id}`}
                       className="flex gap-3 p-3 rounded-lg hover:bg-muted transition-all group">
                       <div className="w-10 h-10 rounded-full shrink-0 flex items-center justify-center border bg-indigo-500/10 text-indigo-500 border-indigo-500/20">
                         <Mail className="size-3.5" />

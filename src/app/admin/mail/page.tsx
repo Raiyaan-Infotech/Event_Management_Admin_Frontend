@@ -232,6 +232,7 @@ export default function AdminMailPage() {
   const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
   const composeParam = searchParams?.get("compose");
   const countParam   = Number(searchParams?.get("count") ?? 0);
+  const mailIdParam  = searchParams?.get("mailId");
   const initRecipients: SelectedContact[] = countParam > 0 && searchParams
     ? Array.from({ length: countParam }, (_, i) => {
         const id   = searchParams.get(`r${i}_id`);
@@ -249,7 +250,7 @@ export default function AdminMailPage() {
   const [selectAll, setSelectAll]       = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [moveOpen, setMoveOpen]           = useState(false);
-  const [selectedMailId, setSelectedMailId] = useState<number | null>(null);
+  const [selectedMailId, setSelectedMailId] = useState<number | null>(mailIdParam ? Number(mailIdParam) : null);
 
   const { data: mails = [], isLoading, refetch } = useAdminMails();
   const { data: mailDetail, isLoading: detailLoading } = useAdminMail(selectedMailId ?? undefined);
