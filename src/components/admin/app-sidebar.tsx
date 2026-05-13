@@ -115,6 +115,7 @@ const menuItems: MenuItem[] = [
     children: [
       { labelKey: "nav.notifications", href: "/admin/notifications", icon: Bell, permission: "notifications.view" },
       { labelKey: "nav.mail", href: "/admin/mail", icon: Mail, permission: "mail.view" },
+      { labelKey: "Chat", href: "/admin/communication/chat", icon: MessageCircle },
       { labelKey: "nav.support", href: "/admin/support", icon: MessageCircle, permission: "support.view" },
       { labelKey: "nav.contact", href: "/admin/contact", icon: Phone, permission: "contact.view" },
     ],
