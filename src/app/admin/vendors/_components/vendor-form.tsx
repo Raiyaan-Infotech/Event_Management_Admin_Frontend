@@ -54,22 +54,50 @@ const baseSchema = z.object({
     branch: z.string().trim().optional(),
 });
 
+const passwordPolicy = (v: string) => {
+    if (/\s/.test(v))             return 'Password must not contain spaces';
+    if (v.length < 8)             return 'Password must be at least 8 characters';
+    if (!/[A-Z]/.test(v))        return 'Must include at least 1 uppercase letter';
+    if (!/[a-z]/.test(v))        return 'Must include at least 1 lowercase letter';
+    if (!/[0-9]/.test(v))        return 'Must include at least 1 number';
+    if (!/[^A-Za-z0-9]/.test(v)) return 'Must include at least 1 special character';
+    return true;
+};
+
 const createSchema = baseSchema.extend({
     membership: z.string().trim().min(1, 'Subscription plan is required'),
-    password: z.string().trim().min(6, 'Password must be at least 6 characters'),
+    password: z.string().trim().min(1, 'Password is required').refine(passwordPolicy, { message: 'Invalid password' }),
     confirm_password: z.string().min(1, 'Please confirm password'),
 })
 .superRefine((d, ctx) => {
     if (d.membership && !d.theme_id) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Theme is required', path: ['theme_id'] });
     }
+    if (d.password) {
+        const result = passwordPolicy(d.password);
+        if (typeof result === 'string') {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: result, path: ['password'] });
+        }
+    }
 })
 .refine(d => d.password === d.confirm_password, { message: 'Passwords do not match', path: ['confirm_password'] });
 
 const editSchema = baseSchema.extend({
-    password: z.string().trim().min(6, 'Password must be at least 6 characters').optional().or(z.literal('')),
+    password: z.string().optional().or(z.literal('')),
     confirm_password: z.string().optional().or(z.literal('')),
-}).refine(d => !d.password || d.password === d.confirm_password, { message: 'Passwords do not match', path: ['confirm_password'] });
+})
+.superRefine((d, ctx) => {
+    if (d.membership && !d.theme_id) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Theme is required', path: ['theme_id'] });
+    }
+    if (d.password) {
+        const result = passwordPolicy(d.password);
+        if (typeof result === 'string') {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: result, path: ['password'] });
+        }
+    }
+})
+.refine(d => !d.password || d.password === d.confirm_password, { message: 'Passwords do not match', path: ['confirm_password'] });
 
 // ─── Component ───────────────────────────────────────────────────────────────
 

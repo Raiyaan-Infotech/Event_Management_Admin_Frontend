@@ -221,7 +221,7 @@ export default function ThemeBuilderWrapper() {
                     <SelectItem key={p.id} value={p.id.toString()}>
                       <div className="flex items-center gap-2">
                         <div className="flex gap-0.5">
-                          {[p.primary_color, p.secondary_color, p.header_color].filter(Boolean).map((c, i) => (
+                          {[p.primary_color, p.secondary_color, p.text_color, p.header_color, p.footer_color, p.hover_color].filter(Boolean).map((c, i) => (
                             <span key={i} className="w-3 h-3 rounded-full border border-black/10 inline-block" style={{ backgroundColor: c! }} />
                           ))}
                         </div>
