@@ -13,6 +13,7 @@ import { PageLoader } from "@/components/common/page-loader";
 import { TablePagination } from "@/components/common/table-pagination";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useDepartments, useDeleteDepartment, useUpdateDepartment, type Department } from "@/hooks/use-departments";
+import { normalizePagination, normalizeRows } from "@/lib/utils";
 
 type NormalizedDept = Department & { created_at: string };
 
@@ -33,29 +34,8 @@ export function DepartmentsContent() {
   const deleteMutation = useDeleteDepartment();
   const updateMutation = useUpdateDepartment();
 
-  // Normalize API response: camelCase createdAt → snake_case created_at (CommonTable contract)
-  const rows = useMemo<NormalizedDept[]>(() =>
-    (data?.data ?? []).map((d: any) => ({
-      ...d,
-      created_at: d.created_at ?? d.createdAt ?? "",
-    })),
-  [data?.data]);
-
-  // Map backend pagination shape → TablePagination shape
-  const pagination = useMemo(() => {
-    const p = data?.pagination as any;
-    if (!p) return null;
-    const total = p.total ?? p.totalItems ?? 0;
-    const totalPages = p.totalPages ?? Math.ceil(total / limit);
-    return {
-      page,
-      totalItems: total,
-      totalPages,
-      hasNextPage: page < totalPages,
-      hasPrevPage: page > 1,
-      limit,
-    };
-  }, [data?.pagination, page, limit]);
+  const rows       = useMemo(() => normalizeRows(data?.data ?? []) as NormalizedDept[], [data?.data]);
+  const pagination = useMemo(() => normalizePagination(data?.pagination, page, limit), [data?.pagination, page, limit]);
 
   const confirmDelete = () => {
     if (!deleteDept) return;
