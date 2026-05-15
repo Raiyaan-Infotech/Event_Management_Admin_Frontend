@@ -17,6 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { ImageCropper } from '@/components/common/image-cropper';
+import { PasswordHint } from '@/components/common/password-hint';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -291,7 +292,7 @@ export function CommonForm({
                             {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
                     </div>
-                    {field.hint && <p className="text-xs text-muted-foreground">{field.hint}</p>}
+                    <PasswordHint password={watch(field.name) || ""} />
                     {err && <p className="text-sm text-destructive">{err}</p>}
                 </div>
             );

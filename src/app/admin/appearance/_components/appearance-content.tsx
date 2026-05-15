@@ -296,7 +296,7 @@ export function AppearanceContent() {
                                                                 </p>
                                                             </div>
                                                             <div className="flex items-center gap-1.5 shrink-0">
-                                                                {colorSwatches(selectedTheme).slice(0, 3).map((s, i) => (
+                                                                {colorSwatches(selectedTheme).map((s, i) => (
                                                                     <span
                                                                         key={i}
                                                                         className="h-4 w-4 rounded-full border border-black/10 shadow-sm"

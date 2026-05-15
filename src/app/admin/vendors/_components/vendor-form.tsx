@@ -338,6 +338,7 @@ export function VendorForm({ vendor }: Props) {
                             ) : (
                                 <p className="text-sm text-muted-foreground h-9 flex items-center px-3 border rounded-md bg-muted/30">Select a plan first</p>
                             )}
+                            {errors?.theme_id && <p className="text-sm text-destructive">{(errors.theme_id as any)?.message || 'Theme is required'}</p>}
                         </div>
                     ),
                 },
@@ -346,7 +347,6 @@ export function VendorForm({ vendor }: Props) {
                 {
                     name: 'password', label: isEdit ? 'Password (leave blank to keep current)' : 'Password',
                     type: 'password', placeholder: 'Enter password', required: !isEdit,
-                    hint: 'Minimum 8 characters with uppercase, lowercase, number, and special character. Spaces are not allowed.',
                 },
                 { name: 'confirm_password', label: 'Confirm Password', type: 'password', placeholder: '••••••••', required: !isEdit },
             ],
