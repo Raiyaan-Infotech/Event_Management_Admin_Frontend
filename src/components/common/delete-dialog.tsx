@@ -1,5 +1,5 @@
-import { Loader2 } from 'lucide-react';
-import { useTranslation } from '@/hooks/use-translation';
+﻿import { Loader2 } from "lucide-react";
+import { useTranslation } from "@/hooks/use-translation";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -9,7 +9,9 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+} from "@/components/ui/alert-dialog";
+import { cn } from "@/lib/utils";
+import { designConfig } from "@/lib/design-config";
 
 interface DeleteDialogProps {
     open: boolean;
@@ -34,19 +36,17 @@ export function DeleteDialog({
 
     return (
         <AlertDialog open={open} onOpenChange={(val) => !isDeleting && onOpenChange(val)}>
-            <AlertDialogContent>
+            <AlertDialogContent className={designConfig.surface.panel}>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>{title || t('common.are_you_sure', 'Are you sure?')}</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        {description || t('common.delete_confirm', 'This action cannot be undone.')}
+                    <AlertDialogTitle className={designConfig.type.cardTitle}>{title || t("common.are_you_sure", "Are you sure?")}</AlertDialogTitle>
+                    <AlertDialogDescription className={designConfig.type.helper}>
+                        {description || t("common.delete_confirm", "This action cannot be undone.")}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel disabled={isDeleting}>
-                        {t('common.cancel', 'Cancel')}
-                    </AlertDialogCancel>
+                    <AlertDialogCancel disabled={isDeleting}>{t("common.cancel", "Cancel")}</AlertDialogCancel>
                     <AlertDialogAction
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90 inline-flex items-center gap-2"
+                        className={cn("inline-flex items-center gap-2", designConfig.feedback.danger)}
                         onClick={(e) => {
                             e.preventDefault();
                             onConfirm();
@@ -54,7 +54,7 @@ export function DeleteDialog({
                         disabled={isDeleting}
                     >
                         {isDeleting && <Loader2 className="animate-spin h-4 w-4" />}
-                        {isDeleting ? t('common.deleting', 'Deleting...') : (confirmText || t('common.delete', 'Delete'))}
+                        {isDeleting ? t("common.deleting", "Deleting...") : (confirmText || t("common.delete", "Delete"))}
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>

@@ -66,7 +66,7 @@ const passwordPolicy = (v: string) => {
 
 const createSchema = baseSchema.extend({
     membership: z.string().trim().min(1, 'Subscription plan is required'),
-    password: z.string().trim().min(1, 'Password is required').refine(passwordPolicy, { message: 'Invalid password' }),
+    password: z.string().min(1, 'Password is required').refine(passwordPolicy, { message: 'Invalid password' }),
     confirm_password: z.string().min(1, 'Please confirm password'),
 })
 .superRefine((d, ctx) => {
@@ -302,6 +302,7 @@ export function VendorForm({ vendor }: Props) {
                     render: ({ watch, setValue, errors }) => (
                         <div className="space-y-2">
                             <Label>Subscription Plan <span className="text-destructive">*</span></Label>
+                            <p className="text-xs text-muted-foreground">Select a subscription plan first, then choose a theme available for that plan.</p>
                             <SearchableSelect
                                 options={planOptions}
                                 value={watch('membership') || ''}
@@ -344,7 +345,8 @@ export function VendorForm({ vendor }: Props) {
                 { name: 'about_us', label: 'About Us', type: 'textarea', placeholder: 'Write a brief description about the vendor...', rows: 4, colSpan: 2 },
                 {
                     name: 'password', label: isEdit ? 'Password (leave blank to keep current)' : 'Password',
-                    type: 'password', placeholder: '••••••••', required: !isEdit,
+                    type: 'password', placeholder: 'Enter password', required: !isEdit,
+                    hint: 'Minimum 8 characters with uppercase, lowercase, number, and special character. Spaces are not allowed.',
                 },
                 { name: 'confirm_password', label: 'Confirm Password', type: 'password', placeholder: '••••••••', required: !isEdit },
             ],
@@ -471,3 +473,5 @@ export function VendorForm({ vendor }: Props) {
         />
     );
 }
+
+

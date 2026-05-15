@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import {
   Pagination,
@@ -16,6 +16,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import { designConfig } from "@/lib/design-config";
 
 export interface PaginationMeta {
   page: number;
@@ -60,15 +62,12 @@ export function TablePagination({
   const to = Math.min(page * limit, totalItems);
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t">
-      {/* Info + limit selector */}
+    <div className={designConfig.data.pagination}>
       <div className="flex items-center gap-3 text-sm text-muted-foreground">
-        <span>
-          {from}–{to} of {totalItems}
-        </span>
+        <span>{from}-{to} of {totalItems}</span>
         {onLimitChange && (
           <div className="flex items-center gap-1.5">
-            <span className="text-xs">Rows:</span>
+            <span className={designConfig.type.caption}>Rows:</span>
             <Select
               value={String(limit)}
               onValueChange={(v) => {
@@ -76,58 +75,29 @@ export function TablePagination({
                 onPageChange(1);
               }}
             >
-              <SelectTrigger className="h-7 w-[64px] text-xs">
+              <SelectTrigger className={cn("w-[64px]", designConfig.control.select)}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {limitOptions.map((o) => (
-                  <SelectItem key={o} value={String(o)} className="text-xs">
-                    {o}
-                  </SelectItem>
-                ))}
+                {limitOptions.map((o) => <SelectItem key={o} value={String(o)} className={designConfig.type.caption}>{o}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
         )}
       </div>
 
-      {/* Page buttons */}
       <Pagination className="w-auto mx-0 justify-end">
         <PaginationContent className="gap-0.5">
           <PaginationItem>
-            <PaginationPrevious
-              href="#"
-              onClick={(e) => { e.preventDefault(); if (hasPrevPage) onPageChange(page - 1); }}
-              aria-disabled={!hasPrevPage}
-              className={!hasPrevPage ? "pointer-events-none opacity-40" : ""}
-            />
+            <PaginationPrevious href="#" onClick={(e) => { e.preventDefault(); if (hasPrevPage) onPageChange(page - 1); }} aria-disabled={!hasPrevPage} className={!hasPrevPage ? "pointer-events-none opacity-40" : ""} />
           </PaginationItem>
-
-          {pages.map((p, i) =>
-            p === "ellipsis" ? (
-              <PaginationItem key={`e-${i}`}>
-                <PaginationEllipsis />
-              </PaginationItem>
-            ) : (
-              <PaginationItem key={p}>
-                <PaginationLink
-                  href="#"
-                  isActive={p === page}
-                  onClick={(e) => { e.preventDefault(); onPageChange(p); }}
-                >
-                  {p}
-                </PaginationLink>
-              </PaginationItem>
-            )
-          )}
-
+          {pages.map((p, i) => p === "ellipsis" ? (
+            <PaginationItem key={`e-${i}`}><PaginationEllipsis /></PaginationItem>
+          ) : (
+            <PaginationItem key={p}><PaginationLink href="#" isActive={p === page} onClick={(e) => { e.preventDefault(); onPageChange(p); }}>{p}</PaginationLink></PaginationItem>
+          ))}
           <PaginationItem>
-            <PaginationNext
-              href="#"
-              onClick={(e) => { e.preventDefault(); if (hasNextPage) onPageChange(page + 1); }}
-              aria-disabled={!hasNextPage}
-              className={!hasNextPage ? "pointer-events-none opacity-40" : ""}
-            />
+            <PaginationNext href="#" onClick={(e) => { e.preventDefault(); if (hasNextPage) onPageChange(page + 1); }} aria-disabled={!hasNextPage} className={!hasNextPage ? "pointer-events-none opacity-40" : ""} />
           </PaginationItem>
         </PaginationContent>
       </Pagination>

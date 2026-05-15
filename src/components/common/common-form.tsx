@@ -25,6 +25,7 @@ export interface CommonFormField {
     label: string;
     type: 'text' | 'email' | 'password' | 'number' | 'textarea' | 'select' | 'switch' | 'image' | 'custom';
     placeholder?: string;
+    hint?: string;
     required?: boolean;
     disabled?: boolean;
     /** How many grid columns this field spans (matches section columns). Default: 1 */
@@ -290,6 +291,7 @@ export function CommonForm({
                             {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
                     </div>
+                    {field.hint && <p className="text-xs text-muted-foreground">{field.hint}</p>}
                     {err && <p className="text-sm text-destructive">{err}</p>}
                 </div>
             );
@@ -356,3 +358,5 @@ export function CommonForm({
         </form>
     );
 }
+
+

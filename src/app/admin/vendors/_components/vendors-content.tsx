@@ -51,7 +51,7 @@ export function VendorsContent() {
                         </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{row.name}</p>
+                        <button type="button" onClick={() => router.push(`/admin/vendors/${row.id}/edit`)} className="text-left text-sm font-medium truncate text-primary hover:underline">{row.name}</button>
                         <p className="text-xs text-muted-foreground truncate">{row.email}</p>
                     </div>
                 </div>
@@ -141,7 +141,6 @@ export function VendorsContent() {
                         showStatus={false}
                         showCreated={true}
                         showActions={true}
-                        onRowClick={(row) => router.push(`/admin/vendors/${row.id}/edit`)}
                         onEdit={(row) => router.push(`/admin/vendors/${row.id}/edit`)}
                         onDelete={(row) => setDeleteId(row.id)}
                         disableEdit={(row) => !!(row as any).has_pending_approval}
@@ -176,3 +175,4 @@ export function VendorsContent() {
         </div>
     );
 }
+

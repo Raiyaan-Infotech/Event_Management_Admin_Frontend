@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState } from "react";
 import { Pencil, Trash2, ArrowUpDown, ChevronDown, ChevronUp, Search, ChevronLeft, ChevronRight } from "lucide-react";
@@ -15,6 +15,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PageLoader } from "@/components/common/page-loader";
+import { cn } from "@/lib/utils";
+import { designConfig } from "@/lib/design-config";
 
 export interface CommonColumn<T> {
   key: string;
@@ -68,9 +70,9 @@ interface CommonTableProps<
 }
 
 function formatDate(dateStr: string): string {
-  if (!dateStr) return "—";
+  if (!dateStr) return "â€”";
   const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return "—";
+  if (isNaN(d.getTime())) return "â€”";
   return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
 
@@ -137,7 +139,7 @@ export function CommonTable<
 
   return (
     <div className="space-y-4">
-      {/* ── Search ── */}
+      {/* â”€â”€ Search â”€â”€ */}
       {onSearch && (
         <div className="relative">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50 pointer-events-none" />
@@ -155,11 +157,11 @@ export function CommonTable<
 
       <PageLoader open={isLoading} />
       {!isLoading && (
-        <div className="w-full rounded-2xl border border-border/60 bg-background shadow-sm ring-1 ring-border/20">
+        <div className={designConfig.data.tableWrapper}>
           <Table>
-            {/* ── Header ── */}
+            {/* â”€â”€ Header â”€â”€ */}
             <TableHeader>
-              <TableRow className="bg-muted/40 hover:bg-muted/40 border-b border-border/60">
+              <TableRow className={designConfig.data.tableHeadRow}>
                 {columns.map((col) => (
                   <TableHead
                     key={col.key}
@@ -167,9 +169,7 @@ export function CommonTable<
                     className={`
                       ${col.className || ""}
                       ${col.hideOnMobile ? "hidden md:table-cell" : ""}
-                      h-12 px-5
-                      text-[11px] font-semibold tracking-wider uppercase text-muted-foreground/70
-                      whitespace-nowrap
+                      ${designConfig.data.tableHeadCell}
                       ${col.sortable ? "cursor-pointer select-none hover:text-foreground transition-colors duration-200" : ""}
                     `}
                   >
@@ -191,24 +191,24 @@ export function CommonTable<
                 ))}
 
                 {showStatus && (
-                  <TableHead className="h-12 px-5 text-[11px] font-semibold tracking-wider uppercase text-muted-foreground/70 whitespace-nowrap">
+                  <TableHead className={designConfig.data.tableHeadCell}>
                     Status
                   </TableHead>
                 )}
                 {showCreated && (
-                  <TableHead className="hidden sm:table-cell h-12 px-5 text-[11px] font-semibold tracking-wider uppercase text-muted-foreground/70 whitespace-nowrap">
+                  <TableHead className={cn("hidden sm:table-cell", designConfig.data.tableHeadCell)}>
                     Created
                   </TableHead>
                 )}
                 {showActions && (
-                  <TableHead className="h-12 px-5 text-[11px] font-semibold tracking-wider uppercase text-muted-foreground/70 text-right whitespace-nowrap">
+                  <TableHead className={cn(designConfig.data.tableHeadCell, "text-right")}>
                     Actions
                   </TableHead>
                 )}
               </TableRow>
             </TableHeader>
 
-            {/* ── Body ── */}
+            {/* â”€â”€ Body â”€â”€ */}
             <TableBody>
               {sortedData.length === 0 ? (
                 <TableRow className="hover:bg-transparent">
@@ -220,7 +220,7 @@ export function CommonTable<
                       (showActions ? 1 : 0)
                     }
                   >
-                    <div className="flex flex-col items-center justify-center gap-3 py-20 text-muted-foreground">
+                    <div className={designConfig.data.empty}>
                       <div className="h-14 w-14 rounded-2xl bg-muted/70 flex items-center justify-center ring-1 ring-border/40 shadow-sm">
                         <svg className="h-6 w-6 text-muted-foreground/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
@@ -235,7 +235,7 @@ export function CommonTable<
                   <TableRow
                     key={row.id}
                     onClick={onRowClick ? () => onRowClick(row) : undefined}
-                    className={`border-b border-border/40 last:border-0 hover:bg-muted/20 transition-all duration-200 ease-in-out group ${
+                    className={`${designConfig.data.tableRow} ${
                       onRowClick ? "cursor-pointer" : ""
                     }`}
                   >
@@ -245,7 +245,7 @@ export function CommonTable<
                         className={`
                           ${col.className || ""}
                           ${col.hideOnMobile ? "hidden md:table-cell" : ""}
-                          px-5 py-4 text-sm leading-snug
+                          ${designConfig.data.tableCell}
                           ${colIndex === 0
                             ? "font-semibold text-foreground"
                             : "font-normal text-muted-foreground"
@@ -313,7 +313,7 @@ export function CommonTable<
         </div>
       )}
 
-      {/* ── Pagination ── */}
+      {/* â”€â”€ Pagination â”€â”€ */}
       {pagination && !isLoading && (
         <div className="flex items-center justify-between pt-2 px-0.5 flex-wrap gap-2">
           <div className="flex items-center gap-2.5 text-sm text-muted-foreground/80">
@@ -340,7 +340,7 @@ export function CommonTable<
             <span className="text-xs font-medium text-muted-foreground/70 tabular-nums">
               Page {pagination.page} of {pagination.totalPages}
               {" "}
-              <span className="hidden sm:inline text-muted-foreground/50">· {pagination.totalItems} total</span>
+              <span className="hidden sm:inline text-muted-foreground/50">Â· {pagination.totalItems} total</span>
             </span>
             <div className="flex gap-1">
               <Button
@@ -368,3 +368,4 @@ export function CommonTable<
     </div>
   );
 }
+
