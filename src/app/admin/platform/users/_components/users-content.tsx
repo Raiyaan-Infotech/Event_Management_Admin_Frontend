@@ -161,8 +161,12 @@ export function UsersContent() {
     {
       key: "department",
       header: "Department",
-      sortable: true,
-      render: (row) => <span className="text-xs text-muted-foreground">{row.department || "—"}</span>,
+      sortable: false,
+      render: (row) => (
+        <span className="text-xs text-muted-foreground">
+          {(row as any).department_ref?.name || row.department || "—"}
+        </span>
+      ),
     },
     {
       key: "designation",

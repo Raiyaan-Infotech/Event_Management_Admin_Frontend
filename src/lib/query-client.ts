@@ -317,4 +317,13 @@ export const queryKeys = {
     details: () => [...queryKeys.colorPalettes.all, 'detail'] as const,
     detail: (id: number | string) => [...queryKeys.colorPalettes.details(), id] as const,
   },
+
+  // Departments
+  departments: {
+    all: ['departments'] as const,
+    lists: () => [...queryKeys.departments.all, 'list'] as const,
+    list: (params: Record<string, unknown>) => [...queryKeys.departments.lists(), params] as const,
+    details: () => [...queryKeys.departments.all, 'detail'] as const,
+    detail: (id: number | string) => [...queryKeys.departments.details(), id] as const,
+  },
 };

@@ -17,6 +17,7 @@ import {
   Palette,
   Languages,
   Users,
+  Building2,
   Lock,
   Puzzle,
   Activity,
@@ -223,6 +224,13 @@ const settingGroups: SettingGroup[] = [
         href: "/admin/platform/users",
         icon: Users,
         permission: "employees.view",
+      },
+      {
+        labelKey: "nav.departments",
+        descriptionKey: "settings.departments_desc",
+        href: "/admin/platform/departments",
+        icon: Building2,
+        permission: "departments.view",
       },
       {
         labelKey: "nav.roles",
