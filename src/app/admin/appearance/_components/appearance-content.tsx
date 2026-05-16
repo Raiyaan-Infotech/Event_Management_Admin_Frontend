@@ -134,6 +134,14 @@ export function AppearanceContent() {
         { color: theme.hover_color, label: 'Hover' },
         { color: theme.text_color, label: 'Text' },
     ].filter(s => s.color);
+    const paletteSwatches = (palette: any) => [
+        palette.primary_color,
+        palette.secondary_color,
+        palette.header_color,
+        palette.footer_color,
+        palette.hover_color,
+        palette.text_color,
+    ].filter(Boolean);
 
     const selectedTheme = themes.find((theme) => theme.id === selectedThemeId) || null;
     const selectedPalette = selectedTheme?.palette_id
@@ -314,9 +322,7 @@ export function AppearanceContent() {
                                                             <SelectItem key={palette.id} value={palette.id.toString()}>
                                                                 <div className="flex items-center gap-2">
                                                                     <div className="flex items-center gap-1.5">
-                                                                        {[palette.primary_color, palette.secondary_color, palette.header_color]
-                                                                            .filter(Boolean)
-                                                                            .slice(0, 3)
+                                                                        {paletteSwatches(palette)
                                                                             .map((color, i) => (
                                                                                 <span
                                                                                     key={i}

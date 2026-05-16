@@ -43,6 +43,7 @@ export interface CommonFormField {
     rounded?: boolean;
     imageFolder?: string;
     showMediaPicker?: boolean;
+    alwaysShowPasswordHint?: boolean;
     // custom — render arbitrary JSX, receives form watch/setValue/errors
     render?: (opts: { watch: any; setValue: any; errors: any }) => React.ReactNode;
 }
@@ -271,6 +272,7 @@ export function CommonForm({
 
         if (field.type === 'password') {
             const show = showPassMap[field.name] ?? false;
+            const passwordValue = String(watch(field.name) || "");
             return (
                 <div key={field.name} className={`space-y-2 ${spanClass}`}>
                     <Label>
@@ -292,7 +294,7 @@ export function CommonForm({
                             {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
                     </div>
-                    <PasswordHint password={watch(field.name) || ""} />
+                    <PasswordHint password={passwordValue} alwaysShow={field.alwaysShowPasswordHint} />
                     {err && <p className="text-sm text-destructive">{err}</p>}
                 </div>
             );

@@ -166,6 +166,10 @@ export default function ThemeBuilderWrapper() {
       document.getElementById('theme-name-input')?.focus();
       return;
     }
+    if (!formData.palette_id) {
+      toast.error('Color palette is required.');
+      return;
+    }
     const payload = { ...formData, is_active: 1, palette_id: formData.palette_id ?? null };
 
     if (editingThemeId) {
@@ -207,7 +211,7 @@ export default function ThemeBuilderWrapper() {
 
             {/* Field 1: Color Palette picker */}
             <div className="space-y-1.5 flex-1 min-w-[200px]">
-              <Label className="text-xs uppercase text-muted-foreground">Color Palette</Label>
+              <Label className="text-xs uppercase text-muted-foreground">Color Palette <span className="text-destructive">*</span></Label>
               <Select
                 value={formData.palette_id?.toString() ?? "none"}
                 onValueChange={handlePaletteSelect}
@@ -216,7 +220,7 @@ export default function ThemeBuilderWrapper() {
                   <SelectValue placeholder="— Pick a palette —" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none" className="text-muted-foreground italic">— No palette —</SelectItem>
+                  <SelectItem value="none" disabled className="text-muted-foreground italic">— Pick a palette —</SelectItem>
                   {palettes.map((p: ColorPalette) => (
                     <SelectItem key={p.id} value={p.id.toString()}>
                       <div className="flex items-center gap-2">

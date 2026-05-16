@@ -51,7 +51,14 @@ export function VendorsContent() {
                         </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0">
-                        <button type="button" onClick={() => router.push(`/admin/vendors/${row.id}/edit`)} className="text-left text-sm font-medium truncate text-primary hover:underline">{row.name}</button>
+                        <button
+                            type="button"
+                            onClick={() => router.push(`/admin/vendors/${row.id}`)}
+                            className="text-left text-sm font-medium truncate text-primary hover:underline"
+                            title="View vendor details"
+                        >
+                            {row.name}
+                        </button>
                         <p className="text-xs text-muted-foreground truncate">{row.email}</p>
                     </div>
                 </div>

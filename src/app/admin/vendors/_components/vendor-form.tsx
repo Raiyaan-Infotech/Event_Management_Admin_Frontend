@@ -46,7 +46,11 @@ const baseSchema = z.object({
     contact: z.string().trim().optional(),
     email: z.string().trim().email('Invalid email'),
     membership: z.string().optional().default('basic'),
-    theme_id: z.number().optional().nullable(),
+    theme_id: z.preprocess((value) => {
+        if (value === '' || value === undefined || value === null) return null;
+        const parsed = typeof value === 'string' ? Number(value) : value;
+        return Number.isNaN(parsed) ? value : parsed;
+    }, z.number({ invalid_type_error: 'Please select a valid theme' }).optional().nullable()),
     bank_name: z.string().trim().optional(),
     acc_no: z.string().trim().optional(),
     ifsc_code: z.string().trim().optional(),
@@ -57,6 +61,7 @@ const baseSchema = z.object({
 const passwordPolicy = (v: string) => {
     if (/\s/.test(v))             return 'Password must not contain spaces';
     if (v.length < 8)             return 'Password must be at least 8 characters';
+    if (v.length > 8)             return 'Password must not exceed 8 characters';
     if (!/[A-Z]/.test(v))        return 'Must include at least 1 uppercase letter';
     if (!/[a-z]/.test(v))        return 'Must include at least 1 lowercase letter';
     if (!/[0-9]/.test(v))        return 'Must include at least 1 number';
@@ -71,7 +76,7 @@ const createSchema = baseSchema.extend({
 })
 .superRefine((d, ctx) => {
     if (d.membership && !d.theme_id) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Theme is required', path: ['theme_id'] });
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Please select a theme for the selected subscription plan', path: ['theme_id'] });
     }
     if (d.password) {
         const result = passwordPolicy(d.password);
@@ -88,7 +93,7 @@ const editSchema = baseSchema.extend({
 })
 .superRefine((d, ctx) => {
     if (d.membership && !d.theme_id) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Theme is required', path: ['theme_id'] });
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Please select a theme for the selected subscription plan', path: ['theme_id'] });
     }
     if (d.password) {
         const result = passwordPolicy(d.password);
@@ -310,9 +315,9 @@ export function VendorForm({ vendor }: Props) {
                                 searchPlaceholder="Search plan..."
                                 className={errors?.membership ? 'border-destructive' : ''}
                                 onValueChange={(v) => {
-                                    setValue('membership', v);
+                                    setValue('membership', v, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
                                     setSelectedPlanName(v);
-                                    setValue('theme_id', null);
+                                    setValue('theme_id', null, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
                                 }}
                             />
                         </div>
@@ -333,12 +338,11 @@ export function VendorForm({ vendor }: Props) {
                                     placeholder="Select theme for this plan..."
                                     searchPlaceholder="Search theme..."
                                     className={errors?.theme_id ? 'border-destructive' : ''}
-                                    onValueChange={(v) => setValue('theme_id', parseInt(v))}
+                                    onValueChange={(v) => setValue('theme_id', parseInt(v), { shouldValidate: true, shouldDirty: true, shouldTouch: true })}
                                 />
                             ) : (
                                 <p className="text-sm text-muted-foreground h-9 flex items-center px-3 border rounded-md bg-muted/30">Select a plan first</p>
                             )}
-                            {errors?.theme_id && <p className="text-sm text-destructive">{(errors.theme_id as any)?.message || 'Theme is required'}</p>}
                         </div>
                     ),
                 },
@@ -346,7 +350,7 @@ export function VendorForm({ vendor }: Props) {
                 { name: 'about_us', label: 'About Us', type: 'textarea', placeholder: 'Write a brief description about the vendor...', rows: 4, colSpan: 2 },
                 {
                     name: 'password', label: isEdit ? 'Password (leave blank to keep current)' : 'Password',
-                    type: 'password', placeholder: 'Enter password', required: !isEdit,
+                    type: 'password', placeholder: 'Enter password', required: !isEdit, alwaysShowPasswordHint: true,
                 },
                 { name: 'confirm_password', label: 'Confirm Password', type: 'password', placeholder: '••••••••', required: !isEdit },
             ],
@@ -473,5 +477,3 @@ export function VendorForm({ vendor }: Props) {
         />
     );
 }
-
-

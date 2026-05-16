@@ -44,16 +44,25 @@ const profileSchema = z.object({
   timezone: z.string().optional(),
 });
 
+const isNotBlank = (value: string) => value.trim().length > 0;
+const hasNoWhitespace = (value: string) => !/\s/.test(value);
+
 const passwordSchema = z
   .object({
-    current_password: z.string().min(1, "Current password is required"),
+    current_password: z.string().min(1, "Current password is required").refine(isNotBlank, "Current password is required"),
     new_password: z.string()
+      .min(1, "New password is required")
       .min(8, "At least 8 characters required")
       .regex(/[A-Z]/, "Must contain at least one uppercase letter")
       .regex(/[a-z]/, "Must contain at least one lowercase letter")
       .regex(/[0-9]/, "Must contain at least one number")
-      .regex(/[^a-zA-Z0-9]/, "Must contain at least one special character"),
-    confirm_password: z.string().min(1, "Please confirm your password"),
+      .regex(/[^a-zA-Z0-9\s]/, "Must contain at least one special character")
+      .refine(isNotBlank, "New password is required")
+      .refine(hasNoWhitespace, "Password must not contain spaces"),
+    confirm_password: z.string()
+      .min(1, "Please confirm your password")
+      .refine(isNotBlank, "Please confirm your password")
+      .refine(hasNoWhitespace, "Password must not contain spaces"),
   })
   .refine((data) => data.new_password === data.confirm_password, {
     message: "Passwords don't match",
@@ -111,15 +120,16 @@ export function ProfileContent() {
     },
   });
 
-  const newPassword = useWatch({ control: passwordForm.control, name: "new_password" });
-  const confirmPassword = useWatch({ control: passwordForm.control, name: "confirm_password" });
+  const newPassword = String(useWatch({ control: passwordForm.control, name: "new_password" }) || "");
+  const confirmPassword = String(useWatch({ control: passwordForm.control, name: "confirm_password" }) || "");
 
   const passwordRules = [
+    { label: "No spaces", met: !/\s/.test(newPassword) },
     { label: "At least 8 characters", met: newPassword.length >= 8 },
     { label: "At least one uppercase letter", met: /[A-Z]/.test(newPassword) },
     { label: "At least one lowercase letter", met: /[a-z]/.test(newPassword) },
     { label: "At least one number", met: /[0-9]/.test(newPassword) },
-    { label: "At least one special character", met: /[^a-zA-Z0-9]/.test(newPassword) },
+    { label: "At least one special character", met: /[^a-zA-Z0-9\s]/.test(newPassword) },
   ];
 
   const onProfileSubmit = (data: ProfileFormData) => {
