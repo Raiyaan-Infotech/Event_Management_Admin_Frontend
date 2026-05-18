@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useVendors, useDeleteVendor, useUpdateVendorStatus, Vendor } from '@/hooks/use-vendors';
+import { useVendors, useDeleteVendor, useUpdateVendorStatus, useImpersonateVendor, Vendor } from '@/hooks/use-vendors';
 import { CommonTable } from '@/components/common/common-table';
 import { DeleteDialog } from '@/components/common/delete-dialog';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { resolveMediaUrl } from '@/lib/utils';
-import { Plus, Store } from 'lucide-react';
+import { Plus, Store, ExternalLink } from 'lucide-react';
+import { toast } from 'sonner';
 import { PageLoader } from '@/components/common/page-loader';
 import { TablePagination } from '@/components/common/table-pagination';
 
@@ -32,6 +33,18 @@ export function VendorsContent() {
     const { data: vendorsRes, isLoading } = useVendors({ page, limit });
     const deleteVendor = useDeleteVendor();
     const updateStatus = useUpdateVendorStatus();
+    const impersonate = useImpersonateVendor();
+
+    const handleImpersonate = async (row: Vendor) => {
+        try {
+            await impersonate.mutateAsync(row.id);
+            const vendorUrl = process.env.NEXT_PUBLIC_VENDOR_FRONTEND_URL || 'http://localhost:3001';
+            toast.success(`Opening ${row.name}'s portal in a new tab`);
+            window.open(`${vendorUrl}/dashboard`, '_blank');
+        } catch {
+            // toast is shown by the mutation hook
+        }
+    };
 
     const vendors: Vendor[] = (vendorsRes?.data || []).map((v: any) => ({
         ...v,
@@ -148,6 +161,12 @@ export function VendorsContent() {
                         onDelete={(row) => setDeleteId(row.id)}
                         disableEdit={(row) => !!(row as any).has_pending_approval}
                         disableDelete={(row) => !!(row as any).has_pending_approval}
+                        extraActions={[{
+                            icon: ExternalLink,
+                            title: 'Open vendor portal as this vendor',
+                            onClick: (row: Vendor) => handleImpersonate(row),
+                            disabled: (row: Vendor) => (row as any).status !== 'active' || impersonate.isPending,
+                        }]}
                         emptyMessage="No vendors found. Add your first vendor."
                     />
                     {vendorsRes?.pagination && (

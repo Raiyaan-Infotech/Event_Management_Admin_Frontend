@@ -161,6 +161,18 @@ export const useUpdateVendorStatus = () => {
     });
 };
 
+export const useImpersonateVendor = () => {
+    return useMutation({
+        mutationFn: async (id: number) => {
+            const res = await apiClient.post(`/vendors/${id}/impersonate`);
+            return res.data;
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || 'Failed to open vendor portal');
+        },
+    });
+};
+
 export const useDeleteVendor = () => {
     const queryClient = useQueryClient();
     return useMutation({

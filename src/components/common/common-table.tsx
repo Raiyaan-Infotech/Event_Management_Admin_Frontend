@@ -67,6 +67,15 @@ interface CommonTableProps<
   disableEdit?: (row: any) => boolean;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   disableDelete?: (row: any) => boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  extraActions?: Array<{
+    icon: React.ComponentType<{ className?: string }>;
+    title: string;
+    onClick: (row: any) => void;
+    hidden?: (row: any) => boolean;
+    disabled?: (row: any) => boolean;
+    className?: string;
+  }>;
 }
 
 function formatDate(dateStr: string): string {
@@ -99,6 +108,7 @@ export function CommonTable<
   disableStatusToggle,
   disableEdit,
   disableDelete,
+  extraActions,
 }: CommonTableProps<T>) {
   const [searchValue, setSearchValue] = useState("");
   const [internalSortColumn, setInternalSortColumn] = useState<string | undefined>(undefined);
@@ -278,6 +288,23 @@ export function CommonTable<
                     {showActions && (
                       <TableCell className="px-5 py-4 text-right">
                         <div className="flex items-center justify-end gap-1">
+                          {extraActions?.filter(a => !(a.hidden?.(row) ?? false)).map((a, i) => {
+                            const Icon = a.icon;
+                            const isDisabled = a.disabled?.(row) ?? false;
+                            return (
+                              <Button
+                                key={i}
+                                variant="ghost"
+                                size="icon"
+                                onClick={(e) => { e.stopPropagation(); if (!isDisabled) a.onClick(row); }}
+                                title={a.title}
+                                disabled={isDisabled}
+                                className={`h-8 w-8 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 active:scale-95 transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed disabled:pointer-events-none ${a.className || ""}`}
+                              >
+                                <Icon className="h-3.5 w-3.5" />
+                              </Button>
+                            );
+                          })}
                           {onEdit && (
                             <Button
                               variant="ghost"
