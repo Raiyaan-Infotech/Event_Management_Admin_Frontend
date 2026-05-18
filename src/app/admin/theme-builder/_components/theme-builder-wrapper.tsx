@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Save, Palette, Check, AlertTriangle, Eye, Monitor, Tablet, Smartphone, RefreshCw, PanelRightOpen, PanelRightClose } from "lucide-react";
+import { Save, Palette, Check, Eye, Monitor, Tablet, Smartphone, RefreshCw, PanelRightOpen, PanelRightClose } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
@@ -24,6 +24,18 @@ import { useSubscriptions } from "@/hooks/use-subscriptions";
 import { normalizeHomeBlocks, safeParseArray } from "@/lib/safe-json";
 
 const PREVIEW_VENDOR_ID = "1";
+
+// User-facing labels for block_type keys — mirrors backend BLOCK_LABELS in theme.service.js
+const BLOCK_LABELS: Record<string, string> = {
+  about_us:         "About Us",
+  terms_conditions: "Terms & Conditions",
+  privacy_policy:   "Privacy Policy",
+  contact_us:       "Contact Us",
+  slider:           "Slider",
+  simple_slider:    "Simple Slider",
+  advance_slider:   "Advance Slider",
+};
+const labelFor = (key: string) => BLOCK_LABELS[key] || key;
 
 export default function ThemeBuilderWrapper() {
   const router = useRouter();
@@ -80,7 +92,8 @@ export default function ThemeBuilderWrapper() {
 
   // header + footer are always rendered structurally (PublicNavbar/PublicFooter)
   // Only content blocks that need explicit inclusion are required.
-  const REQUIRED_BLOCKS: string[] = [];
+  // Mirrors backend `coreRequired` in theme.service.js validateRequiredBlocks.
+  const REQUIRED_BLOCKS: string[] = ['contact_us'];
   const missingBlocks = useMemo(
     () => REQUIRED_BLOCKS.filter(r => !formData.home_blocks.some(b => b.block_type === r)),
     [formData.home_blocks]
@@ -168,6 +181,10 @@ export default function ThemeBuilderWrapper() {
     }
     if (!formData.palette_id) {
       toast.error('Color palette is required.');
+      return;
+    }
+    if (missingBlocks.length > 0) {
+      toast.error(`Missing required blocks: ${missingBlocks.map(labelFor).join(', ')}`);
       return;
     }
     const payload = { ...formData, is_active: 1, palette_id: formData.palette_id ?? null };
@@ -325,12 +342,6 @@ export default function ThemeBuilderWrapper() {
         </div>
 
         <div className="flex flex-col items-end gap-2">
-          {missingBlocks.length > 0 && (
-            <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg px-3 py-1.5">
-              <AlertTriangle className="size-3.5 shrink-0" />
-              <span>Missing required blocks: <strong>{missingBlocks.join(', ')}</strong></span>
-            </div>
-          )}
           <div className="flex items-center gap-2">
             {previewUrl && (
               <Link

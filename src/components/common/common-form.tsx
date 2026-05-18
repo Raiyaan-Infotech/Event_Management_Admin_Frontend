@@ -285,6 +285,19 @@ export function CommonForm({
                             placeholder={field.placeholder || '••••••••'}
                             className="pr-10"
                             {...register(field.name)}
+                            onKeyDown={(e) => {
+                                if (e.key === ' ') {
+                                    e.preventDefault();
+                                }
+                            }}
+                            onPaste={(e) => {
+                                const pasted = e.clipboardData.getData('text');
+                                if (/\s/.test(pasted)) {
+                                    e.preventDefault();
+                                    const cleaned = pasted.replace(/\s+/g, '');
+                                    setValue(field.name, cleaned, { shouldValidate: true });
+                                }
+                            }}
                         />
                         <button
                             type="button"

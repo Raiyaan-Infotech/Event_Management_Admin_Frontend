@@ -65,7 +65,7 @@ const passwordPolicy = (v: string) => {
     if (!/[A-Z]/.test(v))        return 'Must include at least 1 uppercase letter';
     if (!/[a-z]/.test(v))        return 'Must include at least 1 lowercase letter';
     if (!/[0-9]/.test(v))        return 'Must include at least 1 number';
-    if (!/[^A-Za-z0-9]/.test(v)) return 'Must include at least 1 special character';
+    if (!/[^A-Za-z0-9\s]/.test(v)) return 'Must include at least 1 special character';
     return true;
 };
 

@@ -51,14 +51,7 @@ export function VendorsContent() {
                         </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0">
-                        <button
-                            type="button"
-                            onClick={() => router.push(`/admin/vendors/${row.id}`)}
-                            className="text-left text-sm font-medium truncate text-primary hover:underline"
-                            title="View vendor details"
-                        >
-                            {row.name}
-                        </button>
+                        <p className="text-sm font-medium truncate">{row.name}</p>
                         <p className="text-xs text-muted-foreground truncate">{row.email}</p>
                     </div>
                 </div>
@@ -109,13 +102,15 @@ export function VendorsContent() {
             key: 'status',
             header: 'Status',
             render: (row: Vendor) => (
-                <Switch
-                    checked={row.status === 'active'}
-                    disabled={updateStatus.isPending && updateStatus.variables?.id === row.id}
-                    onCheckedChange={(checked) =>
-                        updateStatus.mutate({ id: row.id, status: checked ? 'active' : 'inactive' })
-                    }
-                />
+                <div onClick={(e) => e.stopPropagation()}>  {/* ← add this wrapper */}
+            <Switch
+                checked={row.status === 'active'}
+                disabled={updateStatus.isPending && updateStatus.variables?.id === row.id}
+                onCheckedChange={(checked) =>
+                    updateStatus.mutate({ id: row.id, status: checked ? 'active' : 'inactive' })
+                }
+            />
+        </div>
             ),
         },
     ];
@@ -148,6 +143,7 @@ export function VendorsContent() {
                         showStatus={false}
                         showCreated={true}
                         showActions={true}
+                        onRowClick={(row) => router.push(`/admin/vendors/${row.id}`)}
                         onEdit={(row) => router.push(`/admin/vendors/${row.id}/edit`)}
                         onDelete={(row) => setDeleteId(row.id)}
                         disableEdit={(row) => !!(row as any).has_pending_approval}
