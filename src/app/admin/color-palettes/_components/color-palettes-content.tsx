@@ -201,21 +201,30 @@ export function ColorPalettesContent() {
 
                         {/* Color pickers — 2-column grid */}
                         <div className="grid grid-cols-2 gap-4">
-                            {COLOR_FIELDS.map(f => (
-                                <div key={f.key} className="space-y-1.5">
-                                    <Label className="text-xs">{f.label} Color</Label>
-                                    <div className="flex items-center gap-2 border rounded-md px-3 h-10 bg-background">
-                                        <input
-                                            type="color"
-                                            {...form.register(f.key as ColorKey)}
-                                            className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent p-0"
-                                        />
-                                        <span className="text-sm font-mono text-muted-foreground">
-                                            {form.watch(f.key as ColorKey) || f.default}
-                                        </span>
+                            {COLOR_FIELDS.map(f => {
+                                const colorValue = form.watch(f.key as ColorKey) || '';
+                                return (
+                                    <div key={f.key} className="space-y-1.5">
+                                        <Label className="text-xs">{f.label} Color</Label>
+                                        <div className="flex items-center gap-2 border rounded-md pl-3 pr-2 h-10 bg-background focus-within:ring-2 focus-within:ring-ring">
+                                            <input
+                                                type="color"
+                                                value={colorValue || f.default}
+                                                onChange={(e) => form.setValue(f.key as ColorKey, e.target.value, { shouldDirty: true })}
+                                                className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent p-0 shrink-0"
+                                            />
+                                            <input
+                                                type="text"
+                                                value={colorValue}
+                                                onChange={(e) => form.setValue(f.key as ColorKey, e.target.value, { shouldDirty: true })}
+                                                placeholder={f.default}
+                                                spellCheck={false}
+                                                className="flex-1 min-w-0 text-sm font-mono bg-transparent border-0 outline-none focus:ring-0 placeholder:text-muted-foreground/60"
+                                            />
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
 
                         {/* Active toggle */}
