@@ -18,6 +18,7 @@ import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { ImageCropper } from '@/components/common/image-cropper';
 import { PasswordHint } from '@/components/common/password-hint';
+import { resolveMediaUrl } from '@/lib/utils';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -182,7 +183,7 @@ export function CommonForm({
                         description={field.imageDescription || `Upload ${field.label.toLowerCase()}`}
                         targetWidth={field.targetWidth ?? 200}
                         targetHeight={field.targetHeight ?? 200}
-                        currentImage={imageUrls[field.name] || ''}
+                        currentImage={resolveMediaUrl(imageUrls[field.name] || '')}
                         onImageCropped={(file) => handleImageUpload(file, field.name, field.imageFolder)}
                         onRemove={() => {
                             setImageUrls(prev => ({ ...prev, [field.name]: '' }));

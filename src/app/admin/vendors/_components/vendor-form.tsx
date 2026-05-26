@@ -26,16 +26,16 @@ const MapPicker = dynamic(
 const baseSchema = z.object({
     company_name: z.string().trim().min(1, 'Company name is required'),
     company_logo: z.string().optional(),
-    country_id: z.number().optional(),
-    state_id: z.number().optional(),
-    city_id: z.number().optional(),
-    pincode_id: z.number().optional(),
+    country_id: z.number({ required_error: 'Country is required', invalid_type_error: 'Country is required' }),
+    state_id: z.number({ required_error: 'State is required', invalid_type_error: 'State is required' }),
+    city_id: z.number({ required_error: 'District is required', invalid_type_error: 'District is required' }),
+    pincode_id: z.number({ required_error: 'City is required', invalid_type_error: 'City is required' }),
     latitude: z.number().nullable().optional(),
     longitude: z.number().nullable().optional(),
     company_address: z.string().trim().optional(),
     about_us: z.string().trim().optional(),
     company_information: z.string().trim().optional(),
-    short_description: z.string().trim().optional(),
+    short_description: z.string().trim().min(1, 'Short description is required'),
     reg_no: z.string().trim().optional(),
     gst_no: z.string().trim().optional(),
     company_contact: z.string().trim().optional(),
@@ -181,23 +181,26 @@ export function VendorForm({ vendor }: Props) {
                 { name: 'landline', label: 'Landline', type: 'text', placeholder: 'Enter your landline number' },
                 { name: 'company_email', label: 'Company Email', type: 'email', placeholder: 'Enter your company email' },
                 { name: 'company_address', label: 'Company Address', type: 'textarea', placeholder: 'Enter your company address', rows: 2, colSpan: 2 },
-                { name: 'short_description', label: 'Short Description', type: 'textarea', placeholder: 'Enter a short description of the company...', rows: 2, colSpan: 2 },
+                { name: 'short_description', label: 'Short Description', type: 'textarea', placeholder: 'Enter a short description of the company...', rows: 2, colSpan: 2, required: true },
                 { name: 'company_information', label: 'Company Information', type: 'textarea', placeholder: 'Enter detailed company information...', rows: 4, colSpan: 2 },
                 {
-                    name: 'country_id', label: 'Country', type: 'custom',
-                    render: ({ watch, setValue }) => (
+                    name: 'country_id', label: 'Country', type: 'custom', required: true,
+                    render: ({ watch, setValue, errors }) => (
                         <div className="space-y-2">
-                            <Label>Country</Label>
+                            <Label>Country <span className="text-destructive">*</span></Label>
                             <SearchableSelect
                                 options={countries.map(c => ({ value: c.id.toString(), label: c.name }))}
                                 value={watch('country_id')?.toString() || ''}
                                 placeholder="Select country"
                                 searchPlaceholder="Search country..."
+                                className={errors?.country_id ? 'border-destructive' : ''}
                                 onValueChange={(v) => {
                                     const id = parseInt(v);
                                     const name = countries.find(c => c.id === id)?.name || '';
-                                    setValue('country_id', id);
-                                    setValue('state_id', undefined); setValue('city_id', undefined); setValue('pincode_id', undefined);
+                                    setValue('country_id', id, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
+                                    setValue('state_id', undefined, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
+                                    setValue('city_id', undefined, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
+                                    setValue('pincode_id', undefined, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
                                     setSelCountryId(id); setSelCountryName(name);
                                     setSelStateId(undefined); setSelStateName('');
                                     setSelDistrictId(undefined); setSelDistrictName(''); setSelCityName('');
@@ -207,20 +210,23 @@ export function VendorForm({ vendor }: Props) {
                     ),
                 },
                 {
-                    name: 'state_id', label: 'State', type: 'custom',
-                    render: ({ watch, setValue }) => (
+                    name: 'state_id', label: 'State', type: 'custom', required: true,
+                    render: ({ watch, setValue, errors }) => (
                         <div className="space-y-2">
-                            <Label>State</Label>
+                            <Label>State <span className="text-destructive">*</span></Label>
                             <SearchableSelect
                                 options={states.map(s => ({ value: s.id.toString(), label: s.name }))}
                                 value={watch('state_id')?.toString() || ''}
                                 placeholder="Select state"
                                 searchPlaceholder="Search state..."
                                 disabled={!selCountryId || states.length === 0}
+                                className={errors?.state_id ? 'border-destructive' : ''}
                                 onValueChange={(v) => {
                                     const id = parseInt(v);
                                     const name = states.find(s => s.id === id)?.name || '';
-                                    setValue('state_id', id); setValue('city_id', undefined); setValue('pincode_id', undefined);
+                                    setValue('state_id', id, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
+                                    setValue('city_id', undefined, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
+                                    setValue('pincode_id', undefined, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
                                     setSelStateId(id); setSelStateName(name);
                                     setSelDistrictId(undefined); setSelDistrictName(''); setSelCityName('');
                                 }}
@@ -229,20 +235,22 @@ export function VendorForm({ vendor }: Props) {
                     ),
                 },
                 {
-                    name: 'city_id', label: 'District', type: 'custom',
-                    render: ({ watch, setValue }) => (
+                    name: 'city_id', label: 'District', type: 'custom', required: true,
+                    render: ({ watch, setValue, errors }) => (
                         <div className="space-y-2">
-                            <Label>District</Label>
+                            <Label>District <span className="text-destructive">*</span></Label>
                             <SearchableSelect
                                 options={districts.map(d => ({ value: d.id.toString(), label: d.name }))}
                                 value={watch('city_id')?.toString() || ''}
                                 placeholder="Select district"
                                 searchPlaceholder="Search district..."
                                 disabled={!selStateId || districts.length === 0}
+                                className={errors?.city_id ? 'border-destructive' : ''}
                                 onValueChange={(v) => {
                                     const id = parseInt(v);
                                     const name = districts.find(d => d.id === id)?.name || '';
-                                    setValue('city_id', id); setValue('pincode_id', undefined);
+                                    setValue('city_id', id, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
+                                    setValue('pincode_id', undefined, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
                                     setSelDistrictId(id); setSelDistrictName(name); setSelCityName('');
                                 }}
                             />
@@ -250,20 +258,22 @@ export function VendorForm({ vendor }: Props) {
                     ),
                 },
                 {
-                    name: 'pincode_id', label: 'City', type: 'custom',
-                    render: ({ watch, setValue }) => (
+                    name: 'pincode_id', label: 'City', type: 'custom', required: true,
+                    render: ({ watch, setValue, errors }) => (
                         <div className="space-y-2">
-                            <Label>City</Label>
+                            <Label>City <span className="text-destructive">*</span></Label>
                             <SearchableSelect
                                 options={cityOptions.map(c => ({ value: c.id.toString(), label: c.name }))}
                                 value={watch('pincode_id')?.toString() || ''}
                                 placeholder="Select city"
                                 searchPlaceholder="Search city..."
                                 disabled={!selDistrictId || cityOptions.length === 0}
+                                className={errors?.pincode_id ? 'border-destructive' : ''}
                                 onValueChange={(v) => {
                                     const id = parseInt(v);
                                     const name = cityOptions.find(c => c.id === id)?.name || '';
-                                    setValue('pincode_id', id); setSelCityName(name);
+                                    setValue('pincode_id', id, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
+                                    setSelCityName(name);
                                 }}
                             />
                         </div>
