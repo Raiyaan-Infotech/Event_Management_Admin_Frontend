@@ -200,13 +200,18 @@ export default function AdminNavbar() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel className="font-normal">
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">
-                    {user?.full_name}
-                  </p>
-                  <p className="text-xs leading-none text-muted-foreground">
-                    {user?.email}
-                  </p>
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-md bg-gray-900 text-white flex items-center justify-center font-black text-sm shrink-0">
+                    A
+                  </div>
+                  <div className="flex flex-col space-y-1 min-w-0">
+                    <p className="text-sm font-medium leading-none truncate">
+                      {user?.full_name}
+                    </p>
+                    <p className="text-xs leading-none text-muted-foreground truncate">
+                      {user?.email}
+                    </p>
+                  </div>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />

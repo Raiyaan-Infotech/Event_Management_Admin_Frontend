@@ -100,6 +100,22 @@ export default function AdminSidebar() {
 
   const SidebarContent = () => (
     <div className="p-4 space-y-2">
+      {/* Brand header */}
+      <Link
+        href="/admin"
+        className="flex flex-col items-center gap-2 pt-2 pb-5 mb-2 border-b border-gray-100 hover:opacity-80 transition-opacity"
+      >
+        <div className="w-12 h-12 rounded-lg bg-gray-900 text-white flex items-center justify-center font-black text-xl shadow-sm">
+          A
+        </div>
+        <span className="text-[13px] font-bold text-gray-800 uppercase tracking-wide">
+          Admin Panel
+        </span>
+      </Link>
+      <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 pl-2 pb-1">
+        Navigation
+      </p>
+
       {menuItems.map((item) => (
         <div key={item.labelKey}>
           {item.children ? (
