@@ -34,6 +34,7 @@ const BLOCK_LABELS: Record<string, string> = {
   slider:           "Slider",
   simple_slider:    "Simple Slider",
   advance_slider:   "Advance Slider",
+  hero_section:     "Hero Section",
 };
 const labelFor = (key: string) => BLOCK_LABELS[key] || key;
 
