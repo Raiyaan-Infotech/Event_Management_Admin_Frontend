@@ -73,6 +73,20 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/auth/login', request.url));
   }
 
+  const removedWebsiteAdminRoutes = [
+    '/admin/color-palettes',
+    '/admin/website-management',
+    '/admin/ui-blocks',
+    '/admin/ui-block-categories',
+    '/admin/theme-builder',
+    '/admin/themes',
+    '/admin/appearance',
+  ];
+
+  if (removedWebsiteAdminRoutes.some((route) => pathname.startsWith(route))) {
+    return NextResponse.redirect(new URL('/admin', request.url));
+  }
+
   return NextResponse.next();
 }
 

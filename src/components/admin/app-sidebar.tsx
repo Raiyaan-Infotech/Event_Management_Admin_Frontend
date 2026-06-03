@@ -23,9 +23,6 @@ import {
   Mail,
   MessageCircle,
   Phone,
-  Palette,
-  Globe,
-  Component,
 } from "lucide-react";
 import {
   Sidebar,
@@ -148,23 +145,6 @@ const menuItems: MenuItem[] = [
     href: "/admin/settings",
     icon: Settings,
     permission: "settings.view",
-  },
-  {
-    labelKey: "Website Management",
-    icon: Globe,
-    children: [
-      { labelKey: "Color Palette", href: "/admin/color-palettes", icon: Palette },
-      {
-        labelKey: "UI Blocks",
-        icon: Component,
-        children: [
-          { labelKey: "UI Blocks", href: "/admin/website-management/ui-blocks", icon: Component },
-          { labelKey: "Category", href: "/admin/website-management/ui-block-categories", icon: Package },
-        ]
-      },
-      { labelKey: "Home Settings", href: "/admin/theme-builder", icon: LayoutDashboard },
-      { labelKey: "Appearance", href: "/admin/appearance", icon: Settings },
-    ]
   },
 ];
 

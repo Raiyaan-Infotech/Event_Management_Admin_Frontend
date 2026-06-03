@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 import { useCreateVendor, useUpdateVendor, Vendor } from '@/hooks/use-vendors';
 import { useSubscriptions } from '@/hooks/use-subscriptions';
-import { useThemes } from '@/hooks/use-themes';
 import { isApprovalRequired, apiClient } from '@/lib/api-client';
 import { CommonForm, CommonFormSection } from '@/components/common/common-form';
 import { Building2, User, Landmark, Share2 } from 'lucide-react';
@@ -46,11 +45,6 @@ const baseSchema = z.object({
     contact: z.string().trim().optional(),
     email: z.string().trim().email('Invalid email'),
     membership: z.string().optional().default('basic'),
-    theme_id: z.preprocess((value) => {
-        if (value === '' || value === undefined || value === null) return null;
-        const parsed = typeof value === 'string' ? Number(value) : value;
-        return Number.isNaN(parsed) ? value : parsed;
-    }, z.number({ invalid_type_error: 'Please select a valid theme' }).optional().nullable()),
     bank_name: z.string().trim().optional(),
     acc_no: z.string().trim().optional(),
     ifsc_code: z.string().trim().optional(),
@@ -75,9 +69,6 @@ const createSchema = baseSchema.extend({
     confirm_password: z.string().min(1, 'Please confirm password'),
 })
 .superRefine((d, ctx) => {
-    if (d.membership && !d.theme_id) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Please select a theme for the selected subscription plan', path: ['theme_id'] });
-    }
     if (d.password) {
         const result = passwordPolicy(d.password);
         if (typeof result === 'string') {
@@ -92,9 +83,6 @@ const editSchema = baseSchema.extend({
     confirm_password: z.string().optional().or(z.literal('')),
 })
 .superRefine((d, ctx) => {
-    if (d.membership && !d.theme_id) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Please select a theme for the selected subscription plan', path: ['theme_id'] });
-    }
     if (d.password) {
         const result = passwordPolicy(d.password);
         if (typeof result === 'string') {
@@ -107,8 +95,6 @@ const editSchema = baseSchema.extend({
 // ─── Component ───────────────────────────────────────────────────────────────
 
 interface Props { vendor?: Vendor; }
-
-const normalizePlanName = (value?: string | null) => (value || '').trim().toLowerCase();
 
 export function VendorForm({ vendor }: Props) {
     const router = useRouter();
@@ -132,7 +118,7 @@ export function VendorForm({ vendor }: Props) {
     // Pending social links collected in create mode
     const pendingSocialLinks = useRef<PendingSocialLink[]>([]);
 
-    // Plan + theme cascading state
+    // Subscription plan state
     const [selectedPlanName, setSelectedPlanName] = useState<string>(
         ((vendor as any)?.membership || '').trim()
     );
@@ -152,13 +138,6 @@ export function VendorForm({ vendor }: Props) {
         })),
         [plans]
     );
-
-    const selectedPlan = useMemo(
-        () => planOptions.find((option) => normalizePlanName(option.value) === normalizePlanName(selectedPlanName))?.plan,
-        [planOptions, selectedPlanName]
-    );
-    const { data: themesRes } = useThemes({ plan_id: selectedPlan?.id, limit: 100 });
-    const themes = useMemo(() => themesRes?.data ?? [], [themesRes]);
 
     const mapFlyQuery = [selCityName, selDistrictName, selStateName, selCountryName].filter(Boolean).join(', ');
 
@@ -317,45 +296,21 @@ export function VendorForm({ vendor }: Props) {
                     render: ({ watch, setValue, errors }) => (
                         <div className="space-y-2">
                             <Label>Subscription Plan <span className="text-destructive">*</span></Label>
-                            <p className="text-xs text-muted-foreground">Select a subscription plan first, then choose a theme available for that plan.</p>
+                            <p className="text-xs text-muted-foreground">Select the subscription plan for this vendor.</p>
                             <SearchableSelect
                                 options={planOptions}
                                 value={watch('membership') || ''}
                                 placeholder="Select plan..."
                                 searchPlaceholder="Search plan..."
                                 className={errors?.membership ? 'border-destructive' : ''}
-                                onValueChange={(v) => {
-                                    setValue('membership', v, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
-                                    setSelectedPlanName(v);
-                                    setValue('theme_id', null, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
-                                }}
-                            />
-                        </div>
-                    ),
-                },
-                // Cascading Theme dropdown
-                {
-                    name: 'theme_id', label: 'Theme', type: 'custom', required: true,
-                    render: ({ watch, setValue, errors }) => (
-                        <div className="space-y-2">
-                            <Label>
-                                Theme {selectedPlan && <span className="text-destructive">*</span>}
-                            </Label>
-                            {selectedPlan ? (
-                                <SearchableSelect
-                                    options={themes.map((t: any) => ({ value: t.id.toString(), label: t.name }))}
-                                    value={watch('theme_id')?.toString() || ''}
-                                    placeholder="Select theme for this plan..."
-                                    searchPlaceholder="Search theme..."
-                                    className={errors?.theme_id ? 'border-destructive' : ''}
-                                    onValueChange={(v) => setValue('theme_id', parseInt(v), { shouldValidate: true, shouldDirty: true, shouldTouch: true })}
-                                />
-                            ) : (
-                                <p className="text-sm text-muted-foreground h-9 flex items-center px-3 border rounded-md bg-muted/30">Select a plan first</p>
-                            )}
-                        </div>
-                    ),
-                },
+                                 onValueChange={(v) => {
+                                     setValue('membership', v, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
+                                     setSelectedPlanName(v);
+                                 }}
+                             />
+                         </div>
+                     ),
+                 },
                 { name: 'address', label: 'Address', type: 'textarea', placeholder: 'Enter your address', rows: 2, colSpan: 2 },
                 { name: 'about_us', label: 'About Us', type: 'textarea', placeholder: 'Write a brief description about the vendor...', rows: 4, colSpan: 2 },
                 {
@@ -423,7 +378,6 @@ export function VendorForm({ vendor }: Props) {
         contact: vendor.contact || '',
         email: vendor.email,
         membership: ((vendor as any).membership || '').trim(),
-        theme_id: (vendor as any).theme_id ?? null,
         about_us: vendor.about_us || '',
         company_information: vendor.company_information || '',
         short_description: vendor.short_description || '',

@@ -17,7 +17,6 @@ import {
   Languages,
   DollarSign,
   Mail,
-  Palette,
 } from 'lucide-react';
 import { useTranslation } from '@/hooks/use-translation';
 
@@ -81,7 +80,6 @@ export default function AdminSidebar() {
           href: '/admin/email-templates',
           icon: <Mail size={20} />,
         },
-        { labelKey: 'nav.themes', href: '/admin/themes', icon: <Palette size={20} /> },
       ],
     },
   ];
