@@ -160,6 +160,13 @@ const settingGroups: SettingGroup[] = [
         permission: "settings.view",
       },
       {
+        labelKey: "settings.color_palettes",
+        descriptionKey: "settings.color_palettes_desc",
+        href: "/admin/color-palettes",
+        icon: Palette,
+        permission: "color_palettes.view",
+      },
+      {
         labelKey: "nav.modules",
         descriptionKey: "settings.modules_desc",
         href: "/admin/platform/modules",

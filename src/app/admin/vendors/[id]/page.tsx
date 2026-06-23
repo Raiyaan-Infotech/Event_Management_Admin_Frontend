@@ -116,7 +116,6 @@ export default function VendorViewPage({ params }: { params: Promise<{ id: strin
                         <DetailItem label="Landline" value={vendor.landline} />
                         <DetailItem label="Registration No." value={vendor.reg_no} />
                         <DetailItem label="GST No." value={vendor.gst_no} />
-                        <DetailItem label="Theme ID" value={(vendor as any).theme_id} />
                         <DetailItem label="Created" value={displayDate(vendor.created_at)} />
                         <div className="sm:col-span-2">
                             <DetailItem label="Company Address" value={vendor.company_address} />

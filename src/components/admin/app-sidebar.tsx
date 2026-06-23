@@ -293,7 +293,7 @@ export function AppSidebar() {
                               {visibleChildren.map((child) => {
                                 const grandChildren = getVisibleChildren(child.children);
                                 if (grandChildren.length > 0) {
-                                  // 2nd level collapsible (e.g. UI Blocks inside Website Management)
+                                  // 2nd level collapsible
                                   return (
                                     <Collapsible
                                       key={child.labelKey}

@@ -17,6 +17,7 @@ import {
   Languages,
   DollarSign,
   Mail,
+  Palette,
 } from 'lucide-react';
 import { useTranslation } from '@/hooks/use-translation';
 
@@ -72,6 +73,7 @@ export default function AdminSidebar() {
       icon: <Settings size={20} />,
       children: [
         { labelKey: 'nav.settings', href: '/admin/settings', icon: <Settings size={20} /> },
+        { labelKey: 'nav.color_palettes', href: '/admin/color-palettes', icon: <Palette size={20} /> },
         { labelKey: 'nav.languages', href: '/admin/languages', icon: <Languages size={20} /> },
         { labelKey: 'nav.currencies', href: '/admin/currencies', icon: <DollarSign size={20} /> },
         { labelKey: 'nav.translations', href: '/admin/settings/translations', icon: <Languages size={20} /> },

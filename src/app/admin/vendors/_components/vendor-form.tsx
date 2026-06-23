@@ -1,19 +1,18 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 import { useCreateVendor, useUpdateVendor, Vendor } from '@/hooks/use-vendors';
 import { useSubscriptions } from '@/hooks/use-subscriptions';
-import { isApprovalRequired, apiClient } from '@/lib/api-client';
+import { isApprovalRequired } from '@/lib/api-client';
 import { CommonForm, CommonFormSection } from '@/components/common/common-form';
-import { Building2, User, Landmark, Share2 } from 'lucide-react';
+import { Building2, User, Landmark } from 'lucide-react';
 import { useCountries, useStates, useCities, useLocalities } from '@/hooks/use-locations';
 import { Label } from '@/components/ui/label';
 import { SearchableSelect } from '@/components/common/searchable-select';
 import dynamic from 'next/dynamic';
 import { resolveMediaUrl } from '@/lib/utils';
-import { VendorSocialLinksManager, PendingSocialLink } from './vendor-social-links-manager';
 
 const MapPicker = dynamic(
     () => import('@/components/common/map-picker').then(m => m.MapPicker),
@@ -45,6 +44,7 @@ const baseSchema = z.object({
     contact: z.string().trim().optional(),
     email: z.string().trim().email('Invalid email'),
     membership: z.string().optional().default('basic'),
+    website_enabled: z.boolean().optional().default(false),
     bank_name: z.string().trim().optional(),
     acc_no: z.string().trim().optional(),
     ifsc_code: z.string().trim().optional(),
@@ -116,8 +116,6 @@ export function VendorForm({ vendor }: Props) {
     );
 
     // Pending social links collected in create mode
-    const pendingSocialLinks = useRef<PendingSocialLink[]>([]);
-
     // Subscription plan state
     const [selectedPlanName, setSelectedPlanName] = useState<string>(
         ((vendor as any)?.membership || '').trim()
@@ -159,6 +157,7 @@ export function VendorForm({ vendor }: Props) {
                 { name: 'company_contact', label: 'Company Contact', type: 'text', placeholder: 'Enter your company contact' },
                 { name: 'landline', label: 'Landline', type: 'text', placeholder: 'Enter your landline number' },
                 { name: 'company_email', label: 'Company Email', type: 'email', placeholder: 'Enter your company email' },
+                { name: 'website_enabled', label: 'Vendor Website', type: 'switch', colSpan: 2 },
                 { name: 'company_address', label: 'Company Address', type: 'textarea', placeholder: 'Enter your company address', rows: 2, colSpan: 2 },
                 { name: 'short_description', label: 'Short Description', type: 'textarea', placeholder: 'Enter a short description of the company...', rows: 2, colSpan: 2, required: true },
                 { name: 'company_information', label: 'Company Information', type: 'textarea', placeholder: 'Enter detailed company information...', rows: 4, colSpan: 2 },
@@ -343,19 +342,6 @@ export function VendorForm({ vendor }: Props) {
                 { name: 'branch', label: 'Branch', type: 'text', placeholder: 'Enter your branch name' },
             ],
         },
-        {
-            title: 'Social Links',
-            icon: Share2,
-            fields: [
-                {
-                    name: 'social_links_manager', label: '', type: 'custom' as const, colSpan: 2 as const,
-                    render: () => <VendorSocialLinksManager
-                        vendorId={isEdit && vendor ? vendor.id : null}
-                        onLocalChange={links => { pendingSocialLinks.current = links; }}
-                    />,
-                },
-            ],
-        },
     ];
 
     const defaultValues = vendor ? {
@@ -378,6 +364,7 @@ export function VendorForm({ vendor }: Props) {
         contact: vendor.contact || '',
         email: vendor.email,
         membership: ((vendor as any).membership || '').trim(),
+        website_enabled: Boolean((vendor as any).website_enabled),
         about_us: vendor.about_us || '',
         company_information: vendor.company_information || '',
         short_description: vendor.short_description || '',
@@ -390,11 +377,12 @@ export function VendorForm({ vendor }: Props) {
         ifsc_code: vendor.ifsc_code || '',
         acc_type: vendor.acc_type || undefined,
         branch: vendor.branch || '',
-    } : { membership: '' };
+    } : { membership: '', website_enabled: false };
 
     const handleSubmit = (data: any) => {
-        const { confirm_password, map_location, social_links_manager, ...payload } = data;
+        const { confirm_password, map_location, ...payload } = data;
         if (!payload.password) delete payload.password;
+        payload.website_enabled = payload.website_enabled ? 1 : 0;
         payload.latitude  = mapCoords?.lat ?? null;
         payload.longitude = mapCoords?.lng ?? null;
 
@@ -408,18 +396,9 @@ export function VendorForm({ vendor }: Props) {
                 }
             );
         } else {
-            // Create: save vendor → batch-POST social links → go to edit page
             create.mutate(payload, {
-                onSuccess: async (res: any) => {
+                onSuccess: (res: any) => {
                     const newId = res?.data?.data?.id ?? res?.data?.id;
-                    // batch create pending social links
-                    if (newId && pendingSocialLinks.current.length > 0) {
-                        for (const link of pendingSocialLinks.current) {
-                            try {
-                                await apiClient.post(`/vendors/${newId}/social-links`, link);
-                            } catch { /* non-fatal */ }
-                        }
-                    }
                     router.push(newId ? `/admin/vendors/${newId}/edit` : '/admin/vendors');
                 },
                 onError,

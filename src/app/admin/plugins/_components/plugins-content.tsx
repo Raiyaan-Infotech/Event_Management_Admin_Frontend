@@ -9,6 +9,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { PageLoader } from "@/components/common/page-loader";
 import { PermissionGuard } from "@/components/guards/permission-guard";
 import { PluginCard } from "./plugin-card";
@@ -110,8 +120,9 @@ export function PluginsContent() {
     const [search, setSearch] = useState("");
     const [togglingSlug, setTogglingSlug] = useState<string | null>(null);
     const [configPlugin, setConfigPlugin] = useState<Plugin | null>(null);
+    const [confirmInactivePlugin, setConfirmInactivePlugin] = useState<Plugin | null>(null);
 
-    const handleToggle = async (slug: string) => {
+    const runToggle = async (slug: string) => {
         setTogglingSlug(slug);
         try {
             await toggleMutation.mutateAsync(slug);
@@ -123,6 +134,21 @@ export function PluginsContent() {
     const allPlugins = data?.plugins ?? [];
     const activePlugins = allPlugins.filter((p) => p.is_active === 1);
     const explorePlugins = allPlugins; // all, can toggle from here
+
+    const handleToggle = async (slug: string) => {
+        const plugin = allPlugins.find((p) => p.slug === slug);
+        const isWebsiteDeactivate =
+            plugin?.slug === "website-management" &&
+            plugin.is_active === 1 &&
+            (plugin.usage_count ?? 0) > 0;
+
+        if (plugin && isWebsiteDeactivate) {
+            setConfirmInactivePlugin(plugin);
+            return;
+        }
+
+        await runToggle(slug);
+    };
 
     return (
         <PermissionGuard permission="plugins.view">
@@ -245,6 +271,31 @@ export function PluginsContent() {
                 open={!!configPlugin}
                 onClose={() => setConfigPlugin(null)}
             />
+
+            <AlertDialog open={!!confirmInactivePlugin} onOpenChange={(open) => !open && setConfirmInactivePlugin(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Inactive Website Management plugin?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {(confirmInactivePlugin?.usage_count ?? 0)} vendor(s) are currently using the website feature.
+                            If you inactive this plugin, those vendors will no longer see Website Management in their portal.
+                            Are you sure you want to inactive this plugin?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() => {
+                                const slug = confirmInactivePlugin?.slug;
+                                setConfirmInactivePlugin(null);
+                                if (slug) void runToggle(slug);
+                            }}
+                        >
+                            Yes, inactive plugin
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </PermissionGuard>
     );
 }

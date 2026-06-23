@@ -1,6 +1,6 @@
 "use client";
 
-import { Settings, CheckCircle, XCircle, SlidersHorizontal } from "lucide-react";
+import { Settings, CheckCircle, XCircle, SlidersHorizontal, Globe2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,7 @@ import type { Plugin } from "@/types";
 //  ✏️  Twilio, Paystack: hand-crafted from brand mark
 
 const PLUGIN_LOGOS: Record<string, React.ReactNode> = {
+  "website-management": <Globe2 className="w-6 h-6 text-primary" />,
 
   // ── Google OAuth — simple-icons siGoogle #4285F4 ────────────────────────────
   "google-oauth": (

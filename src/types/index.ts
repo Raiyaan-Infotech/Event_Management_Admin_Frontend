@@ -739,6 +739,7 @@ export interface Plugin {
   is_active: number; // 0=disabled, 1=enabled
   config_group: string | null;
   config_route: string | null;
+  usage_count?: number;
   company_id: number | null;
   created_at: string;
   updated_at: string;

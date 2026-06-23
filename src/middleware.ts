@@ -74,7 +74,6 @@ export async function middleware(request: NextRequest) {
   }
 
   const removedWebsiteAdminRoutes = [
-    '/admin/color-palettes',
     '/admin/website-management',
     '/admin/ui-blocks',
     '/admin/ui-block-categories',
