@@ -23,6 +23,19 @@ import {
   Mail,
   MessageCircle,
   Phone,
+  Globe,
+  Layers,
+  Sliders,
+  FileText,
+  Palette,
+  LayoutGrid,
+  Award,
+  Folder,
+  GalleryHorizontal,
+  LogIn,
+  Monitor,
+  Search,
+  Star,
 } from "lucide-react";
 import {
   Sidebar,
@@ -139,6 +152,62 @@ const menuItems: MenuItem[] = [
     icon: CreditCard,
     permission: "payments.view",
     badge: "Coming Soon",
+  },
+  {
+    labelKey: "Website Builder",
+    icon: Globe,
+    children: [
+      { labelKey: "Header", href: "/admin/website-builder/header", icon: FileText },
+      { labelKey: "Nav Menu", href: "/admin/website-builder/nav-menu", icon: Menu },
+      { labelKey: "Login Page", href: "/admin/website-builder/login-page", icon: LogIn },
+      { labelKey: "Web UI Block", href: "/admin/website-builder/ui-block", icon: Monitor },
+      { labelKey: "Footer Settings", href: "/admin/website-builder/footer", icon: Settings },
+      { labelKey: "Theme Color", href: "/admin/website-builder/theme-color", icon: Palette },
+      { labelKey: "SEO Settings", href: "/admin/website-builder/seo", icon: Search },
+      {
+        labelKey: "Pages",
+        icon: FileText,
+        children: [
+          { labelKey: "Pages List", href: "/admin/website-builder/pages", icon: FileText },
+          { labelKey: "Create Page", href: "/admin/website-builder/pages/create", icon: FileText },
+        ],
+      },
+      {
+        labelKey: "Contact Us",
+        icon: Mail,
+        children: [
+          { labelKey: "Contact Settings", href: "/admin/website-builder/contact-us", icon: Mail },
+          { labelKey: "Categories", href: "/admin/website-builder/contact-us/categories", icon: Folder },
+          { labelKey: "Contact List", href: "/admin/website-builder/contact-us/list", icon: FileText },
+        ],
+      },
+      { labelKey: "Hero Section", href: "/admin/website-builder/hero-section", icon: Monitor },
+      {
+        labelKey: "Slider",
+        icon: Folder,
+        children: [
+          { labelKey: "Simple Slider", href: "/admin/website-builder/simple-slider", icon: Folder },
+          { labelKey: "Advance Slider", href: "/admin/website-builder/advance-slider", icon: Calendar },
+        ],
+      },
+      {
+        labelKey: "Gallery",
+        icon: GalleryHorizontal,
+        children: [
+          { labelKey: "Gallery Images", href: "/admin/website-builder/gallery", icon: GalleryHorizontal },
+          { labelKey: "Gallery Categories", href: "/admin/website-builder/gallery/categories", icon: Folder },
+        ],
+      },
+      { labelKey: "Testimonials", href: "/admin/website-builder/testimonials", icon: Star },
+      {
+        labelKey: "Portfolio",
+        icon: Award,
+        children: [
+          { labelKey: "Sponsors", href: "/admin/website-builder/sponsors", icon: Award },
+          { labelKey: "Clients", href: "/admin/website-builder/clients", icon: Users },
+        ],
+      },
+    ],
   },
   {
     labelKey: "nav.settings",
