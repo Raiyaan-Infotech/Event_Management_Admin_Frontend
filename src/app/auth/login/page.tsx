@@ -22,6 +22,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const loginMutation = useSmartLogin();
   const { data: settings } = useSettingsByGroup("appearance");
 
@@ -49,12 +50,19 @@ export default function LoginPage() {
   const backgroundImage = settings?.find((s) => s.key === "login_background_url")?.value || "";
 
   const onSubmit = (data: LoginFormData) => {
-    loginMutation.mutate(data);
+    loginMutation.mutate(data, {
+      onSuccess: () => {
+        setIsRedirecting(true);
+      },
+    });
   };
+
+  const showLoader = loginMutation.isPending || isRedirecting;
+  const loaderText = isRedirecting ? "Preparing your dashboard..." : "Signing in...";
 
   return (
     <>
-      <PageLoader open={loginMutation.isPending} text="Signing in..." />
+      <PageLoader open={showLoader} text={loaderText} />
       <div className="min-h-screen h-screen flex">
         {/* Left Side - Background Image (60%) */}
         <div className="hidden lg:flex lg:w-[60%] relative overflow-hidden">
@@ -158,7 +166,7 @@ export default function LoginPage() {
               <Button
                 type="submit"
                 className="w-full bg-indigo-600 text-white hover:bg-indigo-700 font-medium"
-                isLoading={loginMutation.isPending}
+                isLoading={showLoader}
               >
                 Sign In
               </Button>

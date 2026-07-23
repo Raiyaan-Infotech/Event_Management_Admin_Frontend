@@ -1,35 +1,89 @@
 'use client';
 
 import { useState } from 'react';
-import { Save, Sparkles, Check, Settings, Mail, Phone, MapPin } from 'lucide-react';
+import { Save, Sparkles, Trash2, Phone, Mail, MapPin, Monitor, Smartphone, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
+import { BuilderCountedInput, BuilderCountedTextarea } from './builder-field';
+import { MultiSelectPages } from './multi-select-pages';
+
+type ContactType = 'default' | 'alternative';
+type PreviewDevice = 'desktop' | 'mobile';
+
+interface ContactBlock {
+    mobile: string;
+    email: string;
+    address: string;
+}
 
 export function FooterContent() {
-    const [companyName, setCompanyName] = useState('EventCraft Pro');
+    const [companyLogo, setCompanyLogo] = useState('');
+    const [companyName, setCompanyName] = useState('RA EVENTS');
     const [shortDescription, setShortDescription] = useState('Full-service event management, wedding planning, corporate galas, and customized decor packages tailored to your special occasions.');
-    const [showSocialLinks, setShowSocialLinks] = useState(true);
+    const [contactType, setContactType] = useState<ContactType>('default');
+    
+    const [defaultContact, setDefaultContact] = useState<ContactBlock>({
+        mobile: '9884699435',
+        email: 'eventcraftf@gmail.com',
+        address: '100 Celebration Way, Suite 400, New York, NY 10001',
+    });
+
+    const [alternativeContact, setAlternativeContact] = useState<ContactBlock>({
+        mobile: '9876543210',
+        email: 'alt.eventcraft@gmail.com',
+        address: '200 Platinum Tower, Tirunelveli',
+    });
+
     const [topListHeading, setTopListHeading] = useState('Quick Links');
-    const [selectedPages, setSelectedPages] = useState<string[]>(['about-us', 'services', 'events', 'terms-conditions', 'privacy-policy']);
+    const [selectedPages, setSelectedPages] = useState<string[]>([
+        'about-us',
+        'services',
+        'events',
+        'terms-conditions',
+        'privacy-policy',
+    ]);
     const [newsletterEnabled, setNewsletterEnabled] = useState(true);
-    const [contactType, setContactType] = useState<'default' | 'alternative'>('default');
-    const [mobile, setMobile] = useState('9884699435');
-    const [email, setEmail] = useState('eventcraftf@gmail.com');
-    const [address, setAddress] = useState('100 Celebration Way, Suite 400, New York, NY 10001');
+    const [showSocialLinks, setShowSocialLinks] = useState(true);
+    const [previewDevice, setPreviewDevice] = useState<PreviewDevice>('desktop');
     const [isSaving, setIsSaving] = useState(false);
 
-    const COMPANY_MAX = 100;
-    const DESC_MAX = 160;
-    const HEADING_MAX = 60;
-    const MOBILE_MAX = 20;
-    const EMAIL_MAX = 100;
-    const ADDRESS_MAX = 200;
+    const copyright = '© 2026 RA Events. All rights reserved.';
+    const poweredBy = 'Powered by EventCraft Website Builder';
+
+    const activeContact = contactType === 'alternative' ? alternativeContact : defaultContact;
+
+    const pageOptions = [
+        { label: 'About Us', value: 'about-us' },
+        { label: 'Services', value: 'services' },
+        { label: 'Events & Packages', value: 'events' },
+        { label: 'Terms & Conditions', value: 'terms-conditions' },
+        { label: 'Privacy Policy', value: 'privacy-policy' },
+        { label: 'Contact Us', value: 'contact-us' },
+    ];
+
+    const quickLinkLabels = selectedPages
+        .map((val) => pageOptions.find((opt) => opt.value === val)?.label)
+        .filter(Boolean);
+
+    const updateActiveContact = (patch: Partial<ContactBlock>) => {
+        if (contactType === 'alternative') {
+            setAlternativeContact((prev) => ({ ...prev, ...patch }));
+        } else {
+            setDefaultContact((prev) => ({ ...prev, ...patch }));
+        }
+    };
+
+    const handleLogoSelect = (file: File) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            setCompanyLogo(e.target?.result as string);
+            toast.success('Company logo updated.');
+        };
+        reader.readAsDataURL(file);
+    };
 
     const handleSave = () => {
         setIsSaving(true);
@@ -41,6 +95,7 @@ export function FooterContent() {
 
     return (
         <div className="space-y-6">
+            {/* Page Header */}
             <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-5">
                 <div>
                     <div className="flex items-center gap-2">
@@ -53,177 +108,293 @@ export function FooterContent() {
                     <p className="text-sm text-muted-foreground">Manage footer company description, quick links, newsletter block, and contact info.</p>
                 </div>
                 <Button size="sm" onClick={handleSave} disabled={isSaving} className="gap-2">
-                    <Save className="h-4 w-4" /> {isSaving ? 'Saving...' : 'Save Footer Settings'}
+                    <Save className="h-4 w-4" /> {isSaving ? 'Saving...' : 'Save Changes'}
                 </Button>
             </div>
 
-            {/* Section 1: Footer Details */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="text-lg">Footer Details</CardTitle>
-                    <CardDescription>Company branding, short description copy, and social links display in footer.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    {/* Company Name */}
-                    <div className="space-y-1.5">
-                        <div className="flex items-center justify-between">
-                            <Label htmlFor="companyName" className="text-xs font-semibold text-muted-foreground">Company Name</Label>
-                            <span className="text-[10px] text-muted-foreground">{companyName.length}/{COMPANY_MAX}</span>
-                        </div>
-                        <Input id="companyName" value={companyName} onChange={(e) => setCompanyName(e.target.value)} maxLength={COMPANY_MAX} className="h-9 text-sm" />
-                    </div>
-
-                    {/* Short Description */}
-                    <div className="space-y-1.5">
-                        <div className="flex items-center justify-between">
-                            <Label htmlFor="shortDescription" className="text-xs font-semibold text-muted-foreground">Footer Short Description</Label>
-                            <span className="text-[10px] text-muted-foreground">{shortDescription.length}/{DESC_MAX}</span>
-                        </div>
-                        <Textarea id="shortDescription" value={shortDescription} onChange={(e) => setShortDescription(e.target.value)} maxLength={DESC_MAX} rows={3} className="text-sm" />
-                    </div>
-
-                    {/* Show Social Links Toggle */}
-                    <div className="flex items-center justify-between rounded-lg border p-3 bg-card">
-                        <div>
-                            <h4 className="font-semibold text-sm">Show Social Links</h4>
-                            <p className="text-xs text-muted-foreground">Show or hide social links in the website footer.</p>
-                        </div>
-                        <Switch checked={showSocialLinks} onCheckedChange={setShowSocialLinks} />
-                    </div>
-                </CardContent>
-            </Card>
-
-            {/* Section 2: Footer Quick Links */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="text-lg">Footer Quick Links</CardTitle>
-                    <CardDescription>Top list heading and page links column configuration.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    {/* Top List Heading */}
-                    <div className="space-y-1.5 max-w-md">
-                        <div className="flex items-center justify-between">
-                            <Label htmlFor="topListHeading" className="text-xs font-semibold text-muted-foreground">Top List Heading</Label>
-                            <span className="text-[10px] text-muted-foreground">{topListHeading.length}/{HEADING_MAX}</span>
-                        </div>
-                        <Input id="topListHeading" value={topListHeading} onChange={(e) => setTopListHeading(e.target.value)} maxLength={HEADING_MAX} className="h-9 text-sm font-semibold" />
-                    </div>
-
-                    {/* Selected Quick Link Pages */}
-                    <div className="space-y-2 pt-2">
-                        <Label className="text-xs font-semibold text-muted-foreground">Add Pages to Quick Links</Label>
-                        <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3">
-                            {[
-                                { slug: 'about-us', name: 'About Us' },
-                                { slug: 'services', name: 'Services' },
-                                { slug: 'events', name: 'Events & Packages' },
-                                { slug: 'terms-conditions', name: 'Terms & Conditions' },
-                                { slug: 'privacy-policy', name: 'Privacy Policy' },
-                                { slug: 'contact-us', name: 'Contact Us' },
-                            ].map((item) => {
-                                const isSelected = selectedPages.includes(item.slug);
-                                return (
-                                    <div
-                                        key={item.slug}
-                                        onClick={() => {
-                                            if (isSelected) {
-                                                setSelectedPages(selectedPages.filter((s) => s !== item.slug));
-                                            } else {
-                                                setSelectedPages([...selectedPages, item.slug]);
-                                            }
-                                        }}
-                                        className={`flex cursor-pointer items-center justify-between rounded-lg border p-3 transition-all ${
-                                            isSelected ? 'border-primary bg-primary/5 text-primary' : 'hover:border-primary/40'
-                                        }`}
-                                    >
-                                        <span className="text-xs font-medium">{item.name}</span>
-                                        {isSelected && <Check className="h-4 w-4" />}
+            {/* Main Section Layout: Form Settings + Live Preview */}
+            <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+                {/* Form Settings (7 cols) */}
+                <div className="xl:col-span-7 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Column 1: Company Info & Contact Info */}
+                        <div className="space-y-4">
+                            {/* Card 1: Company Information */}
+                            <Card>
+                                <CardHeader className="pb-3">
+                                    <CardTitle className="text-sm font-bold">Company Information</CardTitle>
+                                    <CardDescription className="text-xs">Footer brand logo, name, and description.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-3">
+                                    {/* Logo Upload */}
+                                    <div className="space-y-1.5 w-full">
+                                        <label className="text-xs font-semibold text-muted-foreground">Company Logo</label>
+                                        {companyLogo ? (
+                                            <div className="relative flex h-16 w-full items-center justify-center rounded-lg border bg-card p-2 overflow-hidden">
+                                                <img src={companyLogo} alt="Footer Logo" className="h-full w-full object-contain" />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setCompanyLogo('')}
+                                                    className="absolute top-1.5 right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-slate-800 text-white hover:bg-slate-900"
+                                                >
+                                                    <Trash2 className="h-3 w-3" />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="relative flex flex-col items-center justify-center h-16 w-full rounded-lg border border-dashed bg-muted/20 hover:bg-muted/30 cursor-pointer p-2 text-center">
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={(e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) handleLogoSelect(file);
+                                                    }}
+                                                    className="absolute inset-0 opacity-0 cursor-pointer"
+                                                />
+                                                <span className="text-xs font-semibold text-primary">+ Upload Logo</span>
+                                            </div>
+                                        )}
                                     </div>
-                                );
-                            })}
+
+                                    <BuilderCountedInput
+                                        label="Company Name"
+                                        value={companyName}
+                                        onChange={setCompanyName}
+                                        maxLength={100}
+                                    />
+
+                                    <BuilderCountedTextarea
+                                        label="Short Description"
+                                        value={shortDescription}
+                                        onChange={setShortDescription}
+                                        maxLength={200}
+                                        rows={3}
+                                    />
+                                </CardContent>
+                            </Card>
+
+                            {/* Card 2: Contact Info */}
+                            <Card>
+                                <CardHeader className="pb-3">
+                                    <CardTitle className="text-sm font-bold">Contact Info</CardTitle>
+                                    <CardDescription className="text-xs">Footer contact info block details.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-3">
+                                    <div className="flex items-center gap-1 rounded-lg border p-1 bg-muted/30 w-fit">
+                                        <button
+                                            type="button"
+                                            onClick={() => setContactType('default')}
+                                            className={`rounded-md px-2.5 py-1 text-[11px] font-semibold transition-all ${
+                                                contactType === 'default' ? 'bg-primary text-primary-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
+                                            }`}
+                                        >
+                                            Default
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setContactType('alternative')}
+                                            className={`rounded-md px-2.5 py-1 text-[11px] font-semibold transition-all ${
+                                                contactType === 'alternative' ? 'bg-primary text-primary-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
+                                            }`}
+                                        >
+                                            Alternative
+                                        </button>
+                                    </div>
+
+                                    <BuilderCountedInput
+                                        label="Mobile"
+                                        value={activeContact.mobile}
+                                        onChange={(val) => updateActiveContact({ mobile: val })}
+                                        maxLength={30}
+                                    />
+                                    <BuilderCountedInput
+                                        label="Email"
+                                        value={activeContact.email}
+                                        onChange={(val) => updateActiveContact({ email: val })}
+                                        maxLength={100}
+                                    />
+                                    <BuilderCountedTextarea
+                                        label="Address"
+                                        value={activeContact.address}
+                                        onChange={(val) => updateActiveContact({ address: val })}
+                                        maxLength={200}
+                                        rows={2}
+                                    />
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        {/* Column 2: Menu Settings & Footer Bottom */}
+                        <div className="space-y-4">
+                            {/* Card 3: Menu Settings */}
+                            <Card>
+                                <CardHeader className="pb-3">
+                                    <CardTitle className="text-sm font-bold">Menu Settings</CardTitle>
+                                    <CardDescription className="text-xs">Quick links heading, pages, and toggles.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-3">
+                                    <BuilderCountedInput
+                                        label="Top List Heading"
+                                        value={topListHeading}
+                                        onChange={setTopListHeading}
+                                        maxLength={80}
+                                    />
+
+                                    <MultiSelectPages
+                                        label="Add Pages to Quick Links"
+                                        value={selectedPages}
+                                        options={pageOptions}
+                                        onChange={setSelectedPages}
+                                        placeholder="Add page"
+                                    />
+
+                                    <div className="flex items-center justify-between rounded-lg border p-2.5 bg-card">
+                                        <div>
+                                            <h4 className="font-semibold text-xs text-foreground">Enable Newsletter</h4>
+                                            <p className="text-[10px] text-muted-foreground">Display subscribe input.</p>
+                                        </div>
+                                        <Switch checked={newsletterEnabled} onCheckedChange={setNewsletterEnabled} />
+                                    </div>
+
+                                    <div className="flex items-center justify-between rounded-lg border p-2.5 bg-card">
+                                        <div>
+                                            <h4 className="font-semibold text-xs text-foreground">Show Social Links</h4>
+                                            <p className="text-[10px] text-muted-foreground">Display social icon links.</p>
+                                        </div>
+                                        <Switch checked={showSocialLinks} onCheckedChange={setShowSocialLinks} />
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Card 4: Footer Bottom */}
+                            <Card>
+                                <CardHeader className="pb-3">
+                                    <CardTitle className="text-sm font-bold flex items-center gap-1.5">
+                                        Footer Bottom <Lock className="h-3 w-3 text-muted-foreground" />
+                                    </CardTitle>
+                                    <CardDescription className="text-xs">Copyright statement & platform attribution.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-3">
+                                    <BuilderCountedInput
+                                        label="Copyright"
+                                        value={copyright}
+                                        onChange={() => undefined}
+                                        maxLength={120}
+                                        lockInput
+                                        showCount={false}
+                                    />
+                                    <BuilderCountedInput
+                                        label="Powered By"
+                                        value={poweredBy}
+                                        onChange={() => undefined}
+                                        maxLength={80}
+                                        lockInput
+                                        showCount={false}
+                                    />
+                                </CardContent>
+                            </Card>
                         </div>
                     </div>
-                </CardContent>
-            </Card>
+                </div>
 
-            {/* Section 3: Newsletter Block */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="text-lg">Newsletter Subscription Block</CardTitle>
-                    <CardDescription>Enable or disable email newsletter signup in the footer.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between rounded-lg border p-3 bg-card">
-                        <div>
-                            <h4 className="font-semibold text-sm">Enable Newsletter Subscription</h4>
-                            <p className="text-xs text-muted-foreground">Allow visitors to submit their email for updates.</p>
-                        </div>
-                        <Switch checked={newsletterEnabled} onCheckedChange={setNewsletterEnabled} />
-                    </div>
-                </CardContent>
-            </Card>
-
-            {/* Section 4: Contact Information */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="text-lg">Contact Information</CardTitle>
-                    <CardDescription>Default vs alternative contact info displayed in footer.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    {/* Contact Type Toggle */}
-                    <div className="flex items-center gap-4 rounded-lg border p-3 bg-card">
-                        <label className="flex cursor-pointer items-center gap-2">
-                            <input
-                                type="radio"
-                                name="contactType"
-                                checked={contactType === 'default'}
-                                onChange={() => setContactType('default')}
-                                className="h-4 w-4 text-primary"
-                            />
-                            <span className="text-xs font-semibold">Default Contact</span>
-                        </label>
-                        <label className="flex cursor-pointer items-center gap-2">
-                            <input
-                                type="radio"
-                                name="contactType"
-                                checked={contactType === 'alternative'}
-                                onChange={() => setContactType('alternative')}
-                                className="h-4 w-4 text-primary"
-                            />
-                            <span className="text-xs font-semibold">Alternative Contact</span>
-                        </label>
-                    </div>
-
-                    <div className="grid gap-4 md:grid-cols-2 pt-2">
-                        {/* Mobile Number */}
-                        <div className="space-y-1.5">
-                            <div className="flex items-center justify-between">
-                                <Label htmlFor="mobile" className="text-xs font-semibold text-muted-foreground">Mobile Number</Label>
-                                <span className="text-[10px] text-muted-foreground">{mobile.length}/{MOBILE_MAX}</span>
+                {/* Live Responsive Preview Card (5 cols) */}
+                <div className="xl:col-span-5 space-y-4">
+                    <Card className="sticky top-6">
+                        <CardHeader className="pb-3 border-b flex flex-row items-center justify-between">
+                            <div>
+                                <CardTitle className="text-base font-bold">Live Footer Preview</CardTitle>
+                                <CardDescription className="text-xs">Real-time footer layout preview.</CardDescription>
                             </div>
-                            <Input id="mobile" value={mobile} onChange={(e) => setMobile(e.target.value)} maxLength={MOBILE_MAX} className="h-9 text-sm" />
-                        </div>
-
-                        {/* Email */}
-                        <div className="space-y-1.5">
-                            <div className="flex items-center justify-between">
-                                <Label htmlFor="email" className="text-xs font-semibold text-muted-foreground">Email Address</Label>
-                                <span className="text-[10px] text-muted-foreground">{email.length}/{EMAIL_MAX}</span>
+                            <div className="flex items-center gap-1 rounded-lg border p-1 bg-muted/40">
+                                <button
+                                    type="button"
+                                    onClick={() => setPreviewDevice('desktop')}
+                                    className={`flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold ${
+                                        previewDevice === 'desktop' ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground'
+                                    }`}
+                                >
+                                    <Monitor className="h-3.5 w-3.5" /> Desktop
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setPreviewDevice('mobile')}
+                                    className={`flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold ${
+                                        previewDevice === 'mobile' ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground'
+                                    }`}
+                                >
+                                    <Smartphone className="h-3.5 w-3.5" /> Mobile
+                                </button>
                             </div>
-                            <Input id="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={EMAIL_MAX} className="h-9 text-sm" />
-                        </div>
-                    </div>
+                        </CardHeader>
+                        <CardContent className="p-4">
+                            <div className={`mx-auto rounded-xl border overflow-hidden bg-[#0B0D17] text-white shadow-xl transition-all duration-300 ${
+                                previewDevice === 'mobile' ? 'max-w-[320px]' : 'w-full'
+                            }`}>
+                                <div className={`p-5 gap-4 ${previewDevice === 'mobile' ? 'flex flex-col' : 'grid grid-cols-3'}`}>
+                                    {/* Brand Column */}
+                                    <div className="space-y-2">
+                                        {companyLogo ? (
+                                            <img src={companyLogo} alt={companyName} className="h-8 object-contain" />
+                                        ) : (
+                                            <p className="text-sm font-bold text-white tracking-wide">{companyName}</p>
+                                        )}
+                                        <p className="text-[10px] leading-relaxed text-white/60">{shortDescription}</p>
+                                    </div>
 
-                    {/* Address */}
-                    <div className="space-y-1.5">
-                        <div className="flex items-center justify-between">
-                            <Label htmlFor="address" className="text-xs font-semibold text-muted-foreground">Physical Address</Label>
-                            <span className="text-[10px] text-muted-foreground">{address.length}/{ADDRESS_MAX}</span>
-                        </div>
-                        <Textarea id="address" value={address} onChange={(e) => setAddress(e.target.value)} maxLength={ADDRESS_MAX} rows={2} className="text-sm" />
-                    </div>
-                </CardContent>
-            </Card>
+                                    {/* Links Column */}
+                                    <div className="space-y-1.5">
+                                        <p className="text-xs font-bold text-white">{topListHeading}</p>
+                                        {quickLinkLabels.length > 0 ? (
+                                            quickLinkLabels.map((lbl) => (
+                                                <p key={lbl} className="text-[10px] text-white/60 hover:text-white transition-colors cursor-pointer">{lbl}</p>
+                                            ))
+                                        ) : (
+                                            <p className="text-[10px] italic text-white/30">No pages selected</p>
+                                        )}
+                                    </div>
+
+                                    {/* Contact Column */}
+                                    <div className="space-y-1.5">
+                                        <p className="text-xs font-bold text-white">Contact Us</p>
+                                        <div className="flex items-center gap-1.5 text-[10px] text-white/60">
+                                            <Phone className="h-3 w-3 text-primary shrink-0" />
+                                            <span>{activeContact.mobile}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 text-[10px] text-white/60">
+                                            <Mail className="h-3 w-3 text-primary shrink-0" />
+                                            <span>{activeContact.email}</span>
+                                        </div>
+                                        <div className="flex items-start gap-1.5 text-[10px] text-white/60">
+                                            <MapPin className="h-3 w-3 text-primary shrink-0 mt-0.5" />
+                                            <span>{activeContact.address}</span>
+                                        </div>
+
+                                        {newsletterEnabled && (
+                                            <div className="mt-2 flex gap-1">
+                                                <input
+                                                    type="email"
+                                                    placeholder="Your email"
+                                                    readOnly
+                                                    className="w-full rounded-l-md bg-white/10 px-2 py-1 text-[9px] text-white outline-none"
+                                                />
+                                                <div className="rounded-r-md bg-primary px-2 py-1 text-[9px] font-bold text-primary-foreground shrink-0 cursor-pointer">
+                                                    Subscribe
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Footer Bottom Bar */}
+                                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 px-5 py-2.5 text-[9px] text-white/40">
+                                    <span>{copyright}</span>
+                                    <span>{poweredBy}</span>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
         </div>
     );
 }

@@ -39,6 +39,7 @@ export default function ForgotPasswordPage() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   const forgotPasswordMutation = useForgotPassword();
   const verifyOTPMutation = useVerifyOTP();
@@ -82,6 +83,8 @@ export default function ForgotPasswordPage() {
       email,
       otp,
       password: data.password,
+    }, {
+      onSuccess: () => setIsRedirecting(true),
     });
   };
 
@@ -90,9 +93,12 @@ export default function ForgotPasswordPage() {
     forgotPasswordMutation.mutate({ email });
   };
 
+  const showLoader = forgotPasswordMutation.isPending || verifyOTPMutation.isPending || resetPasswordMutation.isPending || isRedirecting;
+  const loaderText = isRedirecting ? "Redirecting to login..." : "Processing...";
+
   return (
     <>
-      <PageLoader open={forgotPasswordMutation.isPending || verifyOTPMutation.isPending || resetPasswordMutation.isPending} text="Processing..." />
+      <PageLoader open={showLoader} text={loaderText} />
       <div className="min-h-screen h-screen flex">
         {/* Left Side - Background */}
         <div className="hidden lg:flex lg:w-[60%] relative overflow-hidden">

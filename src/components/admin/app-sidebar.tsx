@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useNavigationLoader } from "@/components/common/navigation-loader-provider";
 import {
   ChevronDown,
   LayoutDashboard,
@@ -161,9 +162,10 @@ const menuItems: MenuItem[] = [
       { labelKey: "Nav Menu", href: "/admin/website-builder/nav-menu", icon: Menu },
       { labelKey: "Login Page", href: "/admin/website-builder/login-page", icon: LogIn },
       { labelKey: "Web UI Block", href: "/admin/website-builder/ui-block", icon: Monitor },
+      { labelKey: "SEO Settings", href: "/admin/website-builder/seo", icon: Search },
       { labelKey: "Footer Settings", href: "/admin/website-builder/footer", icon: Settings },
       { labelKey: "Theme Color", href: "/admin/website-builder/theme-color", icon: Palette },
-      { labelKey: "SEO Settings", href: "/admin/website-builder/seo", icon: Search },
+      /*
       {
         labelKey: "Pages",
         icon: FileText,
@@ -207,6 +209,7 @@ const menuItems: MenuItem[] = [
           { labelKey: "Clients", href: "/admin/website-builder/clients", icon: Users },
         ],
       },
+      */
     ],
   },
   {
@@ -219,6 +222,7 @@ const menuItems: MenuItem[] = [
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const { startLoading } = useNavigationLoader();
   const { t } = useTranslation();
   const { user } = useAuth();
   const { data: settings } = useSettingsByGroup("appearance");
@@ -295,8 +299,6 @@ export function AppSidebar() {
 
   return (
     <>
-      <PageLoader open={isLoading} text={t("common.loading", "Loading...")} />
-
       <Sidebar>
         <SidebarHeader>
           <SidebarMenu>
@@ -382,10 +384,16 @@ export function AppSidebar() {
                                             {grandChildren.map((grand) => (
                                               <SidebarMenuSubItem key={grand.labelKey}>
                                                 <SidebarMenuSubButton asChild isActive={isActive(grand.href)}>
-                                                  <a href={grand.href || '#'} className="flex items-center gap-2">
+                                                  <Link
+                                                    href={grand.href || '#'}
+                                                    onClick={() => {
+                                                      if (grand.href && !pathname.startsWith(grand.href)) startLoading();
+                                                    }}
+                                                    className="flex items-center gap-2"
+                                                  >
                                                     <grand.icon className="h-3.5 w-3.5 shrink-0" />
                                                     <span className="truncate">{t(grand.labelKey)}</span>
-                                                  </a>
+                                                  </Link>
                                                 </SidebarMenuSubButton>
                                               </SidebarMenuSubItem>
                                             ))}
@@ -401,10 +409,16 @@ export function AppSidebar() {
                                       asChild
                                       isActive={isActive(child.href)}
                                     >
-                                      <a href={child.href || "#"} className="flex items-center gap-2">
+                                      <Link
+                                        href={child.href || "#"}
+                                        onClick={() => {
+                                          if (child.href && !pathname.startsWith(child.href)) startLoading();
+                                        }}
+                                        className="flex items-center gap-2"
+                                      >
                                         <child.icon className="h-4 w-4 shrink-0" />
                                         <span className="truncate">{t(child.labelKey)}</span>
-                                      </a>
+                                      </Link>
                                     </SidebarMenuSubButton>
                                   </SidebarMenuSubItem>
                                 );
@@ -419,7 +433,13 @@ export function AppSidebar() {
                   return (
                     <SidebarMenuItem key={item.labelKey}>
                       <SidebarMenuButton asChild isActive={isActive(item.href)}>
-                        <a href={item.href || "#"} className="flex items-center gap-2">
+                        <Link
+                          href={item.href || "#"}
+                          onClick={() => {
+                            if (item.href && !pathname.startsWith(item.href)) startLoading();
+                          }}
+                          className="flex items-center gap-2"
+                        >
                           <item.icon className="h-4 w-4 shrink-0" />
                           <span className="truncate">{t(item.labelKey)}</span>
                           {item.badge && (
@@ -427,7 +447,7 @@ export function AppSidebar() {
                               {item.badge}
                             </span>
                           )}
-                        </a>
+                        </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   );

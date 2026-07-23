@@ -34,6 +34,7 @@ export default function RegisterPage() {
   const [backgroundImage, setBackgroundImage] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   const {
     register,
@@ -62,12 +63,19 @@ export default function RegisterPage() {
     registerMutation.mutate({
       ...rest,
       full_name: fullName,
+    }, {
+      onSuccess: () => {
+        setIsRedirecting(true);
+      },
     });
   };
 
+  const showLoader = registerMutation.isPending || isRedirecting;
+  const loaderText = isRedirecting ? "Preparing your dashboard..." : "Creating account...";
+
   return (
     <>
-      <PageLoader open={registerMutation.isPending} text="Creating account..." />
+      <PageLoader open={showLoader} text={loaderText} />
       <div className="min-h-screen h-screen flex">
         {/* Left Side - Background Image (60%) */}
         <div className="hidden lg:flex lg:w-[60%] relative overflow-hidden">

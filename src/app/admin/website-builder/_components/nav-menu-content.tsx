@@ -1,72 +1,118 @@
 'use client';
 
 import { useState } from 'react';
-import { Save, Plus, Trash2, Sparkles, Upload, Image as ImageIcon } from 'lucide-react';
+import {
+    Save,
+    Sparkles,
+    Home,
+    Users,
+    FileText,
+    MessageSquareQuote,
+    Calendar,
+    X,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-
-interface MenuItem {
-    id: string;
-    label: string;
-    url: string;
-    children?: { id: string; label: string; link: string }[];
-}
+import { BuilderCountedInput } from './builder-field';
+import { MultiSelectPages } from './multi-select-pages';
+import { DraggableItemList, AddCustomLinkRow, type DraggableItemListItem, type ChildMenuItem } from './draggable-item-list';
 
 export function NavMenuContent() {
-    const [companyName, setCompanyName] = useState('EventCraft Pro');
-    const [city, setCity] = useState('New York');
+    const [logoUrl, setLogoUrl] = useState<string>('');
+    const [companyName, setCompanyName] = useState('RA EVENTS');
+    const [city, setCity] = useState('Melapalayam (Tirunelveli)');
     const [showLogin, setShowLogin] = useState(true);
     const [showSignIn, setShowSignIn] = useState(true);
     const [menuHeading, setMenuHeading] = useState('Nav Menu');
     const [isSaving, setIsSaving] = useState(false);
 
-    // Custom Link state
-    const [isCustomOpen, setIsCustomOpen] = useState(false);
-    const [customName, setCustomName] = useState('');
-    const [customLink, setCustomLink] = useState('');
-
-    const [menuItems, setMenuItems] = useState<MenuItem[]>([
-        { id: 'home', label: 'Home', url: '/' },
-        { id: 'about-us', label: 'About Us', url: '/about-us' },
-        { id: 'pages', label: 'Pages', url: '/pages', children: [{ id: 'c1', label: 'Our Services', link: '/services' }] },
-        { id: 'service', label: 'Service', url: '/services' },
-        { id: 'events', label: 'Events', url: '/events' },
-        { id: 'gallery', label: 'Gallery', url: '/gallery' },
-        { id: 'contact-us', label: 'Contact Us', url: '/contact-us' },
-    ]);
-
-    const handleAddCustomLink = () => {
-        if (!customName.trim()) {
-            toast.error('Menu name is required.');
-            return;
-        }
-        const newItem: MenuItem = {
-            id: `custom-${Date.now()}`,
-            label: customName.trim(),
-            url: customLink.trim() || 'https://',
+    const handleLogoSelect = (file: File) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            setLogoUrl(e.target?.result as string);
+            toast.success('Company logo updated.');
         };
-        setMenuItems([...menuItems, newItem]);
-        setCustomName('');
-        setCustomLink('');
-        setIsCustomOpen(false);
-        toast.success('Custom menu link added.');
+        reader.readAsDataURL(file);
     };
 
-    const handleDeleteMenuItem = (id: string) => {
-        setMenuItems(menuItems.filter((item) => item.id !== id));
-        toast.success('Menu item removed.');
+    // Selected Pages tags
+    const [selectedPages, setSelectedPages] = useState<string[]>([
+        'home',
+        'about-us',
+        'pages',
+        'service',
+        'events',
+        'gallery',
+        'contact-us',
+    ]);
+
+    const pageOptions = [
+        { label: 'Home', value: 'home', icon: Home },
+        { label: 'About Us', value: 'about-us', icon: Users },
+        { label: 'Pages', value: 'pages', icon: FileText },
+        { label: 'Service', value: 'service', icon: MessageSquareQuote },
+        { label: 'Events', value: 'events', icon: Calendar },
+        { label: 'Gallery', value: 'gallery', icon: FileText },
+        { label: 'Contact Us', value: 'contact-us', icon: FileText },
+    ];
+
+    // Menu Items for drag and drop list
+    const [menuItems, setMenuItems] = useState<DraggableItemListItem[]>([
+        { id: 'home', label: 'Home', icon: Home, children: [] },
+        { id: 'about-us', label: 'About Us', icon: Users, children: [] },
+        { id: 'pages', label: 'Pages', icon: FileText, children: [] },
+        { id: 'service', label: 'Service', icon: MessageSquareQuote, children: [] },
+        { id: 'events', label: 'Events', icon: Calendar, children: [] },
+    ]);
+
+    const handleAddChild = (parentId: string | number, child: ChildMenuItem) => {
+        setMenuItems((prev) =>
+            prev.map((item) =>
+                item.id === parentId
+                    ? { ...item, children: [...(item.children ?? []), child] }
+                    : item
+            )
+        );
+        toast.success(`Child page added.`);
+    };
+
+    const handleDeleteChild = (parentId: string | number, childId: string) => {
+        setMenuItems((prev) =>
+            prev.map((item) =>
+                item.id === parentId
+                    ? { ...item, children: (item.children ?? []).filter((child) => child.id !== childId) }
+                    : item
+            )
+        );
+        toast.info(`Child page removed.`);
+    };
+
+    const handleAddCustomLink = (name: string, link: string) => {
+        const newItem: DraggableItemListItem = {
+            id: `custom-${Date.now()}`,
+            label: name,
+            icon: FileText,
+            children: [],
+            description: link || undefined,
+        };
+
+        setMenuItems((prev) => [...prev, newItem]);
+        toast.success(`Custom menu link "${name}" added.`);
+    };
+
+    const handleDeleteMenuItem = (item: DraggableItemListItem) => {
+        setMenuItems(menuItems.filter((i) => i.id !== item.id));
+        toast.success(`Menu item "${item.label}" removed.`);
     };
 
     const handleSave = () => {
         setIsSaving(true);
         setTimeout(() => {
             setIsSaving(false);
-            toast.success('Nav Menu configuration saved successfully!');
+            toast.success('Nav Menu brand, settings, and order saved successfully!');
         }, 500);
     };
 
@@ -82,168 +128,144 @@ export function NavMenuContent() {
                         <Badge variant="secondary" className="text-xs">Super Admin Panel</Badge>
                     </div>
                     <h1 className="mt-1 text-2xl font-bold tracking-tight">Nav Menu Settings</h1>
-                    <p className="text-sm text-muted-foreground">Manage navigation brand logo, company name, city, buttons, and menu ordering.</p>
+                    <p className="text-sm text-muted-foreground">
+                        Manage navigation brand logo, company name, city, buttons, and menu ordering.
+                    </p>
                 </div>
                 <Button size="sm" onClick={handleSave} disabled={isSaving} className="gap-2">
                     <Save className="h-4 w-4" /> {isSaving ? 'Saving...' : 'Save Changes'}
                 </Button>
             </div>
 
-            {/* Section 1: Nav Menu Brand */}
+            {/* Card 1: Nav Menu Brand */}
             <Card>
-                <CardHeader>
-                    <CardTitle className="text-lg">Nav Menu Brand</CardTitle>
-                    <CardDescription>Company logo, name, city, and navbar action button visibility.</CardDescription>
+                <CardHeader className="pb-3">
+                    <CardTitle className="text-base font-bold">Nav Menu Brand</CardTitle>
+                    <CardDescription className="text-xs">
+                        This logo, company name, and city will be used in the website navigation.
+                    </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="grid gap-6 md:grid-cols-2">
-                        {/* Company Logo Upload */}
-                        <div className="space-y-2">
-                            <Label>Company Logo</Label>
-                            <div className="flex items-center gap-4">
-                                <div className="flex h-16 w-40 items-center justify-center rounded-lg border bg-muted/30 p-2">
-                                    <span className="text-xs font-semibold text-primary">LOGO PREVIEW</span>
+                    <div className="grid gap-4 lg:grid-cols-[140px_minmax(0,1fr)]">
+                        {/* Company Logo Box */}
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">COMPANY LOGO</label>
+                            {logoUrl ? (
+                                <div className="relative flex h-24 w-full items-center justify-center rounded-lg border bg-card overflow-hidden p-2">
+                                    <img src={logoUrl} alt="Company Logo" className="h-full w-full object-contain" />
+                                    <button
+                                        type="button"
+                                        onClick={() => setLogoUrl('')}
+                                        className="absolute top-1.5 right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-slate-800 text-white hover:bg-slate-900 transition-colors"
+                                    >
+                                        <X className="h-3 w-3" />
+                                    </button>
                                 </div>
-                                <Button variant="outline" size="sm" className="gap-2">
-                                    <Upload className="h-4 w-4" /> Upload Logo
-                                </Button>
-                            </div>
-                            <p className="text-[11px] text-muted-foreground">Recommended size: Wide logo ~ 420×120px (transparent PNG)</p>
+                            ) : (
+                                <div className="relative flex flex-col items-center justify-center h-24 w-full rounded-lg border border-dashed bg-muted/20 hover:bg-muted/30 cursor-pointer p-2 text-center">
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) handleLogoSelect(file);
+                                        }}
+                                        className="absolute inset-0 opacity-0 cursor-pointer"
+                                    />
+                                    <span className="text-[11px] font-bold text-primary tracking-wide">Upload Logo</span>
+                                    <span className="text-[9px] text-muted-foreground">Click or drag image</span>
+                                </div>
+                            )}
                         </div>
 
-                        {/* Company Name & City */}
-                        <div className="grid gap-4 sm:grid-cols-2">
-                            <div className="space-y-1.5">
-                                <div className="flex items-center justify-between">
-                                    <Label htmlFor="companyName" className="text-xs font-semibold text-muted-foreground">Company Name</Label>
-                                    <span className="text-[10px] text-muted-foreground">{companyName.length}/100</span>
+                        {/* Grid: Company Name, Login, City, Get Started */}
+                        <div className="grid content-start gap-3 sm:grid-cols-2">
+                            <BuilderCountedInput
+                                label="Company Name"
+                                value={companyName}
+                                onChange={setCompanyName}
+                                maxLength={100}
+                            />
+
+                            <div className="flex items-center justify-between rounded-lg border p-3 bg-card">
+                                <div>
+                                    <h4 className="font-semibold text-xs text-foreground">Login</h4>
+                                    <p className="text-[10px] text-muted-foreground">
+                                        Show or hide the Login button in the website navigation.
+                                    </p>
                                 </div>
-                                <Input id="companyName" value={companyName} onChange={(e) => setCompanyName(e.target.value)} maxLength={100} className="h-9 text-sm" />
+                                <Switch checked={showLogin} onCheckedChange={setShowLogin} />
                             </div>
 
-                            <div className="space-y-1.5">
-                                <div className="flex items-center justify-between">
-                                    <Label htmlFor="city" className="text-xs font-semibold text-muted-foreground">City</Label>
-                                    <span className="text-[10px] text-muted-foreground">{city.length}/100</span>
+                            <BuilderCountedInput
+                                label="City"
+                                value={city}
+                                onChange={setCity}
+                                maxLength={100}
+                                lockInput
+                            />
+
+                            <div className="flex items-center justify-between rounded-lg border p-3 bg-card">
+                                <div>
+                                    <h4 className="font-semibold text-xs text-foreground">Get Started</h4>
+                                    <p className="text-[10px] text-muted-foreground">
+                                        Show or hide the Get Started button in the website navigation.
+                                    </p>
                                 </div>
-                                <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} maxLength={100} className="h-9 text-sm" />
+                                <Switch checked={showSignIn} onCheckedChange={setShowSignIn} />
                             </div>
-                        </div>
-                    </div>
-
-                    <div className="grid gap-4 md:grid-cols-2 pt-2">
-                        {/* Login Toggle */}
-                        <div className="flex items-center justify-between rounded-lg border p-3 bg-card">
-                            <div>
-                                <h4 className="font-semibold text-sm">Login</h4>
-                                <p className="text-xs text-muted-foreground">Show or hide the Login button in the website navigation.</p>
-                            </div>
-                            <Switch checked={showLogin} onCheckedChange={setShowLogin} />
-                        </div>
-
-                        {/* Get Started Toggle */}
-                        <div className="flex items-center justify-between rounded-lg border p-3 bg-card">
-                            <div>
-                                <h4 className="font-semibold text-sm">Get Started</h4>
-                                <p className="text-xs text-muted-foreground">Show or hide the Get Started button in the website navigation.</p>
-                            </div>
-                            <Switch checked={showSignIn} onCheckedChange={setShowSignIn} />
                         </div>
                     </div>
                 </CardContent>
             </Card>
 
-            {/* Section 2: Nav Menu Settings */}
+            {/* Card 2: Nav Menu Settings */}
             <Card>
-                <CardHeader>
-                    <CardTitle className="text-lg">Nav Menu Settings</CardTitle>
+                <CardHeader className="pb-3">
+                    <CardTitle className="text-base font-bold">Nav Menu Settings</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="space-y-1.5 max-w-md">
-                        <div className="flex items-center justify-between">
-                            <Label htmlFor="menuHeading" className="text-xs font-semibold text-muted-foreground">Nav Menu Heading</Label>
-                            <span className="text-[10px] text-muted-foreground">{menuHeading.length}/60</span>
-                        </div>
-                        <Input id="menuHeading" value={menuHeading} onChange={(e) => setMenuHeading(e.target.value)} maxLength={60} className="h-9 text-sm" />
-                    </div>
+                <CardContent className="space-y-3">
+                    <BuilderCountedInput
+                        label="Nav Menu Heading"
+                        value={menuHeading}
+                        onChange={setMenuHeading}
+                        maxLength={60}
+                        lockInput
+                    />
 
-                    <p className="text-xs text-muted-foreground">
-                        This list is connected to the Pages module and updates automatically from your saved pages.
+                    <p className="text-[10px] font-medium text-muted-foreground">
+                        This list is now connected to the Pages module and updates from your saved pages.
                     </p>
+
+                    <MultiSelectPages
+                        label="Select Pages"
+                        value={selectedPages}
+                        options={pageOptions}
+                        onChange={setSelectedPages}
+                        placeholder="Add page"
+                    />
                 </CardContent>
             </Card>
 
-            {/* Section 3: Nav Menu Order & Custom Links */}
+            {/* Card 3: Nav Menu Order */}
             <Card>
-                <CardHeader>
-                    <CardTitle className="text-lg">Nav Menu Order</CardTitle>
-                    <CardDescription>Reorder menu items and add custom menu links.</CardDescription>
+                <CardHeader className="pb-3">
+                    <CardTitle className="text-base font-bold">Nav Menu Order</CardTitle>
+                    <CardDescription className="text-xs">
+                        Drag and drop to reorder • Click + on any item to add a child menu
+                    </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                        {menuItems.map((item, idx) => (
-                            <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3 bg-card">
-                                <div className="flex items-center gap-3">
-                                    <span className="text-xs font-bold text-muted-foreground">#{idx + 1}</span>
-                                    <div>
-                                        <h4 className="font-semibold text-sm">{item.label}</h4>
-                                        <span className="text-xs text-muted-foreground">{item.url}</span>
-                                    </div>
-                                </div>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                                    onClick={() => handleDeleteMenuItem(item.id)}
-                                >
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        ))}
-                    </div>
+                <CardContent className="space-y-3">
+                    <DraggableItemList
+                        items={menuItems}
+                        pageOptions={pageOptions}
+                        onReorder={setMenuItems}
+                        onDelete={handleDeleteMenuItem}
+                        onAddChild={handleAddChild}
+                        onDeleteChild={handleDeleteChild}
+                    />
 
-                    {/* Add Custom Link Button / Form */}
-                    {!isCustomOpen ? (
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => setIsCustomOpen(true)}
-                            className="w-full border-dashed border-primary/50 text-primary font-bold text-xs gap-2 h-10 hover:bg-primary/5"
-                        >
-                            <Plus className="h-4 w-4" /> Add Custom Link
-                        </Button>
-                    ) : (
-                        <div className="space-y-3 rounded-lg border border-primary/40 bg-primary/5 p-4">
-                            <h4 className="text-xs font-bold text-primary">New Custom Link</h4>
-                            <div className="space-y-1.5">
-                                <Label className="text-xs">Menu Name</Label>
-                                <Input
-                                    value={customName}
-                                    onChange={(e) => setCustomName(e.target.value)}
-                                    placeholder="e.g. Blog, Portfolio..."
-                                    className="h-9 text-xs bg-background"
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-xs">Link URL</Label>
-                                <Input
-                                    value={customLink}
-                                    onChange={(e) => setCustomLink(e.target.value)}
-                                    placeholder="https://..."
-                                    className="h-9 text-xs bg-background"
-                                />
-                            </div>
-                            <div className="flex gap-2 pt-1">
-                                <Button type="button" variant="outline" size="sm" onClick={() => setIsCustomOpen(false)} className="flex-1 text-xs">
-                                    Cancel
-                                </Button>
-                                <Button type="button" size="sm" onClick={handleAddCustomLink} className="flex-1 text-xs">
-                                    Add Custom Link
-                                </Button>
-                            </div>
-                        </div>
-                    )}
+                    <AddCustomLinkRow onAdd={handleAddCustomLink} />
                 </CardContent>
             </Card>
         </div>

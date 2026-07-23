@@ -119,11 +119,8 @@ export function useLogin() {
         document.cookie = `auth_pending=true; path=/; expires=${expiryDate.toUTCString()}; SameSite=Lax`;
       }
 
-      // Use setTimeout to ensure toast renders before redirect
-      // and to properly trigger the navigation
-      setTimeout(() => {
-        router.push('/admin');
-      }, 300);
+      // Navigate immediately to admin dashboard
+      router.push('/admin');
     },
     onError: (error: Error & { response?: { data?: { message?: string } } }) => {
       console.error('Login error:', error);
@@ -150,9 +147,7 @@ export function useRegister() {
         document.cookie = `auth_pending=true; path=/; expires=${expiryDate.toUTCString()}; SameSite=Lax`;
       }
 
-      setTimeout(() => {
-        router.push('/admin');
-      }, 300);
+      router.push('/admin');
     },
     onError: (error: Error & { response?: { data?: { message?: string } } }) => {
       console.error('Registration error:', error);
@@ -295,7 +290,7 @@ export function useSmartLogin() {
           exp.setSeconds(exp.getSeconds() + 15);
           document.cookie = `auth_pending=true; path=/; expires=${exp.toUTCString()}; SameSite=Lax`;
         }
-        setTimeout(() => router.push('/admin'), 300);
+        router.push('/admin');
       }
     },
     onError: (error: any) => {

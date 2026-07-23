@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Save, Sparkles, FileText, Settings2, Info, Upload, Trash2 } from 'lucide-react';
+import { Save, Sparkles, FileText, Settings2, Upload, Crop, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,13 +10,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
+import { BuilderCountedInput, BuilderCountedTextarea } from './builder-field';
+import { MediaCropDialog } from '@/components/common/media-crop-dialog';
 
 export function SeoContent() {
     const [metaTitle, setMetaTitle] = useState('Eventify - Best Event Management & Planning Services');
     const [metaDescription, setMetaDescription] = useState('Eventify offers top-notch event management and planning services for weddings, corporate events, birthdays, and more.');
     const [keywords, setKeywords] = useState('event management, event planning, wedding events, corporate events, birthday parties');
-    const [ogImage, setOgImage] = useState('');
+    const [ogImageUrl, setOgImageUrl] = useState('');
+    const [cropOpen, setCropOpen] = useState(false);
+    const [cropImageRaw, setCropImageRaw] = useState('');
+    const [cropFileName, setCropFileName] = useState('og-image.jpg');
+    const [cropMimeType, setCropMimeType] = useState('image/jpeg');
+
     const [robotsMeta, setRobotsMeta] = useState('index-follow');
     const [canonicalUrl, setCanonicalUrl] = useState('https://www.eventify.com');
     const [author, setAuthor] = useState('Eventify Team');
@@ -31,6 +37,23 @@ export function SeoContent() {
     const CANONICAL_MAX = 200;
     const AUTHOR_MAX = 80;
     const SITENAME_MAX = 60;
+
+    const handleFileSelect = (file: File) => {
+        setCropFileName(file.name);
+        setCropMimeType(file.type || 'image/jpeg');
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            setCropImageRaw(e.target?.result as string);
+            setCropOpen(true);
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleCropped = (_file: File, dataUrl: string) => {
+        setOgImageUrl(dataUrl);
+        setCropOpen(false);
+        toast.success('OG Image cropped and updated successfully.');
+    };
 
     const handleSave = () => {
         setIsSaving(true);
@@ -70,22 +93,21 @@ export function SeoContent() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                         {/* Meta Title */}
-                        <div className="space-y-1.5">
-                            <div className="flex items-center justify-between">
-                                <Label htmlFor="metaTitle" className="text-xs font-semibold text-muted-foreground">Meta Title</Label>
-                                <span className="text-[10px] text-muted-foreground">{metaTitle.length}/{TITLE_MAX}</span>
-                            </div>
-                            <Input id="metaTitle" value={metaTitle} onChange={(e) => setMetaTitle(e.target.value)} maxLength={TITLE_MAX} className="h-9 text-sm" />
-                        </div>
+                        <BuilderCountedInput
+                            label="Meta Title"
+                            value={metaTitle}
+                            onChange={setMetaTitle}
+                            maxLength={TITLE_MAX}
+                        />
 
                         {/* Meta Description */}
-                        <div className="space-y-1.5">
-                            <div className="flex items-center justify-between">
-                                <Label htmlFor="metaDescription" className="text-xs font-semibold text-muted-foreground">Meta Description</Label>
-                                <span className="text-[10px] text-muted-foreground">{metaDescription.length}/{DESC_MAX}</span>
-                            </div>
-                            <Textarea id="metaDescription" value={metaDescription} onChange={(e) => setMetaDescription(e.target.value)} maxLength={DESC_MAX} rows={3} className="text-sm" />
-                        </div>
+                        <BuilderCountedTextarea
+                            label="Meta Description"
+                            value={metaDescription}
+                            onChange={setMetaDescription}
+                            maxLength={DESC_MAX}
+                            rows={3}
+                        />
 
                         {/* Keywords */}
                         <div className="space-y-1.5">
@@ -94,17 +116,62 @@ export function SeoContent() {
                             <p className="text-[10px] text-muted-foreground">Add relevant keywords separated by commas.</p>
                         </div>
 
-                        {/* OG Image Upload */}
+                        {/* OG Image Upload & Image Cropper */}
                         <div className="space-y-2 pt-1">
                             <Label className="text-xs font-semibold text-muted-foreground">OG Image (Social Preview)</Label>
-                            <div className="flex items-center gap-4 border border-dashed rounded-lg p-4 bg-card">
-                                <div className="flex h-16 w-28 items-center justify-center rounded bg-muted text-xs font-semibold text-muted-foreground">
-                                    1200x630
+                            {ogImageUrl ? (
+                                <div className="relative rounded-lg overflow-hidden border bg-card p-2 flex items-center gap-4">
+                                    <img src={ogImageUrl} alt="OG Preview" className="h-20 w-36 object-cover rounded border" />
+                                    <div className="space-y-1.5">
+                                        <p className="text-xs font-semibold text-foreground">OG Image Selected</p>
+                                        <div className="flex items-center gap-2">
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => {
+                                                    setCropImageRaw(ogImageUrl);
+                                                    setCropOpen(true);
+                                                }}
+                                                className="h-7 text-xs gap-1"
+                                            >
+                                                <Crop className="h-3.5 w-3.5" /> Re-crop Image
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setOgImageUrl('')}
+                                                className="h-7 text-xs text-destructive hover:bg-destructive/10"
+                                            >
+                                                <Trash2 className="h-3.5 w-3.5" /> Remove
+                                            </Button>
+                                        </div>
+                                    </div>
                                 </div>
-                                <Button variant="outline" size="sm" className="gap-2">
-                                    <Upload className="h-4 w-4" /> Upload OG Image
-                                </Button>
-                            </div>
+                            ) : (
+                                <div className="relative flex items-center justify-between gap-4 border border-dashed rounded-lg p-4 bg-muted/20 hover:bg-muted/30 cursor-pointer">
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) handleFileSelect(file);
+                                        }}
+                                        className="absolute inset-0 opacity-0 cursor-pointer"
+                                    />
+                                    <div className="flex h-16 w-28 shrink-0 items-center justify-center rounded bg-muted text-xs font-semibold text-muted-foreground border">
+                                        1200x630
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="text-xs font-semibold text-foreground">Upload & Crop OG Image</p>
+                                        <p className="text-[10px] text-muted-foreground">Click to upload social media preview image.</p>
+                                    </div>
+                                    <Button variant="outline" size="sm" className="gap-2 pointer-events-none text-xs">
+                                        <Upload className="h-4 w-4" /> Upload
+                                    </Button>
+                                </div>
+                            )}
                         </div>
                     </CardContent>
                 </Card>
@@ -134,75 +201,75 @@ export function SeoContent() {
                         </div>
 
                         {/* Canonical URL */}
-                        <div className="space-y-1.5">
-                            <div className="flex items-center justify-between">
-                                <Label htmlFor="canonicalUrl" className="text-xs font-semibold text-muted-foreground">Canonical URL</Label>
-                                <span className="text-[10px] text-muted-foreground">{canonicalUrl.length}/{CANONICAL_MAX}</span>
-                            </div>
-                            <Input id="canonicalUrl" value={canonicalUrl} onChange={(e) => setCanonicalUrl(e.target.value)} maxLength={CANONICAL_MAX} className="h-9 text-sm font-mono" />
-                        </div>
+                        <BuilderCountedInput
+                            label="Canonical URL"
+                            value={canonicalUrl}
+                            onChange={setCanonicalUrl}
+                            maxLength={CANONICAL_MAX}
+                        />
 
                         {/* Author */}
-                        <div className="space-y-1.5">
-                            <div className="flex items-center justify-between">
-                                <Label htmlFor="author" className="text-xs font-semibold text-muted-foreground">Author</Label>
-                                <span className="text-[10px] text-muted-foreground">{author.length}/{AUTHOR_MAX}</span>
+                        <BuilderCountedInput
+                            label="Author"
+                            value={author}
+                            onChange={setAuthor}
+                            maxLength={AUTHOR_MAX}
+                        />
+
+                        {/* Language & Site Name */}
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="space-y-1.5">
+                                <Label className="text-xs font-semibold text-muted-foreground">Language</Label>
+                                <Select value={language} onValueChange={setLanguage}>
+                                    <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="en">English (en)</SelectItem>
+                                        <SelectItem value="es">Spanish (es)</SelectItem>
+                                        <SelectItem value="fr">French (fr)</SelectItem>
+                                        <SelectItem value="de">German (de)</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
-                            <Input id="author" value={author} onChange={(e) => setAuthor(e.target.value)} maxLength={AUTHOR_MAX} className="h-9 text-sm" />
+
+                            <BuilderCountedInput
+                                label="Site Name"
+                                value={siteName}
+                                onChange={setSiteName}
+                                maxLength={SITENAME_MAX}
+                            />
                         </div>
 
-                        {/* Language */}
-                        <div className="space-y-1.5">
-                            <Label className="text-xs font-semibold text-muted-foreground">Language</Label>
-                            <Select value={language} onValueChange={setLanguage}>
-                                <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="en">English (en)</SelectItem>
-                                    <SelectItem value="es">Spanish (es)</SelectItem>
-                                    <SelectItem value="fr">French (fr)</SelectItem>
-                                    <SelectItem value="de">German (de)</SelectItem>
-                                    <SelectItem value="ta">Tamil (ta)</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        {/* Site Name */}
-                        <div className="space-y-1.5">
-                            <div className="flex items-center justify-between">
-                                <Label htmlFor="siteName" className="text-xs font-semibold text-muted-foreground">Site Name</Label>
-                                <span className="text-[10px] text-muted-foreground">{siteName.length}/{SITENAME_MAX}</span>
+                        {/* Sitemap & Structured Data Toggles */}
+                        <div className="space-y-3 pt-2">
+                            <div className="flex items-center justify-between rounded-lg border p-3 bg-card">
+                                <div>
+                                    <h4 className="font-semibold text-xs text-foreground">Enable Sitemap</h4>
+                                    <p className="text-[10px] text-muted-foreground">Auto-generate XML sitemap for search engines.</p>
+                                </div>
+                                <Switch checked={sitemapEnabled} onCheckedChange={setSitemapEnabled} />
                             </div>
-                            <Input id="siteName" value={siteName} onChange={(e) => setSiteName(e.target.value)} maxLength={SITENAME_MAX} className="h-9 text-sm" />
-                        </div>
 
-                        {/* Sitemap Toggle */}
-                        <div className="flex items-center justify-between rounded-lg border p-3 bg-card">
-                            <div>
-                                <h4 className="font-semibold text-sm">Enable Sitemap</h4>
-                                <p className="text-xs text-muted-foreground">Automatically generate and submit sitemap.xml</p>
+                            <div className="flex items-center justify-between rounded-lg border p-3 bg-card">
+                                <div>
+                                    <h4 className="font-semibold text-xs text-foreground">Structured Data (JSON-LD)</h4>
+                                    <p className="text-[10px] text-muted-foreground">Inject rich snippet schema markup into page head.</p>
+                                </div>
+                                <Switch checked={structuredData} onCheckedChange={setStructuredData} />
                             </div>
-                            <Switch checked={sitemapEnabled} onCheckedChange={setSitemapEnabled} />
-                        </div>
-
-                        {/* Structured Data Toggle */}
-                        <div className="flex items-center justify-between rounded-lg border p-3 bg-card">
-                            <div>
-                                <h4 className="font-semibold text-sm">Structured Data</h4>
-                                <p className="text-xs text-muted-foreground">Add JSON-LD schema markup for rich search results</p>
-                            </div>
-                            <Switch checked={structuredData} onCheckedChange={setStructuredData} />
-                        </div>
-
-                        {/* Tip Box */}
-                        <div className="flex items-start gap-2 rounded-lg border bg-primary/5 p-3 text-xs">
-                            <Info className="h-4 w-4 shrink-0 text-primary mt-0.5" />
-                            <p className="text-muted-foreground leading-relaxed">
-                                <span className="font-bold text-foreground">Tip:</span> Keep your meta title within 60 characters and description within 160 characters for the best search engine visibility.
-                            </p>
                         </div>
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Media Crop Dialog */}
+            <MediaCropDialog
+                open={cropOpen}
+                imageUrl={cropImageRaw}
+                fileName={cropFileName}
+                mimeType={cropMimeType}
+                onClose={() => setCropOpen(false)}
+                onCropped={handleCropped}
+            />
         </div>
     );
 }

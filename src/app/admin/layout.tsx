@@ -13,6 +13,8 @@ import { DynamicHead } from "@/components/providers/dynamic-head";
 import { CompanyProvider } from "@/contexts/company-context";
 import { useAuth } from "@/hooks/use-auth";
 
+import { NavigationLoaderProvider } from "@/components/common/navigation-loader-provider";
+
 export default function AdminLayout({
   children,
 }: {
@@ -54,32 +56,34 @@ export default function AdminLayout({
     <AppearanceProvider>
       <DynamicHead />
       <CompanyProvider>
-        <SidebarProvider>
-          <div className="flex min-h-screen w-full bg-background">
-            {/* Sidebar */}
-            <AppSidebar />
+        <NavigationLoaderProvider>
+          <SidebarProvider>
+            <div className="flex min-h-screen w-full bg-background">
+              {/* Sidebar */}
+              <AppSidebar />
 
-            {/* Main Content */}
-            <SidebarInset className="flex flex-col flex-1 min-w-0">
-              {/* Top Header with Language, Currency, Theme */}
-              <TopHeader />
+              {/* Main Content */}
+              <SidebarInset className="flex flex-col flex-1 min-w-0">
+                {/* Top Header with Language, Currency, Theme */}
+                <TopHeader />
 
-              {/* Navbar */}
-              <AdminNavbar />
+                {/* Navbar */}
+                <AdminNavbar />
 
-              {/* Main Content Area */}
-              <main className="flex-1 overflow-y-auto overflow-x-hidden">
-                <div className="p-3 sm:p-4 md:p-6">
-                  <Breadcrumb />
-                  {children}
-                </div>
-              </main>
+                {/* Main Content Area */}
+                <main className="flex-1 overflow-y-auto overflow-x-hidden">
+                  <div className="p-3 sm:p-4 md:p-6">
+                    <Breadcrumb />
+                    {children}
+                  </div>
+                </main>
 
-              {/* Footer */}
-              <AdminFooter />
-            </SidebarInset>
-          </div>
-        </SidebarProvider>
+                {/* Footer */}
+                <AdminFooter />
+              </SidebarInset>
+            </div>
+          </SidebarProvider>
+        </NavigationLoaderProvider>
       </CompanyProvider>
     </AppearanceProvider>
   );

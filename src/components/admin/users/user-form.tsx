@@ -189,24 +189,24 @@ export function UserForm({ user, onSuccess }: UserFormProps) {
     }
   };
 
-  const onSubmit = (data: EmployeeFormData) => {
-    const { confirm_password, ...rest } = data;
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
-    // Clean up: send null for empty strings or undefined fields to ensure backend clears them on update
-    const submitData: any = {};
-    Object.entries(rest).forEach(([k, v]) => {
-      submitData[k] = (v === "" || v === undefined) ? null : v;
-    });
+  const onSubmit = async (data: EmployeeFormData) => {
+    const submitData = { ...data };
 
     // Remove password if blank (edit mode, keep current)
     if (!submitData.password) delete submitData.password;
 
-    const navigateToList = () => { onSuccess?.() ?? router.push("/admin/platform/users"); };
+    const navigateToList = () => {
+      setIsRedirecting(true);
+      onSuccess?.() ?? router.push("/admin/platform/users");
+    };
 
     if (user) {
       updateUserMutation.mutate({ id: user.id, data: submitData }, {
         onSuccess: navigateToList,
         onError: (error: any) => {
+          setIsRedirecting(false);
           if (isApprovalRequired(error)) { navigateToList(); return; }
           const msg: string = error?.response?.data?.message || '';
           if (msg.toLowerCase().includes('email')) {
@@ -218,6 +218,7 @@ export function UserForm({ user, onSuccess }: UserFormProps) {
       createUserMutation.mutate(submitData as EmployeeFormData & { password: string }, {
         onSuccess: navigateToList,
         onError: (error: any) => {
+          setIsRedirecting(false);
           if (isApprovalRequired(error)) { navigateToList(); return; }
           const msg: string = error?.response?.data?.message || '';
           if (msg.toLowerCase().includes('email')) {
@@ -228,7 +229,7 @@ export function UserForm({ user, onSuccess }: UserFormProps) {
     }
   };
 
-  const isPending = createUserMutation.isPending || updateUserMutation.isPending;
+  const isPending = createUserMutation.isPending || updateUserMutation.isPending || isRedirecting;
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" autoComplete="off">

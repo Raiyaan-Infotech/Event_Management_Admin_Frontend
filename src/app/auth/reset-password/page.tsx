@@ -70,13 +70,13 @@ function ResetPasswordForm() {
 
       if (!response.ok) {
         setError(result.message || 'Failed to reset password');
+        setIsLoading(false);
         return;
       }
 
       router.push('/auth/login?message=Password reset successful');
     } catch (err) {
       setError('An error occurred. Please try again.');
-    } finally {
       setIsLoading(false);
     }
   };

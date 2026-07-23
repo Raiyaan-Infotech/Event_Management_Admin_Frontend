@@ -271,7 +271,7 @@ export function MediaCropDialog({
           </Button>
           <Button
             onClick={handleCropAndSave}
-            isLoading={!completedCrop || isSaving}
+            isLoading={isSaving}
           >
             <Crop className="mr-2 h-4 w-4" />
             Crop & Save

@@ -59,6 +59,7 @@ export default function SignUpPage() {
 
       if (!response.ok) {
         setError(result.message || 'Sign up failed');
+        setIsLoading(false);
         return;
       }
 
@@ -82,7 +83,6 @@ export default function SignUpPage() {
       router.push('/admin');
     } catch (err) {
       setError('An error occurred. Please try again.');
-    } finally {
       setIsLoading(false);
     }
   };

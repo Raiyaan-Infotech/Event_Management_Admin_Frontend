@@ -484,7 +484,12 @@ export function RoleForm({ role, onSuccess }: RoleFormProps) {
     }
   };
 
-  const navigateToList = () => { onSuccess?.() ?? router.push("/admin/platform/roles"); };
+  const [isRedirecting, setIsRedirecting] = useState(false);
+
+  const navigateToList = () => {
+    setIsRedirecting(true);
+    onSuccess?.() ?? router.push("/admin/platform/roles");
+  };
 
   const onSubmit = async (data: RoleFormData) => {
     const payload = buildPayload(selectedPermissionKeys);
@@ -496,10 +501,13 @@ export function RoleForm({ role, onSuccess }: RoleFormProps) {
           onSuccess: () => {
             assignPermissionsMutation.mutate(
               { id: role.id, permissions: payload },
-              { onSuccess: navigateToList },
+              { onSuccess: navigateToList, onError: () => setIsRedirecting(false) },
             );
           },
-          onError: (error: any) => { if (isApprovalRequired(error)) navigateToList(); },
+          onError: (error: any) => {
+            setIsRedirecting(false);
+            if (isApprovalRequired(error)) navigateToList();
+          },
         },
       );
     } else {
@@ -508,13 +516,16 @@ export function RoleForm({ role, onSuccess }: RoleFormProps) {
           if (payload.length > 0) {
             assignPermissionsMutation.mutate(
               { id: newRole.id, permissions: payload },
-              { onSuccess: navigateToList },
+              { onSuccess: navigateToList, onError: () => setIsRedirecting(false) },
             );
           } else {
             navigateToList();
           }
         },
-        onError: (error: any) => { if (isApprovalRequired(error)) navigateToList(); },
+        onError: (error: any) => {
+          setIsRedirecting(false);
+          if (isApprovalRequired(error)) navigateToList();
+        },
       });
     }
   };
@@ -522,7 +533,8 @@ export function RoleForm({ role, onSuccess }: RoleFormProps) {
   const isPending =
     createRoleMutation.isPending ||
     updateRoleMutation.isPending ||
-    assignPermissionsMutation.isPending;
+    assignPermissionsMutation.isPending ||
+    isRedirecting;
 
   // Group permissions by module slug (uses filtered list — inactive plugin modules excluded)
   const groupedByModule = filteredPermissions.reduce(

@@ -1,11 +1,12 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
-import { ArrowLeft, RotateCcw, Save } from "lucide-react";
+import { ArrowLeft, RotateCcw, Save, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -27,67 +28,191 @@ import {
 import { useSettingsByGroup, useBulkUpdateSettings } from "@/hooks/use-settings";
 import { PermissionGuard } from "@/components/guards/permission-guard";
 import { PageLoader } from '@/components/common/page-loader';
+import { toast } from "sonner";
+
+const PRESET_PALETTES = [
+  {
+    id: "indigo",
+    name: "Indigo Slate (Recommended)",
+    light: {
+      primary_color: "#4f46e5",
+      secondary_color: "#64748b",
+      background_color: "#f8fafc",
+      sidebar_color: "#0f172a",
+      sidebar_hover_color: "#1e293b",
+      card_color: "#ffffff",
+      border_color: "#e2e8f0",
+      accent_color: "#eef2ff",
+      link_color: "#4f46e5",
+      btn_primary_bg: "#4f46e5",
+      btn_primary_hover: "#4338ca",
+    },
+    dark: {
+      dark_primary_color: "#6366f1",
+      dark_secondary_color: "#475569",
+      dark_background_color: "#090d16",
+      dark_sidebar_color: "#0f172a",
+      dark_sidebar_hover_color: "#1e293b",
+      dark_card_color: "#1e293b",
+      dark_border_color: "#334155",
+      dark_accent_color: "#312e81",
+      dark_link_color: "#818cf8",
+      dark_btn_primary_bg: "#6366f1",
+      dark_btn_primary_hover: "#4f46e5",
+    },
+  },
+  {
+    id: "emerald",
+    name: "Emerald Executive",
+    light: {
+      primary_color: "#059669",
+      secondary_color: "#475569",
+      background_color: "#f0fdf4",
+      sidebar_color: "#064e3b",
+      sidebar_hover_color: "#047857",
+      card_color: "#ffffff",
+      border_color: "#d1fae5",
+      accent_color: "#d1fae5",
+      link_color: "#059669",
+      btn_primary_bg: "#059669",
+      btn_primary_hover: "#047857",
+    },
+    dark: {
+      dark_primary_color: "#10b981",
+      dark_secondary_color: "#334155",
+      dark_background_color: "#041f16",
+      dark_sidebar_color: "#064e3b",
+      dark_sidebar_hover_color: "#047857",
+      dark_card_color: "#065f46",
+      dark_border_color: "#047857",
+      dark_accent_color: "#065f46",
+      dark_link_color: "#34d399",
+      dark_btn_primary_bg: "#10b981",
+      dark_btn_primary_hover: "#059669",
+    },
+  },
+  {
+    id: "royal",
+    name: "Royal Sapphire",
+    light: {
+      primary_color: "#2563eb",
+      secondary_color: "#475569",
+      background_color: "#f0f9ff",
+      sidebar_color: "#1e3a8a",
+      sidebar_hover_color: "#1d4ed8",
+      card_color: "#ffffff",
+      border_color: "#dbeafe",
+      accent_color: "#dbeafe",
+      link_color: "#2563eb",
+      btn_primary_bg: "#2563eb",
+      btn_primary_hover: "#1d4ed8",
+    },
+    dark: {
+      dark_primary_color: "#3b82f6",
+      dark_secondary_color: "#334155",
+      dark_background_color: "#081a36",
+      dark_sidebar_color: "#1e3a8a",
+      dark_sidebar_hover_color: "#1d4ed8",
+      dark_card_color: "#1e40af",
+      dark_border_color: "#1d4ed8",
+      dark_accent_color: "#1e40af",
+      dark_link_color: "#60a5fa",
+      dark_btn_primary_bg: "#3b82f6",
+      dark_btn_primary_hover: "#2563eb",
+    },
+  },
+  {
+    id: "midnight",
+    name: "Midnight Onyx",
+    light: {
+      primary_color: "#7c3aed",
+      secondary_color: "#475569",
+      background_color: "#faf5ff",
+      sidebar_color: "#311075",
+      sidebar_hover_color: "#6d28d9",
+      card_color: "#ffffff",
+      border_color: "#ede9fe",
+      accent_color: "#ede9fe",
+      link_color: "#7c3aed",
+      btn_primary_bg: "#7c3aed",
+      btn_primary_hover: "#6d28d9",
+    },
+    dark: {
+      dark_primary_color: "#8b5cf6",
+      dark_secondary_color: "#334155",
+      dark_background_color: "#16082e",
+      dark_sidebar_color: "#311075",
+      dark_sidebar_hover_color: "#6d28d9",
+      dark_card_color: "#4c1d95",
+      dark_border_color: "#6d28d9",
+      dark_accent_color: "#4c1d95",
+      dark_link_color: "#a78bfa",
+      dark_btn_primary_bg: "#8b5cf6",
+      dark_btn_primary_hover: "#7c3aed",
+    },
+  },
+];
 
 const lightColors = [
-  { key: "primary_color", label: "Primary", defaultVal: "#0066ff" },
-  { key: "secondary_color", label: "Secondary", defaultVal: "#64748b" },
-  { key: "background_color", label: "Background", defaultVal: "#ffffff" },
-  { key: "sidebar_color", label: "Sidebar", defaultVal: "#f8fafc" },
-  { key: "sidebar_hover_color", label: "Sidebar Hover", defaultVal: "#e2e8f0" },
-  { key: "card_color", label: "Card", defaultVal: "#ffffff" },
-  { key: "border_color", label: "Border", defaultVal: "#e2e8f0" },
-  { key: "muted_color", label: "Muted", defaultVal: "#f1f5f9" },
-  { key: "accent_color", label: "Accent", defaultVal: "#e8f1ff" },
-  { key: "heading_color", label: "Heading", defaultVal: "#0a0a0a" },
-  { key: "text_color", label: "Text", defaultVal: "#1a1a1a" },
-  { key: "link_color", label: "Link", defaultVal: "#0066ff" },
-  { key: "link_hover_color", label: "Link Hover", defaultVal: "#0052cc" },
+  { key: "primary_color", label: "Primary Color", defaultVal: "#4f46e5" },
+  { key: "secondary_color", label: "Secondary Color", defaultVal: "#64748b" },
+  { key: "background_color", label: "Background Color", defaultVal: "#f8fafc" },
+  { key: "sidebar_color", label: "Sidebar Background", defaultVal: "#0f172a" },
+  { key: "sidebar_hover_color", label: "Sidebar Hover", defaultVal: "#1e293b" },
+  { key: "card_color", label: "Card Background", defaultVal: "#ffffff" },
+  { key: "border_color", label: "Border Color", defaultVal: "#e2e8f0" },
+  { key: "muted_color", label: "Muted Background", defaultVal: "#f1f5f9" },
+  { key: "accent_color", label: "Accent Highlight", defaultVal: "#eef2ff" },
+  { key: "heading_color", label: "Heading Text", defaultVal: "#0f172a" },
+  { key: "text_color", label: "Body Text", defaultVal: "#1e293b" },
+  { key: "link_color", label: "Link Color", defaultVal: "#4f46e5" },
+  { key: "link_hover_color", label: "Link Hover Color", defaultVal: "#4338ca" },
 ];
 
 const darkColors = [
-  { key: "dark_primary_color", label: "Primary", defaultVal: "#0066ff" },
-  { key: "dark_secondary_color", label: "Secondary", defaultVal: "#3d4760" },
-  { key: "dark_background_color", label: "Background", defaultVal: "#1e1e1e" },
-  { key: "dark_sidebar_color", label: "Sidebar", defaultVal: "#171717" },
-  { key: "dark_sidebar_hover_color", label: "Sidebar Hover", defaultVal: "#2d3444" },
-  { key: "dark_card_color", label: "Card", defaultVal: "#262626" },
-  { key: "dark_border_color", label: "Border", defaultVal: "#2d3444" },
-  { key: "dark_muted_color", label: "Muted", defaultVal: "#252b38" },
-  { key: "dark_accent_color", label: "Accent", defaultVal: "#283654" },
-  { key: "dark_heading_color", label: "Heading", defaultVal: "#ffffff" },
-  { key: "dark_text_color", label: "Text", defaultVal: "#e6e6e6" },
-  { key: "dark_link_color", label: "Link", defaultVal: "#4d94ff" },
-  { key: "dark_link_hover_color", label: "Link Hover", defaultVal: "#80b3ff" },
+  { key: "dark_primary_color", label: "Primary Color", defaultVal: "#6366f1" },
+  { key: "dark_secondary_color", label: "Secondary Color", defaultVal: "#475569" },
+  { key: "dark_background_color", label: "Background Color", defaultVal: "#090d16" },
+  { key: "dark_sidebar_color", label: "Sidebar Background", defaultVal: "#0f172a" },
+  { key: "dark_sidebar_hover_color", label: "Sidebar Hover", defaultVal: "#1e293b" },
+  { key: "dark_card_color", label: "Card Background", defaultVal: "#1e293b" },
+  { key: "dark_border_color", label: "Border Color", defaultVal: "#334155" },
+  { key: "dark_muted_color", label: "Muted Background", defaultVal: "#1e293b" },
+  { key: "dark_accent_color", label: "Accent Highlight", defaultVal: "#312e81" },
+  { key: "dark_heading_color", label: "Heading Text", defaultVal: "#f8fafc" },
+  { key: "dark_text_color", label: "Body Text", defaultVal: "#e2e8f0" },
+  { key: "dark_link_color", label: "Link Color", defaultVal: "#818cf8" },
+  { key: "dark_link_hover_color", label: "Link Hover Color", defaultVal: "#a5b4fc" },
 ];
 
 const buttonColors = [
-  { key: "btn_primary_bg", label: "Primary BG", defaultVal: "#0066ff" },
+  { key: "btn_primary_bg", label: "Primary BG", defaultVal: "#4f46e5" },
   { key: "btn_primary_text", label: "Primary Text", defaultVal: "#ffffff" },
-  { key: "btn_primary_hover", label: "Primary Hover", defaultVal: "#0052cc" },
+  { key: "btn_primary_hover", label: "Primary Hover", defaultVal: "#4338ca" },
   { key: "btn_secondary_bg", label: "Secondary BG", defaultVal: "#f1f5f9" },
-  { key: "btn_secondary_text", label: "Secondary Text", defaultVal: "#1a1a1a" },
+  { key: "btn_secondary_text", label: "Secondary Text", defaultVal: "#1e293b" },
   { key: "btn_secondary_hover", label: "Secondary Hover", defaultVal: "#e2e8f0" },
   { key: "btn_destructive_bg", label: "Destructive BG", defaultVal: "#ef4444" },
   { key: "btn_destructive_text", label: "Destructive Text", defaultVal: "#ffffff" },
   { key: "btn_destructive_hover", label: "Destructive Hover", defaultVal: "#dc2626" },
   { key: "btn_outline_border", label: "Outline Border", defaultVal: "#e2e8f0" },
-  { key: "btn_outline_text", label: "Outline Text", defaultVal: "#1a1a1a" },
+  { key: "btn_outline_text", label: "Outline Text", defaultVal: "#1e293b" },
   { key: "btn_outline_hover", label: "Outline Hover BG", defaultVal: "#f1f5f9" },
 ];
 
 const darkButtonColors = [
-  { key: "dark_btn_primary_bg", label: "Primary BG", defaultVal: "#0066ff" },
+  { key: "dark_btn_primary_bg", label: "Primary BG", defaultVal: "#6366f1" },
   { key: "dark_btn_primary_text", label: "Primary Text", defaultVal: "#ffffff" },
-  { key: "dark_btn_primary_hover", label: "Primary Hover", defaultVal: "#0052cc" },
-  { key: "dark_btn_secondary_bg", label: "Secondary BG", defaultVal: "#2d3444" },
-  { key: "dark_btn_secondary_text", label: "Secondary Text", defaultVal: "#e6e6e6" },
-  { key: "dark_btn_secondary_hover", label: "Secondary Hover", defaultVal: "#3d4760" },
+  { key: "dark_btn_primary_hover", label: "Primary Hover", defaultVal: "#4f46e5" },
+  { key: "dark_btn_secondary_bg", label: "Secondary BG", defaultVal: "#1e293b" },
+  { key: "dark_btn_secondary_text", label: "Secondary Text", defaultVal: "#e2e8f0" },
+  { key: "dark_btn_secondary_hover", label: "Secondary Hover", defaultVal: "#334155" },
   { key: "dark_btn_destructive_bg", label: "Destructive BG", defaultVal: "#ef4444" },
   { key: "dark_btn_destructive_text", label: "Destructive Text", defaultVal: "#ffffff" },
   { key: "dark_btn_destructive_hover", label: "Destructive Hover", defaultVal: "#dc2626" },
-  { key: "dark_btn_outline_border", label: "Outline Border", defaultVal: "#3d4760" },
-  { key: "dark_btn_outline_text", label: "Outline Text", defaultVal: "#e6e6e6" },
-  { key: "dark_btn_outline_hover", label: "Outline Hover BG", defaultVal: "#2d3444" },
+  { key: "dark_btn_outline_border", label: "Outline Border", defaultVal: "#334155" },
+  { key: "dark_btn_outline_text", label: "Outline Text", defaultVal: "#e2e8f0" },
+  { key: "dark_btn_outline_hover", label: "Outline Hover BG", defaultVal: "#1e293b" },
 ];
 
 export function AdminAppearanceContent() {
@@ -126,6 +251,16 @@ export function AdminAppearanceContent() {
     }
   }, [settings]);
 
+  const handleApplyPreset = (preset: typeof PRESET_PALETTES[0]) => {
+    const updated = {
+      ...values,
+      ...preset.light,
+      ...preset.dark,
+    };
+    setValues(updated);
+    toast.success(`Applied ${preset.name} palette for both Light and Dark mode.`);
+  };
+
   const handleSave = () => {
     bulkUpdateMutation.mutate({
       group: "appearance",
@@ -161,40 +296,77 @@ export function AdminAppearanceContent() {
 
         {!isLoading && (
           <div className="space-y-6">
-            <div className="flex items-center gap-4">
-              <Link href="/admin/settings">
-                <Button variant="ghost" size="icon">
-                  <ArrowLeft className="h-4 w-4" />
-                </Button>
-              </Link>
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-bold">Dashboard Color Theme</h1>
-                <p className="text-muted-foreground mt-1">
-                  Customize colors for light and dark mode
-                </p>
+            {/* Header */}
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-5">
+              <div className="flex items-center gap-4">
+                <Link href="/admin/settings">
+                  <Button variant="outline" size="icon" className="h-9 w-9">
+                    <ArrowLeft className="h-4 w-4" />
+                  </Button>
+                </Link>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="gap-1 border-primary/30 bg-primary/5 text-primary text-xs">
+                      <Sparkles className="h-3 w-3" /> System Customization
+                    </Badge>
+                  </div>
+                  <h1 className="text-2xl font-bold tracking-tight mt-1">Dashboard Color Theme</h1>
+                  <p className="text-xs text-muted-foreground">
+                    Customize professional brand colors, HSL accent palettes, and dark mode themes for the Admin Panel.
+                  </p>
+                </div>
               </div>
+
+              <Button onClick={handleSave} isLoading={bulkUpdateMutation.isPending} className="gap-2">
+                <Save className="h-4 w-4" /> Save Theme Colors
+              </Button>
             </div>
+
+            {/* Curated Presets Bar */}
+            <Card className="border-primary/20 bg-card shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-primary" /> Curated Professional Color Palettes
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Click a preset below to apply synchronized Light & Dark mode color themes across the Admin Panel.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-wrap items-center gap-3">
+                {PRESET_PALETTES.map((preset) => (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() => handleApplyPreset(preset)}
+                    className="flex items-center gap-2.5 rounded-lg border p-2.5 bg-background hover:border-primary transition-all text-xs font-semibold"
+                  >
+                    <span className="flex h-5 w-5 rounded-full border shadow-xs" style={{ backgroundColor: preset.light.primary_color }} />
+                    <span>{preset.name}</span>
+                  </button>
+                ))}
+              </CardContent>
+            </Card>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Light Mode Colors */}
               <Card>
-                <CardHeader>
+                <CardHeader className="border-b pb-3">
                   <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
-                      <CardTitle>Light Mode Colors</CardTitle>
-                      <CardDescription>Colors applied in light mode</CardDescription>
+                      <CardTitle className="text-base">Light Mode Colors</CardTitle>
+                      <CardDescription className="text-xs">Colors applied in light mode</CardDescription>
                     </div>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="sm" isLoading={bulkUpdateMutation.isPending}>
-                          <RotateCcw className="h-4 w-4" />
+                        <Button variant="outline" size="sm" isLoading={bulkUpdateMutation.isPending} className="h-8 text-xs">
+                          <RotateCcw className="h-3.5 w-3.5" /> Reset Light
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
                           <AlertDialogTitle>Reset Light Mode Colors?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            This will reset all light mode colors to their default values. This action cannot be undone.
+                            This will reset all light mode colors to their default professional values.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -207,23 +379,23 @@ export function AdminAppearanceContent() {
                     </AlertDialog>
                   </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-4">
                   <div className="grid grid-cols-1 gap-3">
                     {lightColors.map((item) => (
                       <div key={item.key} className="space-y-1">
-                        <Label className="text-xs font-medium">{item.label}</Label>
+                        <Label className="text-xs font-semibold text-muted-foreground">{item.label}</Label>
                         <div className="flex gap-2">
                           <Input
                             type="color"
                             value={values[item.key] || item.defaultVal}
                             onChange={(e) => setValues({ ...values, [item.key]: e.target.value })}
-                            className="w-12 h-9 cursor-pointer p-1"
+                            className="w-12 h-9 cursor-pointer p-1 rounded-md"
                           />
                           <Input
                             type="text"
                             value={values[item.key] || item.defaultVal}
                             onChange={(e) => setValues({ ...values, [item.key]: e.target.value })}
-                            className="flex-1 h-9 text-sm"
+                            className="flex-1 h-9 text-xs font-mono"
                           />
                         </div>
                       </div>
@@ -234,23 +406,23 @@ export function AdminAppearanceContent() {
 
               {/* Dark Mode Colors */}
               <Card>
-                <CardHeader>
+                <CardHeader className="border-b pb-3">
                   <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
-                      <CardTitle>Dark Mode Colors</CardTitle>
-                      <CardDescription>Colors applied in dark mode</CardDescription>
+                      <CardTitle className="text-base">Dark Mode Colors</CardTitle>
+                      <CardDescription className="text-xs">Colors applied in dark mode</CardDescription>
                     </div>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="sm" isLoading={bulkUpdateMutation.isPending}>
-                          <RotateCcw className="h-4 w-4" />
+                        <Button variant="outline" size="sm" isLoading={bulkUpdateMutation.isPending} className="h-8 text-xs">
+                          <RotateCcw className="h-3.5 w-3.5" /> Reset Dark
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
                           <AlertDialogTitle>Reset Dark Mode Colors?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            This will reset all dark mode colors to their default values. This action cannot be undone.
+                            This will reset all dark mode colors to their default professional values.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -263,23 +435,23 @@ export function AdminAppearanceContent() {
                     </AlertDialog>
                   </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-4">
                   <div className="grid grid-cols-1 gap-3">
                     {darkColors.map((item) => (
                       <div key={item.key} className="space-y-1">
-                        <Label className="text-xs font-medium">{item.label}</Label>
+                        <Label className="text-xs font-semibold text-muted-foreground">{item.label}</Label>
                         <div className="flex gap-2">
                           <Input
                             type="color"
                             value={values[item.key] || item.defaultVal}
                             onChange={(e) => setValues({ ...values, [item.key]: e.target.value })}
-                            className="w-12 h-9 cursor-pointer p-1"
+                            className="w-12 h-9 cursor-pointer p-1 rounded-md"
                           />
                           <Input
                             type="text"
                             value={values[item.key] || item.defaultVal}
                             onChange={(e) => setValues({ ...values, [item.key]: e.target.value })}
-                            className="flex-1 h-9 text-sm"
+                            className="flex-1 h-9 text-xs font-mono"
                           />
                         </div>
                       </div>
@@ -287,151 +459,6 @@ export function AdminAppearanceContent() {
                   </div>
                 </CardContent>
               </Card>
-            </div>
-
-            {/* Button Colors */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Light Mode Button Colors */}
-              <Card>
-                <CardHeader>
-                  <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div>
-                      <CardTitle>Light Mode Button Colors</CardTitle>
-                      <CardDescription>Button colors applied in light mode</CardDescription>
-                    </div>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="sm" isLoading={bulkUpdateMutation.isPending}>
-                          <RotateCcw className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Reset Light Mode Button Colors?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This will reset all light mode button colors to their default values. This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleResetSection("buttonLight")}>
-                            Reset
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 gap-3">
-                    {buttonColors.map((item) => (
-                      <div key={item.key} className="space-y-1">
-                        <Label className="text-xs font-medium">{item.label}</Label>
-                        <div className="flex gap-2">
-                          <Input
-                            type="color"
-                            value={values[item.key] || item.defaultVal}
-                            onChange={(e) => setValues({ ...values, [item.key]: e.target.value })}
-                            className="w-12 h-9 cursor-pointer p-1"
-                          />
-                          <Input
-                            type="text"
-                            value={values[item.key] || item.defaultVal}
-                            onChange={(e) => setValues({ ...values, [item.key]: e.target.value })}
-                            className="flex-1 h-9 text-sm"
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Dark Mode Button Colors */}
-              <Card>
-                <CardHeader>
-                  <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div>
-                      <CardTitle>Dark Mode Button Colors</CardTitle>
-                      <CardDescription>Button colors applied in dark mode</CardDescription>
-                    </div>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="sm" isLoading={bulkUpdateMutation.isPending}>
-                          <RotateCcw className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Reset Dark Mode Button Colors?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This will reset all dark mode button colors to their default values. This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleResetSection("buttonDark")}>
-                            Reset
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 gap-3">
-                    {darkButtonColors.map((item) => (
-                      <div key={item.key} className="space-y-1">
-                        <Label className="text-xs font-medium">{item.label}</Label>
-                        <div className="flex gap-2">
-                          <Input
-                            type="color"
-                            value={values[item.key] || item.defaultVal}
-                            onChange={(e) => setValues({ ...values, [item.key]: e.target.value })}
-                            className="w-12 h-9 cursor-pointer p-1"
-                          />
-                          <Input
-                            type="text"
-                            value={values[item.key] || item.defaultVal}
-                            onChange={(e) => setValues({ ...values, [item.key]: e.target.value })}
-                            className="flex-1 h-9 text-sm"
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex justify-end gap-2">
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="outline" isLoading={bulkUpdateMutation.isPending}>
-                    <RotateCcw className="mr-2 h-4 w-4" />
-                    Reset All to Defaults
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Reset All Colors?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will reset ALL color settings (light mode, dark mode, and button colors) to their default values. This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => handleResetSection("all")}>
-                      Reset All
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-              <Button onClick={handleSave} isLoading={bulkUpdateMutation.isPending}>
-                <Save className="mr-2 h-4 w-4" />
-                Save Color Theme
-              </Button>
             </div>
           </div>
         )}

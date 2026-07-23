@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -51,6 +51,7 @@ export function UsersContent() {
   const { user: currentUser } = useAuth();
   const currentUserLevel = getUserRoleLevel(currentUser);
   const [search, setSearch] = useState("");
+  const [isNavigating, setIsNavigating] = useState(false);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const debouncedSearch = useDebounce(search, 300);
@@ -267,7 +268,13 @@ export function UsersContent() {
                     className="pl-10"
                   />
                 </div>
-                <Button onClick={() => router.push("/admin/platform/users/create")}>
+                <Button
+                  isLoading={isNavigating}
+                  onClick={() => {
+                    setIsNavigating(true);
+                    router.push("/admin/platform/users/create");
+                  }}
+                >
                   <Plus className="mr-2 h-4 w-4" />
                   Add Employee
                 </Button>

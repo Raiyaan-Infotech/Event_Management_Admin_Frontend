@@ -1,7 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { Save, Sparkles, Upload, Image as ImageIcon, Sliders } from 'lucide-react';
+import {
+    Save,
+    RotateCcw,
+    Sparkles,
+    Upload,
+    Monitor,
+    Smartphone,
+    Crop,
+    Trash2,
+    Phone,
+    Mail,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,269 +21,650 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
+import { Slider } from '@/components/ui/slider';
+import { BuilderCountedInput, BuilderCountedTextarea } from './builder-field';
+import { MediaCropDialog } from '@/components/common/media-crop-dialog';
+import { cn } from '@/lib/utils';
+
+type PreviewDevice = 'desktop' | 'mobile';
+type HeroHeight = 'small' | 'medium' | 'large' | 'fullscreen';
+type ButtonStyle = 'Primary' | 'Outline' | 'Ghost';
+type ButtonLayout = 'left' | 'center' | 'right' | 'space-between' | 'stack';
+type ContentAlign = 'left' | 'center' | 'right';
+type LinkTargetMode = 'page' | 'custom';
 
 export function HeroSectionContent() {
+    // Hero Content
     const [badgeText, setBadgeText] = useState('Best Event Management');
     const [title, setTitle] = useState('We Create Unforgettable Moments');
     const [description, setDescription] = useState('From elegant weddings to corporate events, we handle every detail with creativity and perfection. Let us bring your dream event to life.');
-    
+    const [heroImage, setHeroImage] = useState('');
+
     // Button 1
     const [btn1Enabled, setBtn1Enabled] = useState(true);
     const [btn1Label, setBtn1Label] = useState('Explore Events');
-    const [btn1Url, setBtn1Url] = useState('/events');
-    const [btn1Style, setBtn1Style] = useState('Primary');
-    const [btn1Color, setBtn1Color] = useState('#6C47FF');
+    const [btn1Style, setBtn1Style] = useState<ButtonStyle>('Primary');
+    const [btn1TargetMode, setBtn1TargetMode] = useState<LinkTargetMode>('custom');
+    const [btn1CustomUrl, setBtn1CustomUrl] = useState('/events');
 
     // Button 2
     const [btn2Enabled, setBtn2Enabled] = useState(true);
     const [btn2Label, setBtn2Label] = useState('Contact Us');
-    const [btn2Url, setBtn2Url] = useState('/contact-us');
-    const [btn2Style, setBtn2Style] = useState('Outline');
-    const [btn2Color, setBtn2Color] = useState('#FFFFFF');
+    const [btn2Style, setBtn2Style] = useState<ButtonStyle>('Outline');
+    const [btn2TargetMode, setBtn2TargetMode] = useState<LinkTargetMode>('custom');
+    const [btn2CustomUrl, setBtn2CustomUrl] = useState('/contact');
 
-    // Layout & Overlay
-    const [buttonLayout, setButtonLayout] = useState('left');
+    // Middle Column Settings
+    const [heroHeight, setHeroHeight] = useState<HeroHeight>('medium');
     const [overlayEnabled, setOverlayEnabled] = useState(true);
     const [overlayColor, setOverlayColor] = useState('#0B0D17');
     const [overlayOpacity, setOverlayOpacity] = useState(60);
+
+    // Mobile Settings
+    const [hideBtn2Mobile, setHideBtn2Mobile] = useState(false);
+    const [centerMobile, setCenterMobile] = useState(true);
+    const [mobileHeroHeight, setMobileHeroHeight] = useState('medium-500');
+
+    // Layout & Alignment
+    const [buttonLayout, setButtonLayout] = useState<ButtonLayout>('left');
+    const [contentAlign, setContentAlign] = useState<ContentAlign>('left');
+
+    const [previewDevice, setPreviewDevice] = useState<PreviewDevice>('desktop');
     const [isSaving, setIsSaving] = useState(false);
 
-    const BADGE_MAX = 40;
-    const TITLE_MAX = 80;
-    const DESC_MAX = 200;
-    const BTN_LABEL_MAX = 30;
+    // Cropper State
+    const [cropOpen, setCropOpen] = useState(false);
+    const [cropImageRaw, setCropImageRaw] = useState('');
+    const [cropFileName, setCropFileName] = useState('hero.jpg');
+    const [cropMimeType, setCropMimeType] = useState('image/jpeg');
+
+    const handleFileSelect = (file: File) => {
+        setCropFileName(file.name);
+        setCropMimeType(file.type || 'image/jpeg');
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            setCropImageRaw(e.target?.result as string);
+            setCropOpen(true);
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleCropped = (_file: File, dataUrl: string) => {
+        setHeroImage(dataUrl);
+        setCropOpen(false);
+        toast.success('Hero image cropped successfully.');
+    };
+
+    const handleReset = () => {
+        setBadgeText('Best Event Management');
+        setTitle('We Create Unforgettable Moments');
+        setDescription('From elegant weddings to corporate events, we handle every detail with creativity and perfection. Let us bring your dream event to life.');
+        setHeroHeight('medium');
+        setOverlayEnabled(true);
+        setOverlayOpacity(60);
+        setButtonLayout('left');
+        setContentAlign('left');
+        toast.info('Hero Section settings reset.');
+    };
 
     const handleSave = () => {
         setIsSaving(true);
         setTimeout(() => {
             setIsSaving(false);
-            toast.success('Hero Section saved successfully!');
+            toast.success('Hero Section settings saved successfully!');
         }, 500);
     };
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-5">
+        <div className="space-y-4">
+            {/* Header */}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-3.5">
                 <div>
                     <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="gap-1 border-primary/30 bg-primary/5 text-primary">
+                        <Badge variant="outline" className="gap-1 border-primary/30 bg-primary/5 text-primary text-xs">
                             <Sparkles className="h-3 w-3" /> Website Builder
                         </Badge>
                         <Badge variant="secondary" className="text-xs">Super Admin Panel</Badge>
                     </div>
-                    <h1 className="mt-1 text-2xl font-bold tracking-tight">Hero Section</h1>
-                    <p className="text-sm text-muted-foreground">Customize main headline, badge text, description, CTA buttons, and background overlay.</p>
+                    <h1 className="mt-1 text-xl font-bold tracking-tight">Hero Section</h1>
+                    <p className="text-xs text-muted-foreground">Manage your website hero section and Hero Section settings.</p>
                 </div>
-                <Button size="sm" onClick={handleSave} disabled={isSaving} className="gap-2">
-                    <Save className="h-4 w-4" /> {isSaving ? 'Saving...' : 'Save Hero Section'}
-                </Button>
+
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={handleReset} className="gap-1.5 h-8 text-xs">
+                        <RotateCcw className="h-3.5 w-3.5" /> Reset
+                    </Button>
+                    <Button size="sm" onClick={handleSave} disabled={isSaving} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white h-8 text-xs">
+                        <Save className="h-4 w-4" /> {isSaving ? 'Saving...' : 'Save Changes'}
+                    </Button>
+                </div>
             </div>
 
-            {/* Section 1: Hero Banner Content */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="text-lg">Hero Banner Content</CardTitle>
-                    <CardDescription>Badge text, hero image frame, main title, and description copy.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    {/* Badge Text */}
-                    <div className="space-y-1.5">
-                        <div className="flex items-center justify-between">
-                            <Label htmlFor="badgeText" className="text-xs font-semibold text-muted-foreground">Badge Text</Label>
-                            <span className="text-[10px] text-muted-foreground">{badgeText.length}/{BADGE_MAX}</span>
-                        </div>
-                        <Input id="badgeText" value={badgeText} onChange={(e) => setBadgeText(e.target.value)} maxLength={BADGE_MAX} className="h-9 text-sm" />
-                    </div>
-
-                    {/* Hero Image Upload */}
-                    <div className="space-y-2">
-                        <Label className="text-xs font-semibold text-muted-foreground">Hero Image Frame</Label>
-                        <div className="flex items-center gap-4 border border-dashed rounded-lg p-4 bg-card">
-                            <div className="flex h-16 w-28 items-center justify-center rounded bg-muted text-xs font-semibold text-muted-foreground">
-                                16:9 FRAME
-                            </div>
-                            <Button variant="outline" size="sm" className="gap-2">
-                                <Upload className="h-4 w-4" /> Upload Hero Image
-                            </Button>
-                        </div>
-                    </div>
-
-                    {/* Title */}
-                    <div className="space-y-1.5">
-                        <div className="flex items-center justify-between">
-                            <Label htmlFor="title" className="text-xs font-semibold text-muted-foreground">Title</Label>
-                            <span className="text-[10px] text-muted-foreground">{title.length}/{TITLE_MAX}</span>
-                        </div>
-                        <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={TITLE_MAX} className="h-9 text-sm font-semibold" />
-                    </div>
-
-                    {/* Description */}
-                    <div className="space-y-1.5">
-                        <div className="flex items-center justify-between">
-                            <Label htmlFor="description" className="text-xs font-semibold text-muted-foreground">Description</Label>
-                            <span className="text-[10px] text-muted-foreground">{description.length}/{DESC_MAX}</span>
-                        </div>
-                        <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={DESC_MAX} rows={3} className="text-sm" />
-                    </div>
-                </CardContent>
-            </Card>
-
-            {/* Section 2: Call to Action Buttons */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="text-lg">Call to Action Buttons</CardTitle>
-                    <CardDescription>Configure labels, target links, button styles, colors, and layout.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <div className="grid gap-6 md:grid-cols-2">
-                        {/* Button 1 */}
-                        <div className="space-y-4 rounded-lg border p-4 bg-card">
-                            <div className="flex items-center justify-between border-b pb-2">
-                                <h4 className="font-semibold text-sm">Button 1 (Primary)</h4>
-                                <Switch checked={btn1Enabled} onCheckedChange={setBtn1Enabled} />
-                            </div>
-                            {btn1Enabled && (
-                                <>
-                                    <div className="space-y-1.5">
-                                        <div className="flex items-center justify-between">
-                                            <Label className="text-xs">Button Label</Label>
-                                            <span className="text-[10px] text-muted-foreground">{btn1Label.length}/{BTN_LABEL_MAX}</span>
-                                        </div>
-                                        <Input value={btn1Label} onChange={(e) => setBtn1Label(e.target.value)} maxLength={BTN_LABEL_MAX} className="h-8 text-xs" />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <Label className="text-xs">Destination Link URL</Label>
-                                        <Input value={btn1Url} onChange={(e) => setBtn1Url(e.target.value)} className="h-8 text-xs font-mono" />
-                                    </div>
-                                    <div className="grid gap-3 sm:grid-cols-2">
-                                        <div className="space-y-1.5">
-                                            <Label className="text-xs">Button Style</Label>
-                                            <Select value={btn1Style} onValueChange={setBtn1Style}>
-                                                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="Primary">Primary</SelectItem>
-                                                    <SelectItem value="Outline">Outline</SelectItem>
-                                                    <SelectItem value="Ghost">Ghost</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <Label className="text-xs">Button Color</Label>
-                                            <div className="flex items-center gap-2">
-                                                <input type="color" value={btn1Color} onChange={(e) => setBtn1Color(e.target.value)} className="h-8 w-8 cursor-pointer rounded border p-0.5" />
-                                                <Input value={btn1Color} onChange={(e) => setBtn1Color(e.target.value)} className="h-8 font-mono text-xs uppercase" />
+            {/* Compact 3-Column Layout */}
+            <div className="grid grid-cols-1 xl:grid-cols-12 gap-3.5">
+                {/* Column 1: Hero Content, Button 1 & Button 2 (4 Cols) */}
+                <div className="xl:col-span-4 space-y-3">
+                    {/* Hero Content Card */}
+                    <Card className="shadow-xs border-slate-200">
+                        <CardHeader className="py-2.5 px-3 border-b">
+                            <CardTitle className="text-xs font-bold text-slate-800">Hero Content</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-3 space-y-2.5">
+                            {/* Hero Image Upload Box */}
+                            <div className="space-y-1">
+                                <Label className="text-[9px] font-black uppercase tracking-wider text-slate-500">HERO IMAGE</Label>
+                                {heroImage ? (
+                                    <div className="relative rounded-lg overflow-hidden border bg-card p-1.5 flex items-center gap-2.5">
+                                        <img src={heroImage} alt="Hero Preview" className="h-14 w-24 object-cover rounded border" />
+                                        <div className="space-y-1">
+                                            <p className="text-xs font-bold text-foreground">Hero Image</p>
+                                            <div className="flex items-center gap-1">
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        setCropImageRaw(heroImage);
+                                                        setCropOpen(true);
+                                                    }}
+                                                    className="h-5.5 text-[9px] px-1.5 gap-1"
+                                                >
+                                                    <Crop className="h-2.5 w-2.5" /> Re-crop
+                                                </Button>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => setHeroImage('')}
+                                                    className="h-5.5 text-[9px] px-1.5 text-destructive hover:bg-destructive/10"
+                                                >
+                                                    <Trash2 className="h-2.5 w-2.5" /> Remove
+                                                </Button>
                                             </div>
                                         </div>
                                     </div>
-                                </>
-                            )}
-                        </div>
-
-                        {/* Button 2 */}
-                        <div className="space-y-4 rounded-lg border p-4 bg-card">
-                            <div className="flex items-center justify-between border-b pb-2">
-                                <h4 className="font-semibold text-sm">Button 2 (Secondary)</h4>
-                                <Switch checked={btn2Enabled} onCheckedChange={setBtn2Enabled} />
+                                ) : (
+                                    <div className="relative flex flex-col items-center justify-center h-20 w-full rounded-xl border border-dashed border-slate-300 bg-slate-50/50 hover:bg-slate-100/60 cursor-pointer p-2 text-center">
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) handleFileSelect(file);
+                                            }}
+                                            className="absolute inset-0 opacity-0 cursor-pointer"
+                                        />
+                                        <Upload className="h-4 w-4 text-slate-400 mb-0.5" />
+                                        <span className="text-[11px] font-bold text-slate-700">Click to upload or drag & drop</span>
+                                        <span className="text-[9px] text-slate-400">Recommended: 1920x1080px (Max: 2MB)</span>
+                                    </div>
+                                )}
                             </div>
-                            {btn2Enabled && (
-                                <>
-                                    <div className="space-y-1.5">
-                                        <div className="flex items-center justify-between">
-                                            <Label className="text-xs">Button Label</Label>
-                                            <span className="text-[10px] text-muted-foreground">{btn2Label.length}/{BTN_LABEL_MAX}</span>
-                                        </div>
-                                        <Input value={btn2Label} onChange={(e) => setBtn2Label(e.target.value)} maxLength={BTN_LABEL_MAX} className="h-8 text-xs" />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <Label className="text-xs">Destination Link URL</Label>
-                                        <Input value={btn2Url} onChange={(e) => setBtn2Url(e.target.value)} className="h-8 text-xs font-mono" />
-                                    </div>
-                                    <div className="grid gap-3 sm:grid-cols-2">
-                                        <div className="space-y-1.5">
-                                            <Label className="text-xs">Button Style</Label>
-                                            <Select value={btn2Style} onValueChange={setBtn2Style}>
-                                                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="Primary">Primary</SelectItem>
-                                                    <SelectItem value="Outline">Outline</SelectItem>
-                                                    <SelectItem value="Ghost">Ghost</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <Label className="text-xs">Button Color</Label>
-                                            <div className="flex items-center gap-2">
-                                                <input type="color" value={btn2Color} onChange={(e) => setBtn2Color(e.target.value)} className="h-8 w-8 cursor-pointer rounded border p-0.5" />
-                                                <Input value={btn2Color} onChange={(e) => setBtn2Color(e.target.value)} className="h-8 font-mono text-xs uppercase" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </>
-                            )}
-                        </div>
-                    </div>
 
-                    {/* Button Layout */}
-                    <div className="space-y-1.5 max-w-md pt-2">
-                        <Label className="text-xs font-semibold text-muted-foreground">Button Alignment Layout</Label>
-                        <Select value={buttonLayout} onValueChange={setButtonLayout}>
-                            <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="left">Left Aligned</SelectItem>
-                                <SelectItem value="center">Center Aligned</SelectItem>
-                                <SelectItem value="right">Right Aligned</SelectItem>
-                                <SelectItem value="space-between">Space Between</SelectItem>
-                                <SelectItem value="stack">Stack Vertical</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </CardContent>
-            </Card>
+                            <BuilderCountedInput
+                                label="Badge Text (Optional)"
+                                value={badgeText}
+                                onChange={setBadgeText}
+                                maxLength={50}
+                                inputClassName="!h-7.5 text-xs"
+                            />
 
-            {/* Section 3: Background Overlay */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="text-lg">Background Overlay</CardTitle>
-                    <CardDescription>Dark contrast overlay settings for hero background image.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between rounded-lg border p-3 bg-card">
-                        <div>
-                            <h4 className="font-semibold text-sm">Enable Dark Overlay</h4>
-                            <p className="text-xs text-muted-foreground">Improve text contrast against background image.</p>
-                        </div>
-                        <Switch checked={overlayEnabled} onCheckedChange={setOverlayEnabled} />
-                    </div>
+                            <BuilderCountedInput
+                                label="Title *"
+                                value={title}
+                                onChange={setTitle}
+                                maxLength={70}
+                                inputClassName="!h-7.5 text-xs"
+                            />
 
-                    {overlayEnabled && (
-                        <div className="grid gap-4 md:grid-cols-2 pt-2">
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-semibold text-muted-foreground">Overlay Color</Label>
-                                <div className="flex items-center gap-2">
-                                    <input type="color" value={overlayColor} onChange={(e) => setOverlayColor(e.target.value)} className="h-9 w-9 cursor-pointer rounded border p-0.5" />
-                                    <Input value={overlayColor} onChange={(e) => setOverlayColor(e.target.value)} className="h-9 font-mono text-xs uppercase" />
+                            <BuilderCountedTextarea
+                                label="Description"
+                                value={description}
+                                onChange={setDescription}
+                                maxLength={300}
+                                textareaClassName="!min-h-[52px] !max-h-[52px] text-xs resize-none"
+                            />
+                        </CardContent>
+                    </Card>
+
+                    {/* Button 1 (Primary CTA) Card */}
+                    <Card className="shadow-xs border-slate-200">
+                        <CardHeader className="py-2 px-3 border-b flex flex-row items-center justify-between space-y-0">
+                            <CardTitle className="text-xs font-bold text-slate-800">Button 1 (Primary CTA)</CardTitle>
+                            <Switch checked={btn1Enabled} onCheckedChange={setBtn1Enabled} />
+                        </CardHeader>
+                        {btn1Enabled && (
+                            <CardContent className="p-3 space-y-2">
+                                <BuilderCountedInput
+                                    label="Label"
+                                    value={btn1Label}
+                                    onChange={setBtn1Label}
+                                    maxLength={30}
+                                    inputClassName="!h-7.5 text-xs"
+                                />
+
+                                <div className="space-y-1">
+                                    <Label className="text-[10px] font-semibold text-slate-600">Style</Label>
+                                    <Select value={btn1Style} onValueChange={(val: ButtonStyle) => setBtn1Style(val)}>
+                                        <SelectTrigger className="h-7.5 text-xs border-slate-200"><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Primary">Primary</SelectItem>
+                                            <SelectItem value="Outline">Outline</SelectItem>
+                                            <SelectItem value="Ghost">Ghost</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-2 p-1 rounded-lg bg-slate-100/70 border border-slate-200 text-xs">
+                                    <button
+                                        type="button"
+                                        onClick={() => setBtn1TargetMode('page')}
+                                        className={cn('flex items-center justify-center gap-1 py-0.5 rounded-md font-semibold text-[11px] transition-all', btn1TargetMode === 'page' ? 'bg-white text-blue-600 shadow-xs border border-blue-600/30' : 'text-slate-500')}
+                                    >
+                                        <span className={cn('h-2 w-2 rounded-full border', btn1TargetMode === 'page' ? 'bg-blue-600 border-blue-600' : 'border-slate-400')} /> Page
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setBtn1TargetMode('custom')}
+                                        className={cn('flex items-center justify-center gap-1 py-0.5 rounded-md font-semibold text-[11px] transition-all', btn1TargetMode === 'custom' ? 'bg-white text-blue-600 shadow-xs border border-blue-600/30' : 'text-slate-500')}
+                                    >
+                                        <span className={cn('h-2 w-2 rounded-full border', btn1TargetMode === 'custom' ? 'bg-blue-600 border-blue-600' : 'border-slate-400')} /> Custom
+                                    </button>
+                                </div>
+
+                                {btn1TargetMode === 'custom' && (
+                                    <BuilderCountedInput
+                                        label="Custom URL"
+                                        value={btn1CustomUrl}
+                                        onChange={setBtn1CustomUrl}
+                                        maxLength={200}
+                                        inputClassName="!h-7.5 text-xs"
+                                    />
+                                )}
+                            </CardContent>
+                        )}
+                    </Card>
+
+                    {/* Button 2 (Optional CTA) Card */}
+                    <Card className="shadow-xs border-slate-200">
+                        <CardHeader className="py-2 px-3 border-b flex flex-row items-center justify-between space-y-0">
+                            <CardTitle className="text-xs font-bold text-slate-800">Button 2 (Optional CTA)</CardTitle>
+                            <Switch checked={btn2Enabled} onCheckedChange={setBtn2Enabled} />
+                        </CardHeader>
+                        {btn2Enabled && (
+                            <CardContent className="p-3 space-y-2">
+                                <BuilderCountedInput
+                                    label="Label"
+                                    value={btn2Label}
+                                    onChange={setBtn2Label}
+                                    maxLength={30}
+                                    inputClassName="!h-7.5 text-xs"
+                                />
+
+                                <div className="space-y-1">
+                                    <Label className="text-[10px] font-semibold text-slate-600">Style</Label>
+                                    <Select value={btn2Style} onValueChange={(val: ButtonStyle) => setBtn2Style(val)}>
+                                        <SelectTrigger className="h-7.5 text-xs border-slate-200"><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Primary">Primary</SelectItem>
+                                            <SelectItem value="Outline">Outline</SelectItem>
+                                            <SelectItem value="Ghost">Ghost</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-2 p-1 rounded-lg bg-slate-100/70 border border-slate-200 text-xs">
+                                    <button
+                                        type="button"
+                                        onClick={() => setBtn2TargetMode('page')}
+                                        className={cn('flex items-center justify-center gap-1 py-0.5 rounded-md font-semibold text-[11px] transition-all', btn2TargetMode === 'page' ? 'bg-white text-blue-600 shadow-xs border border-blue-600/30' : 'text-slate-500')}
+                                    >
+                                        <span className={cn('h-2 w-2 rounded-full border', btn2TargetMode === 'page' ? 'bg-blue-600 border-blue-600' : 'border-slate-400')} /> Page
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setBtn2TargetMode('custom')}
+                                        className={cn('flex items-center justify-center gap-1 py-0.5 rounded-md font-semibold text-[11px] transition-all', btn2TargetMode === 'custom' ? 'bg-white text-blue-600 shadow-xs border border-blue-600/30' : 'text-slate-500')}
+                                    >
+                                        <span className={cn('h-2 w-2 rounded-full border', btn2TargetMode === 'custom' ? 'bg-blue-600 border-blue-600' : 'border-slate-400')} /> Custom
+                                    </button>
+                                </div>
+
+                                {btn2TargetMode === 'custom' && (
+                                    <BuilderCountedInput
+                                        label="Custom URL"
+                                        value={btn2CustomUrl}
+                                        onChange={setBtn2CustomUrl}
+                                        maxLength={200}
+                                        inputClassName="!h-7.5 text-xs"
+                                    />
+                                )}
+                            </CardContent>
+                        )}
+                    </Card>
+                </div>
+
+                {/* Column 2: Height, Overlay, Mobile, Layout & Alignment (3.5 Cols) */}
+                <div className="xl:col-span-3 space-y-3">
+                    {/* Hero Height Card */}
+                    <Card className="shadow-xs border-slate-200">
+                        <CardHeader className="py-2 px-3 border-b">
+                            <CardTitle className="text-xs font-bold text-slate-800">Hero Height</CardTitle>
+                            <CardDescription className="text-[10px]">Set height of hero section.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-3 space-y-1.5">
+                            {[
+                                { label: 'Small (400px)', value: 'small' },
+                                { label: 'Medium (600px)', value: 'medium' },
+                                { label: 'Large (800px)', value: 'large' },
+                                { label: 'Full Screen', value: 'fullscreen' },
+                            ].map((opt) => (
+                                <label key={opt.value} className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+                                    <input
+                                        type="radio"
+                                        name="heroHeight"
+                                        value={opt.value}
+                                        checked={heroHeight === opt.value}
+                                        onChange={() => setHeroHeight(opt.value as HeroHeight)}
+                                        className="h-3 w-3 text-blue-600 focus:ring-blue-500"
+                                    />
+                                    <span>{opt.label}</span>
+                                </label>
+                            ))}
+                        </CardContent>
+                    </Card>
+
+                    {/* Overlay Settings Card */}
+                    <Card className="shadow-xs border-slate-200">
+                        <CardHeader className="py-2 px-3 border-b">
+                            <CardTitle className="text-xs font-bold text-slate-800">Overlay Settings</CardTitle>
+                            <CardDescription className="text-[10px]">Improve text readability.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-3 space-y-2.5">
+                            <div className="flex items-center justify-between">
+                                <Label className="text-xs font-semibold text-slate-700">Enable Overlay</Label>
+                                <Switch checked={overlayEnabled} onCheckedChange={setOverlayEnabled} />
+                            </div>
+
+                            <div className="space-y-1">
+                                <Label className="text-[10px] font-semibold text-slate-600">Overlay Color</Label>
+                                <div className="flex items-center gap-2 rounded-lg border p-1 bg-white">
+                                    <input
+                                        type="color"
+                                        value={overlayColor}
+                                        onChange={(e) => setOverlayColor(e.target.value)}
+                                        className="h-6 w-7 cursor-pointer p-0.5 rounded border"
+                                    />
+                                    <span className="text-xs font-mono font-bold text-slate-700">{overlayColor}</span>
                                 </div>
                             </div>
 
-                            <div className="space-y-1.5">
-                                <div className="flex items-center justify-between">
-                                    <Label className="text-xs font-semibold text-muted-foreground">Overlay Opacity (%)</Label>
-                                    <span className="text-xs font-bold text-primary">{overlayOpacity}%</span>
+                            <div className="space-y-1">
+                                <div className="flex items-center justify-between text-xs">
+                                    <Label className="text-[10px] font-semibold text-slate-600">Overlay Opacity</Label>
+                                    <span className="font-bold text-slate-700">{overlayOpacity}%</span>
                                 </div>
-                                <input
-                                    type="range"
-                                    min="0"
-                                    max="100"
-                                    value={overlayOpacity}
-                                    onChange={(e) => setOverlayOpacity(Number(e.target.value))}
-                                    className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary mt-2"
+                                <Slider
+                                    value={[overlayOpacity]}
+                                    onValueChange={(val) => setOverlayOpacity(val[0])}
+                                    min={0}
+                                    max={100}
+                                    step={1}
                                 />
                             </div>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
+                        </CardContent>
+                    </Card>
+
+                    {/* Mobile Settings Card */}
+                    <Card className="shadow-xs border-slate-200">
+                        <CardHeader className="py-2 px-3 border-b">
+                            <CardTitle className="text-xs font-bold text-slate-800">Mobile Settings</CardTitle>
+                            <CardDescription className="text-[10px]">Customize for mobile devices.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-3 space-y-2">
+                            <div className="flex items-center justify-between">
+                                <Label className="text-[11px] font-semibold text-slate-700">Hide Button 2 on Mobile</Label>
+                                <Switch checked={hideBtn2Mobile} onCheckedChange={setHideBtn2Mobile} />
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                                <Label className="text-[11px] font-semibold text-slate-700">Center Content on Mobile</Label>
+                                <Switch checked={centerMobile} onCheckedChange={setCenterMobile} />
+                            </div>
+
+                            <div className="space-y-1">
+                                <Label className="text-[10px] font-semibold text-slate-600">Mobile Hero Height</Label>
+                                <Select value={mobileHeroHeight} onValueChange={setMobileHeroHeight}>
+                                    <SelectTrigger className="h-7.5 text-xs border-slate-200"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="small-300">Small (300px)</SelectItem>
+                                        <SelectItem value="medium-500">Medium (500px)</SelectItem>
+                                        <SelectItem value="large-700">Large (700px)</SelectItem>
+                                        <SelectItem value="fullscreen">Full Screen</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Button Layout Card */}
+                    <Card className="shadow-xs border-slate-200">
+                        <CardHeader className="py-2 px-3 border-b">
+                            <CardTitle className="text-xs font-bold text-slate-800">Button Layout</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-2.5">
+                            <div className="grid grid-cols-2 gap-1.5">
+                                {[
+                                    { value: 'left', label: 'Left' },
+                                    { value: 'center', label: 'Center' },
+                                    { value: 'right', label: 'Right' },
+                                    { value: 'space-between', label: 'Space Between' },
+                                    { value: 'stack', label: 'Stack Vertical' },
+                                ].map((opt) => (
+                                    <button
+                                        key={opt.value}
+                                        type="button"
+                                        onClick={() => setButtonLayout(opt.value as ButtonLayout)}
+                                        className={cn(
+                                            'flex flex-col items-center justify-center py-1.5 px-2 rounded border text-[10px] font-bold transition-all',
+                                            buttonLayout === opt.value
+                                                ? 'border-blue-600 bg-blue-50/70 text-blue-700 shadow-xs'
+                                                : 'border-slate-200 text-slate-500 hover:bg-slate-50'
+                                        )}
+                                    >
+                                        {opt.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Content Alignment Card */}
+                    <Card className="shadow-xs border-slate-200">
+                        <CardHeader className="py-2 px-3 border-b">
+                            <CardTitle className="text-xs font-bold text-slate-800">Content Alignment</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-2.5">
+                            <div className="grid grid-cols-3 gap-1.5">
+                                {[
+                                    { value: 'left', label: 'Left' },
+                                    { value: 'center', label: 'Center' },
+                                    { value: 'right', label: 'Right' },
+                                ].map((opt) => (
+                                    <button
+                                        key={opt.value}
+                                        type="button"
+                                        onClick={() => setContentAlign(opt.value as ContentAlign)}
+                                        className={cn(
+                                            'flex flex-col items-center justify-center py-1.5 px-1 rounded border text-[10px] font-bold transition-all',
+                                            contentAlign === opt.value
+                                                ? 'border-blue-600 bg-blue-50/70 text-blue-700 shadow-xs'
+                                                : 'border-slate-200 text-slate-500 hover:bg-slate-50'
+                                        )}
+                                    >
+                                        {opt.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Column 3: Live Preview Card (4.5 Cols) */}
+                <div className="xl:col-span-5 space-y-3">
+                    <Card className="sticky top-4 shadow-sm border-slate-200">
+                        <CardHeader className="py-2 px-3 border-b flex flex-row items-center justify-between">
+                            <div>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                                    <CardTitle className="text-xs font-bold">Live Preview</CardTitle>
+                                </div>
+                                <CardDescription className="text-[10px]">Real-time website hero preview.</CardDescription>
+                            </div>
+
+                            <div className="flex items-center gap-1 rounded-lg border p-1 bg-muted/40">
+                                <button
+                                    type="button"
+                                    onClick={() => setPreviewDevice('desktop')}
+                                    className={cn(
+                                        'flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-semibold',
+                                        previewDevice === 'desktop' ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground'
+                                    )}
+                                >
+                                    <Monitor className="h-3 w-3" /> Desktop
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setPreviewDevice('mobile')}
+                                    className={cn(
+                                        'flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-semibold',
+                                        previewDevice === 'mobile' ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground'
+                                    )}
+                                >
+                                    <Smartphone className="h-3 w-3" /> Mobile
+                                </button>
+                            </div>
+                        </CardHeader>
+
+                        <CardContent className="p-3 bg-slate-100">
+                            <div className={cn(
+                                'mx-auto rounded-xl overflow-hidden shadow-xl transition-all duration-300 border border-slate-800',
+                                previewDevice === 'mobile' ? 'max-w-[320px]' : 'w-full'
+                            )}>
+                                {/* Simulated Website Header Bar */}
+                                <div className="bg-[#0B0D17] px-3 py-1.5 text-[9px] text-white/70 border-b border-white/10 flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <span className="flex items-center gap-1"><Phone className="h-2.5 w-2.5 text-blue-400" /> +91 98765 43210</span>
+                                        {previewDevice === 'desktop' && <span className="flex items-center gap-1"><Mail className="h-2.5 w-2.5 text-blue-400" /> hello@eventify.com</span>}
+                                    </div>
+                                    <div className="flex items-center gap-1 text-[9px]">
+                                        <span>in</span>
+                                    </div>
+                                </div>
+
+                                {/* Simulated Nav Bar */}
+                                <div className="bg-white px-3 py-2 flex items-center justify-between text-xs text-slate-800 font-semibold border-b">
+                                    <span className="font-bold text-xs tracking-tight text-slate-900">Eventify</span>
+                                    {previewDevice === 'desktop' && (
+                                        <div className="flex items-center gap-2 text-[10px] text-slate-600">
+                                            <span>Home</span>
+                                            <span>About</span>
+                                            <span>Services</span>
+                                            <span>Events</span>
+                                            <span>Gallery</span>
+                                            <span>Contact</span>
+                                        </div>
+                                    )}
+                                    <Button size="sm" className="h-6 text-[9px] px-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold">
+                                        Book Now
+                                    </Button>
+                                </div>
+
+                                {/* Hero Banner Live Container */}
+                                <div className={cn(
+                                    'relative flex flex-col justify-center p-5 text-white min-h-[340px]',
+                                    heroHeight === 'small' ? 'min-h-[260px]' : heroHeight === 'large' ? 'min-h-[440px]' : 'min-h-[340px]'
+                                )}>
+                                    {/* Hero Background Image */}
+                                    {heroImage ? (
+                                        <img src={heroImage} alt="Hero Background" className="absolute inset-0 h-full w-full object-cover" />
+                                    ) : (
+                                        <div className="absolute inset-0 bg-[#0B0D17]" />
+                                    )}
+
+                                    {/* Overlay */}
+                                    {overlayEnabled && (
+                                        <div
+                                            className="absolute inset-0 transition-opacity"
+                                            style={{ backgroundColor: overlayColor, opacity: overlayOpacity / 100 }}
+                                        />
+                                    )}
+
+                                    {/* Content Wrapper */}
+                                    <div className={cn(
+                                        'relative z-10 space-y-3 max-w-xl',
+                                        contentAlign === 'center' || (previewDevice === 'mobile' && centerMobile)
+                                            ? 'mx-auto text-center'
+                                            : contentAlign === 'right'
+                                                ? 'ml-auto text-right'
+                                                : 'text-left'
+                                    )}>
+                                        {badgeText && (
+                                            <span className="inline-flex items-center rounded-full bg-blue-600 px-2.5 py-0.5 text-[9px] font-bold text-white shadow-xs">
+                                                {badgeText}
+                                            </span>
+                                        )}
+
+                                        <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white leading-tight">
+                                            {title || 'We Create Unforgettable Moments'}
+                                        </h1>
+
+                                        <p className="text-[11px] text-slate-200 leading-relaxed max-w-md">
+                                            {description || 'From elegant weddings to corporate events, we handle every detail with creativity and perfection.'}
+                                        </p>
+
+                                        {/* Action Buttons */}
+                                        <div className={cn(
+                                            'flex flex-wrap gap-2 pt-1',
+                                            buttonLayout === 'center' || (previewDevice === 'mobile' && centerMobile)
+                                                ? 'justify-center'
+                                                : buttonLayout === 'right'
+                                                    ? 'justify-end'
+                                                    : buttonLayout === 'space-between'
+                                                        ? 'justify-between'
+                                                        : buttonLayout === 'stack'
+                                                            ? 'flex-col items-stretch'
+                                                            : 'justify-start'
+                                        )}>
+                                            {btn1Enabled && (
+                                                <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 h-8">
+                                                    {btn1Label}
+                                                </Button>
+                                            )}
+
+                                            {btn2Enabled && !(previewDevice === 'mobile' && hideBtn2Mobile) && (
+                                                <Button variant="outline" size="sm" className="border-white/40 text-white hover:bg-white/10 font-bold text-xs px-4 h-8 bg-transparent">
+                                                    {btn2Label}
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
+
+            {/* Media Crop Dialog */}
+            <MediaCropDialog
+                open={cropOpen}
+                imageUrl={cropImageRaw}
+                fileName={cropFileName}
+                mimeType={cropMimeType}
+                onClose={() => setCropOpen(false)}
+                onCropped={handleCropped}
+            />
         </div>
     );
 }

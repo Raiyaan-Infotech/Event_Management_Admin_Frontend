@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -28,6 +28,7 @@ export function RolesContent() {
   const { user: currentUser } = useAuth();
   const currentUserLevel = getUserRoleLevel(currentUser);
   const [search, setSearch] = useState("");
+  const [isNavigating, setIsNavigating] = useState(false);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const debouncedSearch = useDebounce(search, 300);
@@ -81,7 +82,7 @@ export function RolesContent() {
       <div className="space-y-6">
 
         {/* Page Loader */}
-        <PageLoader open={isLoading || isFetching || deleteRoleMutation.isPending || toggleStatusMutation.isPending} />
+        <PageLoader open={isLoading || isFetching || deleteRoleMutation.isPending || toggleStatusMutation.isPending || isNavigating} />
 
         <Card>
           <CardHeader>
@@ -105,7 +106,13 @@ export function RolesContent() {
                     className="pl-10"
                   />
                 </div>
-                <Button onClick={() => router.push("/admin/platform/roles/create")}>
+                <Button
+                  isLoading={isNavigating}
+                  onClick={() => {
+                    setIsNavigating(true);
+                    router.push("/admin/platform/roles/create");
+                  }}
+                >
                   <Plus className="mr-2 h-4 w-4" />
                   {t("roles.add_role")}
                 </Button>
