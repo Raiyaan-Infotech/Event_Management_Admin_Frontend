@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Save, RotateCcw, Sparkles, Search, Pencil, Trash2 } from 'lucide-react';
+import { Save, RotateCcw, Sparkles, Search, Pencil, Trash2, HelpCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -141,11 +141,15 @@ export default function ContactCategoriesPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={handleResetForm} className="gap-1.5 h-9 text-xs">
-                        <RotateCcw className="h-3.5 w-3.5" /> Reset
+                    <Button variant="outline" size="sm" onClick={() => toast.info('Manage category topics for organizing customer contact form inquiries.')} className="h-8 px-3 text-xs font-semibold text-slate-600 border-slate-200 hover:bg-slate-50">
+                        <HelpCircle className="h-3.5 w-3.5 text-slate-400 mr-1" /> How It Works
                     </Button>
-                    <Button size="sm" onClick={handleSaveCategory} disabled={isSaving} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white h-9 text-xs">
-                        <Save className="h-4 w-4" /> {isSaving ? 'Saving...' : 'Save Category'}
+                    <Button variant="outline" size="sm" onClick={handleResetForm} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
+                        <RotateCcw className="h-3.5 w-3.5 text-rose-500 mr-1" /> Reset
+                    </Button>
+                    <Button size="sm" onClick={handleSaveCategory} disabled={isSaving} className="h-8 px-4 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs">
+                        {isSaving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+                        {isSaving ? 'Saving...' : 'Save Category'}
                     </Button>
                 </div>
             </div>

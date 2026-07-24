@@ -1,18 +1,25 @@
 'use client';
 
 import { useState } from 'react';
-import { Save, Plus, Trash2, Sparkles, PanelLeft, ImageIcon, ListChecks, Check, Monitor } from 'lucide-react';
+import { Save, Plus, Trash2, Sparkles, PanelLeft, ImageIcon, ListChecks, Check, Monitor, Smartphone, HelpCircle, RotateCcw, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { BuilderCountedInput, BuilderCountedTextarea } from './builder-field';
+import { cn } from '@/lib/utils';
 
 interface BulletRow {
     id: string;
     text: string;
 }
+
+const initialBullets: BulletRow[] = [
+    { id: '1', text: 'Real-time RSVP & Guest Management' },
+    { id: '2', text: 'Direct Messaging with Event Vendors' },
+    { id: '3', text: 'Custom Website Builder & Gallery Settings' },
+];
 
 export function LoginPageContent() {
     const [enabled, setEnabled] = useState(true);
@@ -21,18 +28,27 @@ export function LoginPageContent() {
     const [description, setDescription] = useState('Manage enquiries, bookings and event details from one secure account.');
     const [showBackgroundImage, setShowBackgroundImage] = useState(false);
     const [backgroundImage, setBackgroundImage] = useState('');
-    const [bullets, setBullets] = useState<BulletRow[]>([
-        { id: '1', text: 'Real-time RSVP & Guest Management' },
-        { id: '2', text: 'Direct Messaging with Event Vendors' },
-        { id: '3', text: 'Custom Website Builder & Gallery Settings' },
-    ]);
+    const [bullets, setBullets] = useState<BulletRow[]>(initialBullets);
     const [isSaving, setIsSaving] = useState(false);
+    const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
 
     const MAX_BULLETS = 5;
     const EYEBROW_MAX = 40;
     const TITLE_MAX = 60;
     const DESCRIPTION_MAX = 100;
     const BULLET_MAX = 40;
+
+    const handleReset = () => {
+        setEnabled(true);
+        setEyebrow('Event workspace');
+        setTitle('Everything for your event, in one place.');
+        setDescription('Manage enquiries, bookings and event details from one secure account.');
+        setShowBackgroundImage(false);
+        setBackgroundImage('');
+        setBullets(initialBullets);
+        setPreviewDevice('desktop');
+        toast.info('Login page settings reset to defaults.');
+    };
 
     const handleBackgroundSelect = (file: File) => {
         const reader = new FileReader();
@@ -73,9 +89,18 @@ export function LoginPageContent() {
                     <h1 className="mt-1 text-xl font-bold tracking-tight">Login Page Settings</h1>
                     <p className="text-xs text-muted-foreground">Customize side panel copy, background image, and highlight bullets for client login.</p>
                 </div>
-                <Button size="sm" onClick={handleSave} disabled={isSaving} className="gap-1.5 h-8 text-xs">
-                    <Save className="h-3.5 w-3.5" /> {isSaving ? 'Saving...' : 'Save Login Page'}
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => toast.info('Customize client login panel background image, copy, and bullet features.')} className="h-8 px-3 text-xs font-semibold text-slate-600 border-slate-200 hover:bg-slate-50">
+                        <HelpCircle className="h-3.5 w-3.5 text-slate-400 mr-1" /> How It Works
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleReset} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
+                        <RotateCcw className="h-3.5 w-3.5 text-rose-500 mr-1" /> Reset
+                    </Button>
+                    <Button size="sm" onClick={handleSave} disabled={isSaving} className="h-8 px-4 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs">
+                        {isSaving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+                        {isSaving ? 'Saving...' : 'Save Login Page'}
+                    </Button>
+                </div>
             </div>
 
             {/* Split Screen: Left Controls | Right Live Branded Login Panel Preview */}
@@ -239,21 +264,43 @@ export function LoginPageContent() {
                 <div className="sticky top-4 space-y-2">
                     <Card className="border-primary/30 shadow-xs overflow-hidden">
                         <CardHeader className="bg-muted/30 p-3 border-b">
-                            <div className="flex items-center justify-between">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
                                 <div className="flex items-center gap-2">
                                     <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                                     <CardTitle className="text-xs font-bold uppercase tracking-wider text-foreground">Live Login Side Panel Preview</CardTitle>
                                 </div>
-                                <Badge variant="outline" className="text-[9px] gap-1 bg-background h-5 px-1.5">
-                                    <Monitor className="h-2.5 w-2.5" /> Live Render
-                                </Badge>
+                                <div className="flex items-center gap-1 rounded-lg border p-0.5 bg-background shadow-2xs">
+                                    <button
+                                        type="button"
+                                        onClick={() => setPreviewDevice('desktop')}
+                                        className={cn(
+                                            'flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-bold transition-all',
+                                            previewDevice === 'desktop' ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-500 hover:text-slate-900'
+                                        )}
+                                    >
+                                        <Monitor className="h-3 w-3" /> Desktop
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setPreviewDevice('mobile')}
+                                        className={cn(
+                                            'flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-bold transition-all',
+                                            previewDevice === 'mobile' ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-500 hover:text-slate-900'
+                                        )}
+                                    >
+                                        <Smartphone className="h-3 w-3" /> Mobile
+                                    </button>
+                                </div>
                             </div>
                             <CardDescription className="text-[10px]">Real-time interactive rendering of client login branded panel.</CardDescription>
                         </CardHeader>
 
-                        <CardContent className="p-0">
+                        <CardContent className="p-0 bg-slate-50/50">
                             {enabled ? (
-                                <div className="relative min-h-[440px] flex flex-col justify-between p-5 bg-primary text-primary-foreground overflow-hidden">
+                                <div className={cn(
+                                    'relative min-h-[440px] flex flex-col justify-between p-5 bg-primary text-primary-foreground overflow-hidden transition-all duration-300',
+                                    previewDevice === 'mobile' ? 'max-w-[320px] mx-auto my-3 rounded-xl border border-slate-300 shadow-md' : 'w-full'
+                                )}>
                                     {/* Optional Background Image */}
                                     {showBackgroundImage && backgroundImage && (
                                         <>

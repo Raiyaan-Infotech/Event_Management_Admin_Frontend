@@ -11,6 +11,8 @@ import {
     MessageSquareQuote,
     Calendar,
     X,
+    HelpCircle,
+    RotateCcw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +23,16 @@ import { BuilderCountedInput } from './builder-field';
 import { MultiSelectPages } from './multi-select-pages';
 import { DraggableItemList, AddCustomLinkRow, type DraggableItemListItem, type ChildMenuItem } from './draggable-item-list';
 
+const initialSelectedPages = [
+    'home',
+    'about-us',
+    'pages',
+    'service',
+    'events',
+    'gallery',
+    'contact-us',
+];
+
 export function NavMenuContent() {
     const [logoUrl, setLogoUrl] = useState<string>('');
     const [companyName, setCompanyName] = useState('RA EVENTS');
@@ -29,6 +41,7 @@ export function NavMenuContent() {
     const [showSignIn, setShowSignIn] = useState(true);
     const [menuHeading, setMenuHeading] = useState('Nav Menu');
     const [isSaving, setIsSaving] = useState(false);
+    const [selectedPages, setSelectedPages] = useState<string[]>(initialSelectedPages);
 
     const handleLogoSelect = (file: File) => {
         const reader = new FileReader();
@@ -39,16 +52,16 @@ export function NavMenuContent() {
         reader.readAsDataURL(file);
     };
 
-    // Selected Pages tags
-    const [selectedPages, setSelectedPages] = useState<string[]>([
-        'home',
-        'about-us',
-        'pages',
-        'service',
-        'events',
-        'gallery',
-        'contact-us',
-    ]);
+    const handleReset = () => {
+        setLogoUrl('');
+        setCompanyName('RA EVENTS');
+        setCity('Melapalayam (Tirunelveli)');
+        setShowLogin(true);
+        setShowSignIn(true);
+        setMenuHeading('Nav Menu');
+        setSelectedPages(initialSelectedPages);
+        toast.info('Nav menu settings reset to defaults.');
+    };
 
     const pageOptions = [
         { label: 'Home', value: 'home', icon: Home },
@@ -127,10 +140,18 @@ export function NavMenuContent() {
                         Manage navigation brand logo, company name, city, buttons, and menu ordering.
                     </p>
                 </div>
-                <Button size="sm" onClick={handleSave} disabled={isSaving} className="gap-2">
-                    {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                    {isSaving ? 'Saving...' : 'Save Changes'}
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => toast.info('Configure your site navigation links, logo, brand name, and page links.')} className="h-8 px-3 text-xs font-semibold text-slate-600 border-slate-200 hover:bg-slate-50">
+                        <HelpCircle className="h-3.5 w-3.5 text-slate-400 mr-1" /> How It Works
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleReset} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
+                        <RotateCcw className="h-3.5 w-3.5 text-rose-500 mr-1" /> Reset
+                    </Button>
+                    <Button size="sm" onClick={handleSave} disabled={isSaving} className="h-8 px-4 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs">
+                        {isSaving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+                        {isSaving ? 'Saving...' : 'Save Changes'}
+                    </Button>
+                </div>
             </div>
 
             {/* Card 1: Nav Menu Brand */}

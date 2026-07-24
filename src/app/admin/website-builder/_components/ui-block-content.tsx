@@ -20,6 +20,8 @@ import {
     RotateCcw,
     Save,
     Sparkles,
+    HelpCircle,
+    Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -146,9 +148,18 @@ export function UIBlockContent() {
                     <p className="text-sm text-muted-foreground">Manage your website UI blocks and UI Block settings.</p>
                 </div>
 
-                <Button size="sm" onClick={handleSave} disabled={isSaving} className="gap-2">
-                    <Save className="h-4 w-4" /> {isSaving ? 'Saving...' : 'Save Changes'}
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => toast.info('Organize and toggle visibility for website layout blocks.')} className="h-8 px-3 text-xs font-semibold text-slate-600 border-slate-200 hover:bg-slate-50">
+                        <HelpCircle className="h-3.5 w-3.5 text-slate-400 mr-1" /> How It Works
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleResetDefaults} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
+                        <RotateCcw className="h-3.5 w-3.5 text-rose-500 mr-1" /> Reset
+                    </Button>
+                    <Button size="sm" onClick={handleSave} disabled={isSaving} className="h-8 px-4 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs">
+                        {isSaving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+                        {isSaving ? 'Saving...' : 'Save Changes'}
+                    </Button>
+                </div>
             </div>
 
             {/* Main Super Admin Card Table */}

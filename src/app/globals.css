@@ -165,3 +165,59 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
   --primary-foreground: 0 0% 100%;
   --ring: 220 100% 50%;
 }
+
+/* ── Sidebar Custom Scrollbar ────────────────────────────────────────── */
+/* Blends with sidebar theme background & removes ugly native scrollbars */
+[data-sidebar="sidebar"],
+[data-sidebar="content"],
+[data-sidebar="group-content"],
+.sidebar-scroll,
+aside {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--sidebar-foreground) / 0.3) transparent;
+}
+
+[data-sidebar="sidebar"]::-webkit-scrollbar,
+[data-sidebar="content"]::-webkit-scrollbar,
+[data-sidebar="group-content"]::-webkit-scrollbar,
+.sidebar-scroll::-webkit-scrollbar,
+aside::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+[data-sidebar="sidebar"]::-webkit-scrollbar-track,
+[data-sidebar="content"]::-webkit-scrollbar-track,
+[data-sidebar="group-content"]::-webkit-scrollbar-track,
+.sidebar-scroll::-webkit-scrollbar-track,
+aside::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+[data-sidebar="sidebar"]::-webkit-scrollbar-thumb,
+[data-sidebar="content"]::-webkit-scrollbar-thumb,
+[data-sidebar="group-content"]::-webkit-scrollbar-thumb,
+.sidebar-scroll::-webkit-scrollbar-thumb,
+aside::-webkit-scrollbar-thumb {
+  background: hsl(var(--sidebar-foreground) / 0.3) !important;
+  border-radius: 9999px !important;
+}
+
+[data-sidebar="sidebar"]::-webkit-scrollbar-thumb:hover,
+[data-sidebar="content"]::-webkit-scrollbar-thumb:hover,
+[data-sidebar="group-content"]::-webkit-scrollbar-thumb:hover,
+.sidebar-scroll::-webkit-scrollbar-thumb:hover,
+aside::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--sidebar-foreground) / 0.5) !important;
+}
+
+[data-sidebar="sidebar"]::-webkit-scrollbar-button,
+[data-sidebar="content"]::-webkit-scrollbar-button,
+[data-sidebar="group-content"]::-webkit-scrollbar-button,
+.sidebar-scroll::-webkit-scrollbar-button,
+aside::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+

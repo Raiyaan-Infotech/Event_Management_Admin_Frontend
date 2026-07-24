@@ -15,6 +15,8 @@ import {
     Smartphone,
     Send,
     Plus,
+    Loader2,
+    HelpCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -101,11 +103,15 @@ export default function ContactUsPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={handleReset} className="gap-1.5 h-9 text-xs">
-                        <RotateCcw className="h-3.5 w-3.5" /> Reset
+                    <Button variant="outline" size="sm" onClick={() => toast.info('Configure your site contact details, social links, map, and dynamic form.')} className="h-8 px-3 text-xs font-semibold text-slate-600 border-slate-200 hover:bg-slate-50">
+                        <HelpCircle className="h-3.5 w-3.5 text-slate-400 mr-1" /> How It Works
                     </Button>
-                    <Button size="sm" onClick={handleSave} disabled={isSaving} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white h-9 text-xs">
-                        <Save className="h-4 w-4" /> {isSaving ? 'Saving...' : 'Save Changes'}
+                    <Button variant="outline" size="sm" onClick={handleReset} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
+                        <RotateCcw className="h-3.5 w-3.5 text-rose-500 mr-1" /> Reset
+                    </Button>
+                    <Button size="sm" onClick={handleSave} disabled={isSaving} className="h-8 px-4 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs">
+                        {isSaving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+                        {isSaving ? 'Saving...' : 'Save Changes'}
                     </Button>
                 </div>
             </div>
@@ -157,14 +163,16 @@ export default function ContactUsPage() {
                             <CardTitle className="text-sm font-bold">Enable / Disable Components</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
-                            {/* Component 1: Contact Details */}
-                            <div className="flex items-center justify-between rounded-lg border p-3 bg-slate-50/40">
-                                <div>
-                                    <h4 className="font-bold text-xs text-foreground">Contact Details</h4>
-                                    <p className="text-[11px] text-muted-foreground">Contact information is required and always visible.</p>
+                            {/* Component 1: Contact Details (Static Mode Only) */}
+                            {editorMode === 'static' && (
+                                <div className="flex items-center justify-between rounded-lg border p-3 bg-slate-50/40">
+                                    <div>
+                                        <h4 className="font-bold text-xs text-foreground">Contact Details</h4>
+                                        <p className="text-[11px] text-muted-foreground">Contact information is required and always visible.</p>
+                                    </div>
+                                    <Switch checked={enableContactDetails} onCheckedChange={setEnableContactDetails} />
                                 </div>
-                                <Switch checked={enableContactDetails} onCheckedChange={setEnableContactDetails} />
-                            </div>
+                            )}
 
                             {/* Component 2: Social Links */}
                             <div className="flex items-center justify-between rounded-lg border p-3 bg-slate-50/40">
@@ -186,8 +194,8 @@ export default function ContactUsPage() {
                         </CardContent>
                     </Card>
 
-                    {/* Section 3: Contact Information */}
-                    {enableContactDetails && (
+                    {/* Section 3: Contact Information (Static Mode Only) */}
+                    {editorMode === 'static' && enableContactDetails && (
                         <Card className="shadow-xs">
                             <CardHeader className="pb-3">
                                 <CardTitle className="text-sm font-bold">Contact Information</CardTitle>

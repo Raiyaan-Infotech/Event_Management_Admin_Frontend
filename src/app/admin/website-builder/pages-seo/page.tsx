@@ -15,6 +15,8 @@ import {
     Search,
     Code,
     Check,
+    HelpCircle,
+    Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -36,17 +38,19 @@ interface WebPageItem {
     updatedAt: string;
 }
 
+const initialPagesSeo: WebPageItem[] = [
+    { id: '1', title: 'About Us', slug: 'about-us', type: 'system', status: 'published', updatedAt: '2026-07-20' },
+    { id: '2', title: 'Services & Offerings', slug: 'services', type: 'system', status: 'published', updatedAt: '2026-07-21' },
+    { id: '3', title: 'Events & Packages', slug: 'events', type: 'system', status: 'published', updatedAt: '2026-07-21' },
+    { id: '4', title: 'Terms & Conditions', slug: 'terms-conditions', type: 'system', status: 'published', updatedAt: '2026-07-22' },
+    { id: '5', title: 'Privacy Policy', slug: 'privacy-policy', type: 'system', status: 'published', updatedAt: '2026-07-22' },
+    { id: '6', title: 'Maintenance Notice', slug: 'maintenance', type: 'system', status: 'published', updatedAt: '2026-07-22' },
+    { id: '7', title: 'FAQ & Event Guide', slug: 'event-guide', type: 'custom', status: 'published', updatedAt: '2026-07-23' },
+];
+
 export default function PagesSeoSettingsPage() {
     // Pages State
-    const [pages, setPages] = useState<WebPageItem[]>([
-        { id: '1', title: 'About Us', slug: 'about-us', type: 'system', status: 'published', updatedAt: '2026-07-20' },
-        { id: '2', title: 'Services & Offerings', slug: 'services', type: 'system', status: 'published', updatedAt: '2026-07-21' },
-        { id: '3', title: 'Events & Packages', slug: 'events', type: 'system', status: 'published', updatedAt: '2026-07-21' },
-        { id: '4', title: 'Terms & Conditions', slug: 'terms-conditions', type: 'system', status: 'published', updatedAt: '2026-07-22' },
-        { id: '5', title: 'Privacy Policy', slug: 'privacy-policy', type: 'system', status: 'published', updatedAt: '2026-07-22' },
-        { id: '6', title: 'Maintenance Notice', slug: 'maintenance', type: 'system', status: 'published', updatedAt: '2026-07-22' },
-        { id: '7', title: 'FAQ & Event Guide', slug: 'event-guide', type: 'custom', status: 'published', updatedAt: '2026-07-23' },
-    ]);
+    const [pages, setPages] = useState<WebPageItem[]>(initialPagesSeo);
 
     // SEO States
     const [metaTitle, setMetaTitle] = useState('Event Management — Premier Luxury Events & Wedding Planning');
@@ -56,6 +60,16 @@ export default function PagesSeoSettingsPage() {
     const [pixelId, setPixelId] = useState('1098234789123049');
 
     const [isSaving, setIsSaving] = useState(false);
+
+    const handleResetAll = () => {
+        setPages(initialPagesSeo);
+        setMetaTitle('Event Management — Premier Luxury Events & Wedding Planning');
+        setMetaDescription('Leading event management platform delivering bespoke wedding decor, corporate summits, and customized package planning.');
+        setMetaKeywords('event planning, wedding decor, corporate galas, venue booking, catering packages');
+        setAnalyticsId('G-89X72K109P');
+        setPixelId('1098234789123049');
+        toast.info('Pages and SEO settings reset to defaults.');
+    };
 
     const handleResetSystemPage = (title: string) => {
         toast.info(`"${title}" system page content reset to default copy.`);
@@ -99,16 +113,24 @@ export default function PagesSeoSettingsPage() {
             {/* Page Header */}
             <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-5">
                 <div>
-                   
                     <h1 className="mt-1 text-2xl font-bold tracking-tight">Website Pages & SEO Settings</h1>
                     <p className="text-sm text-muted-foreground">
                         Manage system & custom page content, meta tags, OpenGraph previews, and tracking codes.
                     </p>
                 </div>
 
-                <Button size="sm" onClick={handleSaveSeo} disabled={isSaving} className="gap-2">
-                    <Save className="h-4 w-4" /> {isSaving ? 'Saving...' : 'Save Settings'}
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => toast.info('Configure site page lists, SEO metadata, and Google/FB tracking IDs.')} className="h-8 px-3 text-xs font-semibold text-slate-600 border-slate-200 hover:bg-slate-50">
+                        <HelpCircle className="h-3.5 w-3.5 text-slate-400 mr-1" /> How It Works
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleResetAll} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
+                        <RotateCcw className="h-3.5 w-3.5 text-rose-500 mr-1" /> Reset
+                    </Button>
+                    <Button size="sm" onClick={handleSaveSeo} disabled={isSaving} className="h-8 px-4 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs">
+                        {isSaving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+                        {isSaving ? 'Saving...' : 'Save Settings'}
+                    </Button>
+                </div>
             </div>
 
             <Tabs defaultValue="pages" className="w-full space-y-6">

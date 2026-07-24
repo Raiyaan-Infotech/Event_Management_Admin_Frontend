@@ -108,6 +108,24 @@ File: [page.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/
 - **Contact Information:** Character-counted Email, Mobile, and Address inputs.
 - **Social Links Table:** Table with `#`, `Social Network`, `Link` input, and ON/OFF `Show` switches.
 
+### 🟢 SEO Settings Enhancements (`_components/seo-content.tsx`)
+File: [seo-content.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/seo-content.tsx)
+- **Keywords Helper & Badge Pills:** Updated helper text to `"Enter keyword and press Enter (or separate keywords with commas)."` and added interactive keyword badge pills with `×` remove buttons.
+- **Select Dropdowns:** Standardized `Robots Meta Tag` (`Index, Follow`, `NoIndex, NoFollow`, etc.) and `Language` (`English`, `Spanish`, `French`, `German`, `Arabic`, `Hindi`) select dropdowns.
+- **SEO Optimization Tip Box:** Added styled callout card (`💡 SEO Optimization Tip`) providing guidance on title/description length limits and canonical indexing.
+
+### 🟢 Login Page Live Preview Device Switcher (`_components/login-page-content.tsx`)
+File: [login-page-content.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/login-page-content.tsx)
+- Replaced static badge with interactive **`Desktop | Mobile`** view switcher buttons in live preview header card for testing client login side panel layout across viewports.
+
+### 🟢 Contact Submissions List Table (`contact-us/list/page.tsx`)
+File: [page.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/contact-us/list/page.tsx)
+- Rebuilt contact list into a full, interactive 6-column **shadcn `<Table>`**: `#` (index & drag handle), `Contact Person` (name + email avatar), `Category` (pill badge), `Message` details, `Date`, and `Actions` (red outline trash button) with real-time search input.
+
+### 🟢 Header Section Divider Line Contrast Enhancement
+Files: [login-page-content.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/login-page-content.tsx), [header-content.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/header-content.tsx), [nav-menu-content.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/nav-menu-content.tsx), [seo-content.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/seo-content.tsx), [footer-content.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/footer-content.tsx), [ui-block-content.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/ui-block-content.tsx)
+- Updated section header bottom border lines from faint 1px lines (`border-b`) to prominent **`border-b-2 border-slate-300/80`** to ensure clear, crisp visual separation between the top title/action bar and content cards.
+
 ---
 
 ## 3. Verification & Build Integrity

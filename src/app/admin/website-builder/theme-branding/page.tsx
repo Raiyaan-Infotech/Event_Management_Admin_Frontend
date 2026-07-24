@@ -14,6 +14,9 @@ import {
     Shield,
     Sliders,
     Layers,
+    HelpCircle,
+    RotateCcw,
+    Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -71,27 +74,24 @@ const ADMIN_PALETTES: AdminPalette[] = [
 ];
 
 export default function ThemeBrandingSettingsPage() {
-    // Theme Mode
     const [colorMode, setColorMode] = useState<'palette' | 'custom'>('palette');
     const [selectedPaletteId, setSelectedPaletteId] = useState('p1');
-
-    // Custom 4 Colors
     const [customPrimaryBg, setCustomPrimaryBg] = useState('#1e3a8a');
     const [customPrimaryText, setCustomPrimaryText] = useState('#0f172a');
     const [customSecondaryText, setCustomSecondaryText] = useState('#475569');
     const [customParagraph, setCustomParagraph] = useState('#334155');
 
-    // Login Page Brand Panel States
+    // Login Branding
     const [showLoginPanel, setShowLoginPanel] = useState(true);
-    const [loginEyebrow, setLoginEyebrow] = useState('WELCOME BACK');
-    const [loginTitle, setLoginTitle] = useState('Manage Your Special Events & Celebrations');
-    const [loginDescription, setLoginDescription] = useState('Sign in to access your customized event dashboard, guest list, vendor bookings, and invoices.');
+    const [loginEyebrow, setLoginEyebrow] = useState('Event workspace');
+    const [loginTitle, setLoginTitle] = useState('Everything for your event, in one place.');
+    const [loginDescription, setLoginDescription] = useState('Manage enquiries, bookings and event details from one secure account.');
+    const [loginBgUrl, setLoginBgUrl] = useState('');
     const [loginBullets, setLoginBullets] = useState<string[]>([
         'Real-time RSVP & Guest Management',
         'Direct Messaging with Event Vendors',
         'Custom Website Builder & Gallery Settings',
     ]);
-    const [showLoginBgImage, setShowLoginBgImage] = useState(false);
 
     const [isSaving, setIsSaving] = useState(false);
 
@@ -112,6 +112,25 @@ export default function ThemeBrandingSettingsPage() {
                   paragraph: activePalette.paragraph,
               };
 
+    const handleReset = () => {
+        setColorMode('palette');
+        setSelectedPaletteId('p1');
+        setCustomPrimaryBg('#1e3a8a');
+        setCustomPrimaryText('#0f172a');
+        setCustomSecondaryText('#475569');
+        setCustomParagraph('#334155');
+        setLoginEyebrow('Event workspace');
+        setLoginTitle('Everything for your event, in one place.');
+        setLoginDescription('Manage enquiries, bookings and event details from one secure account.');
+        setLoginBgUrl('');
+        setLoginBullets([
+            'Real-time RSVP & Guest Management',
+            'Direct Messaging with Event Vendors',
+            'Custom Website Builder & Gallery Settings',
+        ]);
+        toast.info('Theme branding settings reset to defaults.');
+    };
+
     const handleAddBullet = () => {
         if (loginBullets.length >= 5) {
             toast.error('Maximum 5 bullet points allowed.');
@@ -121,15 +140,15 @@ export default function ThemeBrandingSettingsPage() {
     };
 
     const handleRemoveBullet = (index: number) => {
-        setLoginBullets(loginBullets.filter((_, idx) => idx !== index));
+        setLoginBullets(loginBullets.filter((_, i) => i !== index));
     };
 
     const handleSaveTheme = () => {
         setIsSaving(true);
         setTimeout(() => {
             setIsSaving(false);
-            toast.success('Theme palette and Login Page branding updated!');
-        }, 600);
+            toast.success('Theme and Login branding settings saved successfully!');
+        }, 500);
     };
 
     return (
@@ -137,16 +156,24 @@ export default function ThemeBrandingSettingsPage() {
             {/* Page Header */}
             <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-5">
                 <div>
-                    
                     <h1 className="mt-1 text-2xl font-bold tracking-tight">Theme Palettes & Login Branding</h1>
                     <p className="text-sm text-muted-foreground">
                         Configure 4-color website theme palettes and customize the client login/registration brand panel.
                     </p>
                 </div>
 
-                <Button size="sm" onClick={handleSaveTheme} disabled={isSaving} className="gap-2">
-                    <Save className="h-4 w-4" /> {isSaving ? 'Saving...' : 'Save Settings'}
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => toast.info('Configure site color schemes and login panel branding options.')} className="h-8 px-3 text-xs font-semibold text-slate-600 border-slate-200 hover:bg-slate-50">
+                        <HelpCircle className="h-3.5 w-3.5 text-slate-400 mr-1" /> How It Works
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleReset} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
+                        <RotateCcw className="h-3.5 w-3.5 text-rose-500 mr-1" /> Reset
+                    </Button>
+                    <Button size="sm" onClick={handleSaveTheme} disabled={isSaving} className="h-8 px-4 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs">
+                        {isSaving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+                        {isSaving ? 'Saving...' : 'Save Settings'}
+                    </Button>
+                </div>
             </div>
 
             <Tabs defaultValue="theme" className="w-full space-y-6">

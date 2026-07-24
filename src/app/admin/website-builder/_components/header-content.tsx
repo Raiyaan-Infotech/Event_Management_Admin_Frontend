@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Save, Loader2, Sparkles, Youtube, Instagram, Twitter, Link as LinkIcon, Trash2 } from 'lucide-react';
+import { Save, Loader2, Sparkles, Youtube, Instagram, Twitter, Link as LinkIcon, Trash2, HelpCircle, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -18,36 +18,46 @@ interface SocialLinkItem {
     iconName: string;
 }
 
+const initialSocialLinks: SocialLinkItem[] = [
+    {
+        id: '1',
+        label: 'YouTube',
+        url: 'https://youtube.com/eventinvite',
+        color: '#FF4747',
+        iconName: 'youtube',
+    },
+    {
+        id: '2',
+        label: 'Instagram',
+        url: 'https://insta.com',
+        color: '#FF476C',
+        iconName: 'instagram',
+    },
+    {
+        id: '3',
+        label: 'Twitter',
+        url: 'https://twitter.com',
+        color: '#1877F2',
+        iconName: 'twitter',
+    },
+];
+
 export function HeaderContent() {
     const [showSocialIcons, setShowSocialIcons] = useState(true);
     const [mobileNumber, setMobileNumber] = useState('9884699435');
     const [email, setEmail] = useState('eventcraftf@gmail.com');
-    const [socialLinks, setSocialLinks] = useState<SocialLinkItem[]>([
-        {
-            id: '1',
-            label: 'YouTube',
-            url: 'https://youtube.com/eventinvite',
-            color: '#FF4747',
-            iconName: 'youtube',
-        },
-        {
-            id: '2',
-            label: 'Instagram',
-            url: 'https://insta.com',
-            color: '#FF476C',
-            iconName: 'instagram',
-        },
-        {
-            id: '3',
-            label: 'Twitter',
-            url: 'https://twitter.com',
-            color: '#1877F2',
-            iconName: 'twitter',
-        },
-    ]);
+    const [socialLinks, setSocialLinks] = useState<SocialLinkItem[]>(initialSocialLinks);
     const [isSaving, setIsSaving] = useState(false);
 
     const MAX_LINKS = 10;
+
+    const handleReset = () => {
+        setShowSocialIcons(true);
+        setMobileNumber('9884699435');
+        setEmail('eventcraftf@gmail.com');
+        setSocialLinks(initialSocialLinks);
+        toast.info('Header settings reset to defaults.');
+    };
 
     const handleAddSocialLink = () => {
         if (socialLinks.length >= MAX_LINKS) {
@@ -80,16 +90,24 @@ export function HeaderContent() {
 
     return (
         <div className="space-y-6">
-            {/* Page Header */}
+            {/* Top Page Header Bar */}
             <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-5">
                 <div>
                     <h1 className="mt-1 text-2xl font-bold tracking-tight">Header Settings</h1>
                     <p className="text-sm text-muted-foreground">Manage social icons toggle, contact phone, email, and social links.</p>
                 </div>
-                <Button size="sm" onClick={handleSave} disabled={isSaving} className="gap-2">
-                    {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                    {isSaving ? 'Saving...' : 'Save Changes'}
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => toast.info('Configure your website header contact details and social media icon links.')} className="h-8 px-3 text-xs font-semibold text-slate-600 border-slate-200 hover:bg-slate-50">
+                        <HelpCircle className="h-3.5 w-3.5 text-slate-400 mr-1" /> How It Works
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleReset} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
+                        <RotateCcw className="h-3.5 w-3.5 text-rose-500 mr-1" /> Reset
+                    </Button>
+                    <Button size="sm" onClick={handleSave} disabled={isSaving} className="h-8 px-4 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs">
+                        {isSaving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+                        {isSaving ? 'Saving...' : 'Save Changes'}
+                    </Button>
+                </div>
             </div>
 
             {/* Card 1: Header Settings */}

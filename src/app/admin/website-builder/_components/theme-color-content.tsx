@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Save, Sparkles, Palette, Check } from 'lucide-react';
+import { Save, Sparkles, Palette, Check, HelpCircle, RotateCcw, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -49,6 +49,19 @@ export function ThemeColorContent() {
               paragraph_color: activePalette.paragraph,
           };
 
+    const handleReset = () => {
+        setSelectedPaletteId('p1');
+        setPendingPaletteId('p1');
+        setIsCustom(false);
+        setCustomColors({
+            primary_bg_color: '#1e3a8a',
+            primary_text_color: '#0f172a',
+            secondary_text_color: '#475569',
+            paragraph_color: '#334155',
+        });
+        toast.info('Theme colors reset to defaults.');
+    };
+
     const handleApply = () => {
         if (pendingPaletteId === 'custom') {
             setIsCustom(true);
@@ -71,13 +84,21 @@ export function ThemeColorContent() {
         <div className="space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-5">
                 <div>
-                    
                     <h1 className="mt-1 text-2xl font-bold tracking-tight">Theme Color</h1>
                     <p className="text-sm text-muted-foreground">Select a website color palette or customize 4-color hex codes.</p>
                 </div>
-                <Button size="sm" onClick={handleSave} disabled={isSaving} className="gap-2">
-                    <Save className="h-4 w-4" /> {isSaving ? 'Saving...' : 'Save Theme Color'}
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => toast.info('Select site color scheme presets or enter custom 4-color hex palette.')} className="h-8 px-3 text-xs font-semibold text-slate-600 border-slate-200 hover:bg-slate-50">
+                        <HelpCircle className="h-3.5 w-3.5 text-slate-400 mr-1" /> How It Works
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleReset} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
+                        <RotateCcw className="h-3.5 w-3.5 text-rose-500 mr-1" /> Reset
+                    </Button>
+                    <Button size="sm" onClick={handleSave} disabled={isSaving} className="h-8 px-4 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs">
+                        {isSaving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+                        {isSaving ? 'Saving...' : 'Save Theme Color'}
+                    </Button>
+                </div>
             </div>
 
             {/* Section 1: Color Palette Selector */}

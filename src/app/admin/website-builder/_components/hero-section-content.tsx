@@ -12,6 +12,8 @@ import {
     Trash2,
     Phone,
     Mail,
+    HelpCircle,
+    Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -126,11 +128,15 @@ export function HeroSectionContent() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={handleReset} className="gap-1.5 h-8 text-xs">
-                        <RotateCcw className="h-3.5 w-3.5" /> Reset
+                    <Button variant="outline" size="sm" onClick={() => toast.info('Configure homepage hero title, subtitle, CTA buttons, and background banner.')} className="h-8 px-3 text-xs font-semibold text-slate-600 border-slate-200 hover:bg-slate-50">
+                        <HelpCircle className="h-3.5 w-3.5 text-slate-400 mr-1" /> How It Works
                     </Button>
-                    <Button size="sm" onClick={handleSave} disabled={isSaving} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white h-8 text-xs">
-                        <Save className="h-4 w-4" /> {isSaving ? 'Saving...' : 'Save Changes'}
+                    <Button variant="outline" size="sm" onClick={handleReset} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
+                        <RotateCcw className="h-3.5 w-3.5 text-rose-500 mr-1" /> Reset
+                    </Button>
+                    <Button size="sm" onClick={handleSave} disabled={isSaving} className="h-8 px-4 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs">
+                        {isSaving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+                        {isSaving ? 'Saving...' : 'Save Changes'}
                     </Button>
                 </div>
             </div>

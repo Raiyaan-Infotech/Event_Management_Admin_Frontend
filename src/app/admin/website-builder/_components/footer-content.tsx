@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Save, Sparkles, Trash2, Phone, Mail, MapPin, Monitor, Smartphone, Lock } from 'lucide-react';
+import { Save, Sparkles, Trash2, Phone, Mail, MapPin, Monitor, Smartphone, Lock, HelpCircle, RotateCcw, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -19,17 +19,27 @@ interface ContactBlock {
     address: string;
 }
 
+const initialDefaultContact: ContactBlock = {
+    mobile: '9884699435',
+    email: 'eventcraftf@gmail.com',
+    address: '100 Celebration Way, Suite 400, New York, NY 10001',
+};
+
+const initialSelectedPages = [
+    'about-us',
+    'services',
+    'events',
+    'terms-conditions',
+    'privacy-policy',
+];
+
 export function FooterContent() {
     const [companyLogo, setCompanyLogo] = useState('');
     const [companyName, setCompanyName] = useState('RA EVENTS');
     const [shortDescription, setShortDescription] = useState('Full-service event management, wedding planning, corporate galas, and customized decor packages tailored to your special occasions.');
     const [contactType, setContactType] = useState<ContactType>('default');
     
-    const [defaultContact, setDefaultContact] = useState<ContactBlock>({
-        mobile: '9884699435',
-        email: 'eventcraftf@gmail.com',
-        address: '100 Celebration Way, Suite 400, New York, NY 10001',
-    });
+    const [defaultContact, setDefaultContact] = useState<ContactBlock>(initialDefaultContact);
 
     const [alternativeContact, setAlternativeContact] = useState<ContactBlock>({
         mobile: '9876543210',
@@ -38,13 +48,7 @@ export function FooterContent() {
     });
 
     const [topListHeading, setTopListHeading] = useState('Quick Links');
-    const [selectedPages, setSelectedPages] = useState<string[]>([
-        'about-us',
-        'services',
-        'events',
-        'terms-conditions',
-        'privacy-policy',
-    ]);
+    const [selectedPages, setSelectedPages] = useState<string[]>(initialSelectedPages);
     const [newsletterEnabled, setNewsletterEnabled] = useState(true);
     const [showSocialLinks, setShowSocialLinks] = useState(true);
     const [previewDevice, setPreviewDevice] = useState<PreviewDevice>('desktop');
@@ -64,6 +68,28 @@ export function FooterContent() {
         { label: 'Contact Us', value: 'contact-us' },
     ];
 
+    const handleReset = () => {
+        setCompanyLogo('');
+        setCompanyName('RA EVENTS');
+        setShortDescription('Full-service event management, wedding planning, corporate galas, and customized decor packages tailored to your special occasions.');
+        setContactType('default');
+        setDefaultContact(initialDefaultContact);
+        setTopListHeading('Quick Links');
+        setSelectedPages(initialSelectedPages);
+        setNewsletterEnabled(true);
+        setShowSocialLinks(true);
+        toast.info('Footer settings reset to defaults.');
+    };
+
+    const handleLogoSelect = (file: File) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            setCompanyLogo(e.target?.result as string);
+            toast.success('Company logo updated.');
+        };
+        reader.readAsDataURL(file);
+    };
+
     const quickLinkLabels = selectedPages
         .map((val) => pageOptions.find((opt) => opt.value === val)?.label)
         .filter(Boolean);
@@ -74,15 +100,6 @@ export function FooterContent() {
         } else {
             setDefaultContact((prev) => ({ ...prev, ...patch }));
         }
-    };
-
-    const handleLogoSelect = (file: File) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            setCompanyLogo(e.target?.result as string);
-            toast.success('Company logo updated.');
-        };
-        reader.readAsDataURL(file);
     };
 
     const handleSave = () => {

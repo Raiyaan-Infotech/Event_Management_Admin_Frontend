@@ -54,12 +54,12 @@ export function TopHeader() {
 
   if (!mounted) {
     return (
-      <div className="h-10 bg-muted/50 border-b" />
+      <div className="h-10 bg-muted/50 border-b-2 border-slate-200/90" />
     );
   }
 
   return (
-    <div className="h-10 bg-muted/50 border-b">
+    <div className="h-10 bg-muted/50 border-b-2 border-slate-200/90">
       <div className="h-full flex items-center justify-between px-2 sm:px-4">
         <div className="text-xs text-muted-foreground hidden sm:block">
           {t('dashboard.welcome_admin')}

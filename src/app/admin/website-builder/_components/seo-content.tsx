@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Save, Sparkles, FileText, Settings2, Upload, Crop, Trash2 } from 'lucide-react';
+import { Save, Sparkles, FileText, Settings2, Upload, Crop, Trash2, HelpCircle, RotateCcw, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -38,6 +38,21 @@ export function SeoContent() {
     const AUTHOR_MAX = 80;
     const SITENAME_MAX = 60;
 
+    const handleReset = () => {
+        setMetaTitle('Eventify - Best Event Management & Planning Services');
+        setMetaDescription('Eventify offers top-notch event management and planning services for weddings, corporate events, birthdays, and more.');
+        setKeywords('event management, event planning, wedding events, corporate events, birthday parties');
+        setOgImageUrl('');
+        setRobotsMeta('index-follow');
+        setCanonicalUrl('https://www.eventify.com');
+        setAuthor('Eventify Team');
+        setLanguage('en');
+        setSiteName('Eventify');
+        setSitemapEnabled(true);
+        setStructuredData(false);
+        toast.info('SEO settings reset to defaults.');
+    };
+
     const handleFileSelect = (file: File) => {
         setCropFileName(file.name);
         setCropMimeType(file.type || 'image/jpeg');
@@ -59,7 +74,7 @@ export function SeoContent() {
         setIsSaving(true);
         setTimeout(() => {
             setIsSaving(false);
-            toast.success('SEO Settings saved successfully!');
+            toast.success('SEO settings saved successfully!');
         }, 500);
     };
 
@@ -70,9 +85,18 @@ export function SeoContent() {
                     <h1 className="mt-1 text-2xl font-bold tracking-tight">SEO Settings</h1>
                     <p className="text-sm text-muted-foreground">Manage metadata, OpenGraph images, robots indexing, canonical URLs, and structured data.</p>
                 </div>
-                <Button size="sm" onClick={handleSave} disabled={isSaving} className="gap-2">
-                    <Save className="h-4 w-4" /> {isSaving ? 'Saving...' : 'Save SEO Settings'}
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => toast.info('Configure meta titles, OpenGraph images, canonical URLs, and index tags for SEO.')} className="h-8 px-3 text-xs font-semibold text-slate-600 border-slate-200 hover:bg-slate-50">
+                        <HelpCircle className="h-3.5 w-3.5 text-slate-400 mr-1" /> How It Works
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleReset} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
+                        <RotateCcw className="h-3.5 w-3.5 text-rose-500 mr-1" /> Reset
+                    </Button>
+                    <Button size="sm" onClick={handleSave} disabled={isSaving} className="h-8 px-4 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs">
+                        {isSaving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+                        {isSaving ? 'Saving...' : 'Save SEO Settings'}
+                    </Button>
+                </div>
             </div>
 
             <div className="grid gap-6 lg:grid-cols-2">
@@ -104,10 +128,45 @@ export function SeoContent() {
                         />
 
                         {/* Keywords */}
-                        <div className="space-y-1.5">
+                        <div className="space-y-2">
                             <Label htmlFor="keywords" className="text-xs font-semibold text-muted-foreground">Keywords</Label>
-                            <Input id="keywords" value={keywords} onChange={(e) => setKeywords(e.target.value)} placeholder="event management, wedding planning, corporate events" className="h-9 text-sm" />
-                            <p className="text-[10px] text-muted-foreground">Add relevant keywords separated by commas.</p>
+                            <Input
+                                id="keywords"
+                                value={keywords}
+                                onChange={(e) => setKeywords(e.target.value)}
+                                placeholder="event management, wedding planning, corporate events"
+                                className="h-9 text-sm"
+                            />
+                            <p className="text-[11px] text-slate-500 font-medium">Enter keyword and press Enter (or separate keywords with commas).</p>
+                            
+                            {/* Interactive Keyword Badge Pills */}
+                            {keywords.trim() && (
+                                <div className="flex flex-wrap gap-1.5 pt-1">
+                                    {keywords.split(',').map((kw, idx) => {
+                                        const tag = kw.trim();
+                                        if (!tag) return null;
+                                        return (
+                                            <Badge key={idx} variant="secondary" className="gap-1 bg-blue-50 text-blue-700 border-blue-200 text-xs py-0.5 px-2 font-semibold">
+                                                {tag}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const updated = keywords
+                                                            .split(',')
+                                                            .map((k) => k.trim())
+                                                            .filter((_, i) => i !== idx)
+                                                            .join(', ');
+                                                        setKeywords(updated);
+                                                    }}
+                                                    className="hover:text-blue-900 ml-0.5"
+                                                >
+                                                    ×
+                                                </button>
+                                            </Badge>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
 
                         {/* OG Image Upload & Image Cropper */}
@@ -180,11 +239,11 @@ export function SeoContent() {
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        {/* Robots Meta */}
+                        {/* Robots Meta Tag Dropdown */}
                         <div className="space-y-1.5">
                             <Label className="text-xs font-semibold text-muted-foreground">Robots Meta Tag</Label>
                             <Select value={robotsMeta} onValueChange={setRobotsMeta}>
-                                <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                                <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Select Robots Meta" /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="index-follow">Index, Follow</SelectItem>
                                     <SelectItem value="noindex-nofollow">NoIndex, NoFollow</SelectItem>
@@ -210,17 +269,19 @@ export function SeoContent() {
                             maxLength={AUTHOR_MAX}
                         />
 
-                        {/* Language & Site Name */}
+                        {/* Language & Site Name Dropdowns */}
                         <div className="grid gap-4 sm:grid-cols-2">
                             <div className="space-y-1.5">
                                 <Label className="text-xs font-semibold text-muted-foreground">Language</Label>
                                 <Select value={language} onValueChange={setLanguage}>
-                                    <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                                    <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Select Language" /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="en">English (en)</SelectItem>
                                         <SelectItem value="es">Spanish (es)</SelectItem>
                                         <SelectItem value="fr">French (fr)</SelectItem>
                                         <SelectItem value="de">German (de)</SelectItem>
+                                        <SelectItem value="ar">Arabic (ar)</SelectItem>
+                                        <SelectItem value="hi">Hindi (hi)</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -253,6 +314,17 @@ export function SeoContent() {
                         </div>
                     </CardContent>
                 </Card>
+            </div>
+
+            {/* SEO Optimization Tip Callout Box */}
+            <div className="flex items-start gap-3 rounded-xl border border-blue-100 bg-blue-50/70 p-4 text-xs text-blue-900 shadow-2xs">
+                <Sparkles className="h-5 w-5 shrink-0 text-blue-600 mt-0.5" />
+                <div className="space-y-0.5">
+                    <p className="font-bold text-blue-950 text-sm">💡 SEO Optimization Tip</p>
+                    <p className="text-blue-800 leading-relaxed">
+                        Keep your <strong>Meta Title</strong> under 60 characters and <strong>Meta Description</strong> under 160 characters for optimal display in search engine snippets. Using accurate <strong>Robots Meta</strong> and canonical URLs prevents duplicate indexing issues.
+                    </p>
+                </div>
             </div>
 
             {/* Media Crop Dialog */}

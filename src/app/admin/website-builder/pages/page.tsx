@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { Plus, Trash2, FileText, Sparkles, Pencil, Search } from 'lucide-react';
+import { Plus, Trash2, FileText, Sparkles, Pencil, Search, HelpCircle, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -19,22 +19,30 @@ interface WebPageItem {
     status: 'Published' | 'Unpublished';
 }
 
+const initialPages: WebPageItem[] = [
+    { id: '1', num: 1, title: 'About Us', slug: 'about-us', type: 'Fixed', status: 'Published' },
+    { id: '2', num: 2, title: 'Service', slug: 'service', type: 'Fixed', status: 'Published' },
+    { id: '3', num: 3, title: 'Events', slug: 'events', type: 'Fixed', status: 'Published' },
+    { id: '4', num: 4, title: 'Terms & Conditions', slug: 'terms-conditions', type: 'Fixed', status: 'Published' },
+    { id: '5', num: 5, title: 'Privacy Policy', slug: 'privacy-policy', type: 'Fixed', status: 'Published' },
+    { id: '6', num: 6, title: 'Maintenance', slug: 'maintenance', type: 'Fixed', status: 'Published' },
+];
+
 export default function PagesListPage() {
     const [searchQuery, setSearchQuery] = useState('');
-    const [pages, setPages] = useState<WebPageItem[]>([
-        { id: '1', num: 1, title: 'About Us', slug: 'about-us', type: 'Fixed', status: 'Published' },
-        { id: '2', num: 2, title: 'Service', slug: 'service', type: 'Fixed', status: 'Published' },
-        { id: '3', num: 3, title: 'Events', slug: 'events', type: 'Fixed', status: 'Published' },
-        { id: '4', num: 4, title: 'Terms & Conditions', slug: 'terms-conditions', type: 'Fixed', status: 'Published' },
-        { id: '5', num: 5, title: 'Privacy Policy', slug: 'privacy-policy', type: 'Fixed', status: 'Published' },
-        { id: '6', num: 6, title: 'Maintenance', slug: 'maintenance', type: 'Fixed', status: 'Published' },
-    ]);
+    const [pages, setPages] = useState<WebPageItem[]>(initialPages);
 
     const filteredPages = useMemo(() => {
         if (!searchQuery.trim()) return pages;
         const q = searchQuery.toLowerCase();
         return pages.filter((p) => p.title.toLowerCase().includes(q) || p.slug.toLowerCase().includes(q));
     }, [pages, searchQuery]);
+
+    const handleReset = () => {
+        setSearchQuery('');
+        setPages(initialPages);
+        toast.info('Pages list reset to defaults.');
+    };
 
     const handleDeletePage = (id: string) => {
         const page = pages.find((p) => p.id === id);
@@ -51,16 +59,23 @@ export default function PagesListPage() {
             {/* Page Header */}
             <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-5">
                 <div>
-                    
                     <h1 className="mt-1 text-2xl font-bold tracking-tight">Pages List</h1>
                     <p className="text-sm text-muted-foreground">View and manage all your website pages.</p>
                 </div>
 
-                <Button size="sm" asChild className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white">
-                    <Link href="/admin/website-builder/pages/create">
-                        <Plus className="h-4 w-4" /> Create Page
-                    </Link>
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => toast.info('View, create, and manage fixed or custom site CMS pages.')} className="h-8 px-3 text-xs font-semibold text-slate-600 border-slate-200 hover:bg-slate-50">
+                        <HelpCircle className="h-3.5 w-3.5 text-slate-400 mr-1" /> How It Works
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleReset} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
+                        <RotateCcw className="h-3.5 w-3.5 text-rose-500 mr-1" /> Reset
+                    </Button>
+                    <Button size="sm" asChild className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white h-8 text-xs font-bold shadow-xs">
+                        <Link href="/admin/website-builder/pages/create">
+                            <Plus className="h-4 w-4" /> Create Page
+                        </Link>
+                    </Button>
+                </div>
             </div>
 
             {/* Main Card */}
