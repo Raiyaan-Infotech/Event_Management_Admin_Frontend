@@ -165,7 +165,6 @@ const menuItems: MenuItem[] = [
       { labelKey: "SEO Settings", href: "/admin/website-builder/seo", icon: Search },
       { labelKey: "Footer Settings", href: "/admin/website-builder/footer", icon: Settings },
       { labelKey: "Theme Color", href: "/admin/website-builder/theme-color", icon: Palette },
-      /*
       {
         labelKey: "Pages",
         icon: FileText,
@@ -209,7 +208,6 @@ const menuItems: MenuItem[] = [
           { labelKey: "Clients", href: "/admin/website-builder/clients", icon: Users },
         ],
       },
-      */
     ],
   },
   {

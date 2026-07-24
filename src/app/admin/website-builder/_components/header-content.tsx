@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Save, Sparkles, Youtube, Instagram, Twitter, Link as LinkIcon, Trash2 } from 'lucide-react';
+import { Save, Loader2, Sparkles, Youtube, Instagram, Twitter, Link as LinkIcon, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -83,17 +83,12 @@ export function HeaderContent() {
             {/* Page Header */}
             <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-5">
                 <div>
-                    <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="gap-1 border-primary/30 bg-primary/5 text-primary">
-                            <Sparkles className="h-3 w-3" /> Website Builder
-                        </Badge>
-                        <Badge variant="secondary" className="text-xs">Super Admin Panel</Badge>
-                    </div>
                     <h1 className="mt-1 text-2xl font-bold tracking-tight">Header Settings</h1>
                     <p className="text-sm text-muted-foreground">Manage social icons toggle, contact phone, email, and social links.</p>
                 </div>
                 <Button size="sm" onClick={handleSave} disabled={isSaving} className="gap-2">
-                    <Save className="h-4 w-4" /> {isSaving ? 'Saving...' : 'Save Changes'}
+                    {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                    {isSaving ? 'Saving...' : 'Save Changes'}
                 </Button>
             </div>
 

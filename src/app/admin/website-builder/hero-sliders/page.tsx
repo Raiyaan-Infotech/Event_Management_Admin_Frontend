@@ -166,14 +166,7 @@ export default function HeroSlidersSettingsPage() {
             {/* Page Header */}
             <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-5">
                 <div>
-                    <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="gap-1 border-primary/30 bg-primary/5 text-primary">
-                            <Sparkles className="h-3 w-3" /> Website Builder
-                        </Badge>
-                        <Badge variant="secondary" className="text-xs">
-                            Super Admin Panel
-                        </Badge>
-                    </div>
+                    
                     <h1 className="mt-1 text-2xl font-bold tracking-tight">Hero Section & Sliders Editor</h1>
                     <p className="text-sm text-muted-foreground">
                         Customize the main hero banner content, CTAs, layout styles, and interactive sliders.

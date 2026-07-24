@@ -12,7 +12,7 @@ type SwitchProps = React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root> 
 
 const Switch = React.forwardRef<React.ElementRef<typeof SwitchPrimitives.Root>, SwitchProps>(
   ({ className, pending, onText = "ON", offText = "OFF", ...props }, ref) => {
-    // Calculate width based on longest text: thumb(20px) + text space + padding
+    // Width calculation for comfortable text display: thumb(20px) + text space + padding
     const longestText = onText.length > offText.length ? onText : offText;
     const trackWidth = Math.max(64, 28 + longestText.length * 7);
 
@@ -24,53 +24,53 @@ const Switch = React.forwardRef<React.ElementRef<typeof SwitchPrimitives.Root>, 
         <div
           style={{ width: pendingWidth }}
           className={cn(
-            "inline-flex h-7 shrink-0 items-center rounded-full border-2 border-transparent bg-yellow-100 dark:bg-yellow-900/40 relative px-1 cursor-not-allowed opacity-80",
+            "inline-flex h-7 shrink-0 items-center rounded-full border border-amber-200 bg-amber-100 text-amber-700 relative px-1 cursor-not-allowed opacity-90",
             className
           )}
         >
           <span
             aria-hidden
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-yellow-600 select-none pointer-events-none"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-extrabold select-none pointer-events-none tracking-wider"
           >
             {pendingText}
           </span>
-          <span className="block h-5 w-5 rounded-full bg-yellow-400 shadow-lg animate-pulse" />
+          <span className="block h-5 w-5 rounded-full bg-amber-500 shadow-xs animate-pulse" />
         </div>
       );
     }
 
-    const thumbTranslate = trackWidth - 28;
+    const thumbTranslate = trackWidth - 26;
 
     return (
       <SwitchPrimitives.Root
         style={{ width: trackWidth }}
         className={cn(
-          "peer inline-flex h-6 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-green-100 data-[state=unchecked]:bg-red-100 relative px-1",
+          "peer inline-flex h-7 shrink-0 cursor-pointer items-center rounded-full border border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-emerald-100 data-[state=unchecked]:bg-red-100 relative px-0.5 shadow-xs",
           className
         )}
         {...props}
         ref={ref}
       >
-        {/* On text - left side, visible when checked */}
+        {/* On text - left side, clearly visible when checked */}
         <span
           aria-hidden
-          className="absolute left-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-green-600 select-none pointer-events-none transition-opacity"
+          className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] font-extrabold text-emerald-700 select-none pointer-events-none transition-opacity tracking-wider"
           style={{ opacity: props.checked ? 1 : 0 }}
         >
           {onText}
         </span>
-        {/* Off text - right side, visible when unchecked */}
+        {/* Off text - right side, clearly visible when unchecked */}
         <span
           aria-hidden
-          className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-red-600 select-none pointer-events-none transition-opacity"
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-extrabold text-red-600 select-none pointer-events-none transition-opacity tracking-wider"
           style={{ opacity: props.checked ? 0 : 1 }}
         >
           {offText}
         </span>
         <SwitchPrimitives.Thumb
           className={cn(
-            "pointer-events-none block h-5 w-5 rounded-full shadow-lg ring-0 transition-transform z-10",
-            "data-[state=checked]:bg-green-400 data-[state=unchecked]:bg-red-400"
+            "pointer-events-none block h-5 w-5 rounded-full shadow-xs ring-0 transition-transform z-10",
+            "data-[state=checked]:bg-emerald-500 data-[state=unchecked]:bg-red-500"
           )}
           style={{
             transform: `translateX(${props.checked ? thumbTranslate : 0}px)`,

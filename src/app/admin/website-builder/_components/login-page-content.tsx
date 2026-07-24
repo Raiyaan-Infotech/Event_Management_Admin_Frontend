@@ -70,12 +70,6 @@ export function LoginPageContent() {
             {/* Page Header */}
             <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-4">
                 <div>
-                    <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="gap-1 border-primary/30 bg-primary/5 text-primary text-[10px]">
-                            <Sparkles className="h-3 w-3" /> Website Builder
-                        </Badge>
-                        <Badge variant="secondary" className="text-[10px]">Super Admin Panel</Badge>
-                    </div>
                     <h1 className="mt-1 text-xl font-bold tracking-tight">Login Page Settings</h1>
                     <p className="text-xs text-muted-foreground">Customize side panel copy, background image, and highlight bullets for client login.</p>
                 </div>

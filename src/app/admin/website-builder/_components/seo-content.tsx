@@ -67,12 +67,6 @@ export function SeoContent() {
         <div className="space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-5">
                 <div>
-                    <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="gap-1 border-primary/30 bg-primary/5 text-primary">
-                            <Sparkles className="h-3 w-3" /> Website Builder
-                        </Badge>
-                        <Badge variant="secondary" className="text-xs">Super Admin Panel</Badge>
-                    </div>
                     <h1 className="mt-1 text-2xl font-bold tracking-tight">SEO Settings</h1>
                     <p className="text-sm text-muted-foreground">Manage metadata, OpenGraph images, robots indexing, canonical URLs, and structured data.</p>
                 </div>

@@ -142,12 +142,6 @@ export function UIBlockContent() {
             {/* Page Header */}
             <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-5">
                 <div>
-                    <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="gap-1 border-primary/30 bg-primary/5 text-primary">
-                            <Sparkles className="h-3 w-3" /> Website Builder
-                        </Badge>
-                        <Badge variant="secondary" className="text-xs">Super Admin Panel</Badge>
-                    </div>
                     <h1 className="mt-1 text-2xl font-bold tracking-tight">Web UI Block</h1>
                     <p className="text-sm text-muted-foreground">Manage your website UI blocks and UI Block settings.</p>
                 </div>
@@ -189,7 +183,7 @@ export function UIBlockContent() {
                                     : 'border-input bg-background text-muted-foreground hover:bg-muted'
                             )}
                         >
-                            All Blocks <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{blocks.length}</Badge>
+                            All Blocks <Badge className="text-[10px] bg-emerald-800/20 text-emerald-950 font-bold px-1.5 py-0 border-0">{blocks.length}</Badge>
                         </button>
 
                         <button
@@ -295,11 +289,11 @@ export function UIBlockContent() {
                                             {/* Actions Column */}
                                             <TableCell className="text-right">
                                                 {item.locked ? (
-                                                    <Badge variant="secondary" className="gap-1 text-[10px] font-semibold text-muted-foreground">
-                                                        <Lock className="h-3 w-3" /> Locked
+                                                    <Badge variant="outline" className="gap-1 text-[11px] font-semibold border-slate-200 bg-slate-100 text-slate-500 shadow-none">
+                                                        <Lock className="h-3 w-3 text-slate-400" /> Locked
                                                     </Badge>
                                                 ) : (
-                                                    <span className="text-xs text-muted-foreground font-mono">•••</span>
+                                                    <span className="text-xs text-slate-400 font-mono">•••</span>
                                                 )}
                                             </TableCell>
                                         </TableRow>

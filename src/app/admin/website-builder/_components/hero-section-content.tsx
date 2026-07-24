@@ -120,12 +120,7 @@ export function HeroSectionContent() {
             {/* Header */}
             <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-3.5">
                 <div>
-                    <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="gap-1 border-primary/30 bg-primary/5 text-primary text-xs">
-                            <Sparkles className="h-3 w-3" /> Website Builder
-                        </Badge>
-                        <Badge variant="secondary" className="text-xs">Super Admin Panel</Badge>
-                    </div>
+                    
                     <h1 className="mt-1 text-xl font-bold tracking-tight">Hero Section</h1>
                     <p className="text-xs text-muted-foreground">Manage your website hero section and Hero Section settings.</p>
                 </div>
@@ -329,6 +324,23 @@ export function HeroSectionContent() {
                                         <span className={cn('h-2 w-2 rounded-full border', btn2TargetMode === 'custom' ? 'bg-blue-600 border-blue-600' : 'border-slate-400')} /> Custom
                                     </button>
                                 </div>
+
+                                {btn2TargetMode === 'page' && (
+                                     <div className="space-y-1">
+                                         <Label className="text-[10px] font-semibold text-slate-600">Button Page</Label>
+                                         <Select value={btn2CustomUrl || 'contact'} onValueChange={setBtn2CustomUrl}>
+                                             <SelectTrigger className="h-7.5 text-xs border-slate-200"><SelectValue placeholder="Select Page" /></SelectTrigger>
+                                             <SelectContent>
+                                                 <SelectItem value="home">Home</SelectItem>
+                                                 <SelectItem value="about">About Us</SelectItem>
+                                                 <SelectItem value="services">Services</SelectItem>
+                                                 <SelectItem value="events">Events</SelectItem>
+                                                 <SelectItem value="gallery">Gallery</SelectItem>
+                                                 <SelectItem value="contact">Contact Us</SelectItem>
+                                             </SelectContent>
+                                         </Select>
+                                     </div>
+                                 )}
 
                                 {btn2TargetMode === 'custom' && (
                                     <BuilderCountedInput

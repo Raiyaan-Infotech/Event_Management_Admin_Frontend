@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { BuilderCountedInput, BuilderCountedTextarea } from '../../_components/builder-field';
+import { cn } from '@/lib/utils';
 
 interface CategoryItem {
     id: string;
@@ -132,12 +133,7 @@ export default function ContactCategoriesPage() {
             {/* Header */}
             <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-5">
                 <div>
-                    <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="gap-1 border-primary/30 bg-primary/5 text-primary">
-                            <Sparkles className="h-3 w-3" /> Website Builder
-                        </Badge>
-                        <Badge variant="secondary" className="text-xs">Super Admin Panel</Badge>
-                    </div>
+                    
                     <h1 className="mt-1 text-2xl font-bold tracking-tight">Contact Categories</h1>
                     <p className="text-sm text-muted-foreground">
                         Create categories used by the dynamic contact form.
@@ -310,23 +306,28 @@ export default function ContactCategoriesPage() {
 
                                         {/* Column 6: Actions */}
                                         <TableCell className="text-right">
-                                            <div className="flex items-center justify-end gap-1">
+                                            <div className="flex items-center justify-end gap-1.5">
                                                 <Button
                                                     type="button"
-                                                    variant="ghost"
-                                                    size="sm"
+                                                    variant="outline"
+                                                    size="icon"
                                                     onClick={() => handleEdit(cat)}
-                                                    className="h-7 w-7 p-0 text-slate-400 hover:text-slate-700"
+                                                    className={cn(
+                                                        'h-8 w-8 rounded-lg p-0 transition-colors',
+                                                        editingId === cat.id
+                                                            ? 'border-blue-600 bg-blue-50 text-blue-600 shadow-xs'
+                                                            : 'border-slate-200 text-slate-500 hover:border-blue-600 hover:text-blue-600 hover:bg-blue-50/50'
+                                                    )}
                                                 >
                                                     <Pencil className="h-3.5 w-3.5" />
                                                 </Button>
 
                                                 <Button
                                                     type="button"
-                                                    variant="ghost"
-                                                    size="sm"
+                                                    variant="outline"
+                                                    size="icon"
                                                     onClick={() => handleDelete(cat.id)}
-                                                    className="h-7 w-7 p-0 text-slate-300 hover:text-rose-600"
+                                                    className="h-8 w-8 rounded-lg p-0 text-red-500 border-red-200 hover:bg-red-50 hover:border-red-300"
                                                 >
                                                     <Trash2 className="h-3.5 w-3.5" />
                                                 </Button>

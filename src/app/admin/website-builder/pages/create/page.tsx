@@ -42,12 +42,7 @@ export default function CreateCustomPage() {
                         </Link>
                     </Button>
                     <div>
-                        <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="gap-1 border-primary/30 bg-primary/5 text-primary text-xs">
-                                <Sparkles className="h-3 w-3" /> Website Builder
-                            </Badge>
-                            <Badge variant="secondary" className="text-xs">Super Admin Panel</Badge>
-                        </div>
+                        
                         <h1 className="text-2xl font-bold tracking-tight mt-1">Create Custom Page</h1>
                         <p className="text-xs text-muted-foreground">Add a new custom page to the website with rich text formatting.</p>
                     </div>

@@ -51,12 +51,7 @@ export default function PagesListPage() {
             {/* Page Header */}
             <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-5">
                 <div>
-                    <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="gap-1 border-primary/30 bg-primary/5 text-primary">
-                            <Sparkles className="h-3 w-3" /> Website Builder
-                        </Badge>
-                        <Badge variant="secondary" className="text-xs">Super Admin Panel</Badge>
-                    </div>
+                    
                     <h1 className="mt-1 text-2xl font-bold tracking-tight">Pages List</h1>
                     <p className="text-sm text-muted-foreground">View and manage all your website pages.</p>
                 </div>
@@ -140,13 +135,13 @@ export default function PagesListPage() {
 
                                         {/* Column 5: Actions */}
                                         <TableCell className="text-right">
-                                            <div className="flex items-center justify-end gap-1">
+                                            <div className="flex items-center justify-end gap-1.5">
                                                 <Button
                                                     type="button"
-                                                    variant="ghost"
-                                                    size="sm"
+                                                    variant="outline"
+                                                    size="icon"
                                                     asChild
-                                                    className="h-7 w-7 p-0 text-slate-400 hover:text-slate-700"
+                                                    className="h-8 w-8 rounded-lg p-0 border-slate-200 text-slate-500 hover:border-blue-600 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
                                                 >
                                                     <Link href={`/admin/website-builder/pages/create?edit=${page.id}`}>
                                                         <Pencil className="h-3.5 w-3.5" />
@@ -155,11 +150,11 @@ export default function PagesListPage() {
 
                                                 <Button
                                                     type="button"
-                                                    variant="ghost"
-                                                    size="sm"
+                                                    variant="outline"
+                                                    size="icon"
                                                     onClick={() => handleDeletePage(page.id)}
                                                     disabled={page.type === 'Fixed'}
-                                                    className="h-7 w-7 p-0 text-slate-300 hover:text-rose-600 disabled:opacity-40"
+                                                    className="h-8 w-8 rounded-lg p-0 text-red-500 border-red-200 hover:bg-red-50 hover:border-red-300 disabled:opacity-40"
                                                 >
                                                     <Trash2 className="h-3.5 w-3.5" />
                                                 </Button>
