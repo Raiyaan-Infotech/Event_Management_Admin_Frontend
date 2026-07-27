@@ -208,6 +208,7 @@ const menuItems: MenuItem[] = [
       { labelKey: "Testimonials", href: "/admin/website-builder/testimonials", icon: Star, uiBlockKey: "testimonials" },
       { labelKey: "Pricing Plans", href: "/admin/website-builder/pricing-plans", icon: DollarSign, uiBlockKey: "pricing-plans" },
       { labelKey: "Features Builder", href: "/admin/website-builder/features", icon: Layers, uiBlockKey: "features" },
+      { labelKey: "How It Works", href: "/admin/website-builder/how-it-works", icon: HelpCircle, uiBlockKey: "how-it-works" },
       {
         labelKey: "Event Templates",
         icon: LayoutGrid,
