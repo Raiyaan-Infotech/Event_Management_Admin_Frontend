@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Save,
     ArrowLeft,
@@ -12,7 +12,6 @@ import {
     Upload,
     Monitor,
     Smartphone,
-    Lightbulb,
     Loader2,
     Calendar,
     MapPin,
@@ -28,6 +27,9 @@ import {
     QrCode,
     Sparkles,
     ArrowRight,
+    Pencil,
+    Search,
+    CheckCircle2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -36,164 +38,109 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
-import { useFeaturesData, useSaveFeaturesList, type FeatureItem } from '@/hooks/useFeatures';
+import {
+    useFeaturesData,
+    useSaveFeaturesList,
+    useDeleteFeature,
+    type FeatureItem,
+} from '@/hooks/useFeatures';
+import {
+    BuilderCountedInput,
+    BuilderCountedTextarea,
+} from './builder-field';
 
 const ICON_PRESETS = [
-    { name: 'calendar', Icon: Calendar },
-    { name: 'map-pin', Icon: MapPin },
-    { name: 'users', Icon: Users },
-    { name: 'image', Icon: ImageIcon },
-    { name: 'message', Icon: MessageSquare },
-    { name: 'gift', Icon: Gift },
-    { name: 'video', Icon: Video },
-    { name: 'music', Icon: Music },
-    { name: 'heart', Icon: Heart },
-    { name: 'bell', Icon: Bell },
-    { name: 'scan', Icon: Scan },
-    { name: 'qr-code', Icon: QrCode },
+    { name: 'calendar', Icon: Calendar, label: 'Calendar' },
+    { name: 'map-pin', Icon: MapPin, label: 'Location' },
+    { name: 'users', Icon: Users, label: 'Guests' },
+    { name: 'image', Icon: ImageIcon, label: 'Gallery' },
+    { name: 'message', Icon: MessageSquare, label: 'Message' },
+    { name: 'gift', Icon: Gift, label: 'Gift' },
+    { name: 'video', Icon: Video, label: 'Video' },
+    { name: 'music', Icon: Music, label: 'Music' },
+    { name: 'heart', Icon: Heart, label: 'Love' },
+    { name: 'bell', Icon: Bell, label: 'Alert' },
+    { name: 'scan', Icon: Scan, label: 'Scan' },
+    { name: 'qr-code', Icon: QrCode, label: 'QR Code' },
 ];
 
-const DEFAULT_FEATURES: FeatureItem[] = [
-    {
-        id: '1',
-        title: 'Beautiful Templates',
-        short_description: 'Choose from 1000+ professionally designed templates for any occasion.',
-        detailed_description: 'Explore beautifully crafted responsive templates with custom color schemes and typography for modern events.',
-        icon: 'image',
-        bullet_points_json: ['Wedding, Engagement, Birthday & more', 'Multi-theme & fully customizable', 'Modern & elegant designs'],
-        show_in_menu: true,
-        menu_order: 1,
-        status: 'Active',
-        sort_order: 1,
-        created_by: 'Rohan Mehta',
-        created_on: '18 May 2025, 11:30 AM',
-    },
-    {
-        id: '2',
-        title: 'All in One App',
-        short_description: 'Everything you need in one place. No additional tools required.',
-        detailed_description: 'Manage invitations, agendas, galleries, and real-time updates seamlessly in a unified app.',
-        icon: 'calendar',
-        bullet_points_json: ['Invitation, Agenda, Gallery & more', 'Manage all event details', 'Real-time updates'],
-        show_in_menu: true,
-        menu_order: 2,
-        status: 'Active',
-        sort_order: 2,
-        created_by: 'Rohan Mehta',
-        created_on: '18 May 2025, 11:30 AM',
-    },
-    {
-        id: '3',
-        title: 'Location & Navigation',
-        short_description: 'Help your guests reach the venue easily with built-in navigation.',
-        detailed_description: 'Google Maps integration with interactive directions and nearby parking spots for guests.',
-        icon: 'map-pin',
-        bullet_points_json: ['Google Maps Integration', 'Venue Details & Directions', 'Nearby Places & Parking Info'],
-        show_in_menu: true,
-        menu_order: 3,
-        status: 'Active',
-        sort_order: 3,
-        created_by: 'Rohan Mehta',
-        created_on: '18 May 2025, 11:30 AM',
-    },
-    {
-        id: '4',
-        title: 'Guest Management',
-        short_description: 'Manage your guests and track responses in real-time.',
-        detailed_description: 'Comprehensive guest lists, digital invitation tracking, and instant QR code check-in system.',
-        icon: 'users',
-        bullet_points_json: ['Guest List & Invitations', 'RSVP Tracking', 'Check-in & Attendance'],
-        show_in_menu: true,
-        menu_order: 4,
-        status: 'Active',
-        sort_order: 4,
-        created_by: 'Rohan Mehta',
-        created_on: '18 May 2025, 11:30 AM',
-    },
-    {
-        id: '5',
-        title: 'Agenda & Schedule',
-        short_description: 'Create events, programs and schedules with beautiful timelines.',
-        detailed_description: 'Help your guests never miss an important moment. Create multiple events, sessions and activities with date, time and venue details.',
-        icon: 'calendar',
-        bullet_points_json: ['Multiple Events & Sessions', 'Date & Time Management', 'Easy to Update', 'Beautiful Timeline View'],
-        show_in_menu: true,
-        menu_order: 6,
-        status: 'Active',
-        sort_order: 5,
-        created_by: 'Rohan Mehta',
-        created_on: '18 May 2025, 11:30 AM',
-    },
-    {
-        id: '6',
-        title: 'Live Streaming',
-        short_description: 'Stream your special moments live for guests who can\'t attend.',
-        detailed_description: 'High quality live video streaming integration with private guest link sharing.',
-        icon: 'video',
-        bullet_points_json: ['High-Quality Streaming', 'Secure & Private Links', 'Easy to Share'],
-        show_in_menu: true,
-        menu_order: 7,
-        status: 'Active',
-        sort_order: 6,
-        created_by: 'Rohan Mehta',
-        created_on: '18 May 2025, 11:30 AM',
-    },
-];
+function getIconComponent(iconName?: string) {
+    const found = ICON_PRESETS.find((i) => i.name === iconName);
+    return found ? found.Icon : Calendar;
+}
 
 export function FeaturesBuilderContent() {
-    const [viewMode, setViewMode] = useState<'grid' | 'form'>('grid');
-    const [features, setFeatures] = useState<FeatureItem[]>(DEFAULT_FEATURES);
-    const [selectedId, setSelectedId] = useState<string | number | null>('5');
+    const { data: dbFeatures, isLoading: isFeaturesLoading } = useFeaturesData();
+    const saveFeaturesMutation = useSaveFeaturesList();
+    const deleteFeatureMutation = useDeleteFeature();
+
+    const [viewMode, setViewMode] = useState<'table' | 'form'>('table');
+    const [features, setFeatures] = useState<FeatureItem[]>([]);
+    const [editingId, setEditingId] = useState<string | number | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
     const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
 
-    // Form State
+    // Dynamic Form State
     const [selectedIcon, setSelectedIcon] = useState('calendar');
-    const [title, setTitle] = useState('Agenda & Schedule');
-    const [shortDesc, setShortDesc] = useState('Create events, programs and schedules with beautiful timelines.');
-    const [detailedDesc, setDetailedDesc] = useState('Help your guests never miss an important moment. Create multiple events, sessions and activities with date, time and venue details.');
-    const [bullets, setBullets] = useState<string[]>([
-        'Multiple Events & Sessions',
-        'Date & Time Management',
-        'Easy to Update',
-        'Beautiful Timeline View',
-    ]);
+    const [title, setTitle] = useState('');
+    const [shortDesc, setShortDesc] = useState('');
+    const [detailedDesc, setDetailedDesc] = useState('');
+    const [bullets, setBullets] = useState<string[]>([]);
     const [newBulletText, setNewBulletText] = useState('');
     const [showInMenu, setShowInMenu] = useState(true);
-    const [menuOrder, setMenuOrder] = useState('6');
+    const [menuOrder, setMenuOrder] = useState('1');
     const [status, setStatus] = useState<'Active' | 'Inactive' | 'Draft'>('Active');
+    const [customIconUrl, setCustomIconUrl] = useState('');
+    const [featureImageUrl, setFeatureImageUrl] = useState('');
 
-    // Drag and Drop Bullet State
-    const [draggedBulletIdx, setDraggedBulletIdx] = useState<number | null>(null);
-
-    const saveFeaturesMutation = useSaveFeaturesList();
     const isSaving = saveFeaturesMutation.isPending;
 
-    const handleEditFeature = (item: FeatureItem) => {
-        setSelectedId(item.id || null);
-        setTitle(item.title);
-        setShortDesc(item.short_description);
-        setDetailedDesc(item.detailed_description || '');
-        setSelectedIcon(item.icon || 'calendar');
-        setBullets(item.bullet_points_json || []);
-        setShowInMenu(item.show_in_menu);
-        setMenuOrder(String(item.menu_order || 1));
-        setStatus(item.status);
-        setViewMode('form');
-    };
+    // Load database features dynamically when query succeeds
+    useEffect(() => {
+        if (dbFeatures) {
+            setFeatures(dbFeatures);
+        }
+    }, [dbFeatures]);
 
     const handleCreateNew = () => {
-        setSelectedId(null);
+        setEditingId(null);
         setTitle('');
         setShortDesc('');
         setDetailedDesc('');
         setSelectedIcon('calendar');
         setBullets([]);
         setShowInMenu(true);
-        setMenuOrder('1');
+        setMenuOrder(String((features.length || 0) + 1));
         setStatus('Active');
+        setCustomIconUrl('');
+        setFeatureImageUrl('');
         setViewMode('form');
+    };
+
+    const handleEditFeature = (item: FeatureItem) => {
+        setEditingId(item.id || null);
+        setTitle(item.title);
+        setShortDesc(item.short_description);
+        setDetailedDesc(item.detailed_description || '');
+        setSelectedIcon(item.icon || 'calendar');
+        setBullets(item.bullet_points_json || []);
+        setShowInMenu(item.show_in_menu !== false);
+        setMenuOrder(String(item.menu_order || 1));
+        setStatus(item.status || 'Active');
+        setCustomIconUrl(item.custom_icon_url || '');
+        setFeatureImageUrl(item.feature_image_url || '');
+        setViewMode('form');
+    };
+
+    const handleDeleteFeature = (id?: string | number) => {
+        if (!id) return;
+        deleteFeatureMutation.mutate(id, {
+            onSuccess: () => {
+                setFeatures((prev) => prev.filter((f) => f.id !== id));
+            },
+        });
     };
 
     const handleAddBullet = () => {
@@ -212,54 +159,62 @@ export function FeaturesBuilderContent() {
             return;
         }
 
-        const newFeatureObj: FeatureItem = {
-            id: selectedId || String(Date.now()),
+        const updatedItem: FeatureItem = {
+            id: editingId || undefined,
             title,
             short_description: shortDesc,
             detailed_description: detailedDesc,
             icon: selectedIcon,
+            custom_icon_url: customIconUrl,
+            feature_image_url: featureImageUrl,
             bullet_points_json: bullets,
             show_in_menu: showInMenu,
-            menu_order: parseInt(menuOrder) || 1,
+            menu_order: parseInt(menuOrder, 10) || 1,
             status,
-            sort_order: features.length + 1,
-            created_by: 'Rohan Mehta',
-            created_on: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
         };
 
         let updatedList: FeatureItem[];
-        if (selectedId) {
-            updatedList = features.map((f) => (f.id === selectedId ? newFeatureObj : f));
+        if (editingId) {
+            updatedList = features.map((f) => (f.id === editingId ? { ...f, ...updatedItem } : f));
         } else {
-            updatedList = [...features, newFeatureObj];
+            updatedList = [...features, updatedItem];
         }
 
         setFeatures(updatedList);
-        saveFeaturesMutation.mutate(updatedList);
-        setViewMode('grid');
+        saveFeaturesMutation.mutate(updatedList, {
+            onSuccess: () => {
+                setViewMode('table');
+            },
+        });
     };
 
-    const renderActiveIcon = (iconName: string, className = 'h-6 w-6 text-primary') => {
-        const preset = ICON_PRESETS.find((p) => p.name === iconName);
-        if (preset) {
-            const IconComp = preset.Icon;
-            return <IconComp className={className} />;
-        }
-        return <Calendar className={className} />;
-    };
+    const filteredFeatures = features.filter(
+        (f) =>
+            f.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            f.short_description.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    const CurrentIconComponent = getIconComponent(selectedIcon);
 
     return (
-        <div className="space-y-4 text-foreground">
+        <div className="space-y-5 max-w-7xl mx-auto pb-12">
             {/* Top Header Bar */}
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3.5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-4">
                 <div>
-                    <h1 className="text-xl font-bold tracking-tight text-foreground">
-                        {viewMode === 'form' ? (selectedId ? 'Edit Feature' : 'Add Feature') : 'All Features Management'}
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
+                        <span>Dashboard</span>
+                        <span>›</span>
+                        <span>Website Builder</span>
+                        <span>›</span>
+                        <span className="font-semibold text-foreground">Features Builder</span>
+                    </div>
+                    <h1 className="text-xl font-extrabold tracking-tight text-foreground">
+                        {viewMode === 'form' ? (editingId ? 'Edit Feature' : 'Add New Feature') : 'Features Builder'}
                     </h1>
                     <p className="text-xs text-muted-foreground">
                         {viewMode === 'form'
-                            ? 'Create or update a feature to display on your website and mobile app.'
-                            : 'Manage powerful features that showcase your event experience to guests.'}
+                            ? 'Configure feature options, detailed descriptions, and live card preview.'
+                            : 'Manage interactive feature highlights and key benefits shown on your website.'}
                     </p>
                 </div>
 
@@ -269,123 +224,195 @@ export function FeaturesBuilderContent() {
                             <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => setViewMode('grid')}
-                                className="h-9 px-3 text-xs font-semibold border-border bg-card hover:bg-accent gap-1.5"
+                                onClick={() => setViewMode('table')}
+                                className="h-8 px-3 text-xs font-semibold border-border gap-1"
                             >
-                                <ArrowLeft className="h-3.5 w-3.5" /> Back to Features
+                                <ArrowLeft className="h-3.5 w-3.5" /> Back to Table List
                             </Button>
                             <Button
                                 size="sm"
                                 onClick={handleSaveCurrentFeature}
                                 disabled={isSaving}
-                                className="h-9 px-4 text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs gap-1.5"
+                                className="h-8 px-4 text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs gap-1.5"
                             >
-                                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                                {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
                                 Save Feature
                             </Button>
                         </>
                     ) : (
-                        <Button
-                            size="sm"
-                            onClick={handleCreateNew}
-                            className="h-9 px-4 text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs gap-1.5"
-                        >
-                            <Plus className="h-4 w-4" /> Add New Feature
-                        </Button>
+                        <>
+                            <Button
+                                size="sm"
+                                onClick={handleCreateNew}
+                                className="h-8 px-4 text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs gap-1.5"
+                            >
+                                <Plus className="h-3.5 w-3.5" /> Add Feature
+                            </Button>
+                            <Button
+                                size="sm"
+                                onClick={() => saveFeaturesMutation.mutate(features)}
+                                disabled={isSaving}
+                                className="h-8 px-4 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs gap-1.5"
+                            >
+                                {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                                Save All Changes
+                            </Button>
+                        </>
                     )}
                 </div>
             </div>
 
-            {/* View 1: 12-Card Grid View (Mockup 2) */}
-            {viewMode === 'grid' && (
-                <div className="space-y-6">
-                    <div className="text-center space-y-1.5 max-w-xl mx-auto py-2">
-                        <Badge className="bg-primary/10 text-primary border-primary/20 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-                            FEATURES
-                        </Badge>
-                        <h2 className="text-2xl font-extrabold text-foreground tracking-tight">All the Features You Need</h2>
-                        <p className="text-xs text-muted-foreground">
-                            Powerful tools to create, manage and enhance your event experience.
-                        </p>
-                    </div>
+            {/* PAGE 1: FEATURES MANAGEMENT DATA TABLE VIEW */}
+            {viewMode === 'table' ? (
+                <Card className="shadow-xs border-border bg-card">
+                    <CardHeader className="py-3 px-4 border-b border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-muted/40">
+                        <CardTitle className="text-xs font-bold text-foreground uppercase tracking-wide">
+                            Features List ({filteredFeatures.length})
+                        </CardTitle>
+                        <div className="relative w-full sm:w-64">
+                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                            <Input
+                                placeholder="Search features..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="h-8 pl-8 text-xs border-border bg-card text-foreground placeholder:text-muted-foreground"
+                            />
+                        </div>
+                    </CardHeader>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {features.map((item) => (
-                            <Card
-                                key={item.id}
-                                className="relative border-border bg-card hover:shadow-md transition-all duration-200 group flex flex-col justify-between"
-                            >
-                                <CardHeader className="p-4 pb-2 space-y-2">
-                                    <div className="flex items-center justify-between">
-                                        <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/20">
-                                            {renderActiveIcon(item.icon, 'h-5 w-5 text-primary')}
-                                        </div>
-                                        <Badge
-                                            variant={item.status === 'Active' ? 'default' : 'secondary'}
-                                            className={cn(
-                                                'text-[10px] font-bold px-2 py-0.5',
-                                                item.status === 'Active' && 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
-                                            )}
-                                        >
-                                            {item.status}
-                                        </Badge>
-                                    </div>
-                                    <CardTitle className="text-base font-bold text-card-foreground group-hover:text-primary transition-colors">
-                                        {item.title}
-                                    </CardTitle>
-                                    <CardDescription className="text-xs text-muted-foreground line-clamp-2">
-                                        {item.short_description}
-                                    </CardDescription>
-                                </CardHeader>
-
-                                <CardContent className="p-4 pt-0 space-y-3">
-                                    {item.bullet_points_json && item.bullet_points_json.length > 0 && (
-                                        <ul className="space-y-1.5 text-xs text-muted-foreground">
-                                            {item.bullet_points_json.map((pt, i) => (
-                                                <li key={i} className="flex items-center gap-1.5">
-                                                    <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
-                                                    <span className="truncate">{pt}</span>
-                                                </li>
-                                            ))}
-                                        </ul>
+                    <CardContent className="p-0">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-xs text-left">
+                                <thead className="bg-muted/50 text-[11px] font-bold text-muted-foreground uppercase tracking-wider border-b border-border">
+                                    <tr>
+                                        <th className="py-2.5 px-3 w-12 text-center">#</th>
+                                        <th className="py-2.5 px-3 w-16 text-center">Icon</th>
+                                        <th className="py-2.5 px-3">Feature Title</th>
+                                        <th className="py-2.5 px-3">Short Description</th>
+                                        <th className="py-2.5 px-3 text-center">Show in Menu</th>
+                                        <th className="py-2.5 px-3 text-center">Menu Order</th>
+                                        <th className="py-2.5 px-3 text-center">Status</th>
+                                        <th className="py-2.5 px-3 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-border">
+                                    {isFeaturesLoading ? (
+                                        <tr>
+                                            <td colSpan={8} className="py-8 text-center text-xs text-muted-foreground">
+                                                <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2 text-primary" />
+                                                Loading features from database...
+                                            </td>
+                                        </tr>
+                                    ) : filteredFeatures.length > 0 ? (
+                                        filteredFeatures.map((item, idx) => {
+                                            const IconComp = getIconComponent(item.icon);
+                                            return (
+                                                <tr key={item.id || idx} className="hover:bg-muted/40 transition-colors">
+                                                    <td className="py-3 px-3 text-center text-muted-foreground font-mono">
+                                                        <div className="flex items-center justify-center gap-1">
+                                                            <GripVertical className="h-3.5 w-3.5 text-muted-foreground/50" />
+                                                            <span>{idx + 1}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-3 px-3 text-center">
+                                                        <div className="h-8 w-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mx-auto">
+                                                            <IconComp className="h-4 w-4" />
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-3 px-3 font-semibold text-foreground">
+                                                        {item.title}
+                                                    </td>
+                                                    <td className="py-3 px-3 text-muted-foreground max-w-xs truncate">
+                                                        {item.short_description}
+                                                    </td>
+                                                    <td className="py-3 px-3 text-center">
+                                                        <div className="flex items-center justify-center">
+                                                            <Switch
+                                                                checked={item.show_in_menu !== false}
+                                                                onCheckedChange={(val) => {
+                                                                    setFeatures(
+                                                                        features.map((f) =>
+                                                                            f.id === item.id ? { ...f, show_in_menu: val } : f
+                                                                        )
+                                                                    );
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-3 px-3 text-center font-semibold text-foreground">
+                                                        {item.menu_order || idx + 1}
+                                                    </td>
+                                                    <td className="py-3 px-3 text-center">
+                                                        <span
+                                                            className={cn(
+                                                                'px-2 py-0.5 text-[10px] font-bold rounded-full border inline-block',
+                                                                item.status === 'Active'
+                                                                    ? 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30'
+                                                                    : 'bg-muted text-muted-foreground border-border'
+                                                            )}
+                                                        >
+                                                            {item.status}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-3 px-3 text-right">
+                                                        <div className="flex items-center justify-end gap-1.5">
+                                                            <Button
+                                                                type="button"
+                                                                variant="outline"
+                                                                size="icon"
+                                                                onClick={() => handleEditFeature(item)}
+                                                                className="h-8 w-8 rounded-lg p-0 border-border text-muted-foreground hover:border-primary hover:text-primary hover:bg-primary/5 cursor-pointer"
+                                                            >
+                                                                <Pencil className="h-3.5 w-3.5" />
+                                                            </Button>
+                                                            <Button
+                                                                type="button"
+                                                                variant="outline"
+                                                                size="icon"
+                                                                onClick={() => handleDeleteFeature(item.id)}
+                                                                className="h-8 w-8 rounded-lg p-0 text-rose-500 border-rose-200 hover:bg-rose-50 hover:border-rose-300 cursor-pointer"
+                                                            >
+                                                                <Trash2 className="h-3.5 w-3.5" />
+                                                            </Button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
+                                    ) : (
+                                        <tr>
+                                            <td colSpan={8} className="py-8 text-center text-xs text-muted-foreground">
+                                                No features found. Click "Add Feature" to create one.
+                                            </td>
+                                        </tr>
                                     )}
+                                </tbody>
+                            </table>
+                        </div>
 
-                                    <div className="pt-2 border-t border-border flex items-center justify-between">
-                                        <button
-                                            type="button"
-                                            onClick={() => handleEditFeature(item)}
-                                            className="text-xs font-semibold text-primary hover:underline inline-flex items-center gap-1"
-                                        >
-                                            View Feature <ArrowRight className="h-3 w-3" />
-                                        </button>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => setFeatures((prev) => prev.filter((f) => f.id !== item.id))}
-                                            className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10"
-                                        >
-                                            <Trash2 className="h-3.5 w-3.5" />
-                                        </Button>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {/* View 2: 5-Section Form View + Live Preview (Mockup 1) */}
-            {viewMode === 'form' && (
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                    {/* Left Column: 5 Form Sections */}
+                        {/* Footer Pagination */}
+                        <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-muted/40 text-xs text-muted-foreground">
+                            <span>Showing {filteredFeatures.length} of {features.length} features</span>
+                            <div className="flex items-center gap-1">
+                                <Button variant="outline" size="sm" className="h-7 w-7 p-0 text-xs bg-primary text-primary-foreground border-primary">
+                                    1
+                                </Button>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            ) : (
+                /* PAGE 2: ADD / EDIT FEATURE FORM PAGE (WITH CENTERED HEADERS & LIVE PREVIEW) */
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                    {/* Left Column: 5 Form Section Cards (7 cols) */}
                     <div className="lg:col-span-7 space-y-6">
                         {/* Section 1: Basic Information */}
                         <Card className="border-border bg-card shadow-xs">
-                            <CardHeader className="py-3.5 px-4 border-b border-border flex items-center gap-3">
-                                <div className="h-7 w-7 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-xs shrink-0">
+                            <CardHeader className="py-3.5 px-4 border-b border-border flex flex-row items-center gap-3">
+                                <div className="h-7 w-7 rounded-full bg-emerald-500/20 text-emerald-600 font-extrabold flex items-center justify-center text-xs shrink-0">
                                     1
                                 </div>
-                                <div>
+                                <div className="text-left">
                                     <CardTitle className="text-sm font-bold text-foreground">Basic Information</CardTitle>
                                     <CardDescription className="text-xs text-muted-foreground">Select icon, title, and short summary</CardDescription>
                                 </div>
@@ -402,7 +429,7 @@ export function FeaturesBuilderContent() {
                                                 type="button"
                                                 onClick={() => setSelectedIcon(name)}
                                                 className={cn(
-                                                    'flex h-12 items-center justify-center rounded-xl border p-2 transition-all',
+                                                    'flex h-12 items-center justify-center rounded-xl border p-2 transition-all cursor-pointer',
                                                     selectedIcon === name
                                                         ? 'border-primary bg-primary/10 ring-2 ring-primary/20 text-primary'
                                                         : 'border-border bg-card hover:bg-accent text-muted-foreground'
@@ -419,77 +446,59 @@ export function FeaturesBuilderContent() {
                                     </div>
                                 </div>
 
-                                <div className="space-y-1">
-                                    <div className="flex justify-between items-center">
-                                        <Label className="text-xs font-bold text-foreground">
-                                            Title <span className="text-destructive">*</span>
-                                        </Label>
-                                        <span className="text-[10px] font-semibold text-muted-foreground">{title.length}/50</span>
-                                    </div>
-                                    <Input
-                                        maxLength={50}
-                                        value={title}
-                                        onChange={(e) => setTitle(e.target.value)}
-                                        placeholder="e.g. Agenda & Schedule"
-                                        className="h-9 text-xs"
-                                    />
-                                </div>
+                                <BuilderCountedInput
+                                    label="Feature Title"
+                                    required
+                                    placeholder="e.g. Agenda & Schedule"
+                                    value={title}
+                                    onChange={setTitle}
+                                    maxLength={50}
+                                    inputClassName="!h-9 text-xs border-border bg-card text-foreground"
+                                />
 
-                                <div className="space-y-1">
-                                    <div className="flex justify-between items-center">
-                                        <Label className="text-xs font-bold text-foreground">
-                                            Short Description <span className="text-destructive">*</span>
-                                        </Label>
-                                        <span className="text-[10px] font-semibold text-muted-foreground">{shortDesc.length}/120</span>
-                                    </div>
-                                    <Textarea
-                                        maxLength={120}
-                                        rows={2}
-                                        value={shortDesc}
-                                        onChange={(e) => setShortDesc(e.target.value)}
-                                        placeholder="Brief 1-2 sentence description"
-                                        className="text-xs"
-                                    />
-                                </div>
+                                <BuilderCountedInput
+                                    label="Short Description"
+                                    required
+                                    placeholder="e.g. Manage events and schedules with beautiful timelines."
+                                    value={shortDesc}
+                                    onChange={setShortDesc}
+                                    maxLength={120}
+                                    inputClassName="!h-9 text-xs border-border bg-card text-foreground"
+                                />
                             </CardContent>
                         </Card>
 
                         {/* Section 2: Feature Description */}
                         <Card className="border-border bg-card shadow-xs">
-                            <CardHeader className="py-3.5 px-4 border-b border-border flex items-center gap-3">
-                                <div className="h-7 w-7 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-xs shrink-0">
+                            <CardHeader className="py-3.5 px-4 border-b border-border flex flex-row items-center gap-3">
+                                <div className="h-7 w-7 rounded-full bg-emerald-500/20 text-emerald-600 font-extrabold flex items-center justify-center text-xs shrink-0">
                                     2
                                 </div>
-                                <div>
+                                <div className="text-left">
                                     <CardTitle className="text-sm font-bold text-foreground">Feature Description</CardTitle>
                                     <CardDescription className="text-xs text-muted-foreground">Comprehensive detailed description</CardDescription>
                                 </div>
                             </CardHeader>
                             <CardContent className="p-4 space-y-2">
-                                <div className="flex justify-between items-center">
-                                    <Label className="text-xs font-bold text-foreground">
-                                        Detailed Description <span className="text-destructive">*</span>
-                                    </Label>
-                                    <span className="text-[10px] font-semibold text-muted-foreground">{detailedDesc.length}/500</span>
-                                </div>
-                                <Textarea
-                                    maxLength={500}
-                                    rows={4}
-                                    value={detailedDesc}
-                                    onChange={(e) => setDetailedDesc(e.target.value)}
+                                <BuilderCountedTextarea
+                                    label="Detailed Description"
+                                    required
                                     placeholder="Explain how this feature helps guests or event hosts..."
-                                    className="text-xs"
+                                    value={detailedDesc}
+                                    onChange={setDetailedDesc}
+                                    maxLength={500}
+                                    textareaClassName="min-h-[100px] text-xs border-border bg-card text-foreground"
                                 />
                             </CardContent>
                         </Card>
 
-                        {/* Section 3: Bullet Points (Key Benefits) */}
+                        {/* Section 3: Bullet Points */}
                         <Card className="border-border bg-card shadow-xs">
-                            <CardHeader className="py-3.5 px-4 border-b border-border flex items-center gap-3">
-                                <div className="h-7 w-7 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-xs shrink-0">
+                            <CardHeader className="py-3.5 px-4 border-b border-border flex flex-row items-center gap-3">
+                                <div className="h-7 w-7 rounded-full bg-emerald-500/20 text-emerald-600 font-extrabold flex items-center justify-center text-xs shrink-0">
                                     3
                                 </div>
-                                <div>
+                                <div className="text-left">
                                     <CardTitle className="text-sm font-bold text-foreground">Bullet Points (Key Benefits)</CardTitle>
                                     <CardDescription className="text-xs text-muted-foreground">Highlight top features or capabilities</CardDescription>
                                 </div>
@@ -506,7 +515,7 @@ export function FeaturesBuilderContent() {
                                             <button
                                                 type="button"
                                                 onClick={() => handleRemoveBullet(idx)}
-                                                className="text-muted-foreground hover:text-destructive p-1"
+                                                className="text-muted-foreground hover:text-destructive p-1 cursor-pointer"
                                             >
                                                 <X className="h-3.5 w-3.5" />
                                             </button>
@@ -519,7 +528,7 @@ export function FeaturesBuilderContent() {
                                         placeholder="Add bullet point (e.g. Easy to Update)"
                                         value={newBulletText}
                                         onChange={(e) => setNewBulletText(e.target.value)}
-                                        className="h-9 text-xs flex-1"
+                                        className="h-9 text-xs flex-1 border-border bg-card text-foreground"
                                         onKeyDown={(e) => {
                                             if (e.key === 'Enter') {
                                                 e.preventDefault();
@@ -542,11 +551,11 @@ export function FeaturesBuilderContent() {
 
                         {/* Section 4: Display Settings */}
                         <Card className="border-border bg-card shadow-xs">
-                            <CardHeader className="py-3.5 px-4 border-b border-border flex items-center gap-3">
-                                <div className="h-7 w-7 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-xs shrink-0">
+                            <CardHeader className="py-3.5 px-4 border-b border-border flex flex-row items-center gap-3">
+                                <div className="h-7 w-7 rounded-full bg-emerald-500/20 text-emerald-600 font-extrabold flex items-center justify-center text-xs shrink-0">
                                     4
                                 </div>
-                                <div>
+                                <div className="text-left">
                                     <CardTitle className="text-sm font-bold text-foreground">Display Settings</CardTitle>
                                     <CardDescription className="text-xs text-muted-foreground">Menu visibility, order, and status</CardDescription>
                                 </div>
@@ -561,7 +570,7 @@ export function FeaturesBuilderContent() {
                                             type="button"
                                             onClick={() => setShowInMenu(true)}
                                             className={cn(
-                                                'flex-1 rounded-xl border p-2.5 text-xs font-bold flex items-center justify-center gap-2 transition-all',
+                                                'flex-1 rounded-xl border p-2.5 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer',
                                                 showInMenu
                                                     ? 'border-primary bg-primary/10 text-primary ring-2 ring-primary/20'
                                                     : 'border-border bg-card hover:bg-accent text-muted-foreground'
@@ -574,7 +583,7 @@ export function FeaturesBuilderContent() {
                                             type="button"
                                             onClick={() => setShowInMenu(false)}
                                             className={cn(
-                                                'flex-1 rounded-xl border p-2.5 text-xs font-bold flex items-center justify-center gap-2 transition-all',
+                                                'flex-1 rounded-xl border p-2.5 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer',
                                                 !showInMenu
                                                     ? 'border-primary bg-primary/10 text-primary ring-2 ring-primary/20'
                                                     : 'border-border bg-card hover:bg-accent text-muted-foreground'
@@ -595,7 +604,7 @@ export function FeaturesBuilderContent() {
                                             type="number"
                                             value={menuOrder}
                                             onChange={(e) => setMenuOrder(e.target.value)}
-                                            className="h-9 text-xs"
+                                            className="h-9 text-xs border-border bg-card text-foreground"
                                         />
                                         <span className="text-[10px] text-muted-foreground">Lower numbers show first</span>
                                     </div>
@@ -611,7 +620,7 @@ export function FeaturesBuilderContent() {
                                                     type="button"
                                                     onClick={() => setStatus(st)}
                                                     className={cn(
-                                                        'flex-1 rounded-lg border p-2 text-xs font-semibold transition-all',
+                                                        'flex-1 rounded-lg border p-2 text-xs font-semibold transition-all cursor-pointer',
                                                         status === st
                                                             ? 'border-primary bg-primary/10 text-primary font-bold'
                                                             : 'border-border bg-card text-muted-foreground hover:bg-accent'
@@ -628,11 +637,11 @@ export function FeaturesBuilderContent() {
 
                         {/* Section 5: Additional Options */}
                         <Card className="border-border bg-card shadow-xs">
-                            <CardHeader className="py-3.5 px-4 border-b border-border flex items-center gap-3">
-                                <div className="h-7 w-7 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-xs shrink-0">
+                            <CardHeader className="py-3.5 px-4 border-b border-border flex flex-row items-center gap-3">
+                                <div className="h-7 w-7 rounded-full bg-emerald-500/20 text-emerald-600 font-extrabold flex items-center justify-center text-xs shrink-0">
                                     5
                                 </div>
-                                <div>
+                                <div className="text-left">
                                     <CardTitle className="text-sm font-bold text-foreground">Additional Options (Optional)</CardTitle>
                                     <CardDescription className="text-xs text-muted-foreground">Feature image or media illustration</CardDescription>
                                 </div>
@@ -646,124 +655,93 @@ export function FeaturesBuilderContent() {
                                 </div>
                             </CardContent>
                         </Card>
-
-                        {/* Bottom Action Bar */}
-                        <div className="flex items-center gap-3 pt-2">
-                            <Button
-                                size="sm"
-                                onClick={handleSaveCurrentFeature}
-                                disabled={isSaving}
-                                className="h-9 px-5 text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs gap-1.5"
-                            >
-                                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                                Save Feature
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setViewMode('grid')}
-                                className="h-9 px-4 text-xs font-semibold border-border bg-card hover:bg-accent"
-                            >
-                                Cancel
-                            </Button>
-                        </div>
                     </div>
 
-                    {/* Right Column: Live Preview & Summary Panel */}
-                    <div className="lg:col-span-5 space-y-6">
-                        {/* Live Preview Card */}
-                        <Card className="border-border bg-card shadow-xs sticky top-4">
-                            <CardHeader className="py-3.5 px-4 border-b border-border flex flex-row items-center justify-between">
-                                <CardTitle className="text-sm font-bold text-card-foreground">Live Preview</CardTitle>
-                                <div className="flex items-center gap-1 bg-muted p-1 rounded-lg border border-border">
+                    {/* Right Column: Live Feature Card Preview (5 cols) */}
+                    <div className="lg:col-span-5 space-y-5 sticky top-6">
+                        <Card className="shadow-xs border-border bg-card overflow-hidden">
+                            <CardHeader className="py-3 px-4 border-b border-border flex flex-row items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <Sparkles className="h-4 w-4 text-amber-500" />
+                                    <CardTitle className="text-xs font-bold text-foreground uppercase tracking-wide">
+                                        Live Feature Card Preview
+                                    </CardTitle>
+                                </div>
+
+                                <div className="flex items-center border border-border rounded-lg p-0.5 bg-card">
                                     <button
                                         type="button"
                                         onClick={() => setPreviewDevice('desktop')}
-                                        className={cn('p-1 rounded-md transition-all', previewDevice === 'desktop' ? 'bg-card shadow-xs text-primary' : 'text-muted-foreground')}
+                                        className={cn(
+                                            'p-1 rounded-md text-xs transition-colors cursor-pointer',
+                                            previewDevice === 'desktop'
+                                                ? 'bg-primary text-primary-foreground'
+                                                : 'text-muted-foreground hover:text-foreground'
+                                        )}
+                                        title="Desktop View"
                                     >
-                                        <Monitor className="h-4 w-4" />
+                                        <Monitor className="h-3.5 w-3.5" />
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => setPreviewDevice('mobile')}
-                                        className={cn('p-1 rounded-md transition-all', previewDevice === 'mobile' ? 'bg-card shadow-xs text-primary' : 'text-muted-foreground')}
+                                        className={cn(
+                                            'p-1 rounded-md text-xs transition-colors cursor-pointer',
+                                            previewDevice === 'mobile'
+                                                ? 'bg-primary text-primary-foreground'
+                                                : 'text-muted-foreground hover:text-foreground'
+                                        )}
+                                        title="Mobile View"
                                     >
-                                        <Smartphone className="h-4 w-4" />
+                                        <Smartphone className="h-3.5 w-3.5" />
                                     </button>
                                 </div>
                             </CardHeader>
-                            <CardContent className={cn('p-6 space-y-4 transition-all', previewDevice === 'mobile' && 'max-w-[320px] mx-auto border-x border-border rounded-2xl my-2')}>
-                                <div className="text-center space-y-3 p-6 rounded-2xl border border-primary/20 bg-primary/5">
-                                    <div className="mx-auto h-14 w-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center shadow-xs">
-                                        {renderActiveIcon(selectedIcon, 'h-7 w-7 text-primary')}
+
+                            <CardContent className="p-5 flex justify-center bg-muted/10">
+                                <div
+                                    className={cn(
+                                        'transition-all duration-300 w-full',
+                                        previewDevice === 'mobile' ? 'max-w-[320px]' : 'max-w-full'
+                                    )}
+                                >
+                                    <div className="rounded-2xl border border-border bg-card p-5 shadow-lg space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-primary to-purple-600 text-white flex items-center justify-center shadow-md">
+                                                <CurrentIconComponent className="h-6 w-6 text-white" />
+                                            </div>
+                                            <Badge variant="outline" className="text-[10px] font-bold text-primary border-primary/30">
+                                                {status}
+                                            </Badge>
+                                        </div>
+
+                                        <div>
+                                            <h3 className="text-base font-extrabold text-foreground tracking-tight">
+                                                {title || 'Feature Title'}
+                                            </h3>
+                                            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                                                {shortDesc || 'Feature short description explaining key benefits for event organizers.'}
+                                            </p>
+                                        </div>
+
+                                        {detailedDesc ? (
+                                            <p className="text-[11px] text-muted-foreground/90 bg-muted/40 p-2.5 rounded-xl border border-border">
+                                                {detailedDesc}
+                                            </p>
+                                        ) : null}
+
+                                        {bullets.length > 0 ? (
+                                            <ul className="space-y-1.5 pt-1">
+                                                {bullets.map((bullet, idx) => (
+                                                    <li key={idx} className="flex items-center gap-2 text-xs font-semibold text-foreground">
+                                                        <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                                                        <span>{bullet}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        ) : null}
                                     </div>
-                                    <h3 className="text-lg font-extrabold text-foreground">{title || 'Feature Title'}</h3>
-                                    <p className="text-xs text-muted-foreground leading-relaxed">{shortDesc || 'Short description will appear here...'}</p>
                                 </div>
-
-                                {bullets.length > 0 && (
-                                    <div className="space-y-2 pt-2">
-                                        <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Key Benefits</Label>
-                                        <ul className="space-y-2 text-xs text-foreground font-medium">
-                                            {bullets.map((b, i) => (
-                                                <li key={i} className="flex items-center gap-2">
-                                                    <span className="h-2 w-2 rounded-full bg-primary shrink-0" />
-                                                    <span>{b}</span>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-
-                        {/* Feature Summary Card */}
-                        <Card className="border-border bg-card shadow-xs">
-                            <CardHeader className="py-3 px-4 border-b border-border">
-                                <CardTitle className="text-sm font-bold text-card-foreground">Feature Summary</CardTitle>
-                            </CardHeader>
-                            <CardContent className="p-4 space-y-2.5 text-xs">
-                                <div className="flex justify-between border-b border-border pb-1.5">
-                                    <span className="text-muted-foreground">Title</span>
-                                    <span className="font-bold text-foreground">{title || '-'}</span>
-                                </div>
-                                <div className="flex justify-between border-b border-border pb-1.5">
-                                    <span className="text-muted-foreground">Menu Order</span>
-                                    <span className="font-bold text-foreground">{menuOrder}</span>
-                                </div>
-                                <div className="flex justify-between border-b border-border pb-1.5">
-                                    <span className="text-muted-foreground">Status</span>
-                                    <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[10px] font-bold px-2 py-0.5">
-                                        {status}
-                                    </Badge>
-                                </div>
-                                <div className="flex justify-between border-b border-border pb-1.5">
-                                    <span className="text-muted-foreground">Show in Menu</span>
-                                    <span className="font-bold text-foreground">{showInMenu ? 'Yes' : 'No'}</span>
-                                </div>
-                                <div className="flex justify-between border-b border-border pb-1.5">
-                                    <span className="text-muted-foreground">Created By</span>
-                                    <span className="font-semibold text-foreground">Rohan Mehta</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Created On</span>
-                                    <span className="font-semibold text-foreground">18 May 2025, 11:30 AM</span>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Tips Card */}
-                        <Card className="border-border bg-amber-500/5 shadow-xs">
-                            <CardContent className="p-4 space-y-2">
-                                <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-bold text-xs">
-                                    <Lightbulb className="h-4 w-4" /> Tips for High-Converting Features
-                                </div>
-                                <ul className="space-y-1.5 text-xs text-muted-foreground list-disc pl-4">
-                                    <li>Use a clear and meaningful title (2-4 words)</li>
-                                    <li>Choose an icon that represents the feature well</li>
-                                    <li>Keep short descriptions concise for fast scanning</li>
-                                    <li>Add bullet points to highlight key guest benefits</li>
-                                </ul>
                             </CardContent>
                         </Card>
                     </div>
