@@ -17,6 +17,32 @@ This document records all Website Builder 1:1 updates, component rebuilds, layou
   ```
 - **Rule:** Never render a static `<Save />` icon while saving; always swap the icon to the animated `<Loader2 className="animate-spin" />` spinner component when `isSaving` is true.
 
+### 🎨 Dynamic Dashboard Theme Color Token Rule
+- **Requirement:** NEVER hardcode static color utility classes (e.g., `bg-purple-600`, `text-purple-600`, `border-purple-600`, `bg-white`, `text-slate-900`) for primary action buttons, active states, step badges, icons, callout banners, or card backgrounds across any Website Builder module.
+- **Reason:** The Admin Dashboard appearance system allows admins to dynamically select their custom primary theme color (**Dashboard > Website Builder > Theme Color** / `AppearanceProvider`). Dynamic CSS variables (`--primary`, `--primary-foreground`, `--background`, `--foreground`, `--card`, `--muted`, `--border`) control the theme colors dynamically.
+- **Implementation Standards:**
+  - **Primary Action Buttons & Action Badges:** `bg-primary hover:bg-primary/90 text-primary-foreground`
+  - **Accent Icons & Text Highlights:** `text-primary`
+  - **Active Selection Cards / Active Borders:** `border-primary bg-primary/10 ring-2 ring-primary/20`
+  - **Callout Banners & Info Boxes:** `bg-primary/10 border border-primary/20 text-primary`
+  - **Numbered Step Badges:** `bg-primary text-primary-foreground`
+  - **Cards & Surface Containers:** `bg-card text-card-foreground border-border`
+  - **Subtexts & Helper Labels:** `text-muted-foreground`
+  - **Page Layout Backgrounds:** `bg-background text-foreground`
+
+### 🧩 Standard Design System Component Usage Rule
+- **Requirement:** ALWAYS use the repository's standardized component library (`@/components/ui/*` and `_components/builder-field`) instead of creating custom ad-hoc HTML elements or custom styled wrappers from scratch.
+- **Core Component Map:**
+  - **Buttons:** Always use `<Button>` (`variant="outline"`, `variant="ghost"`, primary) from `@/components/ui/button`.
+  - **Containers & Cards:** Always use `<Card>`, `<CardHeader>`, `<CardTitle>`, `<CardDescription>`, `<CardContent>`, `<CardFooter>` from `@/components/ui/card`.
+  - **Form Fields & Counters:** Always use `<BuilderCountedInput>` and `<BuilderCountedTextarea>` for counted inputs, and `<Input>`, `<Label>` from `@/components/ui/*`.
+  - **Dropdowns & Selectors:** Always use `<Select>`, `<SelectTrigger>`, `<SelectValue>`, `<SelectContent>`, `<SelectItem>` from `@/components/ui/select`.
+  - **Toggles & Checkboxes:** Always use `<Switch>` from `@/components/ui/switch` and `<Checkbox>` from `@/components/ui/checkbox`.
+  - **Modals & Dialogs:** Always use `<Dialog>`, `<DialogContent>`, `<DialogHeader>`, `<DialogTitle>`, `<DialogDescription>`, `<DialogFooter>` from `@/components/ui/dialog`.
+  - **Tabs & Segmented Navigation:** Always use `<Tabs>`, `<TabsList>`, `<TabsTrigger>`, `<TabsContent>` from `@/components/ui/tabs`.
+  - **Status Pills & Badges:** Always use `<Badge>` from `@/components/ui/badge`.
+- **Rule:** Never re-invent ad-hoc custom UI elements when established component library primitives exist.
+
 ---
 
 ## 1. Active Sidebar Navigation Configuration (`app-sidebar.tsx`)
@@ -126,8 +152,300 @@ File: [page.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/
 Files: [login-page-content.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/login-page-content.tsx), [header-content.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/header-content.tsx), [nav-menu-content.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/nav-menu-content.tsx), [seo-content.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/seo-content.tsx), [footer-content.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/footer-content.tsx), [ui-block-content.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/ui-block-content.tsx)
 - Updated section header bottom border lines from faint 1px lines (`border-b`) to prominent **`border-b-2 border-slate-300/80`** to ensure clear, crisp visual separation between the top title/action bar and content cards.
 
+### 🟢 Pricing Plans Module Rebuild & Drag-and-Drop Reordering (`pricing-plans-content.tsx`)
+File: [pricing-plans-content.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/pricing-plans-content.tsx)
+- **1:1 Design & Layout Match:** Rebuilt `pricing-plans-content.tsx` into a 2-view workspace layout matching original Vercel OG App specifications.
+- **Top Actions Bar:** Title `All Plans Include Features` / `Add Pricing Plan`, subtitle, `View Public Page [🔗]` outline button, and `Save Changes` primary button with animated `<Loader2 className="animate-spin" />` spinner.
+- **Features Comparison Matrix Table (View 1):** Title `All Plans Include Powerful Features` with pink badge `Visible on Pricing Page`, top-right `+ Add New Feature` button, tier column headers (`Free`, `Basic`, `Pro`, `Premium`, `Companies`), 10 pre-configured feature rows with tooltips & icons, soft purple info callout box, and legend footer bar.
+- **Add New Feature Modal (Dialog):** 3-section modal featuring `Feature Title *` (`0/80`), `Feature Icon` select dropdown, `Feature Description *` (`0/200`), 5-column plan limit inputs with `Not Included` checkboxes, and `Active` status switch toggle.
+- **Add / Edit Pricing Plans Form (View 2):** 5 numbered form section cards (`Basic Information`, `Pricing Details`, `Features & Limits`, `Plan Settings`, `Additional Settings`) with `Plan For` card selector (`Individuals` vs `Companies`), preset badge pills (`Popular`, `Best Value`, `Recommended`, `New`), billing cycle cards (`Monthly` vs `Yearly` with `Save up to 20%`), currency dropdown, price inputs, free trial toggle, icon grid, color swatches, live preview card with desktop/mobile view switcher (`[🖥️|📱]`), plan summary card, and tips callout card.
+- **Add Plan Badge Modal (Dialog):** Custom badge modal with text input (`0/25`), 4 style cards (`Filled`, `Outline`, `Soft Filled`, `Soft Outline`) with live text previews, and color swatch picker.
+- **🔄 Interactive Drag & Drop Reordering Functionality:**
+  - Implemented smooth HTML5 drag-and-drop reordering (`draggable={true}`, `onDragStart`, `onDragOver`, `onDrop`) for Matrix Feature rows (`matrixFeatures`) and Plan Includes limits (`features`).
+  - Added visual grip handles (`<GripVertical className="cursor-grab active:cursor-grabbing" />`) with active drag opacity feedback (`opacity-40 bg-purple-50`).
+
+### 🟢 100% Radix UI Primitive Elimination & Pure React Component Migration (Ported from `Event_Managment_Website_Builder`)
+Files: [select.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/ui/select.tsx), [dialog.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/ui/dialog.tsx), [tabs.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/ui/tabs.tsx), [switch.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/ui/switch.tsx), [checkbox.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/ui/checkbox.tsx), [label.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/ui/label.tsx), [avatar.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/ui/avatar.tsx), [collapsible.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/ui/collapsible.tsx), [popover.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/ui/popover.tsx), [tooltip.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/ui/tooltip.tsx), [progress.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/ui/progress.tsx), [separator.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/ui/separator.tsx), [slider.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/ui/slider.tsx), [radio-group.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/ui/radio-group.tsx), [alert-dialog.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/ui/alert-dialog.tsx), [dropdown-menu.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/ui/dropdown-menu.tsx), [sheet.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/ui/sheet.tsx), [scroll-area.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/ui/scroll-area.tsx), [context-menu.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/ui/context-menu.tsx), [command.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/ui/command.tsx), [form.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/ui/form.tsx), [sidebar.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/ui/sidebar.tsx), [button.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/ui/button.tsx), [slot.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/lib/slot.tsx)
+- **100% Radix UI Removal:** Verified via grep search (**0 results found** across the entire `src/components/ui` directory). Replaced every Radix UI package primitive (`@radix-ui/react-*`) with lightweight, zero-dependency custom React implementations matching `D:\Jamal\Event_Managment_Website_Builder`.
+- **Full Primitive Coverage (23 UI Primitives):**
+  - **`select.tsx`**: Pure React state + `createPortal` dropdown escaping overflow containers cleanly.
+  - **`dialog.tsx`**: Pure React portal modal backdrop (`fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4`).
+  - **`tabs.tsx`**: Pure React context-driven segmented tab controller.
+  - **`switch.tsx`**: Pure React button toggle with smooth animated thumb handle and green/red status indicators.
+  - **`checkbox.tsx`**: Pure React button checkbox with custom check icon state.
+  - **`label.tsx`**: Pure React `<label>` element with flex typography alignment.
+  - **`avatar.tsx`**: Pure React `<div>` avatar container with error fallback handling.
+  - **`collapsible.tsx`**: Pure React context-driven collapsible panel component.
+  - **`popover.tsx`**: Pure React portal popover container.
+  - **`tooltip.tsx`**: Pure React hover tooltip container.
+  - **`progress.tsx`**: Pure React progress bar indicator.
+  - **`separator.tsx`**: Pure React horizontal & vertical divider lines.
+  - **`slider.tsx`**: Pure React range slider component.
+  - **`radio-group.tsx`**: Pure React radio button option group.
+  - **`alert-dialog.tsx`**: Pure React modal alert dialog overlay.
+  - **`dropdown-menu.tsx`**: Pure React portal action menu dropdown.
+  - **`sheet.tsx`**: Pure React drawer sheet component with portal backdrop overlay.
+  - **`scroll-area.tsx`**: Pure React smooth overflow scrolling container with custom scrollbar styling.
+  - **`context-menu.tsx`**: Pure React portal context menu overlay triggered on right-click.
+  - **`command.tsx`**: Replaced Radix `DialogProps` import with custom `DialogProps`.
+  - **`form.tsx`**: Replaced Radix `LabelPrimitive` and `Slot` with pure React implementations.
+  - **`sidebar.tsx` & `button.tsx`**: Replaced `@radix-ui/react-slot` with custom `Slot` component in `src/lib/slot.tsx`.
+- **Dynamic Theme Binding:** All components bind to dynamic CSS theme tokens (`bg-primary`, `text-primary`, `bg-card`, `text-foreground`, `text-muted-foreground`, `border-border`), ensuring 100% responsiveness to theme color settings and dark mode.
+
 ---
 
 ## 3. Verification & Build Integrity
 - **TypeScript Check (`npx tsc --noEmit`):** Clean build, **0 Errors**.
 - **Development Server:** Running smoothly without compilation errors.
+
+---
+
+## Session 2 — Backend API, DB Migrations, Pricing, Features & UI Block Sidebar Wiring
+
+> **Date:** 2026-07-27 | **Backend:** `D:\Jamal\Event_Management_Admin_Backend` | **Frontend:** `D:\Jamal\Event_Management_Admin_Frontend`
+
+---
+
+### 4. Company Website Builder — New Backend API
+
+> ⚠️ **Architecture Note:** The Admin Portal is NOT a vendor. All previous website-builder routes were under `/api/v1/vendors/website/*` with `isVendorAuthenticated` middleware — the admin JWT cannot use that. A dedicated company-scoped controller + routes was created.
+
+#### New Backend Files
+
+| File | Purpose |
+|---|---|
+| [`companyWebsiteBuilder.controller.js`](file:///D:/Jamal/Event_Management_Admin_Backend/src/controllers/companyWebsiteBuilder.controller.js) | Handlers for UI Blocks, Pricing, Features using `sequelize.query` + `QueryTypes` |
+| [`companyWebsiteBuilder.routes.js`](file:///D:/Jamal/Event_Management_Admin_Backend/src/routes/companyWebsiteBuilder.routes.js) | Routes with `isAuthenticated + extractCompanyContext` middleware |
+
+#### Route Mount in `app.js`
+```js
+// Admin-scoped — uses isAuthenticated + extractCompanyContext (NOT isVendorAuthenticated)
+app.use('/api/v1/website-builder', require('./routes/companyWebsiteBuilder.routes'));
+```
+
+#### All API Endpoints (under `/api/v1/website-builder/`)
+
+| Method | Path | Description |
+|---|---|---|
+| GET / PUT | `/ui-blocks` | UI block visibility & sort order |
+| GET / PUT | `/pricing/settings` | Pricing section heading / labels |
+| GET / PUT | `/pricing/plans` | Company pricing plans (bulk replace) |
+| GET / PUT | `/pricing/matrix-features` | Feature comparison matrix rows |
+| GET / PUT | `/features` | Features (bulk replace) |
+| POST | `/features` | Create single feature |
+| PUT | `/features/:id` | Update single feature |
+| DELETE | `/features/:id` | Delete single feature |
+
+#### Company ID Resolution Pattern
+```js
+const getCompanyId = (req) => req.companyId || req.user?.company_id || 1;
+// req.companyId is always set by extractCompanyContext middleware
+```
+
+#### Raw SQL Pattern — ALWAYS Use This in companyWebsiteBuilder.controller.js
+```js
+const { sequelize, Sequelize } = require('../models');
+const { QueryTypes } = Sequelize;
+
+// SELECT
+const rows = await sequelize.query('SELECT * FROM table WHERE company_id = ?',
+  { replacements: [companyId], type: QueryTypes.SELECT });
+
+// INSERT
+await sequelize.query('INSERT INTO table (...) VALUES (?,...)',
+  { replacements: [...], type: QueryTypes.INSERT });
+
+// UPDATE
+await sequelize.query('UPDATE table SET col=? WHERE company_id=?',
+  { replacements: [...], type: QueryTypes.UPDATE });
+
+// DELETE
+await sequelize.query('DELETE FROM table WHERE company_id=?',
+  { replacements: [companyId], type: QueryTypes.DELETE });
+```
+> ❌ NEVER use `db.query` from `../config/database` — that is a Sequelize config object, not a query interface.
+
+---
+
+### 5. Raw SQL DB Migrations — Pricing & Features Tables
+
+> **Rule:** Never run `sequelize db:migrate`. Always execute raw SQL directly via script.
+
+#### Script: `D:\Jamal\Event_Management_Admin_Backend\scratch\setup_pricing_tables_raw.js`
+- Reads credentials from `.env` (local `localhost:3306`) and `.env.production` (Aiven MySQL)
+- Run with: `node scratch/setup_pricing_tables_raw.js`
+
+#### Tables Created
+
+| Table | Key Columns |
+|---|---|
+| `company_website_pricing_settings` | `company_id`, section_title, headings, yearly_discount_badge |
+| `company_website_pricing_plans` | `company_id`, plan_name, price_monthly, price_yearly, features_json, is_popular |
+| `company_website_pricing_matrix_features` | `company_id`, feature_name, plan_values_json |
+| `company_website_features` | `company_id`, title, short_description, icon, bullet_points_json, status |
+
+> ⚠️ **Business Rule:** All tables use `company_id` — pricing is company promotional content ONLY. It is NOT linked to vendors, individual users, or subscriptions.
+
+---
+
+### 6. Frontend TanStack Query Hooks
+
+| File | Hooks | Endpoint |
+|---|---|---|
+| [`useUiBlocks.ts`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/hooks/useUiBlocks.ts) | `useUiBlocksData`, `useSaveUiBlocks` | `/website-builder/ui-blocks` |
+| [`usePricingPlans.ts`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/hooks/usePricingPlans.ts) | Pricing plan/settings hooks | `/website-builder/pricing/*` |
+
+#### ⚠️ Critical Bug Fixed — `block_key` vs Integer `id` Mapping
+
+**Problem:** DB rows have two separate fields:
+- `id` — integer auto-increment PK (`1`, `2`, `3`…) — NOT the block identifier
+- `block_key` — string identifier (`"pricing-plans"`, `"hero-section"` etc.)
+
+Original code: `id: (row.id ?? row.block_key)` — since `row.id` is always a truthy integer, `block_key` was never reached. The visibility Map was built with integer keys, so `uiBlockVisibility.get("pricing-plans")` always returned `undefined` and nothing was ever hidden.
+
+**Fix in [`useUiBlocks.ts`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/hooks/useUiBlocks.ts):**
+```ts
+return rows.map((row) => ({
+    ...row,
+    // IMPORTANT: row.id = integer DB primary key (1,2,3…). row.block_key = "pricing-plans" etc.
+    // MUST use block_key so sidebar uiBlockKey lookups match correctly.
+    id: (row.block_key ?? row.id) as string,   // ✅ block_key first
+    visible: row.is_visible === 1 || row.is_visible === true || row.visible === true,
+})) as UiBlockPayloadItem[];
+```
+
+---
+
+### 7. Sidebar UI Block Visibility System (`app-sidebar.tsx`)
+
+Every Website Builder sidebar item now respects the **Web UI Block** toggle page.
+
+#### How It Works
+1. Admin goes to `Website Builder > Web UI Block`
+2. Toggles a block OFF → clicks **Save Changes**
+3. DB: `vendor_website_ui_blocks` saves `is_visible = 0` for that `block_key`
+4. Sidebar calls `useUiBlocksData()` → maps `block_key → visible`
+5. Any item where `visible === false` is hidden from the sidebar immediately
+
+#### `MenuItem` Interface — New Field
+```ts
+interface MenuItem {
+  // ...all existing fields...
+  uiBlockKey?: string; // if set, item hidden when this UI block is toggled OFF
+}
+```
+
+#### Filter Logic Added to `filterMenuItem()`
+```ts
+const { data: uiBlocks } = useUiBlocksData();
+const uiBlockVisibility = new Map<string, boolean>(
+  (uiBlocks ?? []).map((b) => [b.id, b.visible])  // b.id = block_key string
+);
+
+// Only hide when blocks have been saved (length > 0) AND block is explicitly OFF
+// Edge case: when DB is empty (before first save), show all items
+if (item.uiBlockKey && uiBlocks && uiBlocks.length > 0 &&
+    uiBlockVisibility.get(item.uiBlockKey) === false) {
+  return false;
+}
+```
+
+#### Complete `uiBlockKey` Mapping — All Website Builder Sidebar Items
+
+| Sidebar Label | `uiBlockKey` |
+|---|---|
+| Header | `basic-information` |
+| Nav Menu | `nav-menu` |
+| Login Page | `login-page` |
+| Web UI Block | *(none — always visible, it's the control panel)* |
+| SEO Settings | `seo` |
+| Footer Settings | `footer` |
+| Theme Color | `theme-color` |
+| Pages *(parent group)* | `pages` |
+| Contact Us *(parent group)* | `contact_us` |
+| Hero Section | `hero-section` |
+| Simple Slider | `basic-slider` |
+| Advance Slider | `advance-slider` |
+| Gallery Images | `gallery-images` |
+| Gallery Categories | `gallery-categories` |
+| Testimonials | `testimonials` |
+| Pricing Plans | `pricing-plans` |
+| Features Builder | `features` |
+| Sponsors | `basic-sponsors` |
+| Clients | `basic-clients` |
+
+#### Login Page Added to `INITIAL_BLOCKS` in `ui-block-content.tsx`
+```ts
+{ id: 'login-page', label: 'Login Page', description: 'Vendor/user login page builder.',
+  icon: Monitor, visible: true, locked: false, required: false },
+```
+
+#### DB Table for UI Blocks
+```
+vendor_website_ui_blocks
+Columns: id (INT PK), vendor_id (stores companyId), website_id,
+         block_key (VARCHAR — the string identifier), is_visible (TINYINT), sort_order
+```
+> Note: `vendor_id` column stores `companyId` for company-scoped blocks (legacy column name).
+
+---
+
+### 8. Proxy Architecture — Frontend → Backend
+
+```
+apiClient.get('/website-builder/ui-blocks')
+  → Next.js proxy: GET /api/proxy/v1/website-builder/ui-blocks
+  → Strips 'v1/' prefix
+  → Backend: http://localhost:5001/api/v1/website-builder/ui-blocks
+  → Middleware: isAuthenticated + extractCompanyContext
+  → Controller: companyWebsiteBuilder.controller.js
+  → MySQL: vendor_website_ui_blocks WHERE vendor_id = companyId
+```
+
+- Frontend env: `NEXT_PUBLIC_API_URL=http://localhost:5001/api/v1` (`.env.local`)
+- Proxy file: [`src/app/api/proxy/[...path]/route.ts`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/api/proxy/[...path]/route.ts)
+- Cookies forwarded: `access_token`, `refresh_token` only
+
+---
+
+### 9. Session 2 Verification Checklist
+
+- [x] Backend starts without errors: `node -e "require('./src/app')"` → clean
+- [x] Route exists: `GET /api/v1/website-builder/ui-blocks` → returns `401` (not `404`) when unauthenticated
+- [x] DB has `pricing-plans` saved with `is_visible = 0` after toggle OFF + Save
+- [x] `block_key` mapping bug fixed in `useUiBlocks.ts` — sidebar hides items correctly
+- [x] All 18 sidebar items tagged with correct `uiBlockKey`
+- [x] Empty DB edge case handled (no items hidden before first save)
+- [x] Parent group items (Pages, Contact Us) use `uiBlockKey` on the parent — entire group hides when toggled OFF
+
+---
+
+### 10. Templates & Template Categories Module
+
+> **Date:** 2026-07-27 | **Module:** Invitation Card & Event Website Templates
+
+#### 🗄️ Database Tables (`scratch/setup_templates_raw.js`)
+Executed raw SQL migrations directly on **Local MySQL** (`localhost:3306`) and **Production Aiven MySQL**:
+1. `company_template_categories`: `id`, `company_id`, `name`, `slug`, `description`, `icon`, `color`, `sort_order`, `is_active`
+2. `company_templates`: `id`, `company_id`, `category_id`, `template_name`, `slug`, `description`, `template_type`, `design_style`, `primary_color`, `thumbnail_url`, `template_file_url`, `preview_url`, `is_active`, `allow_customize`, `is_draft`, `is_popular`, `sort_order`
+
+#### 🔌 Backend APIs (`companyWebsiteBuilder.controller.js` & `companyWebsiteBuilder.routes.js`)
+- `GET /api/v1/website-builder/templates/categories` — List template categories
+- `POST /api/v1/website-builder/templates/categories` — Create category
+- `PUT /api/v1/website-builder/templates/categories/:id` — Update category
+- `DELETE /api/v1/website-builder/templates/categories/:id` — Delete category
+- `GET /api/v1/website-builder/templates` — List templates with filtering (category, type, search)
+- `GET /api/v1/website-builder/templates/:id` — Get template details
+- `POST /api/v1/website-builder/templates` — Create template
+- `PUT /api/v1/website-builder/templates/:id` — Update template
+- `DELETE /api/v1/website-builder/templates/:id` — Delete template
+
+#### ⚛️ Frontend Hooks & Pages (`src/hooks/useTemplates.ts`)
+- **Features Builder Management Data Table**: Converted `/admin/website-builder/features` into a clean Management Data Table (List View) with `#` index, `Icon`, `Feature Title`, `Short Description`, `Show in Menu` switch, `Order`, `Status`, and `Actions` (Edit & Delete). Completely removed all hardcoded mock arrays (`DEFAULT_FEATURES`).
+- **Pricing Plans Dynamic Sync**: Connected `usePricingPlansData()` inside `pricing-plans-content.tsx` to ensure saved company pricing plans dynamically populate from the MySQL database table.
+- **Add / Edit Template Form Page** ([`create/page.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/templates/create/page.tsx)): 1:1 match with Mockup 1 (4 numbered form sections: Basic Information, Template Type & Style, Template Design uploads, Settings switches; Right-column live invitation preview card with desktop/mobile switcher & tips card).
+- **Template Catalog Library Page** ([`templates/page.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/templates/page.tsx)): 1:1 match with Mockup 2 (Search bar, category pill filter bar, 5-column card grid with favorite heart buttons, invitation thumbnails, Preview & Use Template buttons, Load More Templates pagination).
+- **Sidebar Integration**: Registered under parent `Templates` in [`app-sidebar.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/admin/app-sidebar.tsx) with `uiBlockKey: "templates"` and two child navigation options:
+  1. `Templates` (`/admin/website-builder/templates`)
+  2. `Categories` (`/admin/website-builder/templates/categories`)
+

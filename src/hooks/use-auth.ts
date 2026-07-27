@@ -77,6 +77,9 @@ export function useCurrentUser() {
           // Clear cookies first so middleware doesn't redirect back to /admin,
           // then redirect to login
           if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) {
+            document.cookie = 'access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
+            document.cookie = 'refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
+            document.cookie = 'auth_pending=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
             try { await fetch('/api/auth/clear-session', { method: 'POST' }); } catch { /* ignore */ }
             router.push('/auth/login');
           }

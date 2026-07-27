@@ -83,7 +83,14 @@ apiClient.interceptors.response.use(
       if (typeof window !== 'undefined' &&
           !window.location.pathname.includes('/auth') &&
           !window.location.pathname.startsWith('/vendor')) {
-        window.location.href = '/auth/login';
+        // Clear all auth cookies immediately so Next.js middleware won't bounce back to /admin
+        document.cookie = 'access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
+        document.cookie = 'refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
+        document.cookie = 'auth_pending=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
+
+        fetch('/api/auth/clear-session', { method: 'POST' }).finally(() => {
+          window.location.href = '/auth/login';
+        });
       }
     }
     return Promise.reject(error);

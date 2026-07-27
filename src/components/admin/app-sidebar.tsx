@@ -37,6 +37,8 @@ import {
   Monitor,
   Search,
   Star,
+  DollarSign,
+  Plus,
 } from "lucide-react";
 import {
   Sidebar,
@@ -63,6 +65,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { usePermissionCheck } from "@/hooks";
 import { usePlugins } from "@/hooks/use-plugins";
 import { PageLoader } from "@/components/common/page-loader";
+import { useUiBlocksData } from "@/hooks/useUiBlocks";
 
 interface MenuItem {
   labelKey: string;
@@ -74,6 +77,7 @@ interface MenuItem {
   developerOnly?: boolean;
   pluginSlug?: string; // if set, item is hidden when plugin is inactive
   badge?: string;
+  uiBlockKey?: string; // if set, item is hidden when this UI block is toggled off
 }
 
 const menuItems: MenuItem[] = [
@@ -158,16 +162,17 @@ const menuItems: MenuItem[] = [
     labelKey: "Website Builder",
     icon: Globe,
     children: [
-      { labelKey: "Header", href: "/admin/website-builder/header", icon: FileText },
-      { labelKey: "Nav Menu", href: "/admin/website-builder/nav-menu", icon: Menu },
-      { labelKey: "Login Page", href: "/admin/website-builder/login-page", icon: LogIn },
+      { labelKey: "Header", href: "/admin/website-builder/header", icon: FileText, uiBlockKey: "basic-information" },
+      { labelKey: "Nav Menu", href: "/admin/website-builder/nav-menu", icon: Menu, uiBlockKey: "nav-menu" },
+      { labelKey: "Login Page", href: "/admin/website-builder/login-page", icon: LogIn, uiBlockKey: "login-page" },
       { labelKey: "Web UI Block", href: "/admin/website-builder/ui-block", icon: Monitor },
-      { labelKey: "SEO Settings", href: "/admin/website-builder/seo", icon: Search },
-      { labelKey: "Footer Settings", href: "/admin/website-builder/footer", icon: Settings },
-      { labelKey: "Theme Color", href: "/admin/website-builder/theme-color", icon: Palette },
+      { labelKey: "SEO Settings", href: "/admin/website-builder/seo", icon: Search, uiBlockKey: "seo" },
+      { labelKey: "Footer Settings", href: "/admin/website-builder/footer", icon: Settings, uiBlockKey: "footer" },
+      { labelKey: "Theme Color", href: "/admin/website-builder/theme-color", icon: Palette, uiBlockKey: "theme-color" },
       {
         labelKey: "Pages",
         icon: FileText,
+        uiBlockKey: "pages",
         children: [
           { labelKey: "Pages List", href: "/admin/website-builder/pages", icon: FileText },
           { labelKey: "Create Page", href: "/admin/website-builder/pages/create", icon: FileText },
@@ -176,36 +181,48 @@ const menuItems: MenuItem[] = [
       {
         labelKey: "Contact Us",
         icon: Mail,
+        uiBlockKey: "contact_us",
         children: [
           { labelKey: "Contact Settings", href: "/admin/website-builder/contact-us", icon: Mail },
           { labelKey: "Categories", href: "/admin/website-builder/contact-us/categories", icon: Folder },
           { labelKey: "Contact List", href: "/admin/website-builder/contact-us/list", icon: FileText },
         ],
       },
-      { labelKey: "Hero Section", href: "/admin/website-builder/hero-section", icon: Monitor },
+      { labelKey: "Hero Section", href: "/admin/website-builder/hero-section", icon: Monitor, uiBlockKey: "hero-section" },
       {
         labelKey: "Slider",
         icon: Folder,
         children: [
-          { labelKey: "Simple Slider", href: "/admin/website-builder/simple-slider", icon: Folder },
-          { labelKey: "Advance Slider", href: "/admin/website-builder/advance-slider", icon: Calendar },
+          { labelKey: "Simple Slider", href: "/admin/website-builder/simple-slider", icon: Folder, uiBlockKey: "basic-slider" },
+          { labelKey: "Advance Slider", href: "/admin/website-builder/advance-slider", icon: Calendar, uiBlockKey: "advance-slider" },
         ],
       },
       {
         labelKey: "Gallery",
         icon: GalleryHorizontal,
         children: [
-          { labelKey: "Gallery Images", href: "/admin/website-builder/gallery", icon: GalleryHorizontal },
-          { labelKey: "Gallery Categories", href: "/admin/website-builder/gallery/categories", icon: Folder },
+          { labelKey: "Gallery Images", href: "/admin/website-builder/gallery", icon: GalleryHorizontal, uiBlockKey: "gallery-images" },
+          { labelKey: "Gallery Categories", href: "/admin/website-builder/gallery/categories", icon: Folder, uiBlockKey: "gallery-categories" },
         ],
       },
-      { labelKey: "Testimonials", href: "/admin/website-builder/testimonials", icon: Star },
+      { labelKey: "Testimonials", href: "/admin/website-builder/testimonials", icon: Star, uiBlockKey: "testimonials" },
+      { labelKey: "Pricing Plans", href: "/admin/website-builder/pricing-plans", icon: DollarSign, uiBlockKey: "pricing-plans" },
+      { labelKey: "Features Builder", href: "/admin/website-builder/features", icon: Layers, uiBlockKey: "features" },
+      {
+        labelKey: "Event Templates",
+        icon: LayoutGrid,
+        uiBlockKey: "templates",
+        children: [
+          { labelKey: "Event Templates", href: "/admin/website-builder/templates", icon: LayoutGrid },
+          { labelKey: "Template Categories", href: "/admin/website-builder/templates/categories", icon: Folder },
+        ],
+      },
       {
         labelKey: "Portfolio",
         icon: Award,
         children: [
-          { labelKey: "Sponsors", href: "/admin/website-builder/sponsors", icon: Award },
-          { labelKey: "Clients", href: "/admin/website-builder/clients", icon: Users },
+          { labelKey: "Sponsors", href: "/admin/website-builder/sponsors", icon: Award, uiBlockKey: "basic-sponsors" },
+          { labelKey: "Clients", href: "/admin/website-builder/clients", icon: Users, uiBlockKey: "basic-clients" },
         ],
       },
     ],
@@ -251,7 +268,13 @@ export function AppSidebar() {
     (pluginsData?.plugins ?? []).filter((p) => p.is_active === 1).map((p) => p.slug)
   );
 
-  // Filter menu items based on permissions + plugin state
+  // UI Block visibility state — hides sidebar items when their block is toggled OFF
+  const { data: uiBlocks } = useUiBlocksData();
+  const uiBlockVisibility = new Map<string, boolean>(
+    (uiBlocks ?? []).map((b) => [b.id, b.visible])
+  );
+
+  // Filter menu items based on permissions + plugin state + UI block visibility
   const filterMenuItem = (item: MenuItem): boolean => {
     // Developer-only items
     if (item.developerOnly && !isDeveloper()) {
@@ -270,6 +293,11 @@ export function AppSidebar() {
 
     // Plugin check — only hide if plugins are loaded AND plugin is explicitly inactive
     if (item.pluginSlug && pluginsData && !activePluginSlugs.has(item.pluginSlug)) {
+      return false;
+    }
+
+    // UI Block visibility check — only hide when blocks have been saved AND block is explicitly OFF
+    if (item.uiBlockKey && uiBlocks && uiBlocks.length > 0 && uiBlockVisibility.get(item.uiBlockKey) === false) {
       return false;
     }
 

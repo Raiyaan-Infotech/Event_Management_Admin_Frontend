@@ -570,30 +570,35 @@ export function HeroSectionContent() {
                                 previewDevice === 'mobile' ? 'max-w-[320px]' : 'w-full'
                             )}>
                                 {/* Simulated Website Header Bar */}
-                                <div className="bg-[#0B0D17] px-3 py-1.5 text-[9px] text-white/70 border-b border-white/10 flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <span className="flex items-center gap-1"><Phone className="h-2.5 w-2.5 text-blue-400" /> +91 98765 43210</span>
-                                        {previewDevice === 'desktop' && <span className="flex items-center gap-1"><Mail className="h-2.5 w-2.5 text-blue-400" /> hello@eventify.com</span>}
+                                <div className="bg-[#0B0D17] px-3 py-1.5 text-[9px] text-white/70 border-b border-white/10 flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2.5 truncate">
+                                        <span className="flex items-center gap-1 shrink-0"><Phone className="h-2.5 w-2.5 text-blue-400" /> +91 98765 43210</span>
+                                        {previewDevice === 'desktop' && (
+                                            <span className="flex items-center gap-1 truncate"><Mail className="h-2.5 w-2.5 text-blue-400" /> hello@eventify.com</span>
+                                        )}
                                     </div>
-                                    <div className="flex items-center gap-1 text-[9px]">
-                                        <span>in</span>
+                                    <div className="flex items-center gap-1 text-[8px] font-bold text-white/70 shrink-0">
+                                        <span className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-white/90 transition-colors">in</span>
+                                        <span className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-white/90 transition-colors">ig</span>
                                     </div>
                                 </div>
 
                                 {/* Simulated Nav Bar */}
-                                <div className="bg-white px-3 py-2 flex items-center justify-between text-xs text-slate-800 font-semibold border-b">
-                                    <span className="font-bold text-xs tracking-tight text-slate-900">Eventify</span>
+                                <div className="bg-white px-3 py-1.5 flex items-center justify-between gap-2 text-xs text-slate-800 font-semibold border-b shadow-2xs">
+                                    <span className="font-bold text-xs tracking-tight text-slate-900 shrink-0 flex items-center gap-1">
+                                        <span className="h-2 w-2 rounded-full bg-blue-600 inline-block" />
+                                        Eventify
+                                    </span>
                                     {previewDevice === 'desktop' && (
-                                        <div className="flex items-center gap-2 text-[10px] text-slate-600">
-                                            <span>Home</span>
-                                            <span>About</span>
-                                            <span>Services</span>
-                                            <span>Events</span>
-                                            <span>Gallery</span>
-                                            <span>Contact</span>
+                                        <div className="flex items-center gap-1.5 text-[9px] text-slate-600 font-medium truncate mx-1">
+                                            <span className="hover:text-blue-600 cursor-pointer">Home</span>
+                                            <span className="hover:text-blue-600 cursor-pointer">About</span>
+                                            <span className="hover:text-blue-600 cursor-pointer">Services</span>
+                                            <span className="hover:text-blue-600 cursor-pointer">Events</span>
+                                            <span className="hover:text-blue-600 cursor-pointer">Contact</span>
                                         </div>
                                     )}
-                                    <Button size="sm" className="h-6 text-[9px] px-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold">
+                                    <Button size="sm" className="h-5.5 text-[9px] px-2 bg-blue-600 hover:bg-blue-700 text-white font-bold shrink-0 whitespace-nowrap">
                                         Book Now
                                     </Button>
                                 </div>

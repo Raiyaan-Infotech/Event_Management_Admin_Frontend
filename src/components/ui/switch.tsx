@@ -1,87 +1,103 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import * as SwitchPrimitives from "@radix-ui/react-switch";
-import { cn } from "@/lib/utils";
+import * as React from 'react';
+import { cn } from '@/lib/utils';
 
-type SwitchProps = React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root> & {
-  pending?: boolean;
-  onText?: string;
-  offText?: string;
-};
+export interface SwitchProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onChange'> {
+    checked?: boolean;
+    onCheckedChange?: (checked: boolean) => void;
+    pending?: boolean;
+    onText?: string;
+    offText?: string;
+}
 
-const Switch = React.forwardRef<React.ElementRef<typeof SwitchPrimitives.Root>, SwitchProps>(
-  ({ className, pending, onText = "ON", offText = "OFF", ...props }, ref) => {
-    // Width calculation for comfortable text display: thumb(20px) + text space + padding
-    const longestText = onText.length > offText.length ? onText : offText;
-    const trackWidth = Math.max(64, 28 + longestText.length * 7);
+export const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
+    (
+        {
+            checked = false,
+            onCheckedChange,
+            pending,
+            disabled,
+            className,
+            onText = 'ON',
+            offText = 'OFF',
+            onClick,
+            ...props
+        },
+        ref
+    ) => {
+        const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+            if (onClick) onClick(e);
+            if (!disabled && !pending && onCheckedChange) {
+                onCheckedChange(!checked);
+            }
+        };
 
-    const pendingText = "PENDING";
-    const pendingWidth = Math.max(64, 28 + pendingText.length * 7);
+        if (pending) {
+            return (
+                <div
+                    className={cn(
+                        'inline-flex h-7 w-16 shrink-0 items-center rounded-full border border-amber-200 bg-amber-100 px-1 text-amber-700 relative cursor-not-allowed opacity-90 shadow-xs',
+                        className
+                    )}
+                >
+                    <span className="absolute right-2 text-[9px] font-extrabold tracking-wider select-none">
+                        PENDING
+                    </span>
+                    <span className="block h-5 w-5 rounded-full bg-amber-500 shadow-xs animate-pulse" />
+                </div>
+            );
+        }
 
-    if (pending) {
-      return (
-        <div
-          style={{ width: pendingWidth }}
-          className={cn(
-            "inline-flex h-7 shrink-0 items-center rounded-full border border-amber-200 bg-amber-100 text-amber-700 relative px-1 cursor-not-allowed opacity-90",
-            className
-          )}
-        >
-          <span
-            aria-hidden
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-extrabold select-none pointer-events-none tracking-wider"
-          >
-            {pendingText}
-          </span>
-          <span className="block h-5 w-5 rounded-full bg-amber-500 shadow-xs animate-pulse" />
-        </div>
-      );
+        return (
+            <button
+                ref={ref}
+                type="button"
+                role="switch"
+                aria-checked={checked}
+                data-state={checked ? 'checked' : 'unchecked'}
+                disabled={disabled}
+                onClick={handleClick}
+                className={cn(
+                    'relative inline-flex h-7 w-16 shrink-0 cursor-pointer items-center rounded-full border border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 px-0.5 shadow-xs',
+                    checked ? 'bg-emerald-100' : 'bg-red-100',
+                    className
+                )}
+                {...props}
+            >
+                {/* On Text */}
+                <span
+                    aria-hidden
+                    className={cn(
+                        'absolute left-2 text-[10px] font-extrabold text-emerald-700 select-none pointer-events-none transition-opacity tracking-wider',
+                        checked ? 'opacity-100' : 'opacity-0'
+                    )}
+                >
+                    {onText}
+                </span>
+
+                {/* Off Text */}
+                <span
+                    aria-hidden
+                    className={cn(
+                        'absolute right-2 text-[10px] font-extrabold text-red-600 select-none pointer-events-none transition-opacity tracking-wider',
+                        checked ? 'opacity-0' : 'opacity-100'
+                    )}
+                >
+                    {offText}
+                </span>
+
+                {/* Thumb Handle */}
+                <span
+                    data-state={checked ? 'checked' : 'unchecked'}
+                    className={cn(
+                        'pointer-events-none block h-5 w-5 rounded-full shadow-xs ring-0 transition-transform duration-150 ease-in-out z-10',
+                        checked ? 'translate-x-[2.25rem] bg-emerald-500' : 'translate-x-0.5 bg-red-500'
+                    )}
+                />
+            </button>
+        );
     }
-
-    const thumbTranslate = trackWidth - 26;
-
-    return (
-      <SwitchPrimitives.Root
-        style={{ width: trackWidth }}
-        className={cn(
-          "peer inline-flex h-7 shrink-0 cursor-pointer items-center rounded-full border border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-emerald-100 data-[state=unchecked]:bg-red-100 relative px-0.5 shadow-xs",
-          className
-        )}
-        {...props}
-        ref={ref}
-      >
-        {/* On text - left side, clearly visible when checked */}
-        <span
-          aria-hidden
-          className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] font-extrabold text-emerald-700 select-none pointer-events-none transition-opacity tracking-wider"
-          style={{ opacity: props.checked ? 1 : 0 }}
-        >
-          {onText}
-        </span>
-        {/* Off text - right side, clearly visible when unchecked */}
-        <span
-          aria-hidden
-          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-extrabold text-red-600 select-none pointer-events-none transition-opacity tracking-wider"
-          style={{ opacity: props.checked ? 0 : 1 }}
-        >
-          {offText}
-        </span>
-        <SwitchPrimitives.Thumb
-          className={cn(
-            "pointer-events-none block h-5 w-5 rounded-full shadow-xs ring-0 transition-transform z-10",
-            "data-[state=checked]:bg-emerald-500 data-[state=unchecked]:bg-red-500"
-          )}
-          style={{
-            transform: `translateX(${props.checked ? thumbTranslate : 0}px)`,
-            transition: "transform 150ms cubic-bezier(0.4, 0, 0.2, 1)",
-          }}
-        />
-      </SwitchPrimitives.Root>
-    );
-  }
 );
 
-Switch.displayName = SwitchPrimitives.Root.displayName;
-
-export { Switch };
+Switch.displayName = 'Switch';

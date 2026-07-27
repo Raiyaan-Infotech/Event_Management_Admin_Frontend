@@ -29,6 +29,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useSaveUiBlocks, type UiBlockPayloadItem } from '@/hooks/useUiBlocks';
 import { cn } from '@/lib/utils';
 
 type UiBlockFilter = 'all' | 'visible' | 'hidden';
@@ -46,6 +47,7 @@ interface UiBlockItem {
 const INITIAL_BLOCKS: UiBlockItem[] = [
     { id: 'basic-information', label: 'Header', description: 'Website logo, company name, and header details.', icon: FileText, visible: true, locked: true, required: true },
     { id: 'nav-menu', label: 'Nav Menu', description: 'Website navigation menu settings.', icon: List, visible: true, locked: true, required: true },
+    { id: 'login-page', label: 'Login Page', description: 'Vendor/user login page builder.', icon: Monitor, visible: true, locked: false, required: false },
     { id: 'ui-block', label: 'Web UI Block', description: 'Sidebar visibility and block ordering.', icon: Monitor, visible: true, locked: true, required: true },
     { id: 'seo', label: 'SEO Settings', description: 'Search engine metadata settings.', icon: Search, visible: true, locked: false, required: false },
     { id: 'footer', label: 'Footer Settings', description: 'Website footer configuration.', icon: Settings, visible: true, locked: true, required: true },
@@ -66,12 +68,31 @@ const INITIAL_BLOCKS: UiBlockItem[] = [
     { id: 'testimonials', label: 'Testimonials', description: 'Customer testimonial management.', icon: Star, visible: true, locked: false, required: false },
     { id: 'basic-sponsors', label: 'Sponsors', description: 'Sponsor logo section.', icon: Users, visible: true, locked: false, required: false },
     { id: 'basic-clients', label: 'Clients', description: 'Client logo section.', icon: Users, visible: true, locked: false, required: false },
+    { id: 'pricing-plans', label: 'Pricing Plans', description: 'Company promotional pricing plans section.', icon: FileText, visible: true, locked: false, required: false },
+    { id: 'features', label: 'Features Builder', description: 'Interactive features and key benefits section.', icon: FileText, visible: true, locked: false, required: false },
+    { id: 'templates', label: 'Templates Library', description: 'Event invitation card and website template manager.', icon: FileText, visible: true, locked: false, required: false },
 ];
 
 export function UIBlockContent() {
     const [blocks, setBlocks] = useState<UiBlockItem[]>(INITIAL_BLOCKS);
     const [filter, setFilter] = useState<UiBlockFilter>('all');
-    const [isSaving, setIsSaving] = useState(false);
+
+    const saveUiBlocksMutation = useSaveUiBlocks();
+    const isSaving = saveUiBlocksMutation.isPending;
+
+    const handleSave = () => {
+        const payload: UiBlockPayloadItem[] = blocks.map((item, index) => ({
+            id: item.id,
+            label: item.label,
+            description: item.description,
+            visible: item.visible,
+            locked: item.locked,
+            required: item.required,
+            sort_order: index + 1,
+        }));
+
+        saveUiBlocksMutation.mutate(payload);
+    };
 
     const dragIndex = useRef<number | null>(null);
 
@@ -129,14 +150,6 @@ export function UIBlockContent() {
         setBlocks(INITIAL_BLOCKS);
         setFilter('all');
         toast.success('UI blocks reset to default layout');
-    };
-
-    const handleSave = () => {
-        setIsSaving(true);
-        setTimeout(() => {
-            setIsSaving(false);
-            toast.success('Web UI Block configuration saved successfully!');
-        }, 500);
     };
 
     return (
