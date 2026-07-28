@@ -471,3 +471,154 @@ Executed raw SQL migrations directly on **Local MySQL** (`localhost:3306`) and *
 | **Event Templates** | `/admin/website-builder/templates` | ✅ PASS | Category filter pills, grid view, favorite hearts, invitation previews, template management, and `/create` form view active. |
 | **How It Works** | `/admin/website-builder/how-it-works` | ✅ PASS | Numbered step cards `1`-`4`, Edit Pencil modal, Single Image Uploader, active Drag & Drop reordering, Public Output Preview modal, and dynamic green theme integration active. |
 | **Website FAQs** | `/admin/website-builder/faqs` | ✅ PASS | 3 separate page routes (`/faqs`, `/create`, `/categories`), dedicated MySQL tables, search/filter bar, category pills, rich text answer editor, icon/color picker modal, and sidebar wiring active. |
+
+---
+
+## 11. Dedicated Status APIs & Lightweight Status Toggles
+
+To optimize performance and avoid submitting full entity payloads on simple toggle switches, dedicated status toggle endpoints were created across all Website Builder modules in the backend:
+
+### Backend Controller & Route Endpoints
+
+| Entity Module | Dedicated Status API Endpoint | Controller Handler |
+|---|---|---|
+| **Pricing Plans** | `PATCH/PUT /api/v1/website-builder/pricing/plans/:id/status` | `updatePricingPlanStatus` |
+| **Event Templates** | `PATCH/PUT /api/v1/website-builder/templates/:id/status` | `updateTemplateStatus` |
+| **Template Categories** | `PATCH/PUT /api/v1/website-builder/templates/categories/:id/status` | `updateTemplateCategoryStatus` |
+| **Features Builder** | `PATCH/PUT /api/v1/website-builder/features/:id/status` | `updateFeatureStatus` |
+| **How It Works** | `PATCH/PUT /api/v1/website-builder/how-it-works/:id/status` | `updateHowItWorksStepStatus` |
+| **Website FAQs** | `PATCH/PUT /api/v1/website-builder/faqs/:id/status` | `updateWebsiteFaqStatus` |
+| **FAQ Categories** | `PATCH/PUT /api/v1/website-builder/faq-categories/:id/status` | `updateWebsiteFaqCategoryStatus` |
+
+---
+
+## 12. Reusable `BuilderDataTable` Component (`_components/builder-data-table.tsx`)
+
+File: [`src/app/admin/website-builder/_components/builder-data-table.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/builder-data-table.tsx)
+
+### Key Capabilities & Props Architecture:
+1. **Live Search Bar**: Search input with debounced query updates (`searchQuery`, `onSearchChange`).
+2. **Filter Select Dropdowns**: Array of `FilterConfig` objects rendering Radix/Shadcn Select dropdowns (`value`, `onChange`, `options`).
+3. **Interactive Pagination**: Footer bar showing entry counts (`Showing X to Y of N entries`), Previous button, page buttons, Next button (`pageSize = 10`).
+4. **Drag & Drop Reordering**: Row reordering handles (`GripVertical`) with visual drag indicators (`opacity-50`) and `onReorder` callbacks.
+5. **Column Cell Renderers**: Strongly typed `Column<T>[]` definitions supporting custom cell JSX, header titles, and alignment classes.
+
+---
+
+## 13. Auto-Migrations for Large Payload Assets (`LONGTEXT`)
+
+Backend Controller: [`companyWebsiteBuilder.controller.js`](file:///D:/Jamal/Event_Management_Admin_Backend/src/controllers/companyWebsiteBuilder.controller.js)
+
+To prevent MySQL `WARN_DATA_TRUNCATED` errors when uploading base64 data URLs for thumbnail artworks, custom icons, or template file packages:
+1. `ensureTemplatesTable()` — Modifies `thumbnail_url`, `template_file_url`, `preview_url`, `description` to `LONGTEXT`.
+2. `ensureFeaturesTable()` — Modifies `icon`, `custom_icon_url`, `feature_image_url`, `image_url`, `short_description`, `detailed_description` to `LONGTEXT`.
+3. `ensureHowItWorksTable()` — Modifies `icon`, `illustration_url`, `description` to `LONGTEXT`.
+
+---
+
+## 14. List Pages Updated Matrix
+
+| List Page Route | Drag & Drop | Pagination | Live Search | Status Toggle API | Reusable Component |
+|---|:---:|:---:|:---:|:---:|:---:|
+| `/admin/website-builder/templates` | ✅ | ✅ | ✅ | ✅ | `templates/page.tsx` |
+| `/admin/website-builder/templates/categories` | ✅ | ✅ | ✅ | ✅ | `BuilderDataTable` |
+| `/admin/website-builder/features` | ✅ | ✅ | ✅ | ✅ | `features/page.tsx` |
+| `/admin/website-builder/pricing-plans` | ✅ | ✅ | ✅ | ✅ | `pricing-plans/page.tsx` |
+| `/admin/website-builder/how-it-works` | ✅ | ✅ | ✅ | ✅ | `how-it-works/page.tsx` |
+| `/admin/website-builder/faqs` | ✅ | ✅ | ✅ | ✅ | `faqs/page.tsx` |
+
+---
+
+## 🚀 Blueprint Checklist: Creating a New Website Builder Module
+
+Whenever creating a **NEW Website Builder Module** in this codebase, follow this exact 5-step blueprint:
+
+### Step 1: Database Migration Helper (`companyWebsiteBuilder.controller.js`)
+Create an `ensure<ModuleName>Table()` auto-migration function that executes `CREATE TABLE IF NOT EXISTS` and alters text/image columns to `LONGTEXT`:
+```js
+const ensureNewModuleTable = async () => {
+    try {
+        await sequelize.query(`
+            CREATE TABLE IF NOT EXISTS company_website_new_module (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                company_id INT NOT NULL DEFAULT 1,
+                title VARCHAR(255) NOT NULL,
+                description LONGTEXT NULL,
+                image_url LONGTEXT NULL,
+                is_active TINYINT(1) DEFAULT 1,
+                sort_order INT DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        `);
+        await sequelize.query(`ALTER TABLE company_website_new_module MODIFY COLUMN image_url LONGTEXT NULL;`).catch(() => {});
+    } catch (err) {
+        console.error('Error ensuring new_module table:', err);
+    }
+};
+```
+
+### Step 2: Backend Controller Handlers & Dedicated Status API
+Implement raw SQL CRUD + dedicated status update handler:
+```js
+const getNewModuleItems = asyncHandler(async (req, res) => {
+    await ensureNewModuleTable();
+    const companyId = getCompanyId(req);
+    const rows = await sequelize.query(
+        'SELECT * FROM company_website_new_module WHERE company_id = ? ORDER BY sort_order ASC, id ASC',
+        { replacements: [companyId], type: QueryTypes.SELECT }
+    );
+    return ApiResponse.success(res, rows.map(parseRow), 'Items retrieved');
+});
+
+const updateNewModuleItemStatus = asyncHandler(async (req, res) => {
+    const companyId = getCompanyId(req);
+    const { id } = req.params;
+    const { is_active } = req.body || {};
+    const isActiveVal = (is_active === false || is_active === 0 || is_active === '0') ? 0 : 1;
+
+    await sequelize.query(
+        'UPDATE company_website_new_module SET is_active = ? WHERE id = ? AND company_id = ?',
+        { replacements: [isActiveVal, id, companyId], type: QueryTypes.UPDATE }
+    );
+
+    return ApiResponse.success(res, { id, is_active: isActiveVal === 1 }, 'Status updated successfully');
+});
+```
+
+### Step 3: Register Routes (`companyWebsiteBuilder.routes.js`)
+```js
+router.get('/new-module', controller.getNewModuleItems);
+router.post('/new-module', controller.createNewModuleItem);
+router.put('/new-module/:id', controller.updateNewModuleItem);
+router.patch('/new-module/:id/status', controller.updateNewModuleItemStatus);
+router.put('/new-module/:id/status', controller.updateNewModuleItemStatus);
+router.delete('/new-module/:id', controller.deleteNewModuleItem);
+```
+
+### Step 4: Frontend TanStack React Query Hooks (`useNewModule.ts`)
+```ts
+export function useToggleNewModuleStatus() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ id, is_active }: { id: string | number; is_active: boolean }) => {
+            const res = await apiClient.patch(`/website-builder/new-module/${id}/status`, { is_active });
+            return res.data;
+        },
+        onSuccess: () => {
+            toast.success('Status updated successfully!');
+            queryClient.invalidateQueries({ queryKey: ['website-builder-new-module'] });
+        },
+    });
+}
+```
+
+### Step 5: Frontend List & Form Pages with `BuilderDataTable` & Spinner Button
+Use `BuilderDataTable` in the list page with live search, filters, pagination, and drag-and-drop handles. Use the mandatory Save Spinner button on form submits:
+```tsx
+<Button size="sm" onClick={handleSave} disabled={isSaving} className="gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground">
+    {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+    {isSaving ? 'Saving...' : 'Save Item'}
+</Button>
+```
+
+

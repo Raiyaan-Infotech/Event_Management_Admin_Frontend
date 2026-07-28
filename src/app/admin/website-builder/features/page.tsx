@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
     Plus,
@@ -32,7 +32,7 @@ import { cn } from '@/lib/utils';
 import { DeleteDialog } from '@/components/common/delete-dialog';
 import {
     useFeaturesData,
-    useSaveFeaturesList,
+    useToggleFeatureStatus,
     useDeleteFeature,
     type FeatureItem,
 } from '@/hooks/useFeatures';
@@ -59,12 +59,20 @@ function getIconComponent(iconName?: string) {
 
 export default function FeaturesPage() {
     const { data: dbFeatures, isLoading: isFeaturesLoading } = useFeaturesData();
-    const saveFeaturesMutation = useSaveFeaturesList();
+    const toggleStatusMutation = useToggleFeatureStatus();
     const deleteFeatureMutation = useDeleteFeature();
 
+    const [localFeatures, setLocalFeatures] = useState<FeatureItem[] | null>(null);
+
+    useEffect(() => {
+        if (dbFeatures) {
+            setLocalFeatures(dbFeatures);
+        }
+    }, [dbFeatures]);
+
+    const features = localFeatures ?? dbFeatures ?? [];
     const [searchQuery, setSearchQuery] = useState('');
     const [deleteId, setDeleteId] = useState<string | number | null>(null);
-    const features = dbFeatures || [];
 
     const confirmDeleteFeature = () => {
         if (!deleteId) return;
@@ -73,10 +81,13 @@ export default function FeaturesPage() {
         });
     };
 
-    const handleToggleShowInMenu = (id?: string | number, currentVal?: boolean) => {
+    const handleToggleStatus = (id?: string | number, currentStatus?: string) => {
         if (!id) return;
-        const updated = features.map((f) => (f.id === id ? { ...f, show_in_menu: !(currentVal !== false) } : f));
-        saveFeaturesMutation.mutate(updated);
+        const nextStatus: 'Active' | 'Inactive' = currentStatus === 'Active' ? 'Inactive' : 'Active';
+        const nextActive = nextStatus === 'Active';
+        const updated: FeatureItem[] = features.map((f) => (f.id === id ? { ...f, status: nextStatus, is_active: nextActive } : f));
+        setLocalFeatures(updated);
+        toggleStatusMutation.mutate({ id, is_active: nextActive, status: nextStatus });
     };
 
     const filteredFeatures = features.filter(
@@ -181,7 +192,7 @@ export default function FeaturesPage() {
                                                     <div className="flex items-center justify-center">
                                                         <Switch
                                                             checked={item.show_in_menu !== false}
-                                                            onCheckedChange={() => handleToggleShowInMenu(item.id, item.show_in_menu)}
+                                                            onCheckedChange={() => handleToggleStatus(item.id, item.status)}
                                                         />
                                                     </div>
                                                 </td>
@@ -189,15 +200,24 @@ export default function FeaturesPage() {
                                                     {item.menu_order || idx + 1}
                                                 </td>
                                                 <td className="py-3.5 px-3.5 text-center">
-                                                    <Badge
-                                                        variant={item.status === 'Active' ? 'default' : 'secondary'}
-                                                        className={cn(
-                                                            'text-[10px] font-bold px-2 py-0.5',
-                                                            item.status === 'Active' && 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
-                                                        )}
-                                                    >
-                                                        {item.status}
-                                                    </Badge>
+                                                    <div className="flex items-center justify-center gap-2">
+                                                        <Switch
+                                                            checked={item.status === 'Active' || item.is_active !== false}
+                                                            onCheckedChange={() => handleToggleStatus(item.id, item.status)}
+                                                        />
+                                                        <Badge
+                                                            variant={item.status === 'Active' || item.is_active !== false ? 'default' : 'secondary'}
+                                                            className={cn(
+                                                                'text-[10px] font-bold px-2 py-0.5 cursor-pointer',
+                                                                (item.status === 'Active' || item.is_active !== false)
+                                                                    ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                                                                    : 'bg-slate-500/10 text-slate-600 border-slate-500/20'
+                                                            )}
+                                                            onClick={() => handleToggleStatus(item.id, item.status)}
+                                                        >
+                                                            {item.status === 'Active' || item.is_active !== false ? 'Active' : 'Inactive'}
+                                                        </Badge>
+                                                    </div>
                                                 </td>
                                                 <td className="py-3.5 px-3.5 text-right">
                                                     <div className="flex items-center justify-end gap-1.5">

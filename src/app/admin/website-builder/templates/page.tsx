@@ -12,6 +12,8 @@ import {
     Loader2,
     LayoutGrid,
     List,
+    ChevronLeft,
+    ChevronRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,6 +38,8 @@ export default function TemplatesPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
     const [deleteId, setDeleteId] = useState<number | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
 
     const { data: dbTemplates, isLoading } = useTemplates({
         template_type: selectedType,
@@ -100,6 +104,32 @@ export default function TemplatesPage() {
         return matchesCategory && matchesType && matchesSearch;
     });
 
+    const itemsPerPage = 10;
+    const totalPages = Math.max(1, Math.ceil(filteredTemplates.length / itemsPerPage));
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const paginatedTemplates = filteredTemplates.slice(startIndex, startIndex + itemsPerPage);
+
+    const handleDragStart = (e: React.DragEvent, idx: number) => {
+        setDraggedIdx(idx);
+        e.dataTransfer.effectAllowed = 'move';
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+    };
+
+    const handleDrop = (e: React.DragEvent, targetIdx: number) => {
+        e.preventDefault();
+        if (draggedIdx === null || draggedIdx === targetIdx) return;
+        const reordered = [...templates];
+        const [moved] = reordered.splice(draggedIdx, 1);
+        reordered.splice(targetIdx, 0, moved);
+        const updated = reordered.map((item, index) => ({ ...item, sort_order: index + 1 }));
+        setLocalTemplates(updated);
+        setDraggedIdx(null);
+    };
+
     return (
         <div className="space-y-5 max-w-7xl mx-auto pb-12">
             {/* Header Bar */}
@@ -125,7 +155,7 @@ export default function TemplatesPage() {
                         </Button>
                     </Link>
                     <Link href="/admin/website-builder/templates/create">
-                        <Button size="sm" className="h-8 px-4 text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs gap-1.5">
+                        <Button size="sm" className="h-8 px-4 text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs gap-1 cursor-pointer">
                             <Plus className="h-3.5 w-3.5" /> Add Template
                         </Button>
                     </Link>
@@ -147,14 +177,17 @@ export default function TemplatesPage() {
                             <Input
                                 placeholder="Search templates..."
                                 value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onChange={(e) => {
+                                    setSearchQuery(e.target.value);
+                                    setCurrentPage(1);
+                                }}
                                 className="h-8 pl-8 text-xs border-border bg-card text-foreground placeholder:text-muted-foreground"
                             />
                         </div>
 
                         {/* Category Select Filter */}
                         <div className="w-40">
-                            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                            <Select value={selectedCategory} onValueChange={(val) => { setSelectedCategory(val); setCurrentPage(1); }}>
                                 <SelectTrigger className="h-8 text-xs border-border bg-card text-foreground">
                                     <SelectValue placeholder="All Categories">
                                         {selectedCategory === 'all'
@@ -175,7 +208,7 @@ export default function TemplatesPage() {
 
                         {/* Type Select Filter */}
                         <div className="w-36">
-                            <Select value={selectedType} onValueChange={setSelectedType}>
+                            <Select value={selectedType} onValueChange={(val) => { setSelectedType(val); setCurrentPage(1); }}>
                                 <SelectTrigger className="h-8 text-xs border-border bg-card text-foreground">
                                     <SelectValue placeholder="All Types">
                                         {selectedType === 'all'
@@ -250,117 +283,130 @@ export default function TemplatesPage() {
                                                 Loading templates...
                                             </td>
                                         </tr>
-                                    ) : filteredTemplates.length > 0 ? (
-                                        filteredTemplates.map((template, idx) => (
-                                            <tr key={template.id || idx} className="hover:bg-muted/40 transition-colors">
-                                                <td className="py-3 px-3 text-center text-muted-foreground font-mono">
-                                                    <div className="flex items-center justify-center gap-1">
-                                                        <GripVertical className="h-3.5 w-3.5 text-muted-foreground/50" />
-                                                        <span>{idx + 1}</span>
-                                                    </div>
-                                                </td>
-
-                                                {/* Preview Thumbnail Box */}
-                                                <td className="py-3 px-3 text-center">
-                                                    {template.thumbnail_url ? (
-                                                        <img
-                                                            src={template.thumbnail_url}
-                                                            alt={template.template_name}
-                                                            className="h-12 w-9 rounded-md border border-border shadow-2xs mx-auto object-cover"
-                                                        />
-                                                    ) : (
-                                                        <div
-                                                            className="h-12 w-9 rounded-md border border-border shadow-2xs mx-auto flex items-center justify-center text-[8px] text-white font-serif font-bold p-1 text-center truncate overflow-hidden"
-                                                            style={{ backgroundColor: template.primary_color || '#6A38F5' }}
-                                                        >
-                                                            {template.template_name.slice(0, 8)}
+                                    ) : paginatedTemplates.length > 0 ? (
+                                        paginatedTemplates.map((template, idx) => {
+                                            const realIdx = startIndex + idx;
+                                            return (
+                                                <tr
+                                                    key={template.id || realIdx}
+                                                    draggable
+                                                    onDragStart={(e) => handleDragStart(e, realIdx)}
+                                                    onDragOver={handleDragOver}
+                                                    onDrop={(e) => handleDrop(e, realIdx)}
+                                                    className={cn(
+                                                        'hover:bg-muted/40 transition-colors',
+                                                        draggedIdx === realIdx && 'opacity-50 bg-primary/5'
+                                                    )}
+                                                >
+                                                    <td className="py-3 px-3 text-center text-muted-foreground font-mono cursor-grab active:cursor-grabbing">
+                                                        <div className="flex items-center justify-center gap-1">
+                                                            <GripVertical className="h-3.5 w-3.5 text-muted-foreground/50" />
+                                                            <span>{realIdx + 1}</span>
                                                         </div>
-                                                    )}
-                                                </td>
+                                                    </td>
 
-                                                {/* Template Name & Description */}
-                                                <td className="py-3 px-3 font-semibold text-foreground">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <span>{template.template_name}</span>
-                                                        {template.is_popular ? (
-                                                            <span className="px-1.5 py-0.5 text-[9px] font-bold rounded-full bg-amber-500/15 text-amber-600 border border-amber-500/30">
-                                                                🔥 Popular
-                                                            </span>
+                                                    {/* Preview Thumbnail Box */}
+                                                    <td className="py-3 px-3 text-center">
+                                                        {template.thumbnail_url ? (
+                                                            <img
+                                                                src={template.thumbnail_url}
+                                                                alt={template.template_name}
+                                                                className="h-12 w-9 rounded-md border border-border shadow-2xs mx-auto object-cover"
+                                                            />
+                                                        ) : (
+                                                            <div
+                                                                className="h-12 w-9 rounded-md border border-border shadow-2xs mx-auto flex items-center justify-center text-[8px] text-white font-serif font-bold p-1 text-center truncate overflow-hidden"
+                                                                style={{ backgroundColor: template.primary_color || '#6A38F5' }}
+                                                            >
+                                                                {template.template_name.slice(0, 8)}
+                                                            </div>
+                                                        )}
+                                                    </td>
+
+                                                    {/* Template Name & Description */}
+                                                    <td className="py-3 px-3 font-semibold text-foreground">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span>{template.template_name}</span>
+                                                            {template.is_popular ? (
+                                                                <span className="px-1.5 py-0.5 text-[9px] font-bold rounded-full bg-amber-500/15 text-amber-600 border border-amber-500/30">
+                                                                    🔥 Popular
+                                                                </span>
+                                                            ) : null}
+                                                        </div>
+                                                        {template.description ? (
+                                                            <p className="text-[10px] font-normal text-muted-foreground truncate max-w-sm">
+                                                                {template.description}
+                                                            </p>
                                                         ) : null}
-                                                    </div>
-                                                    {template.description ? (
-                                                        <p className="text-[10px] font-normal text-muted-foreground truncate max-w-sm">
-                                                            {template.description}
-                                                        </p>
-                                                    ) : null}
-                                                </td>
+                                                    </td>
 
-                                                {/* Category */}
-                                                <td className="py-3 px-3">
-                                                    <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-primary/10 text-primary border border-primary/20 inline-block">
-                                                        {getCategoryName(template)}
-                                                    </span>
-                                                </td>
+                                                    {/* Category */}
+                                                    <td className="py-3 px-3">
+                                                        <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-primary/10 text-primary border border-primary/20 inline-block">
+                                                            {getCategoryName(template)}
+                                                        </span>
+                                                    </td>
 
-                                                {/* Type */}
-                                                <td className="py-3 px-3 text-center">
-                                                    <span className="px-2 py-0.5 text-[10px] font-semibold rounded-md bg-muted text-muted-foreground capitalize border border-border inline-block">
-                                                        {template.template_type}
-                                                    </span>
-                                                </td>
+                                                    {/* Type */}
+                                                    <td className="py-3 px-3 text-center">
+                                                        <span className="px-2 py-0.5 text-[10px] font-semibold rounded-md bg-muted text-muted-foreground capitalize border border-border inline-block">
+                                                            {template.template_type}
+                                                        </span>
+                                                    </td>
 
-                                                {/* Style */}
-                                                <td className="py-3 px-3 text-center">
-                                                    <span className="px-2 py-0.5 text-[10px] font-medium rounded-md bg-purple-500/10 text-purple-600 capitalize border border-purple-500/20 inline-block">
-                                                        {template.design_style}
-                                                    </span>
-                                                </td>
+                                                    {/* Style */}
+                                                    <td className="py-3 px-3 text-center">
+                                                        <span className="px-2 py-0.5 text-[10px] font-medium rounded-md bg-purple-500/10 text-purple-600 capitalize border border-purple-500/20 inline-block">
+                                                            {template.design_style}
+                                                        </span>
+                                                    </td>
 
-                                                {/* Customizable */}
-                                                <td className="py-3 px-3 text-center font-medium">
-                                                    {template.allow_customize !== false ? (
-                                                        <span className="text-emerald-600 font-bold text-[10px]">Yes</span>
-                                                    ) : (
-                                                        <span className="text-muted-foreground text-[10px]">No</span>
-                                                    )}
-                                                </td>
+                                                    {/* Customizable */}
+                                                    <td className="py-3 px-3 text-center font-medium">
+                                                        {template.allow_customize !== false ? (
+                                                            <span className="text-emerald-600 font-bold text-[10px]">Yes</span>
+                                                        ) : (
+                                                            <span className="text-muted-foreground text-[10px]">No</span>
+                                                        )}
+                                                    </td>
 
-                                                {/* Status Switch */}
-                                                <td className="py-3 px-3 text-center">
-                                                    <div className="flex items-center justify-center">
-                                                        <Switch
-                                                            checked={isTemplateActive(template.is_active)}
-                                                            onCheckedChange={() => handleToggleStatus(template.id, isTemplateActive(template.is_active))}
-                                                        />
-                                                    </div>
-                                                </td>
+                                                    {/* Status Switch */}
+                                                    <td className="py-3 px-3 text-center">
+                                                        <div className="flex items-center justify-center">
+                                                            <Switch
+                                                                checked={isTemplateActive(template.is_active)}
+                                                                onCheckedChange={() => handleToggleStatus(template.id, isTemplateActive(template.is_active))}
+                                                            />
+                                                        </div>
+                                                    </td>
 
-                                                {/* Actions */}
-                                                <td className="py-3 px-3 text-right">
-                                                    <div className="flex items-center justify-end gap-1.5">
-                                                        <Link href={`/admin/website-builder/templates/create?id=${template.id}`}>
+                                                    {/* Actions */}
+                                                    <td className="py-3 px-3 text-right">
+                                                        <div className="flex items-center justify-end gap-1.5">
+                                                            <Link href={`/admin/website-builder/templates/create?id=${template.id}`}>
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="outline"
+                                                                    size="icon"
+                                                                    className="h-8 w-8 rounded-lg p-0 border-border text-muted-foreground hover:border-primary hover:text-primary hover:bg-primary/5 cursor-pointer"
+                                                                >
+                                                                    <Pencil className="h-3.5 w-3.5" />
+                                                                </Button>
+                                                            </Link>
                                                             <Button
                                                                 type="button"
                                                                 variant="outline"
                                                                 size="icon"
-                                                                className="h-8 w-8 rounded-lg p-0 border-border text-muted-foreground hover:border-primary hover:text-primary hover:bg-primary/5 cursor-pointer"
+                                                                onClick={() => template.id !== undefined && setDeleteId(template.id)}
+                                                                className="h-8 w-8 rounded-lg p-0 text-rose-500 border-rose-200 hover:bg-rose-50 hover:border-rose-300 cursor-pointer"
                                                             >
-                                                                <Pencil className="h-3.5 w-3.5" />
+                                                                <Trash2 className="h-3.5 w-3.5" />
                                                             </Button>
-                                                        </Link>
-                                                        <Button
-                                                            type="button"
-                                                            variant="outline"
-                                                            size="icon"
-                                                            onClick={() => template.id !== undefined && setDeleteId(template.id)}
-                                                            className="h-8 w-8 rounded-lg p-0 text-rose-500 border-rose-200 hover:bg-rose-50 hover:border-rose-300 cursor-pointer"
-                                                        >
-                                                            <Trash2 className="h-3.5 w-3.5" />
-                                                        </Button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
                                     ) : (
                                         <tr>
                                             <td colSpan={9} className="py-8 text-center text-xs text-muted-foreground">
@@ -374,8 +420,8 @@ export default function TemplatesPage() {
                     ) : (
                         /* Grid View Option */
                         <div className="p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                            {filteredTemplates.length > 0 ? (
-                                filteredTemplates.map((t) => (
+                            {paginatedTemplates.length > 0 ? (
+                                paginatedTemplates.map((t) => (
                                     <div key={t.id} className="rounded-xl border border-border bg-card p-3 space-y-2 text-center shadow-xs hover:shadow-md transition-shadow relative">
                                         <div
                                             className="h-36 w-full rounded-lg border border-border p-3 flex flex-col items-center justify-center text-white text-xs font-bold"
@@ -408,12 +454,46 @@ export default function TemplatesPage() {
                         </div>
                     )}
 
-                    {/* Footer Pagination */}
+                    {/* Interactive Footer Pagination */}
                     <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-muted/40 text-xs text-muted-foreground">
-                        <span>Showing {filteredTemplates.length} of {templates.length} event templates</span>
-                        <div className="flex items-center gap-1">
-                            <Button variant="outline" size="sm" className="h-7 w-7 p-0 text-xs bg-primary text-primary-foreground border-primary">
-                                1
+                        <span>
+                            Showing {filteredTemplates.length === 0 ? 0 : startIndex + 1} to{' '}
+                            {Math.min(startIndex + itemsPerPage, filteredTemplates.length)} of {filteredTemplates.length} entries
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                                disabled={currentPage === 1}
+                                className="h-7 px-2.5 text-xs font-semibold border-border cursor-pointer disabled:opacity-50"
+                            >
+                                <ChevronLeft className="h-3.5 w-3.5 mr-0.5" /> Previous
+                            </Button>
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                                <Button
+                                    key={page}
+                                    variant={page === currentPage ? 'default' : 'outline'}
+                                    size="sm"
+                                    onClick={() => setCurrentPage(page)}
+                                    className={cn(
+                                        'h-7 w-7 p-0 text-xs font-bold cursor-pointer',
+                                        page === currentPage
+                                            ? 'bg-primary text-primary-foreground border-primary'
+                                            : 'border-border text-foreground hover:bg-muted'
+                                    )}
+                                >
+                                    {page}
+                                </Button>
+                            ))}
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                                disabled={currentPage === totalPages}
+                                className="h-7 px-2.5 text-xs font-semibold border-border cursor-pointer disabled:opacity-50"
+                            >
+                                Next <ChevronRight className="h-3.5 w-3.5 ml-0.5" />
                             </Button>
                         </div>
                     </div>

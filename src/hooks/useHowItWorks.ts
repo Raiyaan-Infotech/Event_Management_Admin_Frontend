@@ -96,3 +96,21 @@ export function useSaveHowItWorksSteps() {
         },
     });
 }
+
+export function useToggleHowItWorksStatus() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ id, is_active }: { id: string | number; is_active: boolean }) => {
+            const res = await apiClient.patch(`/website-builder/how-it-works/${id}/status`, { is_active });
+            return res.data;
+        },
+        onSuccess: () => {
+            toast.success('Step status updated successfully!');
+            queryClient.invalidateQueries({ queryKey: ['website-builder-how-it-works'] });
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || error.message || 'Error updating step status.');
+        },
+    });
+}

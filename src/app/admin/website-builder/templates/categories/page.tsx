@@ -10,6 +10,8 @@ import {
     Search,
     GripVertical,
     Loader2,
+    ChevronLeft,
+    ChevronRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -31,6 +33,8 @@ import {
 
 import { DeleteDialog } from '@/components/common/delete-dialog';
 import { useTemplates } from '@/hooks/useTemplates';
+
+import { BuilderDataTable, Column } from '../../_components/builder-data-table';
 
 export default function TemplateCategoriesPage() {
     const { data: dbCategories, isLoading } = useTemplateCategories();
@@ -148,6 +152,90 @@ export default function TemplateCategoriesPage() {
             c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             c.slug.toLowerCase().includes(searchQuery.toLowerCase())
     );
+
+    const columns: Column<TemplateCategory>[] = [
+        {
+            header: 'Category',
+            cell: (cat) => (
+                <div className="font-semibold text-foreground">
+                    <div>{cat.name}</div>
+                    {cat.description ? (
+                        <p className="text-[10px] font-normal text-muted-foreground truncate max-w-xs">
+                            {cat.description}
+                        </p>
+                    ) : null}
+                </div>
+            ),
+        },
+        {
+            header: 'Slug',
+            cell: (cat) => (
+                <span className="font-mono text-[11px] text-muted-foreground">{cat.slug}</span>
+            ),
+        },
+        {
+            header: 'Templates',
+            headerClassName: 'text-center',
+            className: 'text-center font-medium text-foreground',
+            cell: (cat) => {
+                const count = templates.filter(
+                    (t) => String(t.category_id) === String(cat.id) || t.category_name?.toLowerCase() === cat.name.toLowerCase()
+                ).length;
+                return cat.templates_count ?? count;
+            },
+        },
+        {
+            header: 'Status',
+            headerClassName: 'text-center',
+            className: 'text-center',
+            cell: (cat) => (
+                <div className="flex items-center justify-center">
+                    <Switch
+                        checked={isCategoryActive(cat.is_active)}
+                        onCheckedChange={() => handleToggleStatus(cat.id, isCategoryActive(cat.is_active))}
+                    />
+                </div>
+            ),
+        },
+        {
+            header: 'Order',
+            headerClassName: 'text-center',
+            className: 'text-center font-semibold text-foreground',
+            cell: (cat, idx) => cat.sort_order || idx + 1,
+        },
+        {
+            header: 'Actions',
+            headerClassName: 'text-right',
+            className: 'text-right',
+            cell: (cat) => (
+                <div className="flex items-center justify-end gap-1.5">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleEdit(cat)}
+                        className={cn(
+                            'h-8 w-8 rounded-lg p-0 transition-colors cursor-pointer',
+                            editingId === cat.id
+                                ? 'border-primary bg-primary/10 text-primary shadow-xs'
+                                : 'border-border text-muted-foreground hover:border-primary hover:text-primary hover:bg-primary/5'
+                        )}
+                    >
+                        <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => cat.id !== undefined && setDeleteId(cat.id)}
+                        className="h-8 w-8 rounded-lg p-0 text-rose-500 border-rose-200 hover:bg-rose-50 hover:border-rose-300 cursor-pointer"
+                    >
+                        <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                </div>
+            ),
+        },
+    ];
 
     return (
         <div className="space-y-5">
@@ -267,141 +355,30 @@ export default function TemplateCategoriesPage() {
                 </CardContent>
             </Card>
 
-            {/* Bottom Card: Categories Table */}
-            <Card className="shadow-xs border-border bg-card">
-                <CardHeader className="py-3 px-4 border-b border-border flex flex-row items-center justify-between space-y-0 bg-muted/40">
-                    <CardTitle className="text-xs font-bold text-foreground uppercase tracking-wide">
-                        Categories ({filteredCategories.length})
-                    </CardTitle>
-                    <div className="relative w-64">
-                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                        <Input
-                            placeholder="Search categories..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="h-8 pl-8 text-xs border-border bg-card text-foreground placeholder:text-muted-foreground"
-                        />
-                    </div>
-                </CardHeader>
-
-                <CardContent className="p-0">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-xs text-left">
-                            <thead className="bg-muted/50 text-[11px] font-bold text-muted-foreground uppercase tracking-wider border-b border-border">
-                                <tr>
-                                    <th className="py-2.5 px-3 w-12 text-center">#</th>
-                                    <th className="py-2.5 px-3">Category</th>
-                                    <th className="py-2.5 px-3">Slug</th>
-                                    <th className="py-2.5 px-3 text-center">Templates</th>
-                                    <th className="py-2.5 px-3 text-center">Status</th>
-                                    <th className="py-2.5 px-3 text-center">Order</th>
-                                    <th className="py-2.5 px-3 text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-border">
-                                {isLoading ? (
-                                    <tr>
-                                        <td colSpan={7} className="py-8 text-center text-xs text-muted-foreground">
-                                            <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2 text-primary" />
-                                            Loading categories...
-                                        </td>
-                                    </tr>
-                                ) : filteredCategories.length > 0 ? (
-                                    filteredCategories.map((cat, idx) => {
-                                        const count = templates.filter(
-                                            (t) => String(t.category_id) === String(cat.id) || t.category_name?.toLowerCase() === cat.name.toLowerCase()
-                                        ).length;
-                                        return (
-                                            <tr key={cat.id || idx} className="hover:bg-muted/40 transition-colors">
-                                                <td className="py-3 px-3 text-center text-muted-foreground font-mono">
-                                                    <div className="flex items-center justify-center gap-1">
-                                                        <GripVertical className="h-3.5 w-3.5 text-muted-foreground/50" />
-                                                        <span>{idx + 1}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="py-3 px-3 font-semibold text-foreground">
-                                                    {cat.name}
-                                                    {cat.description ? (
-                                                        <p className="text-[10px] font-normal text-muted-foreground truncate max-w-xs">
-                                                            {cat.description}
-                                                        </p>
-                                                    ) : null}
-                                                </td>
-                                                <td className="py-3 px-3 font-mono text-[11px] text-muted-foreground">
-                                                    {cat.slug}
-                                                </td>
-                                                <td className="py-3 px-3 text-center font-medium text-foreground">
-                                                    {cat.templates_count ?? count}
-                                                </td>
-                                                <td className="py-3 px-3 text-center">
-                                                    <div className="flex items-center justify-center">
-                                                        <Switch
-                                                            checked={isCategoryActive(cat.is_active)}
-                                                            onCheckedChange={() => handleToggleStatus(cat.id, isCategoryActive(cat.is_active))}
-                                                        />
-                                                    </div>
-                                                </td>
-                                                <td className="py-3 px-3 text-center font-semibold text-foreground">
-                                                    {cat.sort_order || idx + 1}
-                                                </td>
-                                                <td className="py-3 px-3 text-right">
-                                                    <div className="flex items-center justify-end gap-1.5">
-                                                        <Button
-                                                            type="button"
-                                                            variant="outline"
-                                                            size="icon"
-                                                            onClick={() => handleEdit(cat)}
-                                                            className={cn(
-                                                                'h-8 w-8 rounded-lg p-0 transition-colors cursor-pointer',
-                                                                editingId === cat.id
-                                                                    ? 'border-primary bg-primary/10 text-primary shadow-xs'
-                                                                    : 'border-border text-muted-foreground hover:border-primary hover:text-primary hover:bg-primary/5'
-                                                            )}
-                                                        >
-                                                            <Pencil className="h-3.5 w-3.5" />
-                                                        </Button>
-                                                        <Button
-                                                            type="button"
-                                                            variant="outline"
-                                                            size="icon"
-                                                            onClick={() => cat.id !== undefined && setDeleteId(cat.id)}
-                                                            className="h-8 w-8 rounded-lg p-0 text-rose-500 border-rose-200 hover:bg-rose-50 hover:border-rose-300 cursor-pointer"
-                                                        >
-                                                            <Trash2 className="h-3.5 w-3.5" />
-                                                        </Button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })
-                                ) : (
-                                    <tr>
-                                        <td colSpan={7} className="py-8 text-center text-xs text-muted-foreground">
-                                            No categories found yet.
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* Footer Pagination */}
-                    <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-muted/40 text-xs text-muted-foreground">
-                        <span>Showing {filteredCategories.length} of {categories.length} categories</span>
-                        <div className="flex items-center gap-1">
-                            <Button variant="outline" size="sm" className="h-7 w-7 p-0 text-xs bg-primary text-primary-foreground border-primary">
-                                1
-                            </Button>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
+            {/* Bottom Section: Reusable BuilderDataTable */}
+            <BuilderDataTable
+                title="Categories"
+                data={filteredCategories}
+                columns={columns}
+                isLoading={isLoading}
+                emptyMessage="No categories found yet."
+                searchPlaceholder="Search categories..."
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                keyExtractor={(item, index) => item.id || index}
+                pageSize={10}
+                enableDragAndDrop
+                onReorder={(reordered) => {
+                    setLocalCategories(reordered);
+                }}
+            />
 
             {/* Delete Confirmation Dialog */}
             <DeleteDialog
                 open={deleteId !== null}
                 onOpenChange={(open) => !open && setDeleteId(null)}
                 onConfirm={confirmDelete}
+                isDeleting={deleteCategoryMutation.isPending}
                 title="Delete Template Category"
                 description="Are you sure you want to delete this template category? Templates in this category may be affected."
             />

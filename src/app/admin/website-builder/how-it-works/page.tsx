@@ -36,6 +36,7 @@ import {
     useUpdateHowItWorksStep,
     useDeleteHowItWorksStep,
     useSaveHowItWorksSteps,
+    useToggleHowItWorksStatus,
     type HowItWorksStep,
 } from '@/hooks/useHowItWorks';
 import { BuilderCountedInput, BuilderCountedTextarea } from '../_components/builder-field';
@@ -64,6 +65,7 @@ export default function HowItWorksPage() {
     const updateMutation = useUpdateHowItWorksStep();
     const deleteMutation = useDeleteHowItWorksStep();
     const saveAllMutation = useSaveHowItWorksSteps();
+    const toggleStatusMutation = useToggleHowItWorksStatus();
 
     const [steps, setSteps] = useState<HowItWorksStep[]>([]);
     const [previewOpen, setPreviewOpen] = useState(false);
@@ -94,9 +96,13 @@ export default function HowItWorksPage() {
     }, [dbSteps]);
 
     const handleUpdateStepField = (idx: number, field: keyof HowItWorksStep, value: any) => {
+        const target = steps[idx];
         setSteps((prev) =>
             prev.map((s, i) => (i === idx ? { ...s, [field]: value } : s))
         );
+        if (field === 'is_active' && target?.id) {
+            toggleStatusMutation.mutate({ id: target.id, is_active: Boolean(value) });
+        }
     };
 
     const handleSaveAll = () => {
