@@ -186,17 +186,17 @@ export default function TemplatesPage() {
                         </div>
 
                         {/* Category Select Filter */}
-                        <div className="w-40">
+                        <div className="w-44">
                             <Select value={selectedCategory} onValueChange={(val) => { setSelectedCategory(val); setCurrentPage(1); }}>
                                 <SelectTrigger className="h-8 text-xs border-border bg-card text-foreground">
-                                    <SelectValue placeholder="All Categories">
+                                    <SelectValue placeholder="Category: All">
                                         {selectedCategory === 'all'
-                                            ? 'All Categories'
-                                            : (categories || []).find((c) => c.name === selectedCategory || String(c.id) === selectedCategory)?.name || selectedCategory}
+                                            ? 'Category: All'
+                                            : `Category: ${(categories || []).find((c) => c.name === selectedCategory || String(c.id) === selectedCategory)?.name || selectedCategory}`}
                                     </SelectValue>
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">All Categories</SelectItem>
+                                    <SelectItem value="all">Category: All</SelectItem>
                                     {(categories || []).map((c) => (
                                         <SelectItem key={c.id || c.name} value={c.name}>
                                             {c.name}
@@ -210,14 +210,14 @@ export default function TemplatesPage() {
                         <div className="w-36">
                             <Select value={selectedType} onValueChange={(val) => { setSelectedType(val); setCurrentPage(1); }}>
                                 <SelectTrigger className="h-8 text-xs border-border bg-card text-foreground">
-                                    <SelectValue placeholder="All Types">
+                                    <SelectValue placeholder="Type: All">
                                         {selectedType === 'all'
-                                            ? 'All Types'
-                                            : selectedType.charAt(0).toUpperCase() + selectedType.slice(1).replace('_', ' ')}
+                                            ? 'Type: All'
+                                            : `Type: ${selectedType.charAt(0).toUpperCase() + selectedType.slice(1).replace('_', ' ')}`}
                                     </SelectValue>
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">All Types</SelectItem>
+                                    <SelectItem value="all">Type: All</SelectItem>
                                     <SelectItem value="wedding">Wedding</SelectItem>
                                     <SelectItem value="engagement">Engagement</SelectItem>
                                     <SelectItem value="birthday">Birthday</SelectItem>

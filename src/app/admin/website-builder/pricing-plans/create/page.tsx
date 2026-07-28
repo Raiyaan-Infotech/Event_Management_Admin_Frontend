@@ -107,14 +107,18 @@ function PricingPlanFormContent() {
         );
     };
 
+    const [planNameError, setPlanNameError] = useState(false);
     const [priceMonthlyError, setPriceMonthlyError] = useState(false);
     const [previewBillingCycle, setPreviewBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
 
     const handleSavePlan = () => {
         let hasError = false;
         if (!planName.trim()) {
+            setPlanNameError(true);
             toast.error('Plan name is required.');
             hasError = true;
+        } else {
+            setPlanNameError(false);
         }
         if (!priceMonthly.trim()) {
             setPriceMonthlyError(true);
@@ -226,6 +230,22 @@ function PricingPlanFormContent() {
                             </div>
                         </CardHeader>
                         <CardContent className="p-4 space-y-4">
+                            <BuilderCountedInput
+                                label="Plan Name"
+                                required
+                                placeholder="e.g. Professional Plan"
+                                value={planName}
+                                onChange={(val) => {
+                                    setPlanName(val);
+                                    if (planNameError && val.trim()) setPlanNameError(false);
+                                }}
+                                maxLength={40}
+                                inputClassName={cn(
+                                    '!h-9 text-xs border-border bg-card text-foreground',
+                                    planNameError && 'border-red-500 ring-1 ring-red-500 bg-red-50/20'
+                                )}
+                            />
+
                             <div className="space-y-1.5">
                                 <Label className="text-xs font-bold text-foreground">
                                     Target Audience <span className="text-destructive">*</span>
@@ -257,16 +277,6 @@ function PricingPlanFormContent() {
                                     </button>
                                 </div>
                             </div>
-
-                            <BuilderCountedInput
-                                label="Plan Name"
-                                required
-                                placeholder="e.g. Professional Plan"
-                                value={planName}
-                                onChange={setPlanName}
-                                maxLength={40}
-                                inputClassName="!h-9 text-xs border-border bg-card text-foreground"
-                            />
 
                             <BuilderCountedTextarea
                                 label="Plan Subtitle / Description"

@@ -108,8 +108,16 @@ export function useToggleFeatureStatus() {
 
     return useMutation({
         mutationFn: async ({ id, is_active, status }: { id: string | number; is_active?: boolean; status?: string }) => {
-            const res = await apiClient.patch(`/website-builder/features/${id}/status`, { is_active, status });
-            return res.data;
+            try {
+                const res = await apiClient.patch(`/website-builder/features/${id}/status`, { is_active, status });
+                return res.data;
+            } catch (err: any) {
+                if (err?.response?.status === 404) {
+                    const res = await apiClient.put(`/website-builder/features/${id}`, { is_active, status });
+                    return res.data;
+                }
+                throw err;
+            }
         },
         onSuccess: () => {
             toast.success('Feature status updated successfully!');
@@ -117,6 +125,24 @@ export function useToggleFeatureStatus() {
         },
         onError: (error: any) => {
             toast.error(error.response?.data?.message || error.message || 'Error updating feature status.');
+        },
+    });
+}
+
+export function useToggleFeatureMenu() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ id, show_in_menu }: { id: string | number; show_in_menu: boolean }) => {
+            const res = await apiClient.put(`/website-builder/features/${id}`, { show_in_menu });
+            return res.data;
+        },
+        onSuccess: () => {
+            toast.success('Menu visibility updated successfully!');
+            queryClient.invalidateQueries({ queryKey: ['website-builder-features'] });
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || error.message || 'Error updating menu visibility.');
         },
     });
 }

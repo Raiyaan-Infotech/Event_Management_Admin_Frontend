@@ -33,6 +33,7 @@ import { DeleteDialog } from '@/components/common/delete-dialog';
 import {
     useFeaturesData,
     useToggleFeatureStatus,
+    useToggleFeatureMenu,
     useDeleteFeature,
     type FeatureItem,
 } from '@/hooks/useFeatures';
@@ -60,6 +61,7 @@ function getIconComponent(iconName?: string) {
 export default function FeaturesPage() {
     const { data: dbFeatures, isLoading: isFeaturesLoading } = useFeaturesData();
     const toggleStatusMutation = useToggleFeatureStatus();
+    const toggleMenuMutation = useToggleFeatureMenu();
     const deleteFeatureMutation = useDeleteFeature();
 
     const [localFeatures, setLocalFeatures] = useState<FeatureItem[] | null>(null);
@@ -88,6 +90,14 @@ export default function FeaturesPage() {
         const updated: FeatureItem[] = features.map((f) => (f.id === id ? { ...f, status: nextStatus, is_active: nextActive } : f));
         setLocalFeatures(updated);
         toggleStatusMutation.mutate({ id, is_active: nextActive, status: nextStatus });
+    };
+
+    const handleToggleMenu = (id?: string | number, currentShowInMenu?: boolean) => {
+        if (!id) return;
+        const nextShow = !currentShowInMenu;
+        const updated: FeatureItem[] = features.map((f) => (f.id === id ? { ...f, show_in_menu: nextShow } : f));
+        setLocalFeatures(updated);
+        toggleMenuMutation.mutate({ id, show_in_menu: nextShow });
     };
 
     const filteredFeatures = features.filter(
@@ -191,8 +201,8 @@ export default function FeaturesPage() {
                                                 <td className="py-3.5 px-3.5 text-center">
                                                     <div className="flex items-center justify-center">
                                                         <Switch
-                                                            checked={item.show_in_menu !== false}
-                                                            onCheckedChange={() => handleToggleStatus(item.id, item.status)}
+                                                            checked={item.show_in_menu !== false && (item.show_in_menu as any) !== 0 && (item.show_in_menu as any) !== '0'}
+                                                            onCheckedChange={() => handleToggleMenu(item.id, item.show_in_menu !== false && (item.show_in_menu as any) !== 0 && (item.show_in_menu as any) !== '0')}
                                                         />
                                                     </div>
                                                 </td>

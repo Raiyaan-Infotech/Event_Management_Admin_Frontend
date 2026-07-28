@@ -860,6 +860,20 @@ export function PricingPlansBuilderContent() {
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent className="p-4 space-y-4">
+                                    {/* Plan Name */}
+                                    <BuilderCountedInput
+                                        label="Plan Name"
+                                        required
+                                        maxLength={60}
+                                        value={currentPlan.name}
+                                        onChange={(val) => updateCurrentPlan({ name: val })}
+                                        placeholder="e.g., Pro Plan"
+                                        inputClassName={cn(
+                                            '!h-9 text-xs border-border bg-card text-foreground',
+                                            !currentPlan.name?.trim() && 'border-red-500 ring-1 ring-red-500 bg-red-50/20'
+                                        )}
+                                    />
+
                                     {/* Plan For */}
                                     <div>
                                         <Label className="text-xs font-semibold text-foreground">Plan For *</Label>
@@ -903,16 +917,6 @@ export function PricingPlansBuilderContent() {
                                             </button>
                                         </div>
                                     </div>
-
-                                    {/* Plan Name */}
-                                    <BuilderCountedInput
-                                        label="Plan Name"
-                                        required
-                                        maxLength={60}
-                                        value={currentPlan.name}
-                                        onChange={(val) => updateCurrentPlan({ name: val })}
-                                        placeholder="e.g., Pro Plan"
-                                    />
 
                                     {/* Plan Description */}
                                     <BuilderCountedTextarea

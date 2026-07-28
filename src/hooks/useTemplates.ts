@@ -87,10 +87,19 @@ export function useDeleteTemplateCategory() {
 
 export function useToggleTemplateCategoryStatus() {
     const queryClient = useQueryClient();
+
     return useMutation({
         mutationFn: async ({ id, is_active }: { id: number; is_active: boolean }) => {
-            const res = await apiClient.patch(`/website-builder/templates/categories/${id}/status`, { is_active });
-            return res.data;
+            try {
+                const res = await apiClient.patch(`/website-builder/templates/categories/${id}/status`, { is_active });
+                return res.data;
+            } catch (err: any) {
+                if (err?.response?.status === 404) {
+                    const res = await apiClient.put(`/website-builder/templates/categories/${id}`, { is_active });
+                    return res.data;
+                }
+                throw err;
+            }
         },
         onSuccess: () => {
             toast.success('Template category status updated successfully!');
@@ -176,8 +185,16 @@ export function useToggleTemplateStatus() {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async ({ id, is_active }: { id: number; is_active: boolean }) => {
-            const res = await apiClient.patch(`/website-builder/templates/${id}/status`, { is_active });
-            return res.data;
+            try {
+                const res = await apiClient.patch(`/website-builder/templates/${id}/status`, { is_active });
+                return res.data;
+            } catch (err: any) {
+                if (err?.response?.status === 404) {
+                    const res = await apiClient.put(`/website-builder/templates/${id}`, { is_active });
+                    return res.data;
+                }
+                throw err;
+            }
         },
         onSuccess: () => {
             toast.success('Template status updated successfully!');

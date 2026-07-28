@@ -105,7 +105,32 @@ export default function HowItWorksPage() {
         }
     };
 
+    const [modalErrors, setModalErrors] = useState<{ title?: boolean; desc?: boolean; highlightTitle?: boolean; highlightSubtext?: boolean }>({});
+
+    const validateModalFields = () => {
+        const errs: typeof modalErrors = {};
+        if (!modalTitle.trim()) errs.title = true;
+        if (!modalDesc.trim()) errs.desc = true;
+        if (!modalHighlightTitle.trim()) errs.highlightTitle = true;
+        if (!modalHighlightSubtext.trim()) errs.highlightSubtext = true;
+
+        if (Object.keys(errs).length > 0) {
+            setModalErrors(errs);
+            toast.error('Title, Description, Highlight Title, and Subtext are required.');
+            return false;
+        }
+        setModalErrors({});
+        return true;
+    };
+
     const handleSaveAll = () => {
+        for (let i = 0; i < steps.length; i++) {
+            const s = steps[i];
+            if (!s.title?.trim() || !s.description?.trim() || !s.highlight_title?.trim() || !s.highlight_subtext?.trim()) {
+                toast.error(`Step ${i + 1}: Title, Description, Highlight Title, and Subtext are required.`);
+                return;
+            }
+        }
         saveAllMutation.mutate(steps);
     };
 
@@ -159,6 +184,7 @@ export default function HowItWorksPage() {
         setModalHighlightSubtext('');
         setModalStepOrder(String(steps.length + 1));
         setModalIsActive(true);
+        setModalErrors({});
         setAddModalOpen(true);
     };
 
@@ -175,15 +201,13 @@ export default function HowItWorksPage() {
         setModalHighlightSubtext(target.highlight_subtext || '');
         setModalStepOrder(String(target.step_number || idx + 1));
         setModalIsActive(target.is_active !== false);
+        setModalErrors({});
         setEditModalOpen(true);
     };
 
     // Save Add Modal Submit
     const handleAddStepSubmit = () => {
-        if (!modalTitle.trim()) {
-            toast.error('Step title is required.');
-            return;
-        }
+        if (!validateModalFields()) return;
 
         const newStep: HowItWorksStep = {
             step_number: parseInt(modalStepOrder, 10) || steps.length + 1,
@@ -207,10 +231,7 @@ export default function HowItWorksPage() {
     // Save Edit Modal Submit
     const handleEditStepSubmit = () => {
         if (editingStepIdx === null) return;
-        if (!modalTitle.trim()) {
-            toast.error('Step title is required.');
-            return;
-        }
+        if (!validateModalFields()) return;
 
         const target = steps[editingStepIdx];
         const updatedStep: HowItWorksStep = {
@@ -411,19 +432,27 @@ export default function HowItWorksPage() {
                                             <div className="md:col-span-3 space-y-3">
                                                 <BuilderCountedInput
                                                     label="Highlight Title"
+                                                    required
                                                     placeholder="Enter highlight title"
                                                     value={item.highlight_title || ''}
                                                     onChange={(val) => handleUpdateStepField(idx, 'highlight_title', val)}
                                                     maxLength={30}
-                                                    inputClassName="!h-9 text-xs border-border bg-card text-foreground"
+                                                    inputClassName={cn(
+                                                        '!h-9 text-xs border-border bg-card text-foreground',
+                                                        !item.highlight_title?.trim() && 'border-red-500 ring-1 ring-red-500 bg-red-50/20'
+                                                    )}
                                                 />
                                                 <BuilderCountedInput
                                                     label="Highlight Subtext"
+                                                    required
                                                     placeholder="Enter highlight subtext"
                                                     value={item.highlight_subtext || ''}
                                                     onChange={(val) => handleUpdateStepField(idx, 'highlight_subtext', val)}
                                                     maxLength={30}
-                                                    inputClassName="!h-9 text-xs border-border bg-card text-foreground"
+                                                    inputClassName={cn(
+                                                        '!h-9 text-xs border-border bg-card text-foreground',
+                                                        !item.highlight_subtext?.trim() && 'border-red-500 ring-1 ring-red-500 bg-red-50/20'
+                                                    )}
                                                 />
                                             </div>
                                         </div>
@@ -561,18 +590,30 @@ export default function HowItWorksPage() {
                                 required
                                 placeholder="Enter step title"
                                 value={modalTitle}
-                                onChange={setModalTitle}
+                                onChange={(val) => {
+                                    setModalTitle(val);
+                                    if (modalErrors.title && val.trim()) setModalErrors((e) => ({ ...e, title: false }));
+                                }}
                                 maxLength={60}
-                                inputClassName="!h-9 text-xs border-border bg-card text-foreground"
+                                inputClassName={cn(
+                                    '!h-9 text-xs border-border bg-card text-foreground',
+                                    modalErrors.title && 'border-red-500 ring-1 ring-red-500 bg-red-50/20'
+                                )}
                             />
                             <BuilderCountedTextarea
                                 label="Description"
                                 required
                                 placeholder="Describe this step in detail..."
                                 value={modalDesc}
-                                onChange={setModalDesc}
+                                onChange={(val) => {
+                                    setModalDesc(val);
+                                    if (modalErrors.desc && val.trim()) setModalErrors((e) => ({ ...e, desc: false }));
+                                }}
                                 maxLength={200}
-                                textareaClassName="min-h-[70px] text-xs border-border bg-card text-foreground"
+                                textareaClassName={cn(
+                                    'min-h-[70px] text-xs border-border bg-card text-foreground',
+                                    modalErrors.desc && 'border-red-500 ring-1 ring-red-500 bg-red-50/20'
+                                )}
                             />
                         </div>
 
@@ -583,18 +624,30 @@ export default function HowItWorksPage() {
                                 required
                                 placeholder="Enter highlight title"
                                 value={modalHighlightTitle}
-                                onChange={setModalHighlightTitle}
+                                onChange={(val) => {
+                                    setModalHighlightTitle(val);
+                                    if (modalErrors.highlightTitle && val.trim()) setModalErrors((e) => ({ ...e, highlightTitle: false }));
+                                }}
                                 maxLength={30}
-                                inputClassName="!h-9 text-xs border-border bg-card text-foreground"
+                                inputClassName={cn(
+                                    '!h-9 text-xs border-border bg-card text-foreground',
+                                    modalErrors.highlightTitle && 'border-red-500 ring-1 ring-red-500 bg-red-50/20'
+                                )}
                             />
                             <BuilderCountedInput
                                 label="Highlight Subtext"
                                 required
                                 placeholder="Enter highlight subtext"
                                 value={modalHighlightSubtext}
-                                onChange={setModalHighlightSubtext}
+                                onChange={(val) => {
+                                    setModalHighlightSubtext(val);
+                                    if (modalErrors.highlightSubtext && val.trim()) setModalErrors((e) => ({ ...e, highlightSubtext: false }));
+                                }}
                                 maxLength={30}
-                                inputClassName="!h-9 text-xs border-border bg-card text-foreground"
+                                inputClassName={cn(
+                                    '!h-9 text-xs border-border bg-card text-foreground',
+                                    modalErrors.highlightSubtext && 'border-red-500 ring-1 ring-red-500 bg-red-50/20'
+                                )}
                             />
                         </div>
 
@@ -712,18 +765,30 @@ export default function HowItWorksPage() {
                                 required
                                 placeholder="Enter step title"
                                 value={modalTitle}
-                                onChange={setModalTitle}
+                                onChange={(val) => {
+                                    setModalTitle(val);
+                                    if (modalErrors.title && val.trim()) setModalErrors((e) => ({ ...e, title: false }));
+                                }}
                                 maxLength={60}
-                                inputClassName="!h-9 text-xs border-border bg-card text-foreground"
+                                inputClassName={cn(
+                                    '!h-9 text-xs border-border bg-card text-foreground',
+                                    modalErrors.title && 'border-red-500 ring-1 ring-red-500 bg-red-50/20'
+                                )}
                             />
                             <BuilderCountedTextarea
                                 label="Description"
                                 required
                                 placeholder="Describe this step in detail..."
                                 value={modalDesc}
-                                onChange={setModalDesc}
+                                onChange={(val) => {
+                                    setModalDesc(val);
+                                    if (modalErrors.desc && val.trim()) setModalErrors((e) => ({ ...e, desc: false }));
+                                }}
                                 maxLength={200}
-                                textareaClassName="min-h-[70px] text-xs border-border bg-card text-foreground"
+                                textareaClassName={cn(
+                                    'min-h-[70px] text-xs border-border bg-card text-foreground',
+                                    modalErrors.desc && 'border-red-500 ring-1 ring-red-500 bg-red-50/20'
+                                )}
                             />
                         </div>
 
@@ -734,18 +799,30 @@ export default function HowItWorksPage() {
                                 required
                                 placeholder="Enter highlight title"
                                 value={modalHighlightTitle}
-                                onChange={setModalHighlightTitle}
+                                onChange={(val) => {
+                                    setModalHighlightTitle(val);
+                                    if (modalErrors.highlightTitle && val.trim()) setModalErrors((e) => ({ ...e, highlightTitle: false }));
+                                }}
                                 maxLength={30}
-                                inputClassName="!h-9 text-xs border-border bg-card text-foreground"
+                                inputClassName={cn(
+                                    '!h-9 text-xs border-border bg-card text-foreground',
+                                    modalErrors.highlightTitle && 'border-red-500 ring-1 ring-red-500 bg-red-50/20'
+                                )}
                             />
                             <BuilderCountedInput
                                 label="Highlight Subtext"
                                 required
                                 placeholder="Enter highlight subtext"
                                 value={modalHighlightSubtext}
-                                onChange={setModalHighlightSubtext}
+                                onChange={(val) => {
+                                    setModalHighlightSubtext(val);
+                                    if (modalErrors.highlightSubtext && val.trim()) setModalErrors((e) => ({ ...e, highlightSubtext: false }));
+                                }}
                                 maxLength={30}
-                                inputClassName="!h-9 text-xs border-border bg-card text-foreground"
+                                inputClassName={cn(
+                                    '!h-9 text-xs border-border bg-card text-foreground',
+                                    modalErrors.highlightSubtext && 'border-red-500 ring-1 ring-red-500 bg-red-50/20'
+                                )}
                             />
                         </div>
 
