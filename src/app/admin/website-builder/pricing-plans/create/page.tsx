@@ -107,11 +107,24 @@ function PricingPlanFormContent() {
         );
     };
 
+    const [priceMonthlyError, setPriceMonthlyError] = useState(false);
+    const [previewBillingCycle, setPreviewBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+
     const handleSavePlan = () => {
+        let hasError = false;
         if (!planName.trim()) {
             toast.error('Plan name is required.');
-            return;
+            hasError = true;
         }
+        if (!priceMonthly.trim()) {
+            setPriceMonthlyError(true);
+            toast.error('Monthly price is required.');
+            hasError = true;
+        } else {
+            setPriceMonthlyError(false);
+        }
+
+        if (hasError) return;
 
         const existingList = dbPlans || [];
         const planPayload: PricingPlan = {
@@ -142,6 +155,21 @@ function PricingPlanFormContent() {
                 router.push('/admin/website-builder/pricing-plans');
             },
         });
+    };
+
+    // Helper for Badge Style Classes
+    const getBadgeStyleClass = () => {
+        switch (badgeStyle) {
+            case 'outline':
+                return 'bg-transparent text-primary border-2 border-primary';
+            case 'soft-filled':
+                return 'bg-primary/20 text-primary border-primary/30';
+            case 'soft-outline':
+                return 'bg-primary/10 text-primary border border-primary/40';
+            case 'filled':
+            default:
+                return 'bg-primary text-primary-foreground border-primary shadow-sm';
+        }
     };
 
     return (
@@ -299,9 +327,18 @@ function PricingPlanFormContent() {
                                         type="number"
                                         placeholder="e.g. 999"
                                         value={priceMonthly}
-                                        onChange={(e) => setPriceMonthly(e.target.value)}
-                                        className="h-9 text-xs border-border bg-card text-foreground"
+                                        onChange={(e) => {
+                                            setPriceMonthly(e.target.value);
+                                            if (priceMonthlyError) setPriceMonthlyError(false);
+                                        }}
+                                        className={cn(
+                                            'h-9 text-xs border-border bg-card text-foreground',
+                                            priceMonthlyError && 'border-red-500 focus-visible:ring-red-500'
+                                        )}
                                     />
+                                    {priceMonthlyError && (
+                                        <p className="text-[11px] font-semibold text-red-500">Monthly price is required.</p>
+                                    )}
                                 </div>
 
                                 <div className="space-y-1">
@@ -472,34 +509,65 @@ function PricingPlanFormContent() {
                                 </CardTitle>
                             </div>
 
-                            <div className="flex items-center border border-border rounded-lg p-0.5 bg-card">
-                                <button
-                                    type="button"
-                                    onClick={() => setPreviewDevice('desktop')}
-                                    className={cn(
-                                        'p-1 rounded-md text-xs transition-colors cursor-pointer',
-                                        previewDevice === 'desktop'
-                                            ? 'bg-primary text-primary-foreground'
-                                            : 'text-muted-foreground hover:text-foreground'
-                                    )}
-                                    title="Desktop View"
-                                >
-                                    <Monitor className="h-3.5 w-3.5" />
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setPreviewDevice('mobile')}
-                                    className={cn(
-                                        'p-1 rounded-md text-xs transition-colors cursor-pointer',
-                                        previewDevice === 'mobile'
-                                            ? 'bg-primary text-primary-foreground'
-                                            : 'text-muted-foreground hover:text-foreground'
-                                    )}
-                                    title="Mobile View"
-                                >
-                                    <Smartphone className="h-3.5 w-3.5" />
-                                </button>
-                            </div>
+                                <div className="flex items-center gap-2">
+                                    {/* Monthly / Yearly Billing Preview Toggle */}
+                                    <div className="flex items-center border border-border rounded-lg p-0.5 bg-muted/40 text-[11px] font-bold">
+                                        <button
+                                            type="button"
+                                            onClick={() => setPreviewBillingCycle('monthly')}
+                                            className={cn(
+                                                'px-2 py-0.5 rounded-md transition-colors cursor-pointer',
+                                                previewBillingCycle === 'monthly'
+                                                    ? 'bg-card text-foreground shadow-xs'
+                                                    : 'text-muted-foreground hover:text-foreground'
+                                            )}
+                                        >
+                                            Monthly
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setPreviewBillingCycle('yearly')}
+                                            className={cn(
+                                                'px-2 py-0.5 rounded-md transition-colors cursor-pointer',
+                                                previewBillingCycle === 'yearly'
+                                                    ? 'bg-card text-foreground shadow-xs'
+                                                    : 'text-muted-foreground hover:text-foreground'
+                                            )}
+                                        >
+                                            Yearly
+                                        </button>
+                                    </div>
+
+                                    {/* Device Toggle */}
+                                    <div className="flex items-center border border-border rounded-lg p-0.5 bg-card">
+                                        <button
+                                            type="button"
+                                            onClick={() => setPreviewDevice('desktop')}
+                                            className={cn(
+                                                'p-1 rounded-md text-xs transition-colors cursor-pointer',
+                                                previewDevice === 'desktop'
+                                                    ? 'bg-primary text-primary-foreground'
+                                                    : 'text-muted-foreground hover:text-foreground'
+                                            )}
+                                            title="Desktop View"
+                                        >
+                                            <Monitor className="h-3.5 w-3.5" />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setPreviewDevice('mobile')}
+                                            className={cn(
+                                                'p-1 rounded-md text-xs transition-colors cursor-pointer',
+                                                previewDevice === 'mobile'
+                                                    ? 'bg-primary text-primary-foreground'
+                                                    : 'text-muted-foreground hover:text-foreground'
+                                            )}
+                                            title="Mobile View"
+                                        >
+                                            <Smartphone className="h-3.5 w-3.5" />
+                                        </button>
+                                    </div>
+                                </div>
                         </CardHeader>
 
                         <CardContent className="p-5 flex justify-center bg-muted/10">
@@ -517,7 +585,7 @@ function PricingPlanFormContent() {
                                 >
                                     {badgeText ? (
                                         <div className="absolute -top-3 left-6">
-                                            <Badge className="bg-primary text-primary-foreground font-extrabold text-[10px] px-3 py-0.5 shadow-sm uppercase tracking-wider">
+                                            <Badge className={cn('font-extrabold text-[10px] px-3 py-0.5 uppercase tracking-wider', getBadgeStyleClass())}>
                                                 {badgeText}
                                             </Badge>
                                         </div>
@@ -538,10 +606,20 @@ function PricingPlanFormContent() {
                                     <div className="border-t border-b border-border py-4">
                                         <div className="flex items-baseline gap-1">
                                             <span className="text-3xl font-extrabold text-foreground tracking-tight">
-                                                {currency}{priceMonthly || '0'}
+                                                {currency}
+                                                {previewBillingCycle === 'yearly'
+                                                    ? (priceYearly || '0')
+                                                    : (priceMonthly || '0')}
                                             </span>
-                                            <span className="text-xs text-muted-foreground font-semibold">{periodLabel}</span>
+                                            <span className="text-xs text-muted-foreground font-semibold">
+                                                {previewBillingCycle === 'yearly' ? '/year' : periodLabel}
+                                            </span>
                                         </div>
+                                        {previewBillingCycle === 'yearly' && priceYearly ? (
+                                            <div className="text-[11px] font-semibold text-emerald-600 mt-1">
+                                                Billed annually ({currency}{priceYearly}/yr)
+                                            </div>
+                                        ) : null}
                                     </div>
 
                                     {features.length > 0 ? (

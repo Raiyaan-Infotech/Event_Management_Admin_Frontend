@@ -29,6 +29,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
+import { DeleteDialog } from '@/components/common/delete-dialog';
 import {
     useFeaturesData,
     useSaveFeaturesList,
@@ -62,16 +63,19 @@ export default function FeaturesPage() {
     const deleteFeatureMutation = useDeleteFeature();
 
     const [searchQuery, setSearchQuery] = useState('');
+    const [deleteId, setDeleteId] = useState<string | number | null>(null);
     const features = dbFeatures || [];
 
-    const handleDeleteFeature = (id?: string | number) => {
-        if (!id) return;
-        deleteFeatureMutation.mutate(id);
+    const confirmDeleteFeature = () => {
+        if (!deleteId) return;
+        deleteFeatureMutation.mutate(deleteId, {
+            onSuccess: () => setDeleteId(null),
+        });
     };
 
     const handleToggleShowInMenu = (id?: string | number, currentVal?: boolean) => {
         if (!id) return;
-        const updated = features.map((f) => (f.id === id ? { ...f, show_in_menu: !currentVal } : f));
+        const updated = features.map((f) => (f.id === id ? { ...f, show_in_menu: !(currentVal !== false) } : f));
         saveFeaturesMutation.mutate(updated);
     };
 
@@ -211,7 +215,7 @@ export default function FeaturesPage() {
                                                             type="button"
                                                             variant="outline"
                                                             size="icon"
-                                                            onClick={() => handleDeleteFeature(item.id)}
+                                                            onClick={() => item.id !== undefined && setDeleteId(item.id)}
                                                             className="h-8 w-8 rounded-lg p-0 text-rose-500 border-rose-200 hover:bg-rose-50 hover:border-rose-300 cursor-pointer"
                                                         >
                                                             <Trash2 className="h-3.5 w-3.5" />
@@ -243,6 +247,15 @@ export default function FeaturesPage() {
                     </div>
                 </CardContent>
             </Card>
+
+            {/* Delete Confirmation Dialog */}
+            <DeleteDialog
+                open={deleteId !== null}
+                onOpenChange={(open) => !open && setDeleteId(null)}
+                onConfirm={confirmDeleteFeature}
+                title="Delete Feature"
+                description="Are you sure you want to delete this feature? This action cannot be undone."
+            />
         </div>
     );
 }

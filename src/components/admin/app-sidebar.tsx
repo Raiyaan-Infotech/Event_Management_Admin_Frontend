@@ -219,6 +219,15 @@ const menuItems: MenuItem[] = [
         ],
       },
       {
+        labelKey: "FAQs",
+        icon: HelpCircle,
+        uiBlockKey: "faqs",
+        children: [
+          { labelKey: "All FAQs", href: "/admin/website-builder/faqs", icon: HelpCircle },
+          { labelKey: "FAQ Categories", href: "/admin/website-builder/faqs/categories", icon: Folder },
+        ],
+      },
+      {
         labelKey: "Portfolio",
         icon: Award,
         children: [

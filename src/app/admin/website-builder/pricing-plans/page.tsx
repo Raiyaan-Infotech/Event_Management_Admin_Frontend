@@ -28,22 +28,27 @@ import {
     type PricingPlan,
 } from '@/hooks/usePricingPlans';
 
+import { DeleteDialog } from '@/components/common/delete-dialog';
+
 export default function PricingPlansPage() {
     const { data: dbPlans, isLoading: isPlansLoading } = usePricingPlansData();
     const savePlansMutation = useSavePricingPlans();
     const [searchQuery, setSearchQuery] = useState('');
+    const [deleteId, setDeleteId] = useState<number | null>(null);
 
     const plans = dbPlans || [];
 
-    const handleDeletePlan = (id?: number) => {
-        if (id === undefined) return;
-        const updated = plans.filter((p) => p.id !== id);
-        savePlansMutation.mutate(updated);
+    const confirmDeletePlan = () => {
+        if (deleteId === null) return;
+        const updated = plans.filter((p) => p.id !== deleteId);
+        savePlansMutation.mutate(updated, {
+            onSuccess: () => setDeleteId(null),
+        });
     };
 
     const handleToggleStatus = (id?: number, currentStatus?: boolean) => {
         if (id === undefined) return;
-        const updated = plans.map((p) => (p.id === id ? { ...p, is_active: !currentStatus } : p));
+        const updated = plans.map((p) => (p.id === id ? { ...p, is_active: !(currentStatus !== false) } : p));
         savePlansMutation.mutate(updated);
     };
 
@@ -198,7 +203,7 @@ export default function PricingPlansPage() {
                                                         type="button"
                                                         variant="outline"
                                                         size="icon"
-                                                        onClick={() => handleDeletePlan(item.id)}
+                                                        onClick={() => item.id !== undefined && setDeleteId(item.id)}
                                                         className="h-8 w-8 rounded-lg p-0 text-rose-500 border-rose-200 hover:bg-rose-50 hover:border-rose-300 cursor-pointer"
                                                     >
                                                         <Trash2 className="h-3.5 w-3.5" />
@@ -229,6 +234,15 @@ export default function PricingPlansPage() {
                     </div>
                 </CardContent>
             </Card>
+
+            {/* Delete Confirmation Dialog */}
+            <DeleteDialog
+                open={deleteId !== null}
+                onOpenChange={(open) => !open && setDeleteId(null)}
+                onConfirm={confirmDeletePlan}
+                title="Delete Pricing Plan"
+                description="Are you sure you want to delete this pricing plan? This action cannot be undone."
+            />
         </div>
     );
 }

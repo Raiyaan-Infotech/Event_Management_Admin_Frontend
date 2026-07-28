@@ -85,6 +85,10 @@ function FeatureFormContent() {
     const [status, setStatus] = useState<'Active' | 'Inactive' | 'Draft'>('Active');
     const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
 
+    const [customIconUrl, setCustomIconUrl] = useState<string>('');
+    const [featureImageUrl, setFeatureImageUrl] = useState<string>('');
+    const [errors, setErrors] = useState<{ title?: boolean; shortDesc?: boolean; detailedDesc?: boolean }>({});
+
     const isSaving = saveFeaturesMutation.isPending;
 
     // Load feature data if editing
@@ -96,6 +100,9 @@ function FeatureFormContent() {
                 setShortDesc(found.short_description);
                 setDetailedDesc(found.detailed_description || '');
                 setSelectedIcon(found.icon || 'calendar');
+                if (found.icon?.startsWith('data:') || found.icon?.startsWith('http')) {
+                    setCustomIconUrl(found.icon);
+                }
                 setBullets(found.bullet_points_json || []);
                 setShowInMenu(found.show_in_menu !== false);
                 setMenuOrder(String(found.menu_order || 1));
@@ -103,6 +110,31 @@ function FeatureFormContent() {
             }
         }
     }, [featureId, dbFeatures]);
+
+    const handleCustomIconUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            const result = ev.target?.result as string;
+            setCustomIconUrl(result);
+            setSelectedIcon(result);
+            toast.success('Custom icon uploaded!');
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleFeatureImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            const result = ev.target?.result as string;
+            setFeatureImageUrl(result);
+            toast.success('Feature image uploaded!');
+        };
+        reader.readAsDataURL(file);
+    };
 
     const handleAddBullet = () => {
         if (!newBulletText.trim()) return;
@@ -115,10 +147,17 @@ function FeatureFormContent() {
     };
 
     const handleSaveFeature = () => {
-        if (!title.trim()) {
-            toast.error('Feature title is required.');
+        const newErrors: { title?: boolean; shortDesc?: boolean; detailedDesc?: boolean } = {};
+        if (!title.trim()) newErrors.title = true;
+        if (!shortDesc.trim()) newErrors.shortDesc = true;
+        if (!detailedDesc.trim()) newErrors.detailedDesc = true;
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            toast.error('Please fill in all required fields marked with *');
             return;
         }
+        setErrors({});
 
         const existingList = dbFeatures || [];
         const featurePayload: FeatureItem = {
@@ -212,10 +251,13 @@ function FeatureFormContent() {
                                         <button
                                             key={name}
                                             type="button"
-                                            onClick={() => setSelectedIcon(name)}
+                                            onClick={() => {
+                                                setSelectedIcon(name);
+                                                setCustomIconUrl('');
+                                            }}
                                             className={cn(
                                                 'flex h-12 items-center justify-center rounded-xl border p-2 transition-all cursor-pointer',
-                                                selectedIcon === name
+                                                selectedIcon === name && !customIconUrl
                                                     ? 'border-primary bg-primary/10 ring-2 ring-primary/20 text-primary'
                                                     : 'border-border bg-card hover:bg-accent text-muted-foreground'
                                             )}
@@ -223,11 +265,26 @@ function FeatureFormContent() {
                                             <Icon className="h-5 w-5" />
                                         </button>
                                     ))}
-                                    <div className="col-span-2 flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/40 p-2 text-center">
-                                        <Upload className="h-4 w-4 text-muted-foreground mb-1" />
-                                        <span className="text-[10px] font-bold text-foreground">Upload Custom</span>
-                                        <span className="text-[9px] text-muted-foreground">SVG/PNG Max 2MB</span>
-                                    </div>
+                                    <label className={cn(
+                                        'col-span-2 flex flex-col items-center justify-center rounded-xl border border-dashed p-2 text-center relative cursor-pointer transition-all',
+                                        customIconUrl ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-muted/40 hover:bg-muted/60 text-muted-foreground'
+                                    )}>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleCustomIconUpload}
+                                            className="absolute inset-0 opacity-0 cursor-pointer"
+                                        />
+                                        {customIconUrl ? (
+                                            <img src={customIconUrl} alt="Custom Icon" className="h-6 w-6 object-contain rounded-md" />
+                                        ) : (
+                                            <>
+                                                <Upload className="h-4 w-4 mb-1" />
+                                                <span className="text-[10px] font-bold text-foreground">Upload Custom</span>
+                                                <span className="text-[9px]">SVG/PNG Max 2MB</span>
+                                            </>
+                                        )}
+                                    </label>
                                 </div>
                             </div>
 
@@ -236,9 +293,12 @@ function FeatureFormContent() {
                                 required
                                 placeholder="e.g. Agenda & Schedule"
                                 value={title}
-                                onChange={setTitle}
+                                onChange={(val) => {
+                                    setTitle(val);
+                                    if (errors.title) setErrors(prev => ({ ...prev, title: false }));
+                                }}
                                 maxLength={50}
-                                inputClassName="!h-9 text-xs border-border bg-card text-foreground"
+                                inputClassName={cn('!h-9 text-xs border-border bg-card text-foreground', errors.title && 'border-red-500 ring-1 ring-red-500')}
                             />
 
                             <BuilderCountedInput
@@ -246,9 +306,12 @@ function FeatureFormContent() {
                                 required
                                 placeholder="e.g. Manage events and schedules with beautiful timelines."
                                 value={shortDesc}
-                                onChange={setShortDesc}
+                                onChange={(val) => {
+                                    setShortDesc(val);
+                                    if (errors.shortDesc) setErrors(prev => ({ ...prev, shortDesc: false }));
+                                }}
                                 maxLength={120}
-                                inputClassName="!h-9 text-xs border-border bg-card text-foreground"
+                                inputClassName={cn('!h-9 text-xs border-border bg-card text-foreground', errors.shortDesc && 'border-red-500 ring-1 ring-red-500')}
                             />
                         </CardContent>
                     </Card>
@@ -270,9 +333,12 @@ function FeatureFormContent() {
                                 required
                                 placeholder="Explain how this feature helps guests or event hosts..."
                                 value={detailedDesc}
-                                onChange={setDetailedDesc}
+                                onChange={(val) => {
+                                    setDetailedDesc(val);
+                                    if (errors.detailedDesc) setErrors(prev => ({ ...prev, detailedDesc: false }));
+                                }}
                                 maxLength={500}
-                                textareaClassName="min-h-[100px] text-xs border-border bg-card text-foreground"
+                                textareaClassName={cn('min-h-[100px] text-xs border-border bg-card text-foreground', errors.detailedDesc && 'border-red-500 ring-1 ring-red-500')}
                             />
                         </CardContent>
                     </Card>
@@ -433,11 +499,38 @@ function FeatureFormContent() {
                         </CardHeader>
                         <CardContent className="p-4 space-y-2">
                             <Label className="text-xs font-bold text-foreground">Feature Image</Label>
-                            <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-muted/20 p-6 text-center hover:bg-muted/40 transition-all cursor-pointer">
-                                <Upload className="h-6 w-6 text-muted-foreground mb-2" />
-                                <span className="text-xs font-semibold text-foreground">Click to upload image</span>
-                                <span className="text-[10px] text-muted-foreground mt-0.5">PNG, JPG or WEBP (Max 2MB) — Recommended size: 600 x 400px</span>
-                            </div>
+                            {featureImageUrl ? (
+                                <div className="relative rounded-xl overflow-hidden border border-border p-2 bg-card flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <img src={featureImageUrl} alt="Feature Preview" className="h-16 w-24 object-cover rounded-lg border border-border" />
+                                        <div>
+                                            <p className="text-xs font-bold text-foreground">Uploaded Image</p>
+                                            <p className="text-[10px] text-muted-foreground">Ready for feature page</p>
+                                        </div>
+                                    </div>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setFeatureImageUrl('')}
+                                        className="h-8 px-2 text-xs text-red-500 border-red-200 hover:bg-red-50 cursor-pointer"
+                                    >
+                                        <X className="h-3.5 w-3.5 mr-1" /> Remove
+                                    </Button>
+                                </div>
+                            ) : (
+                                <label className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-muted/20 p-6 text-center hover:bg-muted/40 transition-all cursor-pointer relative">
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleFeatureImageUpload}
+                                        className="absolute inset-0 opacity-0 cursor-pointer"
+                                    />
+                                    <Upload className="h-6 w-6 text-muted-foreground mb-2" />
+                                    <span className="text-xs font-semibold text-foreground">Click to upload image</span>
+                                    <span className="text-[10px] text-muted-foreground mt-0.5">PNG, JPG or WEBP (Max 2MB) — Recommended size: 600 x 400px</span>
+                                </label>
+                            )}
                         </CardContent>
                     </Card>
                 </div>
@@ -491,9 +584,16 @@ function FeatureFormContent() {
                                 )}
                             >
                                 <div className="rounded-2xl border border-border bg-card p-5 shadow-lg space-y-4">
+                                    {featureImageUrl ? (
+                                        <img src={featureImageUrl} alt="Preview Header" className="h-36 w-full object-cover rounded-xl border border-border mb-2" />
+                                    ) : null}
                                     <div className="flex items-center justify-between">
-                                        <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-primary to-purple-600 text-white flex items-center justify-center shadow-md">
-                                            <CurrentIcon className="h-6 w-6 text-white" />
+                                        <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-primary to-purple-600 text-white flex items-center justify-center shadow-md overflow-hidden p-2">
+                                            {customIconUrl ? (
+                                                <img src={customIconUrl} alt="Icon" className="h-6 w-6 object-contain" />
+                                            ) : (
+                                                <CurrentIcon className="h-6 w-6 text-white" />
+                                            )}
                                         </div>
                                         <Badge variant="outline" className="text-[10px] font-bold text-primary border-primary/30">
                                             {status}

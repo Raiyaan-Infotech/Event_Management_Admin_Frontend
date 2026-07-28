@@ -1,8 +1,6 @@
-'use client';
-
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
     ArrowLeft,
     Save,
@@ -20,6 +18,7 @@ import {
     Calendar,
     MoreHorizontal,
     PartyPopper,
+    X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -27,12 +26,14 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
     BuilderCountedInput,
     BuilderCountedTextarea,
 } from '../../_components/builder-field';
 import { cn } from '@/lib/utils';
 import {
+    useTemplates,
     useTemplateCategories,
     useSaveTemplate,
     type Template,
@@ -58,8 +59,12 @@ function RingIcon({ className }: { className?: string }) {
     return <Sparkles className={className} />;
 }
 
-export default function CreateTemplatePage() {
+function CreateTemplatePage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const templateId = searchParams.get('id');
+
+    const { data: dbTemplates } = useTemplates();
     const { data: categories } = useTemplateCategories();
     const saveTemplateMutation = useSaveTemplate();
 
@@ -74,25 +79,81 @@ export default function CreateTemplatePage() {
     const [isActive, setIsActive] = useState(true);
     const [allowCustomize, setAllowCustomize] = useState(true);
     const [viewDevice, setViewDevice] = useState<'desktop' | 'mobile'>('mobile');
+    const [fullScreenPreview, setFullScreenPreview] = useState(false);
+
+    const [errors, setErrors] = useState<{
+        name?: boolean;
+        category?: boolean;
+        thumbnail?: boolean;
+        file?: boolean;
+    }>({});
 
     const isSaving = saveTemplateMutation.isPending;
 
+    // Load existing template data when editing
+    useEffect(() => {
+        if (templateId && dbTemplates) {
+            const found = dbTemplates.find((t) => String(t.id) === String(templateId));
+            if (found) {
+                setTemplateName(found.template_name);
+                setCategoryId(found.category_id ? String(found.category_id) : '');
+                setDescription(found.description || '');
+                setTemplateType(found.template_type || 'wedding');
+                setDesignStyle(found.design_style || 'classic');
+                setPrimaryColor(found.primary_color || '#6A38F5');
+                setThumbnailUrl(found.thumbnail_url || '');
+                setTemplateFileUrl(found.template_file_url || '');
+                setIsActive(found.is_active !== false);
+                setAllowCustomize(found.allow_customize !== false);
+            }
+        }
+    }, [templateId, dbTemplates]);
+
+    const handleThumbnailUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            setThumbnailUrl(ev.target?.result as string);
+            setErrors((prev) => ({ ...prev, thumbnail: false }));
+            toast.success('Thumbnail uploaded!');
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setTemplateFileUrl(file.name);
+        setErrors((prev) => ({ ...prev, file: false }));
+        toast.success(`File "${file.name}" uploaded!`);
+    };
+
     const handleSave = (isDraft = false) => {
-        if (!templateName.trim()) {
-            toast.error('Template Name is required.');
+        const newErrors: typeof errors = {};
+        if (!templateName.trim()) newErrors.name = true;
+        if (!categoryId) newErrors.category = true;
+        if (!thumbnailUrl) newErrors.thumbnail = true;
+        if (!templateFileUrl) newErrors.file = true;
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            toast.error('Please fill in all required fields marked with *');
             return;
         }
+        setErrors({});
 
         saveTemplateMutation.mutate(
             {
+                id: templateId ? Number(templateId) : undefined,
                 template_name: templateName,
                 category_id: categoryId ? Number(categoryId) : null,
                 description,
                 template_type: templateType,
                 design_style: designStyle,
                 primary_color: primaryColor,
-                thumbnail_url: thumbnailUrl || '/templates/royal-wedding.jpg',
-                template_file_url: templateFileUrl || '/templates/royal-wedding-full.jpg',
+                thumbnail_url: thumbnailUrl,
+                template_file_url: templateFileUrl,
                 is_active: isActive,
                 allow_customize: allowCustomize,
                 is_draft: isDraft,
@@ -153,17 +214,26 @@ export default function CreateTemplatePage() {
                                 required
                                 placeholder="e.g., Royal Wedding Invitation"
                                 value={templateName}
-                                onChange={setTemplateName}
+                                onChange={(val) => {
+                                    setTemplateName(val);
+                                    if (errors.name) setErrors(prev => ({ ...prev, name: false }));
+                                }}
                                 maxLength={100}
-                                inputClassName="!h-10 text-xs"
+                                inputClassName={cn('!h-10 text-xs', errors.name && 'border-red-500 ring-1 ring-red-500')}
                             />
 
                             <div className="space-y-1">
                                 <label className="text-[10px] font-black uppercase tracking-wide text-muted-foreground flex items-center gap-1">
                                     Category <span className="text-rose-500">*</span>
                                 </label>
-                                <Select value={categoryId} onValueChange={setCategoryId}>
-                                    <SelectTrigger className="h-10 text-xs border-border bg-card">
+                                <Select
+                                    value={categoryId}
+                                    onValueChange={(val) => {
+                                        setCategoryId(val);
+                                        if (errors.category) setErrors(prev => ({ ...prev, category: false }));
+                                    }}
+                                >
+                                    <SelectTrigger className={cn('h-10 text-xs border-border bg-card', errors.category && 'border-red-500 ring-1 ring-red-500')}>
                                         <SelectValue placeholder="Select Category" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -312,28 +382,63 @@ export default function CreateTemplatePage() {
 
                             {/* Thumbnail Upload */}
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-black uppercase tracking-wide text-muted-foreground">
+                                <label className="text-[10px] font-black uppercase tracking-wide text-muted-foreground flex items-center gap-1">
                                     Template Thumbnail <span className="text-rose-500">*</span>
                                 </label>
-                                <div className="border-2 border-dashed border-border hover:border-primary/60 transition-colors rounded-xl p-6 text-center bg-muted/20 cursor-pointer">
-                                    <Upload className="h-7 w-7 text-muted-foreground mx-auto mb-2" />
-                                    <p className="text-xs font-bold text-foreground">Click to upload thumbnail</p>
-                                    <p className="text-[11px] text-muted-foreground mt-0.5">PNG, JPG or WEBP (Max. 2MB)</p>
-                                    <p className="text-[10px] text-primary font-semibold mt-1">Recommended size: 800 x 1200px</p>
-                                </div>
+                                {thumbnailUrl ? (
+                                    <div className="relative rounded-xl border border-border p-2 bg-card flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <img src={thumbnailUrl} alt="Thumbnail Preview" className="h-16 w-12 object-cover rounded-md border border-border" />
+                                            <div>
+                                                <p className="text-xs font-bold text-foreground">Thumbnail Uploaded</p>
+                                                <p className="text-[10px] text-emerald-600 font-semibold">Ready for display</p>
+                                            </div>
+                                        </div>
+                                        <Button type="button" variant="outline" size="sm" onClick={() => setThumbnailUrl('')} className="h-8 px-2 text-xs text-red-500 border-red-200 hover:bg-red-50 cursor-pointer">
+                                            <X className="h-3.5 w-3.5 mr-1" /> Remove
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <label className={cn(
+                                        'border-2 border-dashed transition-colors rounded-xl p-6 text-center bg-muted/20 cursor-pointer relative flex flex-col items-center justify-center',
+                                        errors.thumbnail ? 'border-red-500 bg-red-50/20' : 'border-border hover:border-primary/60'
+                                    )}>
+                                        <input type="file" accept="image/*" onChange={handleThumbnailUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                        <Upload className="h-7 w-7 text-muted-foreground mx-auto mb-2" />
+                                        <p className="text-xs font-bold text-foreground">Click to upload thumbnail</p>
+                                        <p className="text-[11px] text-muted-foreground mt-0.5">PNG, JPG or WEBP (Max. 2MB)</p>
+                                        <p className="text-[10px] text-primary font-semibold mt-1">Recommended size: 800 x 1200px</p>
+                                    </label>
+                                )}
                             </div>
 
                             {/* Template File Upload */}
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-black uppercase tracking-wide text-muted-foreground">
+                                <label className="text-[10px] font-black uppercase tracking-wide text-muted-foreground flex items-center gap-1">
                                     Template File <span className="text-rose-500">*</span>
                                 </label>
-                                <div className="border-2 border-dashed border-border hover:border-primary/60 transition-colors rounded-xl p-6 text-center bg-muted/20 cursor-pointer">
-                                    <Upload className="h-7 w-7 text-muted-foreground mx-auto mb-2" />
-                                    <p className="text-xs font-bold text-foreground">Click to upload template file</p>
-                                    <p className="text-[11px] text-muted-foreground mt-0.5">PNG, JPG or WEBP (Max. 10MB)</p>
-                                    <p className="text-[10px] text-muted-foreground mt-1">Upload the full template image or design</p>
-                                </div>
+                                {templateFileUrl ? (
+                                    <div className="relative rounded-xl border border-border p-3 bg-card flex items-center justify-between">
+                                        <div>
+                                            <p className="text-xs font-bold text-foreground truncate max-w-xs">{templateFileUrl}</p>
+                                            <p className="text-[10px] text-emerald-600 font-semibold">File uploaded successfully</p>
+                                        </div>
+                                        <Button type="button" variant="outline" size="sm" onClick={() => setTemplateFileUrl('')} className="h-8 px-2 text-xs text-red-500 border-red-200 hover:bg-red-50 cursor-pointer">
+                                            <X className="h-3.5 w-3.5 mr-1" /> Remove
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <label className={cn(
+                                        'border-2 border-dashed transition-colors rounded-xl p-6 text-center bg-muted/20 cursor-pointer relative flex flex-col items-center justify-center',
+                                        errors.file ? 'border-red-500 bg-red-50/20' : 'border-border hover:border-primary/60'
+                                    )}>
+                                        <input type="file" accept="*/*" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                        <Upload className="h-7 w-7 text-muted-foreground mx-auto mb-2" />
+                                        <p className="text-xs font-bold text-foreground">Click to upload template file</p>
+                                        <p className="text-[11px] text-muted-foreground mt-0.5">ZIP, HTML, PNG, JPG or WEBP (Max. 10MB)</p>
+                                        <p className="text-[10px] text-muted-foreground mt-1">Upload the full template image or design file</p>
+                                    </label>
+                                )}
                             </div>
                         </CardContent>
                     </Card>
@@ -365,33 +470,6 @@ export default function CreateTemplatePage() {
                             </div>
                         </CardContent>
                     </Card>
-
-                    {/* Bottom Action Bar */}
-                    <div className="flex items-center gap-3">
-                        <Button
-                            size="lg"
-                            onClick={() => handleSave(false)}
-                            disabled={isSaving}
-                            className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs px-6 shadow-xs gap-1.5"
-                        >
-                            {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                            Save Template
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="lg"
-                            onClick={() => handleSave(true)}
-                            disabled={isSaving}
-                            className="font-bold text-xs px-6 border-border"
-                        >
-                            Save as Draft
-                        </Button>
-                        <Link href="/admin/website-builder/templates">
-                            <Button variant="ghost" size="lg" className="text-xs font-semibold text-muted-foreground">
-                                Cancel
-                            </Button>
-                        </Link>
-                    </div>
                 </div>
 
                 {/* Right Column - Live Preview & Tips */}
@@ -399,15 +477,16 @@ export default function CreateTemplatePage() {
                     {/* Template Preview Card */}
                     <Card className="shadow-xs border-border overflow-hidden">
                         <div className="p-4 border-b border-border bg-muted/30 flex items-center justify-between">
-                            <h4 className="text-xs font-bold text-foreground">Template Preview</h4>
+                            <h4 className="text-xs font-bold text-foreground">Template Preview ({viewDevice})</h4>
                             <div className="flex items-center border border-border rounded-lg p-0.5 bg-card">
                                 <button
                                     type="button"
                                     onClick={() => setViewDevice('desktop')}
                                     className={cn(
-                                        'p-1 rounded-md text-xs transition-colors',
+                                        'p-1 rounded-md text-xs transition-colors cursor-pointer',
                                         viewDevice === 'desktop' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
                                     )}
+                                    title="Desktop View"
                                 >
                                     <Monitor className="h-3.5 w-3.5" />
                                 </button>
@@ -415,9 +494,10 @@ export default function CreateTemplatePage() {
                                     type="button"
                                     onClick={() => setViewDevice('mobile')}
                                     className={cn(
-                                        'p-1 rounded-md text-xs transition-colors',
+                                        'p-1 rounded-md text-xs transition-colors cursor-pointer',
                                         viewDevice === 'mobile' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
                                     )}
+                                    title="Mobile View"
                                 >
                                     <Smartphone className="h-3.5 w-3.5" />
                                 </button>
@@ -426,47 +506,40 @@ export default function CreateTemplatePage() {
 
                         <CardContent className="p-6 flex flex-col items-center justify-center bg-slate-50/50">
                             {/* Invitation Card Mockup */}
-                            <div className="w-full max-w-xs rounded-2xl border-4 border-amber-200/60 bg-white p-6 shadow-md text-center space-y-3 relative overflow-hidden">
-                                {/* Decorative floral corner elements */}
-                                <div className="absolute top-0 left-0 w-16 h-16 bg-gradient-to-br from-rose-200/50 to-transparent rounded-br-full" />
-                                <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-rose-200/50 to-transparent rounded-bl-full" />
+                            <div
+                                className={cn(
+                                    'w-full transition-all duration-300 rounded-2xl border-4 bg-white p-6 shadow-md text-center space-y-3 relative overflow-hidden',
+                                    viewDevice === 'mobile' ? 'max-w-[280px]' : 'max-w-md'
+                                )}
+                                style={{ borderColor: primaryColor }}
+                            >
+                                {thumbnailUrl ? (
+                                    <img src={thumbnailUrl} alt="Thumbnail Preview" className="h-36 w-full object-cover rounded-xl border border-border mb-2" />
+                                ) : (
+                                    <div className="h-28 w-full rounded-xl flex items-center justify-center text-white font-bold text-sm" style={{ backgroundColor: primaryColor }}>
+                                        {templateName || 'Template Preview'}
+                                    </div>
+                                )}
 
-                                <p className="text-[9px] font-black uppercase tracking-widest text-amber-800">
-                                    YOU ARE INVITED TO THE
+                                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
+                                    {templateType.toUpperCase()} INVITATION
                                 </p>
 
-                                <h2 className="text-2xl font-serif font-extrabold text-amber-950 italic">
-                                    Wedding
+                                <h2 className="text-xl font-serif font-extrabold text-slate-900 capitalize">
+                                    {templateName || 'Template Name'}
                                 </h2>
 
-                                <p className="text-[10px] font-serif text-amber-800 italic">of</p>
-
-                                <div className="space-y-0.5">
-                                    <h3 className="text-base font-serif font-bold text-slate-900">
-                                        John Smith
-                                    </h3>
-                                    <p className="text-xs font-serif italic text-amber-700">&</p>
-                                    <h3 className="text-base font-serif font-bold text-slate-900">
-                                        Emily Johnson
-                                    </h3>
-                                </div>
-
-                                <div className="pt-2 border-t border-amber-200/80 space-y-1">
-                                    <p className="text-[9px] font-bold tracking-wider text-slate-700">
-                                        SUNDAY <span className="mx-1 font-black">20 | JULY | 2025</span>
-                                    </p>
-                                    <p className="text-[9px] text-slate-500">10:30 AM ONWARDS</p>
-                                </div>
-
-                                <div className="pt-2">
-                                    <p className="text-[9px] font-black uppercase tracking-wider text-amber-900">
-                                        GRAND ROYAL PALACE
-                                    </p>
-                                    <p className="text-[8px] text-slate-500">CHENNAI</p>
+                                <div className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full inline-block bg-primary/10 text-primary">
+                                    Style: {designStyle}
                                 </div>
                             </div>
 
-                            <Button variant="outline" size="sm" className="mt-4 text-xs font-semibold text-primary border-primary/30 w-full">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setFullScreenPreview(true)}
+                                className="mt-4 text-xs font-semibold text-primary border-primary/30 w-full cursor-pointer"
+                            >
                                 Preview Full Screen <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
                             </Button>
                         </CardContent>
@@ -493,19 +566,42 @@ export default function CreateTemplatePage() {
                                     <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 mt-0.5 shrink-0" />
                                     <span>Use readable fonts</span>
                                 </li>
-                                <li className="flex items-start gap-2">
-                                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 mt-0.5 shrink-0" />
-                                    <span>Ensure good contrast for visibility</span>
-                                </li>
-                                <li className="flex items-start gap-2">
-                                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 mt-0.5 shrink-0" />
-                                    <span>Test on both mobile and desktop</span>
-                                </li>
                             </ul>
                         </CardContent>
                     </Card>
                 </div>
             </div>
+
+            {/* Full Screen Preview Modal */}
+            <Dialog open={fullScreenPreview} onOpenChange={setFullScreenPreview}>
+                <DialogContent className="max-w-4xl p-6 border-border bg-card text-foreground">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg font-bold">Full Screen Template Preview</DialogTitle>
+                    </DialogHeader>
+                    <div className="p-8 flex justify-center bg-slate-900 rounded-2xl">
+                        <div className="w-full max-w-sm rounded-2xl border-4 bg-white p-8 text-center space-y-4" style={{ borderColor: primaryColor }}>
+                            {thumbnailUrl ? (
+                                <img src={thumbnailUrl} alt="Full Preview" className="h-48 w-full object-cover rounded-xl" />
+                            ) : null}
+                            <h2 className="text-2xl font-bold text-slate-900">{templateName || 'Template Name'}</h2>
+                            <p className="text-xs text-slate-600">{description || 'Full screen template details preview.'}</p>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
+    );
+}
+
+export default function CreateTemplatePageWrapper() {
+    return (
+        <Suspense fallback={
+            <div className="py-12 text-center text-xs text-muted-foreground">
+                <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2 text-primary" />
+                Loading template editor...
+            </div>
+        }>
+            <CreateTemplatePage />
+        </Suspense>
     );
 }

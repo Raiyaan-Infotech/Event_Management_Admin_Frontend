@@ -28,12 +28,17 @@ import {
     type TemplateCategory,
 } from '@/hooks/useTemplates';
 
+import { DeleteDialog } from '@/components/common/delete-dialog';
+import { useTemplates } from '@/hooks/useTemplates';
+
 export default function TemplateCategoriesPage() {
     const { data: dbCategories, isLoading } = useTemplateCategories();
+    const { data: dbTemplates } = useTemplates();
     const saveCategoryMutation = useSaveTemplateCategory();
     const deleteCategoryMutation = useDeleteTemplateCategory();
 
     const categories = dbCategories || [];
+    const templates = dbTemplates || [];
 
     const [editingId, setEditingId] = useState<number | null>(null);
     const [categoryName, setCategoryName] = useState('');
@@ -42,27 +47,36 @@ export default function TemplateCategoriesPage() {
     const [status, setStatus] = useState(true);
     const [displayOrder, setDisplayOrder] = useState(1);
     const [searchQuery, setSearchQuery] = useState('');
+    const [deleteId, setDeleteId] = useState<number | null>(null);
+    const [errors, setErrors] = useState<{ name?: boolean; slug?: boolean }>({});
 
     const isSaving = saveCategoryMutation.isPending;
 
     const handleCategoryNameChange = (val: string) => {
         setCategoryName(val);
+        if (errors.name) setErrors(prev => ({ ...prev, name: false }));
         if (!editingId) {
-            setSlug(
-                val
-                    .toLowerCase()
-                    .trim()
-                    .replace(/[^a-z0-9]+/g, '-')
-                    .replace(/^-|-$/g, '')
-            );
+            const generated = val
+                .toLowerCase()
+                .trim()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-|-$/g, '');
+            setSlug(generated);
+            if (errors.slug) setErrors(prev => ({ ...prev, slug: false }));
         }
     };
 
     const handleSaveCategory = () => {
-        if (!categoryName.trim()) {
-            toast.error('Category Name is required.');
+        const newErrors: typeof errors = {};
+        if (!categoryName.trim()) newErrors.name = true;
+        if (!slug.trim()) newErrors.slug = true;
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            toast.error('Category Name and Slug are required.');
             return;
         }
+        setErrors({});
 
         saveCategoryMutation.mutate(
             {
@@ -88,12 +102,15 @@ export default function TemplateCategoriesPage() {
         setDescription(cat.description || '');
         setStatus(cat.is_active !== false);
         setDisplayOrder(cat.sort_order || 1);
+        setErrors({});
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    const handleDelete = (id?: number) => {
-        if (!id) return;
-        deleteCategoryMutation.mutate(id);
+    const confirmDelete = () => {
+        if (!deleteId) return;
+        deleteCategoryMutation.mutate(deleteId, {
+            onSuccess: () => setDeleteId(null),
+        });
     };
 
     const handleCancel = () => {
@@ -103,6 +120,7 @@ export default function TemplateCategoriesPage() {
         setDescription('');
         setStatus(true);
         setDisplayOrder((categories.length || 0) + 1);
+        setErrors({});
     };
 
     const filteredCategories = categories.filter(
@@ -132,20 +150,8 @@ export default function TemplateCategoriesPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" className="h-8 px-3 text-xs font-semibold border-border">
-                        <HelpCircle className="h-3.5 w-3.5 text-muted-foreground mr-1" /> How It Works
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={handleCancel} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
-                        <RotateCcw className="h-3.5 w-3.5 text-rose-500 mr-1" /> Reset
-                    </Button>
-                    <Button
-                        size="sm"
-                        onClick={handleSaveCategory}
-                        disabled={isSaving}
-                        className="h-8 px-4 text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs gap-1.5"
-                    >
-                        {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
-                        {isSaving ? 'Saving...' : 'Save Category'}
+                    <Button variant="outline" size="sm" onClick={handleCancel} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50 cursor-pointer">
+                        <RotateCcw className="h-3.5 w-3.5 text-rose-500 mr-1" /> Reset Form
                     </Button>
                 </div>
             </div>
@@ -167,16 +173,19 @@ export default function TemplateCategoriesPage() {
                             value={categoryName}
                             onChange={handleCategoryNameChange}
                             maxLength={50}
-                            inputClassName="!h-9 text-xs border-border bg-card text-foreground"
+                            inputClassName={cn('!h-9 text-xs border-border bg-card text-foreground', errors.name && 'border-red-500 ring-1 ring-red-500')}
                         />
                         <BuilderCountedInput
                             label="Slug"
                             required
                             placeholder="e.g. wedding"
                             value={slug}
-                            onChange={setSlug}
+                            onChange={(val) => {
+                                setSlug(val);
+                                if (errors.slug) setErrors(prev => ({ ...prev, slug: false }));
+                            }}
                             maxLength={50}
-                            inputClassName="!h-9 text-xs font-mono border-border bg-card text-foreground"
+                            inputClassName={cn('!h-9 text-xs font-mono border-border bg-card text-foreground', errors.slug && 'border-red-500 ring-1 ring-red-500')}
                         />
                         <BuilderCountedTextarea
                             label="Description (Optional)"
@@ -217,7 +226,7 @@ export default function TemplateCategoriesPage() {
                                 variant="outline"
                                 size="sm"
                                 onClick={handleCancel}
-                                className="h-9 w-full text-xs font-bold border-border text-foreground bg-card hover:bg-muted"
+                                className="h-9 w-full text-xs font-bold border-border text-foreground bg-card hover:bg-muted cursor-pointer"
                             >
                                 Cancel
                             </Button>
@@ -226,7 +235,7 @@ export default function TemplateCategoriesPage() {
                                 size="sm"
                                 onClick={handleSaveCategory}
                                 disabled={isSaving}
-                                className="h-9 w-full text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs gap-1"
+                                className="h-9 w-full text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs gap-1 cursor-pointer"
                             >
                                 {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
                                 Save Category
@@ -240,7 +249,7 @@ export default function TemplateCategoriesPage() {
             <Card className="shadow-xs border-border bg-card">
                 <CardHeader className="py-3 px-4 border-b border-border flex flex-row items-center justify-between space-y-0 bg-muted/40">
                     <CardTitle className="text-xs font-bold text-foreground uppercase tracking-wide">
-                        Categories
+                        Categories ({filteredCategories.length})
                     </CardTitle>
                     <div className="relative w-64">
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -276,72 +285,77 @@ export default function TemplateCategoriesPage() {
                                         </td>
                                     </tr>
                                 ) : filteredCategories.length > 0 ? (
-                                    filteredCategories.map((cat, idx) => (
-                                        <tr key={cat.id || idx} className="hover:bg-muted/40 transition-colors">
-                                            <td className="py-3 px-3 text-center text-muted-foreground font-mono">
-                                                <div className="flex items-center justify-center gap-1">
-                                                    <GripVertical className="h-3.5 w-3.5 text-muted-foreground/50" />
-                                                    <span>{idx + 1}</span>
-                                                </div>
-                                            </td>
-                                            <td className="py-3 px-3 font-semibold text-foreground">
-                                                {cat.name}
-                                                {cat.description ? (
-                                                    <p className="text-[10px] font-normal text-muted-foreground truncate max-w-xs">
-                                                        {cat.description}
-                                                    </p>
-                                                ) : null}
-                                            </td>
-                                            <td className="py-3 px-3 font-mono text-[11px] text-muted-foreground">
-                                                {cat.slug}
-                                            </td>
-                                            <td className="py-3 px-3 text-center font-medium text-foreground">
-                                                {cat.templates_count || 0}
-                                            </td>
-                                            <td className="py-3 px-3 text-center">
-                                                <div className="flex items-center justify-center">
-                                                    <Switch
-                                                        checked={cat.is_active !== false}
-                                                        onCheckedChange={(val) => {
-                                                            if (cat.id) {
-                                                                saveCategoryMutation.mutate({ id: cat.id, name: cat.name, slug: cat.slug, is_active: val });
-                                                            }
-                                                        }}
-                                                    />
-                                                </div>
-                                            </td>
-                                            <td className="py-3 px-3 text-center font-semibold text-foreground">
-                                                {cat.sort_order || idx + 1}
-                                            </td>
-                                            <td className="py-3 px-3 text-right">
-                                                <div className="flex items-center justify-end gap-1.5">
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        size="icon"
-                                                        onClick={() => handleEdit(cat)}
-                                                        className={cn(
-                                                            'h-8 w-8 rounded-lg p-0 transition-colors',
-                                                            editingId === cat.id
-                                                                ? 'border-primary bg-primary/10 text-primary shadow-xs'
-                                                                : 'border-border text-muted-foreground hover:border-primary hover:text-primary hover:bg-primary/5'
-                                                        )}
-                                                    >
-                                                        <Pencil className="h-3.5 w-3.5" />
-                                                    </Button>
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        size="icon"
-                                                        onClick={() => handleDelete(cat.id)}
-                                                        className="h-8 w-8 rounded-lg p-0 text-rose-500 border-rose-200 hover:bg-rose-50 hover:border-rose-300"
-                                                    >
-                                                        <Trash2 className="h-3.5 w-3.5" />
-                                                    </Button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
+                                    filteredCategories.map((cat, idx) => {
+                                        const count = templates.filter(
+                                            (t) => String(t.category_id) === String(cat.id) || t.category_name?.toLowerCase() === cat.name.toLowerCase()
+                                        ).length;
+                                        return (
+                                            <tr key={cat.id || idx} className="hover:bg-muted/40 transition-colors">
+                                                <td className="py-3 px-3 text-center text-muted-foreground font-mono">
+                                                    <div className="flex items-center justify-center gap-1">
+                                                        <GripVertical className="h-3.5 w-3.5 text-muted-foreground/50" />
+                                                        <span>{idx + 1}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="py-3 px-3 font-semibold text-foreground">
+                                                    {cat.name}
+                                                    {cat.description ? (
+                                                        <p className="text-[10px] font-normal text-muted-foreground truncate max-w-xs">
+                                                            {cat.description}
+                                                        </p>
+                                                    ) : null}
+                                                </td>
+                                                <td className="py-3 px-3 font-mono text-[11px] text-muted-foreground">
+                                                    {cat.slug}
+                                                </td>
+                                                <td className="py-3 px-3 text-center font-medium text-foreground">
+                                                    {cat.templates_count ?? count}
+                                                </td>
+                                                <td className="py-3 px-3 text-center">
+                                                    <div className="flex items-center justify-center">
+                                                        <Switch
+                                                            checked={cat.is_active !== false}
+                                                            onCheckedChange={(val) => {
+                                                                if (cat.id) {
+                                                                    saveCategoryMutation.mutate({ id: cat.id, name: cat.name, slug: cat.slug, is_active: val });
+                                                                }
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </td>
+                                                <td className="py-3 px-3 text-center font-semibold text-foreground">
+                                                    {cat.sort_order || idx + 1}
+                                                </td>
+                                                <td className="py-3 px-3 text-right">
+                                                    <div className="flex items-center justify-end gap-1.5">
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="icon"
+                                                            onClick={() => handleEdit(cat)}
+                                                            className={cn(
+                                                                'h-8 w-8 rounded-lg p-0 transition-colors cursor-pointer',
+                                                                editingId === cat.id
+                                                                    ? 'border-primary bg-primary/10 text-primary shadow-xs'
+                                                                    : 'border-border text-muted-foreground hover:border-primary hover:text-primary hover:bg-primary/5'
+                                                            )}
+                                                        >
+                                                            <Pencil className="h-3.5 w-3.5" />
+                                                        </Button>
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="icon"
+                                                            onClick={() => cat.id !== undefined && setDeleteId(cat.id)}
+                                                            className="h-8 w-8 rounded-lg p-0 text-rose-500 border-rose-200 hover:bg-rose-50 hover:border-rose-300 cursor-pointer"
+                                                        >
+                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                        </Button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
                                 ) : (
                                     <tr>
                                         <td colSpan={7} className="py-8 text-center text-xs text-muted-foreground">
@@ -364,6 +378,15 @@ export default function TemplateCategoriesPage() {
                     </div>
                 </CardContent>
             </Card>
+
+            {/* Delete Confirmation Dialog */}
+            <DeleteDialog
+                open={deleteId !== null}
+                onOpenChange={(open) => !open && setDeleteId(null)}
+                onConfirm={confirmDelete}
+                title="Delete Template Category"
+                description="Are you sure you want to delete this template category? Templates in this category may be affected."
+            />
         </div>
     );
 }

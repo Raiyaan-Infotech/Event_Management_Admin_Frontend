@@ -71,6 +71,8 @@ const INITIAL_BLOCKS: UiBlockItem[] = [
     { id: 'pricing-plans', label: 'Pricing Plans', description: 'Company promotional pricing plans section.', icon: FileText, visible: true, locked: false, required: false },
     { id: 'features', label: 'Features Builder', description: 'Interactive features and key benefits section.', icon: FileText, visible: true, locked: false, required: false },
     { id: 'templates', label: 'Templates Library', description: 'Event invitation card and website template manager.', icon: FileText, visible: true, locked: false, required: false },
+    { id: 'faqs', label: 'FAQs Builder', description: 'Frequently asked questions and FAQ categories module.', icon: HelpCircle, visible: true, locked: false, required: false },
+    { id: 'how-it-works', label: 'How It Works', description: 'Step-by-step workflow overview module.', icon: HelpCircle, visible: true, locked: false, required: false },
 ];
 
 export function UIBlockContent() {

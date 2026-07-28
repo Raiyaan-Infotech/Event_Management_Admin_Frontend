@@ -27,11 +27,14 @@ import {
     type Template,
 } from '@/hooks/useTemplates';
 
+import { DeleteDialog } from '@/components/common/delete-dialog';
+
 export default function TemplatesPage() {
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [selectedType, setSelectedType] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
+    const [deleteId, setDeleteId] = useState<number | null>(null);
 
     const { data: dbTemplates, isLoading } = useTemplates({
         template_type: selectedType,
@@ -43,9 +46,11 @@ export default function TemplatesPage() {
 
     const templates = dbTemplates || [];
 
-    const handleDelete = (id?: number) => {
-        if (!id) return;
-        deleteTemplateMutation.mutate(id);
+    const confirmDelete = () => {
+        if (!deleteId) return;
+        deleteTemplateMutation.mutate(deleteId, {
+            onSuccess: () => setDeleteId(null),
+        });
     };
 
     const getCategoryName = (template: Template) => {
@@ -323,8 +328,8 @@ export default function TemplatesPage() {
                                                             type="button"
                                                             variant="outline"
                                                             size="icon"
-                                                            onClick={() => handleDelete(template.id)}
-                                                            className="h-8 w-8 rounded-lg p-0 text-rose-500 border-rose-200 hover:bg-rose-50 hover:border-rose-300"
+                                                            onClick={() => template.id !== undefined && setDeleteId(template.id)}
+                                                            className="h-8 w-8 rounded-lg p-0 text-rose-500 border-rose-200 hover:bg-rose-50 hover:border-rose-300 cursor-pointer"
                                                         >
                                                             <Trash2 className="h-3.5 w-3.5" />
                                                         </Button>
@@ -347,7 +352,7 @@ export default function TemplatesPage() {
                         <div className="p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                             {filteredTemplates.length > 0 ? (
                                 filteredTemplates.map((t) => (
-                                    <div key={t.id} className="rounded-xl border border-border bg-card p-3 space-y-2 text-center shadow-xs hover:shadow-md transition-shadow">
+                                    <div key={t.id} className="rounded-xl border border-border bg-card p-3 space-y-2 text-center shadow-xs hover:shadow-md transition-shadow relative">
                                         <div
                                             className="h-36 w-full rounded-lg border border-border p-3 flex flex-col items-center justify-center text-white text-xs font-bold"
                                             style={{ backgroundColor: t.primary_color || '#6A38F5' }}
@@ -359,12 +364,15 @@ export default function TemplatesPage() {
                                             <h4 className="text-xs font-bold text-foreground">{t.template_name}</h4>
                                             <p className="text-[10px] text-muted-foreground capitalize">{t.template_type} • {t.design_style}</p>
                                         </div>
-                                        <div className="flex items-center justify-center gap-1.5 pt-1">
-                                            <Link href={`/admin/website-builder/templates/create?id=${t.id}`} className="w-full">
-                                                <Button variant="outline" size="sm" className="h-7 w-full text-[10px] font-semibold border-border">
-                                                    Edit Template
+                                        <div className="flex items-center justify-between pt-1 border-t border-border mt-2">
+                                            <Link href={`/admin/website-builder/templates/create?id=${t.id}`}>
+                                                <Button variant="outline" size="sm" className="h-7 px-2 text-[11px] font-semibold cursor-pointer">
+                                                    <Pencil className="h-3 w-3 mr-1" /> Edit
                                                 </Button>
                                             </Link>
+                                            <Button variant="outline" size="sm" onClick={() => t.id !== undefined && setDeleteId(t.id)} className="h-7 px-2 text-[11px] font-semibold text-rose-500 border-rose-200 hover:bg-rose-50 cursor-pointer">
+                                                <Trash2 className="h-3 w-3 mr-1" /> Delete
+                                            </Button>
                                         </div>
                                     </div>
                                 ))
@@ -387,6 +395,15 @@ export default function TemplatesPage() {
                     </div>
                 </CardContent>
             </Card>
+
+            {/* Delete Confirmation Dialog */}
+            <DeleteDialog
+                open={deleteId !== null}
+                onOpenChange={(open) => !open && setDeleteId(null)}
+                onConfirm={confirmDelete}
+                title="Delete Event Template"
+                description="Are you sure you want to delete this event template? This action cannot be undone."
+            />
         </div>
     );
 }

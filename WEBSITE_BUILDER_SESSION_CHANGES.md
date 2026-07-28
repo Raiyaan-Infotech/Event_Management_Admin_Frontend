@@ -451,12 +451,14 @@ Executed raw SQL migrations directly on **Local MySQL** (`localhost:3306`) and *
   4. **Frontend Admin Page & Preview Modal** ([`/admin/website-builder/how-it-works/page.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/how-it-works/page.tsx)):
      - **Main Admin View** (1:1 with Screenshot 2): Numbered pink circle badges (`1`, `2`, `3`, `4`), Icon & Illustration change buttons, Title & Description inputs with character counters (`19/60`, `107/200`), Highlight Title & Subtext inputs (`15/30`, `16/30`), Active switch, duplicate, delete, and drag handle icons.
      - **Add Next Step Modal Dialog** (1:1 with Screenshot 1): Icon picker, Illustration thumbnail cards, Title, Description, Highlight Title, Highlight Subtext, Step Order, and Active switch toggle.
-     - **Public Output Preview Modal** (1:1 with Screenshot 3): "WORKING PROCESS - How Event Invit Works" layout with curved connector line, step illustration images, bold step text, and right-side highlight icon badges.
-  5. **Production Build & Live Vercel Verification**: Passed `npx tsc --noEmit` and `npm run build` with **0 Errors**. Verified all 4 live page routes on Vercel deployment (`https://event-management-admin-frontend.vercel.app/`):
-     - **Pricing Plans** (`/admin/website-builder/pricing-plans` & `/create`): ✅ Verified Live
-     - **Features Builder** (`/admin/website-builder/features` & `/create`): ✅ Verified Live
-     - **Event Templates** (`/admin/website-builder/templates` & `/create`): ✅ Verified Live
-     - **How It Works** (`/admin/website-builder/how-it-works`): ✅ Verified Live with Dynamic Theme, Edit Modal, Active Drag & Drop, and Single Image Uploader.
+  5. **Website Builder FAQs Module (`/faqs`, `/faqs/create`, `/faqs/edit/[id]`, `/faqs/categories`)**:
+     - **Dedicated MySQL Database Tables**: Created `company_website_faq_categories` and `company_website_faqs` tables (executed on local & production Aiven MySQL via `scratch/setup_website_builder_faqs_raw.js`) to keep Website Builder FAQs 100% isolated from core admin FAQs.
+     - **Backend Controllers & Routes**: Implemented `getWebsiteFaqCategories`, `createWebsiteFaqCategory`, `updateWebsiteFaqCategory`, `deleteWebsiteFaqCategory`, `getWebsiteFaqs`, `getWebsiteFaqById`, `createWebsiteFaq`, `updateWebsiteFaq`, and `deleteWebsiteFaq` in [`companyWebsiteBuilder.controller.js`](file:///D:/Jamal/Event_Management_Admin_Backend/src/controllers/companyWebsiteBuilder.controller.js) & [`companyWebsiteBuilder.routes.js`](file:///D:/Jamal/Event_Management_Admin_Backend/src/routes/companyWebsiteBuilder.routes.js).
+     - **Frontend React Query Hooks**: Created [`useWebsiteFaqs.ts`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/hooks/useWebsiteFaqs.ts) and [`useWebsiteFaqCategories.ts`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/hooks/useWebsiteFaqCategories.ts).
+     - **Separate Page Routes**:
+       1. **FAQs List Page** ([`/admin/website-builder/faqs/page.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/faqs/page.tsx)): 1:1 match with Screenshot 1 featuring search bar, category filter, status filter, category icon & color pills, status switches, order, and pagination.
+       2. **Add / Edit FAQ Page** ([`/admin/website-builder/faqs/create/page.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/faqs/create/page.tsx) & `/edit/[id]`): 1:1 match with Screenshot 2 featuring 2-column layout (`1. FAQ Details` & `2. Settings`), counted question input (`0/200`), tags input, rich answer editor (`0/2000`), status switch, display order, featured toggle, and save handler.
+       3. **FAQ Categories Page** ([`/admin/website-builder/faqs/categories/page.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/faqs/categories/page.tsx)): 1:1 match with Screenshot 3 featuring categories data table and modal dialog with name (`0/50`), icon picker, description (`0/150`), color picker preview (`#7C3AED`), display order, and status switch.
 
 ---
 
@@ -468,3 +470,4 @@ Executed raw SQL migrations directly on **Local MySQL** (`localhost:3306`) and *
 | **Features Builder** | `/admin/website-builder/features` | ✅ PASS | Split list view data table, search bar, status toggles, menu ordering, and `/create` form with 5 left-aligned header cards active. |
 | **Event Templates** | `/admin/website-builder/templates` | ✅ PASS | Category filter pills, grid view, favorite hearts, invitation previews, template management, and `/create` form view active. |
 | **How It Works** | `/admin/website-builder/how-it-works` | ✅ PASS | Numbered step cards `1`-`4`, Edit Pencil modal, Single Image Uploader, active Drag & Drop reordering, Public Output Preview modal, and dynamic green theme integration active. |
+| **Website FAQs** | `/admin/website-builder/faqs` | ✅ PASS | 3 separate page routes (`/faqs`, `/create`, `/categories`), dedicated MySQL tables, search/filter bar, category pills, rich text answer editor, icon/color picker modal, and sidebar wiring active. |

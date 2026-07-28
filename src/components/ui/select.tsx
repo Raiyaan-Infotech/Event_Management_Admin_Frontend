@@ -83,8 +83,12 @@ export function SelectTrigger({
     );
 }
 
-export function SelectValue({ placeholder }: { placeholder?: string }) {
+export function SelectValue({ placeholder, children }: { placeholder?: string; children?: React.ReactNode }) {
     const { value } = useSelect();
+
+    if (children !== undefined && children !== null) {
+        return <span className="line-clamp-1 font-medium">{children}</span>;
+    }
 
     return <span className="line-clamp-1 font-medium">{value || placeholder}</span>;
 }

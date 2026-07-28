@@ -342,9 +342,9 @@ export default function HowItWorksPage() {
                                         {/* Main Grid Content */}
                                         <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
                                             {/* Column 1: Icon Box */}
-                                            <div className="md:col-span-2 flex flex-col items-center justify-center text-center space-y-2 border-r border-border/50 pr-3">
-                                                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Icon</span>
-                                                <div className="h-14 w-14 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-xs">
+                                            <div className="md:col-span-2 flex flex-col items-center justify-center text-center space-y-2 border-r border-border/50 pr-3 min-w-0">
+                                                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Icon</span>
+                                                <div className="h-14 w-14 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-xs shrink-0">
                                                     <IconComp className="h-6 w-6" />
                                                 </div>
                                                 <Button
@@ -352,23 +352,23 @@ export default function HowItWorksPage() {
                                                     variant="outline"
                                                     size="sm"
                                                     onClick={() => handleOpenIconPicker(idx)}
-                                                    className="h-7 px-2.5 text-[11px] font-bold border-border bg-card hover:bg-accent text-foreground cursor-pointer"
+                                                    className="h-7 px-2.5 text-[11px] font-bold border-border bg-card hover:bg-accent text-foreground cursor-pointer whitespace-nowrap shrink-0"
                                                 >
                                                     Change
                                                 </Button>
                                             </div>
 
                                             {/* Column 2: Illustration Box (Single Image Upload) */}
-                                            <div className="md:col-span-2 flex flex-col items-center justify-center text-center space-y-2 border-r border-border/50 pr-3">
-                                                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Illustration</span>
-                                                <div className="h-14 w-24 rounded-xl border border-border overflow-hidden bg-muted/30 flex items-center justify-center">
+                                            <div className="md:col-span-2 flex flex-col items-center justify-center text-center space-y-2 border-r border-border/50 pr-3 min-w-0">
+                                                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Illustration</span>
+                                                <div className="h-14 w-24 rounded-xl border border-border overflow-hidden bg-muted/30 flex items-center justify-center shrink-0">
                                                     {item.illustration_url ? (
                                                         <img src={item.illustration_url} alt="Illustration" className="h-full w-full object-cover" />
                                                     ) : (
                                                         <ImageIcon className="h-5 w-5 text-muted-foreground" />
                                                     )}
                                                 </div>
-                                                <label className="h-7 px-2.5 text-[11px] font-bold border border-border bg-card hover:bg-accent text-foreground rounded-lg flex items-center justify-center cursor-pointer transition-all">
+                                                <label className="h-7 px-2.5 text-[11px] font-bold border border-border bg-card hover:bg-accent text-foreground rounded-lg flex items-center justify-center cursor-pointer transition-all whitespace-nowrap shrink-0 shadow-xs">
                                                     Change Image
                                                     <input
                                                         type="file"
