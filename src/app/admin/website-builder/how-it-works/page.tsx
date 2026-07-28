@@ -40,6 +40,7 @@ import {
     type HowItWorksStep,
 } from '@/hooks/useHowItWorks';
 import { BuilderCountedInput, BuilderCountedTextarea } from '../_components/builder-field';
+import { DeleteDialog } from '@/components/common/delete-dialog';
 
 const ICON_PRESETS = [
     { name: 'gift', Icon: Gift, label: 'Gift / Template' },
@@ -72,8 +73,7 @@ export default function HowItWorksPage() {
     const [addModalOpen, setAddModalOpen] = useState(false);
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [iconPickerOpen, setIconPickerOpen] = useState(false);
-
-    const [editingStepIdx, setEditingStepIdx] = useState<number | null>(null);
+const [pendingDelete, setPendingDelete] = useState<{ id?: string | number; idx?: number } | null>(null);    const [editingStepIdx, setEditingStepIdx] = useState<number | null>(null);
     const [draggedStepIdx, setDraggedStepIdx] = useState<number | null>(null);
 
     // Modal Form State (Single Image & Form inputs)
@@ -94,7 +94,6 @@ export default function HowItWorksPage() {
             setSteps(dbSteps);
         }
     }, [dbSteps]);
-
     const handleUpdateStepField = (idx: number, field: keyof HowItWorksStep, value: any) => {
         const target = steps[idx];
         setSteps((prev) =>
@@ -123,6 +122,18 @@ export default function HowItWorksPage() {
         return true;
     };
 
+    const confirmDelete = () => {
+        if (!pendingDelete) return;
+        const { id, idx } = pendingDelete;
+        if (id) {
+            deleteMutation.mutate(id, {
+                onSuccess: () => setPendingDelete(null),
+            });
+        } else if (idx !== undefined) {
+            setSteps((prev) => prev.filter((_, i) => i !== idx));
+            setPendingDelete(null);
+        }
+    };
     const handleSaveAll = () => {
         for (let i = 0; i < steps.length; i++) {
             const s = steps[i];
@@ -483,7 +494,7 @@ export default function HowItWorksPage() {
                                                     type="button"
                                                     variant="outline"
                                                     size="icon"
-                                                    onClick={() => handleDeleteStep(item.id, idx)}
+                                                    onClick={() => setPendingDelete({ id: item.id, idx })}
                                                     className="h-8 w-8 rounded-lg text-rose-500 border-rose-200 hover:bg-rose-50 cursor-pointer"
                                                     title="Delete Step"
                                                 >
@@ -960,6 +971,15 @@ export default function HowItWorksPage() {
                     </div>
                 </DialogContent>
             </Dialog>
+
+            <DeleteDialog
+    open={pendingDelete !== null}
+    onOpenChange={(open) => !open && setPendingDelete(null)}
+    onConfirm={confirmDelete}
+    isDeleting={deleteMutation.isPending}
+    title="Delete How It Works"
+    description="Are you sure you want to delete this How it Works? This action cannot be undone."
+/>
         </div>
     );
 }
