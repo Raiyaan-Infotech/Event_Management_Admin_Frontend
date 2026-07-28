@@ -103,6 +103,9 @@ function FeatureFormContent() {
                 if (found.icon?.startsWith('data:') || found.icon?.startsWith('http')) {
                     setCustomIconUrl(found.icon);
                 }
+                if (found.image_url) {
+                    setFeatureImageUrl(found.image_url);
+                }
                 setBullets(found.bullet_points_json || []);
                 setShowInMenu(found.show_in_menu !== false);
                 setMenuOrder(String(found.menu_order || 1));
@@ -165,7 +168,8 @@ function FeatureFormContent() {
             title,
             short_description: shortDesc,
             detailed_description: detailedDesc,
-            icon: selectedIcon,
+            icon: customIconUrl || selectedIcon,
+            image_url: featureImageUrl || undefined,
             bullet_points_json: bullets,
             show_in_menu: showInMenu,
             menu_order: parseInt(menuOrder, 10) || 1,

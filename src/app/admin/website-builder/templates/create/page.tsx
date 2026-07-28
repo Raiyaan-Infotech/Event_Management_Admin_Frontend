@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -35,6 +37,7 @@ import { cn } from '@/lib/utils';
 import {
     useTemplates,
     useTemplateCategories,
+    useTemplateById,
     useSaveTemplate,
     type Template,
 } from '@/hooks/useTemplates';
@@ -234,11 +237,14 @@ function CreateTemplatePage() {
                                     }}
                                 >
                                     <SelectTrigger className={cn('h-10 text-xs border-border bg-card', errors.category && 'border-red-500 ring-1 ring-red-500')}>
-                                        <SelectValue placeholder="Select Category" />
+                                        <SelectValue placeholder="Select Category">
+                                            {(categories || []).find((c) => String(c.id) === String(categoryId) || c.name === categoryId)?.name ||
+                                                (categoryId && isNaN(Number(categoryId)) ? categoryId : '')}
+                                        </SelectValue>
                                     </SelectTrigger>
                                     <SelectContent>
                                         {(categories || []).map((cat) => (
-                                            <SelectItem key={cat.id} value={String(cat.id)}>
+                                            <SelectItem key={cat.id || cat.name} value={String(cat.id || cat.name)}>
                                                 {cat.name}
                                             </SelectItem>
                                         ))}
@@ -382,8 +388,9 @@ function CreateTemplatePage() {
 
                             {/* Thumbnail Upload */}
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-black uppercase tracking-wide text-muted-foreground flex items-center gap-1">
-                                    Template Thumbnail <span className="text-rose-500">*</span>
+                                <label className="text-[10px] font-black uppercase tracking-wide text-muted-foreground flex items-center justify-between">
+                                    <span>Template Thumbnail <span className="text-rose-500">*</span></span>
+                                    {errors.thumbnail && <span className="text-rose-500 font-bold lowercase">Required</span>}
                                 </label>
                                 {thumbnailUrl ? (
                                     <div className="relative rounded-xl border border-border p-2 bg-card flex items-center justify-between">
@@ -401,9 +408,9 @@ function CreateTemplatePage() {
                                 ) : (
                                     <label className={cn(
                                         'border-2 border-dashed transition-colors rounded-xl p-6 text-center bg-muted/20 cursor-pointer relative flex flex-col items-center justify-center',
-                                        errors.thumbnail ? 'border-red-500 bg-red-50/20' : 'border-border hover:border-primary/60'
+                                        errors.thumbnail ? 'border-red-500 ring-1 ring-red-500 bg-red-50/20' : 'border-border hover:border-primary/60'
                                     )}>
-                                        <input type="file" accept="image/*" onChange={handleThumbnailUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                        <input type="file" accept="image/*" onClick={(e) => (e.currentTarget.value = '')} onChange={handleThumbnailUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
                                         <Upload className="h-7 w-7 text-muted-foreground mx-auto mb-2" />
                                         <p className="text-xs font-bold text-foreground">Click to upload thumbnail</p>
                                         <p className="text-[11px] text-muted-foreground mt-0.5">PNG, JPG or WEBP (Max. 2MB)</p>
@@ -414,8 +421,9 @@ function CreateTemplatePage() {
 
                             {/* Template File Upload */}
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-black uppercase tracking-wide text-muted-foreground flex items-center gap-1">
-                                    Template File <span className="text-rose-500">*</span>
+                                <label className="text-[10px] font-black uppercase tracking-wide text-muted-foreground flex items-center justify-between">
+                                    <span>Template File <span className="text-rose-500">*</span></span>
+                                    {errors.file && <span className="text-rose-500 font-bold lowercase">Required</span>}
                                 </label>
                                 {templateFileUrl ? (
                                     <div className="relative rounded-xl border border-border p-3 bg-card flex items-center justify-between">
@@ -430,13 +438,13 @@ function CreateTemplatePage() {
                                 ) : (
                                     <label className={cn(
                                         'border-2 border-dashed transition-colors rounded-xl p-6 text-center bg-muted/20 cursor-pointer relative flex flex-col items-center justify-center',
-                                        errors.file ? 'border-red-500 bg-red-50/20' : 'border-border hover:border-primary/60'
+                                        errors.file ? 'border-red-500 ring-1 ring-red-500 bg-red-50/20' : 'border-border hover:border-primary/60'
                                     )}>
-                                        <input type="file" accept="*/*" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                        <input type="file" accept="*/*" onClick={(e) => (e.currentTarget.value = '')} onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
                                         <Upload className="h-7 w-7 text-muted-foreground mx-auto mb-2" />
                                         <p className="text-xs font-bold text-foreground">Click to upload template file</p>
                                         <p className="text-[11px] text-muted-foreground mt-0.5">ZIP, HTML, PNG, JPG or WEBP (Max. 10MB)</p>
-                                        <p className="text-[10px] text-muted-foreground mt-1">Upload the full template image or design file</p>
+                                        <p className="text-[10px] text-muted-foreground mt-1">Upload full template file package</p>
                                     </label>
                                 )}
                             </div>
@@ -504,32 +512,33 @@ function CreateTemplatePage() {
                             </div>
                         </div>
 
-                        <CardContent className="p-6 flex flex-col items-center justify-center bg-slate-50/50">
+                        <CardContent className="p-6 flex flex-col items-center justify-center bg-slate-900/10 min-h-[380px]">
                             {/* Invitation Card Mockup */}
                             <div
                                 className={cn(
-                                    'w-full transition-all duration-300 rounded-2xl border-4 bg-white p-6 shadow-md text-center space-y-3 relative overflow-hidden',
-                                    viewDevice === 'mobile' ? 'max-w-[280px]' : 'max-w-md'
+                                    'w-full transition-all duration-300 rounded-2xl border-4 p-6 shadow-xl text-center space-y-3 relative overflow-hidden bg-gradient-to-br',
+                                    viewDevice === 'mobile' ? 'max-w-[280px]' : 'max-w-full',
+                                    DESIGN_STYLES.find(s => s.id === designStyle)?.bg || 'from-amber-100 to-amber-50 border-amber-200'
                                 )}
                                 style={{ borderColor: primaryColor }}
                             >
                                 {thumbnailUrl ? (
                                     <img src={thumbnailUrl} alt="Thumbnail Preview" className="h-36 w-full object-cover rounded-xl border border-border mb-2" />
                                 ) : (
-                                    <div className="h-28 w-full rounded-xl flex items-center justify-center text-white font-bold text-sm" style={{ backgroundColor: primaryColor }}>
+                                    <div className="h-28 w-full rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-xs" style={{ backgroundColor: primaryColor }}>
                                         {templateName || 'Template Preview'}
                                     </div>
                                 )}
 
-                                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
+                                <p className="text-[9px] font-black uppercase tracking-widest opacity-80">
                                     {templateType.toUpperCase()} INVITATION
                                 </p>
 
-                                <h2 className="text-xl font-serif font-extrabold text-slate-900 capitalize">
+                                <h2 className="text-xl font-serif font-extrabold tracking-tight capitalize">
                                     {templateName || 'Template Name'}
                                 </h2>
 
-                                <div className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full inline-block bg-primary/10 text-primary">
+                                <div className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full inline-block bg-white/20 backdrop-blur-xs border border-white/30">
                                     Style: {designStyle}
                                 </div>
                             </div>
@@ -538,7 +547,7 @@ function CreateTemplatePage() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => setFullScreenPreview(true)}
-                                className="mt-4 text-xs font-semibold text-primary border-primary/30 w-full cursor-pointer"
+                                className="mt-4 text-xs font-semibold text-primary border-primary/30 w-full cursor-pointer bg-card hover:bg-primary/10"
                             >
                                 Preview Full Screen <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
                             </Button>
@@ -578,13 +587,27 @@ function CreateTemplatePage() {
                     <DialogHeader>
                         <DialogTitle className="text-lg font-bold">Full Screen Template Preview</DialogTitle>
                     </DialogHeader>
-                    <div className="p-8 flex justify-center bg-slate-900 rounded-2xl">
-                        <div className="w-full max-w-sm rounded-2xl border-4 bg-white p-8 text-center space-y-4" style={{ borderColor: primaryColor }}>
+                    <div className="p-8 flex justify-center bg-slate-950 rounded-2xl">
+                        <div
+                            className={cn(
+                                'w-full max-w-md rounded-2xl border-4 p-8 text-center space-y-4 shadow-2xl bg-gradient-to-br',
+                                DESIGN_STYLES.find(s => s.id === designStyle)?.bg || 'from-amber-100 to-amber-50 border-amber-200'
+                            )}
+                            style={{ borderColor: primaryColor }}
+                        >
                             {thumbnailUrl ? (
-                                <img src={thumbnailUrl} alt="Full Preview" className="h-48 w-full object-cover rounded-xl" />
-                            ) : null}
-                            <h2 className="text-2xl font-bold text-slate-900">{templateName || 'Template Name'}</h2>
-                            <p className="text-xs text-slate-600">{description || 'Full screen template details preview.'}</p>
+                                <img src={thumbnailUrl} alt="Full Preview" className="h-56 w-full object-cover rounded-xl border" />
+                            ) : (
+                                <div className="h-36 w-full rounded-xl flex items-center justify-center text-white font-bold text-lg" style={{ backgroundColor: primaryColor }}>
+                                    {templateName || 'Template Preview'}
+                                </div>
+                            )}
+                            <p className="text-xs font-black uppercase tracking-widest opacity-80">{templateType} INVITATION</p>
+                            <h2 className="text-2xl font-extrabold capitalize">{templateName || 'Template Name'}</h2>
+                            <p className="text-xs opacity-90">{description || 'Full screen template details preview.'}</p>
+                            <div className="text-xs font-bold uppercase px-3 py-1 rounded-full inline-block bg-white/20 border border-white/30">
+                                Style: {designStyle}
+                            </div>
                         </div>
                     </div>
                 </DialogContent>

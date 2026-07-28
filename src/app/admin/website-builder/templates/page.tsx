@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
     Plus,
@@ -23,6 +23,7 @@ import {
     useTemplates,
     useTemplateCategories,
     useSaveTemplate,
+    useToggleTemplateStatus,
     useDeleteTemplate,
     type Template,
 } from '@/hooks/useTemplates';
@@ -42,9 +43,28 @@ export default function TemplatesPage() {
     });
     const { data: categories } = useTemplateCategories();
     const saveTemplateMutation = useSaveTemplate();
+    const toggleStatusMutation = useToggleTemplateStatus();
     const deleteTemplateMutation = useDeleteTemplate();
 
-    const templates = dbTemplates || [];
+    const [localTemplates, setLocalTemplates] = useState<Template[] | null>(null);
+
+    useEffect(() => {
+        if (dbTemplates) {
+            setLocalTemplates(dbTemplates);
+        }
+    }, [dbTemplates]);
+
+    const templates = localTemplates ?? dbTemplates ?? [];
+
+    const isTemplateActive = (val?: boolean | number | string) => val !== false && val !== 0 && val !== '0';
+
+    const handleToggleStatus = (id?: number, currentActive?: boolean) => {
+        if (id === undefined) return;
+        const nextActive = !currentActive;
+        const updated = templates.map((t) => (t.id === id ? { ...t, is_active: nextActive } : t));
+        setLocalTemplates(updated);
+        toggleStatusMutation.mutate({ id, is_active: nextActive });
+    };
 
     const confirmDelete = () => {
         if (!deleteId) return;
@@ -133,10 +153,14 @@ export default function TemplatesPage() {
                         </div>
 
                         {/* Category Select Filter */}
-                        <div className="w-36">
+                        <div className="w-40">
                             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                                 <SelectTrigger className="h-8 text-xs border-border bg-card text-foreground">
-                                    <SelectValue placeholder="All Categories" />
+                                    <SelectValue placeholder="All Categories">
+                                        {selectedCategory === 'all'
+                                            ? 'All Categories'
+                                            : (categories || []).find((c) => c.name === selectedCategory || String(c.id) === selectedCategory)?.name || selectedCategory}
+                                    </SelectValue>
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">All Categories</SelectItem>
@@ -150,10 +174,14 @@ export default function TemplatesPage() {
                         </div>
 
                         {/* Type Select Filter */}
-                        <div className="w-32">
+                        <div className="w-36">
                             <Select value={selectedType} onValueChange={setSelectedType}>
                                 <SelectTrigger className="h-8 text-xs border-border bg-card text-foreground">
-                                    <SelectValue placeholder="Type" />
+                                    <SelectValue placeholder="All Types">
+                                        {selectedType === 'all'
+                                            ? 'All Types'
+                                            : selectedType.charAt(0).toUpperCase() + selectedType.slice(1).replace('_', ' ')}
+                                    </SelectValue>
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">All Types</SelectItem>
@@ -301,12 +329,8 @@ export default function TemplatesPage() {
                                                 <td className="py-3 px-3 text-center">
                                                     <div className="flex items-center justify-center">
                                                         <Switch
-                                                            checked={template.is_active !== false}
-                                                            onCheckedChange={(val) => {
-                                                                if (template.id) {
-                                                                    saveTemplateMutation.mutate({ ...template, is_active: val });
-                                                                }
-                                                            }}
+                                                            checked={isTemplateActive(template.is_active)}
+                                                            onCheckedChange={() => handleToggleStatus(template.id, isTemplateActive(template.is_active))}
                                                         />
                                                     </div>
                                                 </td>
@@ -319,7 +343,7 @@ export default function TemplatesPage() {
                                                                 type="button"
                                                                 variant="outline"
                                                                 size="icon"
-                                                                className="h-8 w-8 rounded-lg p-0 border-border text-muted-foreground hover:border-primary hover:text-primary hover:bg-primary/5"
+                                                                className="h-8 w-8 rounded-lg p-0 border-border text-muted-foreground hover:border-primary hover:text-primary hover:bg-primary/5 cursor-pointer"
                                                             >
                                                                 <Pencil className="h-3.5 w-3.5" />
                                                             </Button>
@@ -401,6 +425,7 @@ export default function TemplatesPage() {
                 open={deleteId !== null}
                 onOpenChange={(open) => !open && setDeleteId(null)}
                 onConfirm={confirmDelete}
+                isDeleting={deleteTemplateMutation.isPending}
                 title="Delete Event Template"
                 description="Are you sure you want to delete this event template? This action cannot be undone."
             />

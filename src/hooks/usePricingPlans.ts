@@ -44,7 +44,7 @@ export function usePricingPlansData() {
         queryKey: ['website-builder-pricing-plans'],
         queryFn: async () => {
             const res = await apiClient.get('/website-builder/pricing/plans');
-            return res.data.data as PricingPlan[];
+            return (res.data?.data || []) as PricingPlan[];
         },
     });
 }
@@ -63,6 +63,24 @@ export function useSavePricingPlans() {
         },
         onError: (error: any) => {
             toast.error(error.response?.data?.message || error.message || 'Error saving pricing plans.');
+        },
+    });
+}
+
+export function useTogglePricingPlanStatus() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ id, is_active }: { id: number; is_active: boolean }) => {
+            const res = await apiClient.patch(`/website-builder/pricing/plans/${id}/status`, { is_active });
+            return res.data;
+        },
+        onSuccess: () => {
+            toast.success('Pricing plan status updated successfully!');
+            queryClient.invalidateQueries({ queryKey: ['website-builder-pricing-plans'] });
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || error.message || 'Error updating status.');
         },
     });
 }

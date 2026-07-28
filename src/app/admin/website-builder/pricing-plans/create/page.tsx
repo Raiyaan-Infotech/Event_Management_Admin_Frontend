@@ -158,17 +158,17 @@ function PricingPlanFormContent() {
     };
 
     // Helper for Badge Style Classes
-    const getBadgeStyleClass = () => {
-        switch (badgeStyle) {
+    const getBadgeStyleClass = (styleName?: string) => {
+        switch (styleName || badgeStyle) {
             case 'outline':
-                return 'bg-transparent text-primary border-2 border-primary';
+                return 'bg-background text-primary border-2 border-primary shadow-xs font-extrabold';
             case 'soft-filled':
-                return 'bg-primary/20 text-primary border-primary/30';
+                return 'bg-primary/20 text-primary border border-primary/40 font-extrabold';
             case 'soft-outline':
-                return 'bg-primary/10 text-primary border border-primary/40';
+                return 'bg-accent text-primary border border-primary/40 font-bold';
             case 'filled':
             default:
-                return 'bg-primary text-primary-foreground border-primary shadow-sm';
+                return 'bg-primary text-primary-foreground border-primary shadow-sm font-extrabold';
         }
     };
 
@@ -182,20 +182,20 @@ function PricingPlanFormContent() {
                             Pricing Plans
                         </Link>
                         <span>›</span>
-                        <span className="font-semibold text-foreground">{planId ? 'Edit Pricing Plan' : 'Add New Pricing Plan'}</span>
+                        <span className="font-semibold text-foreground">{planId ? 'Edit Plan' : 'Add New Plan'}</span>
                     </div>
                     <h1 className="text-xl font-extrabold tracking-tight text-foreground">
                         {planId ? 'Edit Pricing Plan' : 'Add New Pricing Plan'}
                     </h1>
                     <p className="text-xs text-muted-foreground">
-                        Configure pricing tier options, feature limits, and view real-time public website card preview.
+                        Configure pricing tier details, features checklist, and view live preview card.
                     </p>
                 </div>
 
                 <div className="flex items-center gap-2">
                     <Link href="/admin/website-builder/pricing-plans">
                         <Button variant="outline" size="sm" className="h-9 px-3 text-xs font-semibold border-border gap-1.5 cursor-pointer">
-                            <ArrowLeft className="h-3.5 w-3.5" /> Back to Pricing Plans
+                            <ArrowLeft className="h-3.5 w-3.5" /> Back to Plans List
                         </Button>
                     </Link>
                     <Button
@@ -205,14 +205,14 @@ function PricingPlanFormContent() {
                         className="h-9 px-4 text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs gap-1.5 cursor-pointer"
                     >
                         {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                        Save Pricing Plan
+                        {isSaving ? 'Saving...' : 'Save Pricing Plan'}
                     </Button>
                 </div>
             </div>
 
             {/* Form Layout: 2 Columns */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                {/* Left Column: 5 Section Cards (7 cols) */}
+                {/* Left Column: 4 Section Cards (7 cols) */}
                 <div className="lg:col-span-7 space-y-6">
                     {/* Section 1: Basic Plan Information */}
                     <Card className="border-border bg-card shadow-xs">
@@ -291,9 +291,11 @@ function PricingPlanFormContent() {
                             </div>
                         </CardHeader>
                         <CardContent className="p-4 space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 gap-4 items-start">
                                 <div className="space-y-1">
-                                    <Label className="text-xs font-bold text-foreground">Currency Symbol</Label>
+                                    <div className="flex items-center justify-between">
+                                        <Label className="text-xs font-bold text-foreground">Currency Symbol</Label>
+                                    </div>
                                     <Select value={currency} onValueChange={setCurrency}>
                                         <SelectTrigger className="h-9 text-xs border-border bg-card">
                                             <SelectValue placeholder="Select currency" />
@@ -308,7 +310,9 @@ function PricingPlanFormContent() {
                                 </div>
 
                                 <div className="space-y-1">
-                                    <Label className="text-xs font-bold text-foreground">Period Unit Label</Label>
+                                    <div className="flex items-center justify-between">
+                                        <Label className="text-xs font-bold text-foreground">Period Unit Label</Label>
+                                    </div>
                                     <Input
                                         placeholder="e.g. /month or /year"
                                         value={periodLabel}
@@ -333,7 +337,7 @@ function PricingPlanFormContent() {
                                         }}
                                         className={cn(
                                             'h-9 text-xs border-border bg-card text-foreground',
-                                            priceMonthlyError && 'border-red-500 focus-visible:ring-red-500'
+                                            priceMonthlyError && 'border-red-500 ring-1 ring-red-500'
                                         )}
                                     />
                                     {priceMonthlyError && (
@@ -367,18 +371,21 @@ function PricingPlanFormContent() {
                             </div>
                         </CardHeader>
                         <CardContent className="p-4 space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 gap-4 items-start">
                                 <BuilderCountedInput
                                     label="Badge Text (Optional)"
                                     placeholder="e.g. Most Popular, Best Value"
                                     value={badgeText}
                                     onChange={setBadgeText}
                                     maxLength={25}
+                                    labelClassName="text-xs font-bold text-foreground"
                                     inputClassName="!h-9 text-xs border-border bg-card text-foreground"
                                 />
 
                                 <div className="space-y-1">
-                                    <Label className="text-xs font-bold text-foreground">Badge Style</Label>
+                                    <div className="flex items-center justify-between">
+                                        <Label className="text-xs font-bold text-foreground">Badge Style</Label>
+                                    </div>
                                     <Select value={badgeStyle} onValueChange={(val: any) => setBadgeStyle(val)}>
                                         <SelectTrigger className="h-9 text-xs border-border bg-card">
                                             <SelectValue placeholder="Select style" />
@@ -451,7 +458,7 @@ function PricingPlanFormContent() {
 
                             <div className="flex gap-2">
                                 <Input
-                                    placeholder="Add feature capability (e.g. Unlimited Guests)"
+                                    placeholder="Add feature item (e.g. Unlimited Event Invites)"
                                     value={newFeatureText}
                                     onChange={(e) => setNewFeatureText(e.target.value)}
                                     className="h-9 text-xs flex-1 border-border bg-card text-foreground"
@@ -467,7 +474,7 @@ function PricingPlanFormContent() {
                                     variant="outline"
                                     size="sm"
                                     onClick={handleAddFeature}
-                                    className="h-9 text-xs font-semibold border-primary/30 text-primary hover:bg-primary/10 cursor-pointer"
+                                    className="h-9 text-xs font-semibold border-primary/30 text-primary hover:bg-primary/10"
                                 >
                                     <Plus className="h-3.5 w-3.5 mr-1" /> Add Feature
                                 </Button>
@@ -585,7 +592,7 @@ function PricingPlanFormContent() {
                                 >
                                     {badgeText ? (
                                         <div className="absolute -top-3 left-6">
-                                            <Badge className={cn('font-extrabold text-[10px] px-3 py-0.5 uppercase tracking-wider', getBadgeStyleClass())}>
+                                            <Badge className={cn('px-3 py-0.5 text-[10px] uppercase tracking-wider', getBadgeStyleClass())}>
                                                 {badgeText}
                                             </Badge>
                                         </div>
@@ -608,16 +615,16 @@ function PricingPlanFormContent() {
                                             <span className="text-3xl font-extrabold text-foreground tracking-tight">
                                                 {currency}
                                                 {previewBillingCycle === 'yearly'
-                                                    ? (priceYearly || '0')
+                                                    ? (priceYearly || priceMonthly || '0')
                                                     : (priceMonthly || '0')}
                                             </span>
                                             <span className="text-xs text-muted-foreground font-semibold">
                                                 {previewBillingCycle === 'yearly' ? '/year' : periodLabel}
                                             </span>
                                         </div>
-                                        {previewBillingCycle === 'yearly' && priceYearly ? (
-                                            <div className="text-[11px] font-semibold text-emerald-600 mt-1">
-                                                Billed annually ({currency}{priceYearly}/yr)
+                                        {priceYearly ? (
+                                            <div className="text-[11px] font-bold text-emerald-600 mt-1">
+                                                Yearly Option: {currency}{priceYearly} / year
                                             </div>
                                         ) : null}
                                     </div>

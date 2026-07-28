@@ -85,6 +85,23 @@ export function useDeleteTemplateCategory() {
     });
 }
 
+export function useToggleTemplateCategoryStatus() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ id, is_active }: { id: number; is_active: boolean }) => {
+            const res = await apiClient.patch(`/website-builder/templates/categories/${id}/status`, { is_active });
+            return res.data;
+        },
+        onSuccess: () => {
+            toast.success('Template category status updated successfully!');
+            queryClient.invalidateQueries({ queryKey: ['website-builder-template-categories'] });
+        },
+        onError: (err: any) => {
+            toast.error(err.response?.data?.message || err.message || 'Failed to update category status');
+        },
+    });
+}
+
 // ─── TEMPLATES HOOKS ──────────────────────────────────────────────────────────
 
 export function useTemplates(params?: { category_id?: number; template_type?: string; search?: string }) {
@@ -151,6 +168,23 @@ export function useDeleteTemplate() {
         },
         onError: (err: any) => {
             toast.error(err.response?.data?.message || err.message || 'Failed to delete template');
+        },
+    });
+}
+
+export function useToggleTemplateStatus() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ id, is_active }: { id: number; is_active: boolean }) => {
+            const res = await apiClient.patch(`/website-builder/templates/${id}/status`, { is_active });
+            return res.data;
+        },
+        onSuccess: () => {
+            toast.success('Template status updated successfully!');
+            queryClient.invalidateQueries({ queryKey: ['website-builder-templates'] });
+        },
+        onError: (err: any) => {
+            toast.error(err.response?.data?.message || err.message || 'Failed to update template status');
         },
     });
 }

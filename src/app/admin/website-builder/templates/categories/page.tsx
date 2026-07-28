@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Save,
     RotateCcw,
@@ -24,6 +24,7 @@ import { cn } from '@/lib/utils';
 import {
     useTemplateCategories,
     useSaveTemplateCategory,
+    useToggleTemplateCategoryStatus,
     useDeleteTemplateCategory,
     type TemplateCategory,
 } from '@/hooks/useTemplates';
@@ -35,10 +36,29 @@ export default function TemplateCategoriesPage() {
     const { data: dbCategories, isLoading } = useTemplateCategories();
     const { data: dbTemplates } = useTemplates();
     const saveCategoryMutation = useSaveTemplateCategory();
+    const toggleStatusMutation = useToggleTemplateCategoryStatus();
     const deleteCategoryMutation = useDeleteTemplateCategory();
 
-    const categories = dbCategories || [];
+    const [localCategories, setLocalCategories] = useState<TemplateCategory[] | null>(null);
+
+    useEffect(() => {
+        if (dbCategories) {
+            setLocalCategories(dbCategories);
+        }
+    }, [dbCategories]);
+
+    const categories = localCategories ?? dbCategories ?? [];
     const templates = dbTemplates || [];
+
+    const isCategoryActive = (val?: boolean | number | string) => val !== false && val !== 0 && val !== '0';
+
+    const handleToggleStatus = (id?: number, currentActive?: boolean) => {
+        if (id === undefined) return;
+        const nextActive = !currentActive;
+        const updated = categories.map((c) => (c.id === id ? { ...c, is_active: nextActive } : c));
+        setLocalCategories(updated);
+        toggleStatusMutation.mutate({ id, is_active: nextActive });
+    };
 
     const [editingId, setEditingId] = useState<number | null>(null);
     const [categoryName, setCategoryName] = useState('');
@@ -173,7 +193,7 @@ export default function TemplateCategoriesPage() {
                             value={categoryName}
                             onChange={handleCategoryNameChange}
                             maxLength={50}
-                            inputClassName={cn('!h-9 text-xs border-border bg-card text-foreground', errors.name && 'border-red-500 ring-1 ring-red-500')}
+                            inputClassName={cn('!h-9 text-xs border-border bg-card text-foreground', errors.name && 'border-red-500 ring-1 ring-red-500 bg-red-50/20')}
                         />
                         <BuilderCountedInput
                             label="Slug"
@@ -185,7 +205,7 @@ export default function TemplateCategoriesPage() {
                                 if (errors.slug) setErrors(prev => ({ ...prev, slug: false }));
                             }}
                             maxLength={50}
-                            inputClassName={cn('!h-9 text-xs font-mono border-border bg-card text-foreground', errors.slug && 'border-red-500 ring-1 ring-red-500')}
+                            inputClassName={cn('!h-9 text-xs font-mono border-border bg-card text-foreground', errors.slug && 'border-red-500 ring-1 ring-red-500 bg-red-50/20')}
                         />
                         <BuilderCountedTextarea
                             label="Description (Optional)"
@@ -219,26 +239,28 @@ export default function TemplateCategoriesPage() {
                             />
                         </div>
 
-                        {/* Buttons */}
-                        <div className="grid grid-cols-2 gap-2">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={handleCancel}
-                                className="h-9 w-full text-xs font-bold border-border text-foreground bg-card hover:bg-muted cursor-pointer"
-                            >
-                                Cancel
-                            </Button>
+                        {/* Single Form Save Action Button */}
+                        <div className="flex items-center gap-2">
+                            {editingId ? (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleCancel}
+                                    className="h-9 flex-1 text-xs font-bold border-border text-foreground bg-card hover:bg-muted cursor-pointer"
+                                >
+                                    Cancel
+                                </Button>
+                            ) : null}
                             <Button
                                 type="button"
                                 size="sm"
                                 onClick={handleSaveCategory}
                                 disabled={isSaving}
-                                className="h-9 w-full text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs gap-1 cursor-pointer"
+                                className="h-9 flex-1 text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs gap-1.5 cursor-pointer"
                             >
                                 {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-                                Save Category
+                                {isSaving ? 'Saving...' : editingId ? 'Update Category' : 'Save Category'}
                             </Button>
                         </div>
                     </div>
@@ -314,12 +336,8 @@ export default function TemplateCategoriesPage() {
                                                 <td className="py-3 px-3 text-center">
                                                     <div className="flex items-center justify-center">
                                                         <Switch
-                                                            checked={cat.is_active !== false}
-                                                            onCheckedChange={(val) => {
-                                                                if (cat.id) {
-                                                                    saveCategoryMutation.mutate({ id: cat.id, name: cat.name, slug: cat.slug, is_active: val });
-                                                                }
-                                                            }}
+                                                            checked={isCategoryActive(cat.is_active)}
+                                                            onCheckedChange={() => handleToggleStatus(cat.id, isCategoryActive(cat.is_active))}
                                                         />
                                                     </div>
                                                 </td>

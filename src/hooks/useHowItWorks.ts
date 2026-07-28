@@ -20,7 +20,7 @@ export function useHowItWorksData() {
         queryKey: ['website-builder-how-it-works'],
         queryFn: async () => {
             const res = await apiClient.get('/website-builder/how-it-works');
-            return res.data.data as HowItWorksStep[];
+            return (res.data?.data || res.data || []) as HowItWorksStep[];
         },
     });
 }

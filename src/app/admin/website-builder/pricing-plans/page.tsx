@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
     Plus,
@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils';
 import {
     usePricingPlansData,
     useSavePricingPlans,
+    useTogglePricingPlanStatus,
     type PricingPlan,
 } from '@/hooks/usePricingPlans';
 
@@ -33,23 +34,38 @@ import { DeleteDialog } from '@/components/common/delete-dialog';
 export default function PricingPlansPage() {
     const { data: dbPlans, isLoading: isPlansLoading } = usePricingPlansData();
     const savePlansMutation = useSavePricingPlans();
+    const toggleStatusMutation = useTogglePricingPlanStatus();
+
     const [searchQuery, setSearchQuery] = useState('');
     const [deleteId, setDeleteId] = useState<number | null>(null);
 
-    const plans = dbPlans || [];
+    const [localPlans, setLocalPlans] = useState<PricingPlan[] | null>(null);
+
+    useEffect(() => {
+        if (dbPlans) {
+            setLocalPlans(dbPlans);
+        }
+    }, [dbPlans]);
+
+    const plans = localPlans ?? dbPlans ?? [];
 
     const confirmDeletePlan = () => {
         if (deleteId === null) return;
         const updated = plans.filter((p) => p.id !== deleteId);
+        setLocalPlans(updated);
         savePlansMutation.mutate(updated, {
             onSuccess: () => setDeleteId(null),
         });
     };
 
-    const handleToggleStatus = (id?: number, currentStatus?: boolean) => {
+    const isPlanActive = (val?: boolean | number | string) => val !== false && val !== 0 && val !== '0';
+
+    const handleToggleStatus = (id?: number, currentActive?: boolean) => {
         if (id === undefined) return;
-        const updated = plans.map((p) => (p.id === id ? { ...p, is_active: !(currentStatus !== false) } : p));
-        savePlansMutation.mutate(updated);
+        const nextActive = !currentActive;
+        const updated = plans.map((p) => (p.id === id ? { ...p, is_active: nextActive } : p));
+        setLocalPlans(updated);
+        toggleStatusMutation.mutate({ id, is_active: nextActive });
     };
 
     const filteredPlans = plans.filter(
@@ -130,63 +146,79 @@ export default function PricingPlansPage() {
                                         </td>
                                     </tr>
                                 ) : filteredPlans.length > 0 ? (
-                                    filteredPlans.map((item, idx) => (
-                                        <tr key={item.id || idx} className="hover:bg-muted/30 transition-colors">
-                                            <td className="py-3.5 px-3.5 text-center text-muted-foreground font-mono">
-                                                <div className="flex items-center justify-center gap-1">
-                                                    <GripVertical className="h-3.5 w-3.5 text-muted-foreground/40" />
-                                                    <span>{idx + 1}</span>
-                                                </div>
-                                            </td>
-                                            <td className="py-3.5 px-3.5">
-                                                <div className="font-bold text-foreground">{item.plan_name}</div>
-                                                {item.subtitle ? (
-                                                    <div className="text-[11px] text-muted-foreground truncate max-w-xs">{item.subtitle}</div>
-                                                ) : null}
-                                            </td>
-                                            <td className="py-3.5 px-3.5 text-center">
-                                                <Badge variant="outline" className="text-[10px] font-bold capitalize">
-                                                    {item.target_type === 'companies' ? (
-                                                        <span className="flex items-center gap-1 text-blue-600">
-                                                            <Building2 className="h-3 w-3" /> Companies
+                                    filteredPlans.map((item, idx) => {
+                                        const active = isPlanActive(item.is_active);
+                                        return (
+                                            <tr key={item.id || idx} className="hover:bg-muted/30 transition-colors">
+                                                <td className="py-3.5 px-3.5 text-center text-muted-foreground font-mono">
+                                                    <div className="flex items-center justify-center gap-1">
+                                                        <GripVertical className="h-3.5 w-3.5 text-muted-foreground/40" />
+                                                        <span>{idx + 1}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="py-3.5 px-3.5">
+                                                    <div className="font-bold text-foreground">{item.plan_name}</div>
+                                                    {item.subtitle ? (
+                                                        <div className="text-[11px] text-muted-foreground truncate max-w-xs">{item.subtitle}</div>
+                                                    ) : null}
+                                                </td>
+                                                <td className="py-3.5 px-3.5 text-center">
+                                                    <Badge variant="outline" className="text-[10px] font-bold capitalize">
+                                                        {item.target_type === 'companies' ? (
+                                                            <span className="flex items-center gap-1 text-blue-600">
+                                                                <Building2 className="h-3 w-3" /> Companies
+                                                            </span>
+                                                        ) : (
+                                                            <span className="flex items-center gap-1 text-purple-600">
+                                                                <User className="h-3 w-3" /> Individuals
+                                                            </span>
+                                                        )}
+                                                    </Badge>
+                                                </td>
+                                                <td className="py-3.5 px-3.5 text-center font-bold text-foreground">
+                                                    <div>{item.currency || '₹'}{item.price_monthly} <span className="text-[10px] font-normal text-muted-foreground">{item.period_label || '/month'}</span></div>
+                                                    {item.price_yearly ? (
+                                                        <div className="text-[10px] font-extrabold text-emerald-600">
+                                                            Yearly: {item.currency || '₹'}{item.price_yearly}/yr
+                                                        </div>
+                                                    ) : null}
+                                                </td>
+                                                <td className="py-3.5 px-3.5 text-center">
+                                                    {item.badge_text ? (
+                                                        <Badge className={cn(
+                                                            'text-[10px] font-extrabold px-2.5 py-0.5',
+                                                            item.badge_style === 'outline'
+                                                                ? 'bg-transparent text-primary border-2 border-primary'
+                                                                : item.badge_style === 'soft-filled'
+                                                                ? 'bg-primary/20 text-primary border border-primary/30'
+                                                                : item.badge_style === 'soft-outline'
+                                                                ? 'bg-accent text-primary border border-primary/40'
+                                                                : 'bg-primary text-primary-foreground border-primary shadow-xs'
+                                                        )}>
+                                                            {item.badge_text}
+                                                        </Badge>
+                                                    ) : (
+                                                        <span className="text-muted-foreground">—</span>
+                                                    )}
+                                                </td>
+                                                <td className="py-3.5 px-3.5 text-center font-semibold text-foreground">
+                                                    {item.features_json ? item.features_json.length : 0} items
+                                                </td>
+                                                <td className="py-3.5 px-3.5 text-center">
+                                                    {item.is_popular ? (
+                                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+                                                            <Sparkles className="h-3 w-3" /> Popular
                                                         </span>
                                                     ) : (
-                                                        <span className="flex items-center gap-1 text-purple-600">
-                                                            <User className="h-3 w-3" /> Individuals
-                                                        </span>
+                                                        <span className="text-muted-foreground">—</span>
                                                     )}
-                                                </Badge>
-                                            </td>
-                                            <td className="py-3.5 px-3.5 text-center font-bold text-foreground">
-                                                {item.currency || '₹'}{item.price_monthly} <span className="text-[10px] font-normal text-muted-foreground">{item.period_label || '/month'}</span>
-                                            </td>
-                                            <td className="py-3.5 px-3.5 text-center">
-                                                {item.badge_text ? (
-                                                    <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px] font-bold">
-                                                        {item.badge_text}
-                                                    </Badge>
-                                                ) : (
-                                                    <span className="text-muted-foreground">—</span>
-                                                )}
-                                            </td>
-                                            <td className="py-3.5 px-3.5 text-center font-semibold text-foreground">
-                                                {item.features_json ? item.features_json.length : 0} items
-                                            </td>
-                                            <td className="py-3.5 px-3.5 text-center">
-                                                {item.is_popular ? (
-                                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
-                                                        <Sparkles className="h-3 w-3" /> Popular
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-muted-foreground">—</span>
-                                                )}
-                                            </td>
-                                            <td className="py-3.5 px-3.5 text-center">
-                                                <Switch
-                                                    checked={item.is_active !== false}
-                                                    onCheckedChange={() => handleToggleStatus(item.id, item.is_active)}
-                                                />
-                                            </td>
+                                                </td>
+                                                <td className="py-3.5 px-3.5 text-center">
+                                                    <Switch
+                                                        checked={active}
+                                                        onCheckedChange={() => handleToggleStatus(item.id, active)}
+                                                    />
+                                                </td>
                                             <td className="py-3.5 px-3.5 text-right">
                                                 <div className="flex items-center justify-end gap-1.5">
                                                     <Link href={`/admin/website-builder/pricing-plans/create?id=${item.id}`}>
@@ -211,7 +243,8 @@ export default function PricingPlansPage() {
                                                 </div>
                                             </td>
                                         </tr>
-                                    ))
+                                        );
+                                    })
                                 ) : (
                                     <tr>
                                         <td colSpan={9} className="py-12 text-center text-xs text-muted-foreground">

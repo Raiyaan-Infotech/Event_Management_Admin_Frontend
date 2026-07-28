@@ -10,6 +10,7 @@ export interface FeatureItem {
     icon: string;
     custom_icon_url?: string;
     feature_image_url?: string;
+    image_url?: string;
     bullet_points_json: string[];
     show_in_menu: boolean;
     menu_order: number;
