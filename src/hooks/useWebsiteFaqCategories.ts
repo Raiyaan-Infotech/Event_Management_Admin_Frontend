@@ -23,6 +23,8 @@ export function useWebsiteFaqCategories() {
             const res = await apiClient.get('/website-builder/faq-categories');
             return (res.data?.data || []) as WebsiteFaqCategory[];
         },
+        staleTime: 0,
+        refetchOnMount: 'always',
     });
 }
 
@@ -34,7 +36,10 @@ export function useCreateWebsiteFaqCategory() {
             return res.data?.data as WebsiteFaqCategory;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+            queryClient.invalidateQueries({ queryKey: QUERY_KEY, exact: false });
+            queryClient.refetchQueries({ queryKey: QUERY_KEY, type: 'active' });
+            queryClient.invalidateQueries({ queryKey: ['website-faqs'], exact: false });
+            queryClient.refetchQueries({ queryKey: ['website-faqs'], type: 'active' });
             toast.success('FAQ Category created successfully');
         },
         onError: (err: any) => {
@@ -51,7 +56,10 @@ export function useUpdateWebsiteFaqCategory() {
             return res.data?.data as WebsiteFaqCategory;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+            queryClient.invalidateQueries({ queryKey: QUERY_KEY, exact: false });
+            queryClient.refetchQueries({ queryKey: QUERY_KEY, type: 'active' });
+            queryClient.invalidateQueries({ queryKey: ['website-faqs'], exact: false });
+            queryClient.refetchQueries({ queryKey: ['website-faqs'], type: 'active' });
             toast.success('FAQ Category updated successfully');
         },
         onError: (err: any) => {
@@ -67,7 +75,10 @@ export function useDeleteWebsiteFaqCategory() {
             await apiClient.delete(`/website-builder/faq-categories/${id}`);
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+            queryClient.invalidateQueries({ queryKey: QUERY_KEY, exact: false });
+            queryClient.refetchQueries({ queryKey: QUERY_KEY, type: 'active' });
+            queryClient.invalidateQueries({ queryKey: ['website-faqs'], exact: false });
+            queryClient.refetchQueries({ queryKey: ['website-faqs'], type: 'active' });
             toast.success('FAQ Category deleted successfully');
         },
         onError: (err: any) => {

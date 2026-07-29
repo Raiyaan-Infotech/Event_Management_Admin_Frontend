@@ -38,6 +38,7 @@ import {
   Search,
   Star,
   DollarSign,
+  Video,
   Plus,
 } from "lucide-react";
 import {
@@ -225,6 +226,18 @@ const menuItems: MenuItem[] = [
         children: [
           { labelKey: "All FAQs", href: "/admin/website-builder/faqs", icon: HelpCircle },
           { labelKey: "FAQ Categories", href: "/admin/website-builder/faqs/categories", icon: Folder },
+        ],
+      },
+      {
+        labelKey: "Video Tutorials",
+        icon: Video,
+        uiBlockKey: "video-tutorials",
+        children: [
+          { labelKey: "All Video Tutorials", href: "/admin/website-builder/video-tutorials", icon: Video },
+          { labelKey: "Categories", href: "/admin/website-builder/video-tutorials/categories", icon: Folder },
+          { labelKey: "Sub Categories", href: "/admin/website-builder/video-tutorials/subcategories", icon: Folder },
+          { labelKey: "Difficulty Levels", href: "/admin/website-builder/video-tutorials/difficulty-levels", icon: BarChart2 },
+          { labelKey: "Tutorial Types", href: "/admin/website-builder/video-tutorials/types", icon: Sliders },
         ],
       },
       {

@@ -59,7 +59,7 @@ export function FaqsListContent() {
     const [selectedStatus, setSelectedStatus] = useState('all');
 
     const [page, setPage] = useState(1);
-    const limit = 10;
+    const [limit, setLimit] = useState(10);
 
     const { data: categories = [] } = useWebsiteFaqCategories();
     const { data: rawFaqs = [], isLoading } = useWebsiteFaqs({
@@ -373,17 +373,38 @@ export function FaqsListContent() {
                     {/* Pagination Footer */}
                     {!isLoading && filteredFaqs.length > 0 && (
                         <div className="p-4 border-t border-border/80">
-                            <TablePagination
-                                pagination={{
-                                    page,
-                                    totalPages,
-                                    totalItems: filteredFaqs.length,
-                                    limit,
-                                    hasNextPage: page < totalPages,
-                                    hasPrevPage: page > 1,
-                                }}
-                                onPageChange={setPage}
-                            />
+                            {filteredFaqs.length > limit ? (
+                                <TablePagination
+                                    pagination={{
+                                        page,
+                                        totalPages,
+                                        totalItems: filteredFaqs.length,
+                                        limit,
+                                        hasNextPage: page < totalPages,
+                                        hasPrevPage: page > 1,
+                                    }}
+                                    onPageChange={setPage}
+                                    onLimitChange={(newLimit) => {
+                                        setLimit(newLimit);
+                                        setPage(1);
+                                    }}
+                                />
+                            ) : (
+                                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
+                                    <span>Showing 1 to {filteredFaqs.length} of {filteredFaqs.length} FAQs</span>
+                                    <div className="flex items-center gap-1.5">
+                                        <Button variant="outline" size="sm" className="h-8 px-3 text-xs border-border bg-card text-foreground cursor-pointer" disabled>
+                                            Previous
+                                        </Button>
+                                        <Button variant="outline" size="sm" className="h-8 w-8 text-xs bg-primary text-primary-foreground border-primary font-bold shadow-xs">
+                                            1
+                                        </Button>
+                                        <Button variant="outline" size="sm" className="h-8 px-3 text-xs border-border bg-card text-foreground cursor-pointer" disabled>
+                                            Next
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </CardContent>

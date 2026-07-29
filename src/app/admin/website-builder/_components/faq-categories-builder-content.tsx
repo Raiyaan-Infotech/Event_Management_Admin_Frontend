@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
     Plus,
     Pencil,
@@ -32,6 +32,7 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { DeleteDialog } from '@/components/common/delete-dialog';
+import { TablePagination } from '@/components/common/table-pagination';
 import { BuilderCountedInput, BuilderCountedTextarea } from './builder-field';
 import {
     Select,
@@ -81,6 +82,16 @@ export function FaqCategoriesBuilderContent() {
     const createMutation = useCreateWebsiteFaqCategory();
     const updateMutation = useUpdateWebsiteFaqCategory();
     const deleteMutation = useDeleteWebsiteFaqCategory();
+
+    const [page, setPage] = useState(1);
+    const [limit, setLimit] = useState(10);
+
+    const paginatedCategories = useMemo(() => {
+        const start = (page - 1) * limit;
+        return categories.slice(start, start + limit);
+    }, [categories, page, limit]);
+
+    const totalPages = Math.ceil(categories.length / limit) || 1;
 
     const [modalOpen, setModalOpen] = useState(false);
     const [editCategory, setEditCategory] = useState<WebsiteFaqCategory | null>(null);
@@ -201,14 +212,15 @@ export function FaqCategoriesBuilderContent() {
                                             Loading categories...
                                         </td>
                                     </tr>
-                                ) : categories.length === 0 ? (
+                                ) : paginatedCategories.length === 0 ? (
                                     <tr>
                                         <td colSpan={7} className="py-12 text-center text-muted-foreground">
                                             No categories found. Click <strong>+ Add Category</strong> to create one.
                                         </td>
                                     </tr>
                                 ) : (
-                                    categories.map((cat, idx) => {
+                                    paginatedCategories.map((cat, idx) => {
+                                        const globalIndex = (page - 1) * limit + idx + 1;
                                         const catIconName = cat.icon || 'HelpCircle';
                                         const IconComp = ICON_MAP[catIconName] || HelpCircle;
                                         const catColor = cat.color || '#7C3AED';
@@ -217,7 +229,7 @@ export function FaqCategoriesBuilderContent() {
                                         return (
                                             <tr key={cat.id} className="hover:bg-muted/20 transition-colors">
                                                 <td className="py-3.5 px-4 font-semibold text-muted-foreground text-center">
-                                                    {idx + 1}
+                                                    {globalIndex}
                                                 </td>
                                                 <td className="py-3.5 px-4 text-center">
                                                     <div
@@ -280,6 +292,44 @@ export function FaqCategoriesBuilderContent() {
                             </tbody>
                         </table>
                     </div>
+
+                    {/* Pagination Footer */}
+                    {!isLoading && categories.length > 0 && (
+                        <div className="p-4 border-t border-border/80">
+                            {categories.length > limit ? (
+                                <TablePagination
+                                    pagination={{
+                                        page,
+                                        totalPages,
+                                        totalItems: categories.length,
+                                        limit,
+                                        hasNextPage: page < totalPages,
+                                        hasPrevPage: page > 1,
+                                    }}
+                                    onPageChange={setPage}
+                                    onLimitChange={(newLimit) => {
+                                        setLimit(newLimit);
+                                        setPage(1);
+                                    }}
+                                />
+                            ) : (
+                                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
+                                    <span>Showing 1 to {categories.length} of {categories.length} categories</span>
+                                    <div className="flex items-center gap-1.5">
+                                        <Button variant="outline" size="sm" className="h-8 px-3 text-xs border-border bg-card text-foreground cursor-pointer" disabled>
+                                            Previous
+                                        </Button>
+                                        <Button variant="outline" size="sm" className="h-8 w-8 text-xs bg-primary text-primary-foreground border-primary font-bold shadow-xs">
+                                            1
+                                        </Button>
+                                        <Button variant="outline" size="sm" className="h-8 px-3 text-xs border-border bg-card text-foreground cursor-pointer" disabled>
+                                            Next
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 

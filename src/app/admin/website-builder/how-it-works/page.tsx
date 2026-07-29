@@ -30,8 +30,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 import {
     useHowItWorksData,
+    useHowItWorksStepDetail,
     useCreateHowItWorksStep,
     useUpdateHowItWorksStep,
     useDeleteHowItWorksStep,
@@ -69,11 +71,14 @@ export default function HowItWorksPage() {
     const toggleStatusMutation = useToggleHowItWorksStatus();
 
     const [steps, setSteps] = useState<HowItWorksStep[]>([]);
+    const [selectedStepId, setSelectedStepId] = useState<string | number | null>(null);
+    const { data: stepDetailData, isLoading: isDetailLoading } = useHowItWorksStepDetail(selectedStepId);
     const [previewOpen, setPreviewOpen] = useState(false);
     const [addModalOpen, setAddModalOpen] = useState(false);
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [iconPickerOpen, setIconPickerOpen] = useState(false);
-const [pendingDelete, setPendingDelete] = useState<{ id?: string | number; idx?: number } | null>(null);    const [editingStepIdx, setEditingStepIdx] = useState<number | null>(null);
+    const [pendingDelete, setPendingDelete] = useState<{ id?: string | number; idx?: number } | null>(null);
+    const [editingStepIdx, setEditingStepIdx] = useState<number | null>(null);
     const [draggedStepIdx, setDraggedStepIdx] = useState<number | null>(null);
 
     // Modal Form State (Single Image & Form inputs)
@@ -86,7 +91,12 @@ const [pendingDelete, setPendingDelete] = useState<{ id?: string | number; idx?:
     const [modalStepOrder, setModalStepOrder] = useState('1');
     const [modalIsActive, setModalIsActive] = useState(true);
 
-    const isSaving = saveAllMutation.isPending || createMutation.isPending || updateMutation.isPending;
+    const isSaving =
+        saveAllMutation.isPending ||
+        createMutation.isPending ||
+        updateMutation.isPending ||
+        deleteMutation.isPending ||
+        toggleStatusMutation.isPending;
 
     // Load database steps into state
     useEffect(() => {
@@ -94,6 +104,20 @@ const [pendingDelete, setPendingDelete] = useState<{ id?: string | number; idx?:
             setSteps(dbSteps);
         }
     }, [dbSteps]);
+
+    // Populate modal when step detail is fetched by ID
+    useEffect(() => {
+        if (stepDetailData && editModalOpen) {
+            if (stepDetailData.title !== undefined) setModalTitle(stepDetailData.title);
+            if (stepDetailData.description !== undefined) setModalDesc(stepDetailData.description);
+            if (stepDetailData.highlight_title !== undefined) setModalHighlightTitle(stepDetailData.highlight_title || '');
+            if (stepDetailData.highlight_subtext !== undefined) setModalHighlightSubtext(stepDetailData.highlight_subtext || '');
+            if (stepDetailData.icon !== undefined) setModalIcon(stepDetailData.icon || 'gift');
+            if (stepDetailData.illustration_url !== undefined) setModalIllustration(stepDetailData.illustration_url || PRESET_ILLUSTRATION);
+            if (stepDetailData.step_number !== undefined) setModalStepOrder(String(stepDetailData.step_number));
+            if (stepDetailData.is_active !== undefined) setModalIsActive(stepDetailData.is_active !== false);
+        }
+    }, [stepDetailData, editModalOpen]);
     const handleUpdateStepField = (idx: number, field: keyof HowItWorksStep, value: any) => {
         const target = steps[idx];
         setSteps((prev) =>
@@ -187,6 +211,7 @@ const [pendingDelete, setPendingDelete] = useState<{ id?: string | number; idx?:
     // Open Add Modal
     const handleOpenAddModal = () => {
         setEditingStepIdx(null);
+        setSelectedStepId(null);
         setModalIcon('gift');
         setModalIllustration(PRESET_ILLUSTRATION);
         setModalTitle('');
@@ -204,6 +229,7 @@ const [pendingDelete, setPendingDelete] = useState<{ id?: string | number; idx?:
         const target = steps[idx];
         if (!target) return;
         setEditingStepIdx(idx);
+        setSelectedStepId(target.id ?? null);
         setModalIcon(target.icon || 'gift');
         setModalIllustration(target.illustration_url || PRESET_ILLUSTRATION);
         setModalTitle(target.title || '');
@@ -258,18 +284,22 @@ const [pendingDelete, setPendingDelete] = useState<{ id?: string | number; idx?:
             sort_order: parseInt(modalStepOrder, 10) || editingStepIdx + 1,
         };
 
-        if (target.id) {
+        const targetId = target?.id || selectedStepId;
+
+        if (targetId) {
             updateMutation.mutate(
-                { id: target.id, payload: updatedStep },
+                { id: targetId, payload: updatedStep },
                 {
                     onSuccess: () => {
                         setEditModalOpen(false);
+                        setSelectedStepId(null);
                     },
                 }
             );
         } else {
             setSteps((prev) => prev.map((s, i) => (i === editingStepIdx ? updatedStep : s)));
             setEditModalOpen(false);
+            setSelectedStepId(null);
             toast.success('Step updated successfully!');
         }
     };
@@ -308,7 +338,20 @@ const [pendingDelete, setPendingDelete] = useState<{ id?: string | number; idx?:
     };
 
     return (
-        <div className="space-y-6 max-w-7xl mx-auto pb-16 text-foreground">
+        <div className="space-y-6 max-w-7xl mx-auto pb-16 text-foreground relative">
+            {/* Full Page Loading Overlay */}
+            {isSaving && (
+                <div className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-xs flex flex-col items-center justify-center gap-3 animate-in fade-in duration-200">
+                    <div className="h-14 w-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-lg">
+                        <Loader2 className="h-7 w-7 animate-spin text-primary" />
+                    </div>
+                    <div className="text-center space-y-1">
+                        <p className="text-sm font-extrabold text-foreground">Saving How It Works...</p>
+                        <p className="text-xs text-muted-foreground">Please wait while your changes are saved to the server.</p>
+                    </div>
+                </div>
+            )}
+
             {/* Top Header */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-4">
                 <div>
@@ -366,117 +409,79 @@ const [pendingDelete, setPendingDelete] = useState<{ id?: string | number; idx?:
                                 onDragOver={handleDragOver}
                                 onDrop={(e) => handleDrop(e, idx)}
                                 className={cn(
-                                    'relative border-border bg-card shadow-xs overflow-hidden transition-all duration-200 cursor-move',
+                                    'relative border-border bg-card shadow-xs overflow-hidden transition-all duration-200 cursor-move hover:border-primary/40',
                                     draggedStepIdx === idx && 'opacity-40 border-dashed border-primary bg-primary/10'
                                 )}
                             >
                                 <CardContent className="p-4 sm:p-5">
-                                    <div className="flex items-start gap-4">
-                                        {/* Dynamic Theme Step Circle Badge */}
-                                        <div className="h-7 w-7 rounded-full bg-primary text-primary-foreground font-extrabold flex items-center justify-center text-xs shrink-0 mt-2 shadow-xs">
+                                    <div className="flex items-center gap-4">
+                                        {/* Step Circle */}
+                                        <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground font-black flex items-center justify-center text-xs shrink-0 shadow-xs">
                                             {idx + 1}
                                         </div>
 
-                                        {/* Main Grid Content */}
-                                        <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
+                                        {/* Main Grid Content (Read-Only) */}
+                                        <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
                                             {/* Column 1: Icon Box */}
-                                            <div className="md:col-span-2 flex flex-col items-center justify-center text-center space-y-2 border-r border-border/50 pr-3 min-w-0">
+                                            <div className="md:col-span-2 flex flex-col items-center justify-center text-center space-y-1 border-r border-border/50 pr-3 min-w-0">
                                                 <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Icon</span>
-                                                <div className="h-14 w-14 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-xs shrink-0">
-                                                    <IconComp className="h-6 w-6" />
+                                                <div className="h-12 w-12 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-xs shrink-0">
+                                                    <IconComp className="h-5 w-5" />
                                                 </div>
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => handleOpenIconPicker(idx)}
-                                                    className="h-7 px-2.5 text-[11px] font-bold border-border bg-card hover:bg-accent text-foreground cursor-pointer whitespace-nowrap shrink-0"
-                                                >
-                                                    Change
-                                                </Button>
+                                                <span className="text-[10px] font-semibold text-muted-foreground capitalize truncate max-w-full">
+                                                    {item.icon || 'gift'}
+                                                </span>
                                             </div>
 
-                                            {/* Column 2: Illustration Box (Single Image Upload) */}
-                                            <div className="md:col-span-2 flex flex-col items-center justify-center text-center space-y-2 border-r border-border/50 pr-3 min-w-0">
+                                            {/* Column 2: Illustration Image */}
+                                            <div className="md:col-span-2 flex flex-col items-center justify-center text-center space-y-1 border-r border-border/50 pr-3 min-w-0">
                                                 <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Illustration</span>
-                                                <div className="h-14 w-24 rounded-xl border border-border overflow-hidden bg-muted/30 flex items-center justify-center shrink-0">
+                                                <div className="h-14 w-24 rounded-xl border border-border overflow-hidden bg-muted/30 flex items-center justify-center shrink-0 shadow-xs">
                                                     {item.illustration_url ? (
                                                         <img src={item.illustration_url} alt="Illustration" className="h-full w-full object-cover" />
                                                     ) : (
                                                         <ImageIcon className="h-5 w-5 text-muted-foreground" />
                                                     )}
                                                 </div>
-                                                <label className="h-7 px-2.5 text-[11px] font-bold border border-border bg-card hover:bg-accent text-foreground rounded-lg flex items-center justify-center cursor-pointer transition-all whitespace-nowrap shrink-0 shadow-xs">
-                                                    Change Image
-                                                    <input
-                                                        type="file"
-                                                        accept="image/*"
-                                                        className="hidden"
-                                                        onChange={(e) => handleSingleFileUpload(e, idx)}
-                                                    />
-                                                </label>
                                             </div>
 
-                                            {/* Column 3: Title & Description Inputs */}
-                                            <div className="md:col-span-5 space-y-3">
-                                                <BuilderCountedInput
-                                                    label="Title"
-                                                    required
-                                                    placeholder="Enter step title"
-                                                    value={item.title}
-                                                    onChange={(val) => handleUpdateStepField(idx, 'title', val)}
-                                                    maxLength={60}
-                                                    inputClassName="!h-9 text-xs border-border bg-card text-foreground"
-                                                />
-                                                <BuilderCountedTextarea
-                                                    label="Description"
-                                                    required
-                                                    placeholder="Describe this step in detail..."
-                                                    value={item.description}
-                                                    onChange={(val) => handleUpdateStepField(idx, 'description', val)}
-                                                    maxLength={200}
-                                                    textareaClassName="min-h-[65px] text-xs border-border bg-card text-foreground"
-                                                />
+                                            {/* Column 3: Title & Description (Read-Only Text) */}
+                                            <div className="md:col-span-5 space-y-1 min-w-0 pr-2">
+                                                <h3 className="text-sm font-extrabold text-foreground truncate">
+                                                    {item.title || <span className="italic text-muted-foreground">Untitled Step</span>}
+                                                </h3>
+                                                <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
+                                                    {item.description || <span className="italic">No description provided.</span>}
+                                                </p>
                                             </div>
 
-                                            {/* Column 4: Highlight Title & Subtext */}
-                                            <div className="md:col-span-3 space-y-3">
-                                                <BuilderCountedInput
-                                                    label="Highlight Title"
-                                                    required
-                                                    placeholder="Enter highlight title"
-                                                    value={item.highlight_title || ''}
-                                                    onChange={(val) => handleUpdateStepField(idx, 'highlight_title', val)}
-                                                    maxLength={30}
-                                                    inputClassName={cn(
-                                                        '!h-9 text-xs border-border bg-card text-foreground',
-                                                        !item.highlight_title?.trim() && 'border-red-500 ring-1 ring-red-500 bg-red-50/20'
-                                                    )}
-                                                />
-                                                <BuilderCountedInput
-                                                    label="Highlight Subtext"
-                                                    required
-                                                    placeholder="Enter highlight subtext"
-                                                    value={item.highlight_subtext || ''}
-                                                    onChange={(val) => handleUpdateStepField(idx, 'highlight_subtext', val)}
-                                                    maxLength={30}
-                                                    inputClassName={cn(
-                                                        '!h-9 text-xs border-border bg-card text-foreground',
-                                                        !item.highlight_subtext?.trim() && 'border-red-500 ring-1 ring-red-500 bg-red-50/20'
-                                                    )}
-                                                />
+                                            {/* Column 4: Highlight Title & Subtext (Read-Only Box) */}
+                                            <div className="md:col-span-3 space-y-1">
+                                                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Highlights</span>
+                                                <div className="p-2 rounded-xl border border-border bg-muted/20 space-y-0.5">
+                                                    <div className="text-xs font-bold text-foreground truncate">
+                                                        {item.highlight_title || <span className="text-muted-foreground text-[11px] italic">No highlight title</span>}
+                                                    </div>
+                                                    <div className="text-[11px] text-muted-foreground truncate">
+                                                        {item.highlight_subtext || <span className="italic text-[10px]">No highlight subtext</span>}
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
 
                                         {/* Right Action Icons Column */}
-                                        <div className="flex flex-col items-end justify-between gap-4 border-l border-border/50 pl-3">
+                                        <div className="flex flex-col items-end justify-between gap-3 border-l border-border/50 pl-3 shrink-0">
                                             <div className="flex items-center gap-2">
+                                                <Badge variant={item.is_active !== false ? "default" : "secondary"} className="text-[10px] px-2 py-0.5">
+                                                    {item.is_active !== false ? 'Active' : 'Inactive'}
+                                                </Badge>
                                                 <Switch
                                                     checked={item.is_active !== false}
                                                     onCheckedChange={(val) => handleUpdateStepField(idx, 'is_active', val)}
                                                 />
-                                                <span className="text-xs font-bold text-foreground">Active</span>
-                                                <GripVertical className="h-4 w-4 text-muted-foreground/60 cursor-grab ml-1" />
+                                                <span title="Drag to reorder">
+                                                    <GripVertical className="h-4 w-4 text-muted-foreground/60 cursor-grab ml-1" />
+                                                </span>
                                             </div>
 
                                             <div className="flex items-center gap-1.5">
@@ -485,7 +490,7 @@ const [pendingDelete, setPendingDelete] = useState<{ id?: string | number; idx?:
                                                     variant="outline"
                                                     size="icon"
                                                     onClick={() => handleOpenEditModal(idx)}
-                                                    className="h-8 w-8 rounded-lg border-border text-muted-foreground hover:text-primary hover:bg-primary/10 cursor-pointer"
+                                                    className="h-8 w-8 rounded-lg border-border text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/10 cursor-pointer transition-all"
                                                     title="Edit Step Details"
                                                 >
                                                     <Pencil className="h-3.5 w-3.5" />
@@ -495,7 +500,7 @@ const [pendingDelete, setPendingDelete] = useState<{ id?: string | number; idx?:
                                                     variant="outline"
                                                     size="icon"
                                                     onClick={() => setPendingDelete({ id: item.id, idx })}
-                                                    className="h-8 w-8 rounded-lg text-rose-500 border-rose-200 hover:bg-rose-50 cursor-pointer"
+                                                    className="h-8 w-8 rounded-lg text-rose-500 border-rose-200 hover:bg-rose-50 hover:border-rose-300 cursor-pointer transition-all"
                                                     title="Delete Step"
                                                 >
                                                     <Trash2 className="h-3.5 w-3.5" />
@@ -697,9 +702,16 @@ const [pendingDelete, setPendingDelete] = useState<{ id?: string | number; idx?:
                         <Button
                             onClick={handleAddStepSubmit}
                             disabled={createMutation.isPending}
-                            className="h-9 px-5 text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer shadow-xs"
+                            className="h-9 px-5 text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer shadow-xs gap-2"
                         >
-                            {createMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Add Step'}
+                            {createMutation.isPending ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    <span>Adding...</span>
+                                </>
+                            ) : (
+                                'Add Step'
+                            )}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -709,7 +721,10 @@ const [pendingDelete, setPendingDelete] = useState<{ id?: string | number; idx?:
             <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
                 <DialogContent className="max-w-2xl bg-card border-border text-foreground p-6 rounded-2xl shadow-xl">
                     <DialogHeader>
-                        <DialogTitle className="text-xl font-extrabold text-foreground">Edit Step</DialogTitle>
+                        <DialogTitle className="text-xl font-extrabold text-foreground flex items-center gap-2">
+                            Edit Step {selectedStepId ? `#${selectedStepId}` : ''}
+                            {isDetailLoading && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
+                        </DialogTitle>
                         <DialogDescription className="text-xs text-muted-foreground">
                             Update details and options for this step.
                         </DialogDescription>
@@ -870,9 +885,16 @@ const [pendingDelete, setPendingDelete] = useState<{ id?: string | number; idx?:
                         <Button
                             onClick={handleEditStepSubmit}
                             disabled={updateMutation.isPending}
-                            className="h-9 px-5 text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer shadow-xs"
+                            className="h-9 px-5 text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer shadow-xs gap-2"
                         >
-                            {updateMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Save Changes'}
+                            {updateMutation.isPending ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    <span>Saving...</span>
+                                </>
+                            ) : (
+                                'Save Changes'
+                            )}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

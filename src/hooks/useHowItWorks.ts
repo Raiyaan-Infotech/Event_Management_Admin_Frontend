@@ -25,6 +25,19 @@ export function useHowItWorksData() {
     });
 }
 
+export function useHowItWorksStepDetail(id: string | number | null | undefined) {
+    return useQuery({
+        queryKey: ['website-builder-how-it-works', id],
+        queryFn: async () => {
+            if (!id) return null;
+            const res = await apiClient.get(`/website-builder/how-it-works/${id}`);
+            return (res.data?.data || res.data) as HowItWorksStep;
+        },
+        enabled: !!id,
+    });
+}
+
+
 export function useCreateHowItWorksStep() {
     const queryClient = useQueryClient();
 

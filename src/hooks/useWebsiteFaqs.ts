@@ -56,6 +56,8 @@ export function useWebsiteFaqs(params?: { search?: string; category_id?: string;
             const res = await apiClient.get('/website-builder/faqs', { params });
             return (res.data?.data || []) as WebsiteFaq[];
         },
+        staleTime: 0,
+        refetchOnMount: 'always',
     });
 }
 
@@ -68,6 +70,8 @@ export function useWebsiteFaq(id?: number) {
             return (res.data?.data || null) as WebsiteFaq | null;
         },
         enabled: !!id,
+        staleTime: 0,
+        refetchOnMount: 'always',
     });
 }
 
@@ -79,7 +83,8 @@ export function useCreateWebsiteFaq() {
             return res.data?.data as WebsiteFaq;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+            queryClient.invalidateQueries({ queryKey: QUERY_KEY, exact: false });
+            queryClient.refetchQueries({ queryKey: QUERY_KEY, type: 'active' });
             toast.success('FAQ created successfully');
         },
         onError: (err: any) => {
@@ -96,7 +101,8 @@ export function useUpdateWebsiteFaq() {
             return res.data?.data as WebsiteFaq;
         },
         onSuccess: (_, vars) => {
-            queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+            queryClient.invalidateQueries({ queryKey: QUERY_KEY, exact: false });
+            queryClient.refetchQueries({ queryKey: QUERY_KEY, type: 'active' });
             queryClient.invalidateQueries({ queryKey: [...QUERY_KEY, vars.id] });
             toast.success('FAQ updated successfully');
         },
@@ -113,7 +119,8 @@ export function useDeleteWebsiteFaq() {
             await apiClient.delete(`/website-builder/faqs/${id}`);
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+            queryClient.invalidateQueries({ queryKey: QUERY_KEY, exact: false });
+            queryClient.refetchQueries({ queryKey: QUERY_KEY, type: 'active' });
             toast.success('FAQ deleted successfully');
         },
         onError: (err: any) => {

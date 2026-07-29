@@ -621,4 +621,502 @@ Use `BuilderDataTable` in the list page with live search, filters, pagination, a
 </Button>
 ```
 
+---
+
+## Session 3 — Full CRUD Hooks, Create/Edit Pages, & Complete Module Reference
+
+> **Date:** 2026-07-28 | **Frontend:** `D:\Jamal\Event_Management_Admin_Frontend` | **Backend:** `D:\Jamal\Event_Management_Admin_Backend`
+
+---
+
+### 15. Complete Backend Routes Reference (`companyWebsiteBuilder.routes.js`)
+
+File: [`companyWebsiteBuilder.routes.js`](file:///D:/Jamal/Event_Management_Admin_Backend/src/routes/companyWebsiteBuilder.routes.js)
+
+All routes mount under `/api/v1/website-builder/` with `isAuthenticated + extractCompanyContext` middleware applied globally via `router.use(...)`.
+
+| Method | Path | Controller Handler |
+|---|---|---|
+| GET / PUT | `/ui-blocks` | `getUiBlocks`, `saveUiBlocks` |
+| GET / PUT | `/pricing/settings` | `getPricingSettings`, `savePricingSettings` |
+| GET / PUT | `/pricing/plans` | `getPricingPlans`, `savePricingPlans` |
+| PATCH / PUT | `/pricing/plans/:id/status` | `updatePricingPlanStatus` |
+| DELETE | `/pricing/plans/:id` | `deletePricingPlan` |
+| GET / PUT | `/pricing/matrix-features` | `getPricingMatrixFeatures`, `savePricingMatrixFeatures` |
+| GET / POST / PUT | `/features` | `getFeatures`, `createFeature`, `replaceFeatures` |
+| PUT | `/features/:id` | `updateFeature` |
+| PATCH / PUT | `/features/:id/status` | `updateFeatureStatus` |
+| DELETE | `/features/:id` | `deleteFeature` |
+| GET / POST | `/templates/categories` | `getTemplateCategories`, `createTemplateCategory` |
+| PUT | `/templates/categories/:id` | `updateTemplateCategory` |
+| PATCH / PUT | `/templates/categories/:id/status` | `updateTemplateCategoryStatus` |
+| DELETE | `/templates/categories/:id` | `deleteTemplateCategory` |
+| GET / POST | `/templates` | `getTemplates`, `createTemplate` |
+| GET | `/templates/:id` | `getTemplateById` |
+| PUT | `/templates/:id` | `updateTemplate` |
+| PATCH / PUT | `/templates/:id/status` | `updateTemplateStatus` |
+| DELETE | `/templates/:id` | `deleteTemplate` |
+| GET / POST / PUT | `/how-it-works` | `getHowItWorksSteps`, `createHowItWorksStep`, `replaceHowItWorksSteps` |
+| PUT | `/how-it-works/:id` | `updateHowItWorksStep` |
+| PATCH / PUT | `/how-it-works/:id/status` | `updateHowItWorksStepStatus` |
+| DELETE | `/how-it-works/:id` | `deleteHowItWorksStep` |
+| GET / POST | `/faq-categories` | `getWebsiteFaqCategories`, `createWebsiteFaqCategory` |
+| PUT | `/faq-categories/:id` | `updateWebsiteFaqCategory` |
+| PATCH / PUT | `/faq-categories/:id/status` | `updateWebsiteFaqCategoryStatus` |
+| DELETE | `/faq-categories/:id` | `deleteWebsiteFaqCategory` |
+| GET / POST | `/faqs` | `getWebsiteFaqs`, `createWebsiteFaq` |
+| GET | `/faqs/:id` | `getWebsiteFaqById` |
+| PUT | `/faqs/:id` | `updateWebsiteFaq` |
+| PATCH / PUT | `/faqs/:id/status` | `updateWebsiteFaqStatus` |
+| DELETE | `/faqs/:id` | `deleteWebsiteFaq` |
+
+---
+
+### 16. Complete Frontend React Query Hooks Reference
+
+#### [`useFeatures.ts`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/hooks/useFeatures.ts)
+
+**TypeScript Interface — `FeatureItem`:**
+```ts
+export interface FeatureItem {
+    id?: number | string;
+    title: string;
+    short_description: string;
+    detailed_description?: string;
+    icon: string;
+    custom_icon_url?: string;
+    feature_image_url?: string;
+    image_url?: string;
+    bullet_points_json: string[];
+    show_in_menu: boolean;
+    menu_order: number;
+    status: 'Active' | 'Inactive' | 'Draft';
+    sort_order?: number;
+    is_active?: boolean;
+    created_by?: string;
+    created_on?: string;
+}
+```
+
+**All Exported Hooks:**
+| Hook | Method | Endpoint | Purpose |
+|---|---|---|---|
+| `useFeaturesData()` | GET | `/website-builder/features` | Fetch all features list |
+| `useCreateFeature()` | POST | `/website-builder/features` | Create single feature |
+| `useUpdateFeature()` | PUT | `/website-builder/features/:id` | Update single feature |
+| `useDeleteFeature()` | DELETE | `/website-builder/features/:id` | Delete feature by ID |
+| `useSaveFeaturesList()` | PUT | `/website-builder/features` (bulk) | Replace all features (bulk save) |
+| `useToggleFeatureStatus()` | PATCH | `/website-builder/features/:id/status` | Toggle active/inactive status |
+| `useToggleFeatureMenu()` | PUT | `/website-builder/features/:id` | Toggle show_in_menu visibility |
+
+> ⚠️ **Status Toggle Fallback Pattern:** `useToggleFeatureStatus()` catches `404` and falls back to a full `PUT` update — same pattern used in `useToggleTemplateStatus` and `useToggleTemplateCategoryStatus`.
+
+---
+
+#### [`useHowItWorks.ts`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/hooks/useHowItWorks.ts)
+
+**TypeScript Interface — `HowItWorksStep`:**
+```ts
+export interface HowItWorksStep {
+    id?: number | string;
+    step_number: number;
+    title: string;
+    description: string;
+    highlight_title?: string;
+    highlight_subtext?: string;
+    icon?: string;
+    illustration_url?: string;
+    is_active?: boolean;
+    sort_order?: number;
+}
+```
+
+**All Exported Hooks:**
+| Hook | Method | Endpoint | Purpose |
+|---|---|---|---|
+| `useHowItWorksData()` | GET | `/website-builder/how-it-works` | Fetch all steps |
+| `useCreateHowItWorksStep()` | POST | `/website-builder/how-it-works` | Create a new step |
+| `useUpdateHowItWorksStep()` | PUT | `/website-builder/how-it-works/:id` | Update a step by ID |
+| `useDeleteHowItWorksStep()` | DELETE | `/website-builder/how-it-works/:id` | Delete a step by ID |
+| `useSaveHowItWorksSteps()` | PUT | `/website-builder/how-it-works` (bulk) | Bulk replace all steps + reorder |
+| `useToggleHowItWorksStatus()` | PATCH | `/website-builder/how-it-works/:id/status` | Toggle active/inactive per step |
+
+---
+
+#### [`useTemplates.ts`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/hooks/useTemplates.ts)
+
+**TypeScript Interfaces:**
+```ts
+export interface TemplateCategory {
+    id?: number;
+    name: string;
+    slug: string;
+    description?: string;
+    icon?: string;
+    color?: string;
+    sort_order?: number;
+    is_active?: boolean;
+    templates_count?: number;
+}
+
+export interface Template {
+    id?: number;
+    category_id?: number | null;
+    category_name?: string;
+    template_name: string;
+    slug?: string;
+    description?: string;
+    template_type: 'wedding' | 'engagement' | 'birthday' | 'anniversary' | 'baby_shower' | 'corporate' | 'festival' | 'other';
+    design_style: 'classic' | 'modern' | 'minimal' | 'floral' | 'traditional';
+    primary_color: string;
+    thumbnail_url?: string;
+    template_file_url?: string;
+    preview_url?: string;
+    is_active?: boolean;
+    allow_customize?: boolean;
+    is_draft?: boolean;
+    is_popular?: boolean;
+    sort_order?: number;
+}
+```
+
+**All Exported Hooks:**
+| Hook | Method | Endpoint | Purpose |
+|---|---|---|---|
+| `useTemplateCategories()` | GET | `/website-builder/templates/categories` | Fetch all categories |
+| `useSaveTemplateCategory()` | POST/PUT | `/website-builder/templates/categories[/:id]` | Create or update category |
+| `useDeleteTemplateCategory()` | DELETE | `/website-builder/templates/categories/:id` | Delete category |
+| `useToggleTemplateCategoryStatus()` | PATCH | `/website-builder/templates/categories/:id/status` | Toggle category status |
+| `useTemplates(params?)` | GET | `/website-builder/templates[?filters]` | Fetch templates with optional filtering |
+| `useTemplateById(id?)` | GET | `/website-builder/templates/:id` | Fetch single template (edit mode) |
+| `useSaveTemplate()` | POST/PUT | `/website-builder/templates[/:id]` | Create or update template |
+| `useDeleteTemplate()` | DELETE | `/website-builder/templates/:id` | Delete template |
+| `useToggleTemplateStatus()` | PATCH | `/website-builder/templates/:id/status` | Toggle template active status |
+
+**Filter Params for `useTemplates()`:**
+```ts
+useTemplates({
+    category_id?: number,
+    template_type?: string,  // 'wedding' | 'engagement' | 'birthday' | etc.
+    search?: string,
+})
+```
+
+---
+
+#### [`useWebsiteFaqs.ts`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/hooks/useWebsiteFaqs.ts) & [`useWebsiteFaqCategories.ts`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/hooks/useWebsiteFaqCategories.ts)
+
+**Hooks:**
+| Hook | Method | Endpoint | Purpose |
+|---|---|---|---|
+| `useWebsiteFaqCategories()` | GET | `/website-builder/faq-categories` | Fetch all FAQ categories |
+| `useSaveWebsiteFaqCategory()` | POST/PUT | `/website-builder/faq-categories[/:id]` | Create/update FAQ category |
+| `useDeleteWebsiteFaqCategory()` | DELETE | `/website-builder/faq-categories/:id` | Delete FAQ category |
+| `useWebsiteFaqs(params?)` | GET | `/website-builder/faqs[?filters]` | Fetch FAQs with filters |
+| `useSaveWebsiteFaq()` | POST/PUT | `/website-builder/faqs[/:id]` | Create/update FAQ |
+| `useDeleteWebsiteFaq()` | DELETE | `/website-builder/faqs/:id` | Delete FAQ |
+
+---
+
+### 17. Complete Frontend Admin Pages Reference
+
+| Route | File | Description |
+|---|---|---|
+| `/admin/website-builder/features` | [`features/page.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/features/page.tsx) | Features list table with search, status toggle, menu toggle, edit/delete actions |
+| `/admin/website-builder/features/create` | [`features/create/page.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/features/create/page.tsx) | Features form with 5 section cards + live right-column preview |
+| `/admin/website-builder/templates` | [`templates/page.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/templates/page.tsx) | Templates list with table/grid view switcher, category+type filters, search, status toggle, pagination, drag & drop |
+| `/admin/website-builder/templates/create` | [`templates/create/page.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/templates/create/page.tsx) | Template create/edit form with type cards, design style grid, color picker, thumbnail upload, live preview switcher |
+| `/admin/website-builder/templates/categories` | [`templates/categories/page.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/templates/categories/page.tsx) | Template categories table with modal dialog for create/edit |
+| `/admin/website-builder/how-it-works` | [`how-it-works/page.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/how-it-works/page.tsx) | How It Works step cards with inline editing, drag & drop reorder, Add/Edit modals, icon picker, illustration uploader |
+| `/admin/website-builder/pricing-plans` | [`pricing-plans/page.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/pricing-plans/page.tsx) | Pricing plans list via `pricing-plans-content.tsx` |
+| `/admin/website-builder/pricing-plans/create` | [`pricing-plans/create/page.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/pricing-plans/create/page.tsx) | Pricing plan create/edit form with plan type, billing cycle, features list, badge, live card preview |
+| `/admin/website-builder/faqs` | [`faqs/page.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/faqs/page.tsx) | FAQs list with search, category filter, status filter, pagination |
+| `/admin/website-builder/faqs/create` | [`faqs/create/page.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/faqs/create/page.tsx) | FAQ create/edit 2-column form |
+| `/admin/website-builder/faqs/categories` | [`faqs/categories/page.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/faqs/categories/page.tsx) | FAQ categories table + modal |
+
+---
+
+### 18. Feature-by-Feature Page Implementation Details
+
+#### 🟢 Features List Page (`features/page.tsx`)
+- **Breadcrumb:** `Dashboard › Website Builder › Features List`
+- **Table Columns:** `#` (with GripVertical drag handle), `Icon` (colored primary/10 icon box), `Feature Title` (bold), `Short Description` (truncated), `Show in Menu` (Switch toggle → `useToggleFeatureMenu`), `Menu Order` (number), `Status` (Switch + Badge pill: emerald=Active, slate=Inactive), `Actions` (Pencil edit → `/create?id=X`, Trash delete → `DeleteDialog`)
+- **Hooks Used:** `useFeaturesData`, `useToggleFeatureStatus`, `useToggleFeatureMenu`, `useDeleteFeature`
+- **Icon Presets:** `calendar`, `map-pin`, `users`, `image`, `message`, `gift`, `video`, `music`, `heart`, `bell`, `scan`, `qr-code`
+
+#### 🟢 Templates List Page (`templates/page.tsx`)
+- **Breadcrumb:** `Dashboard › Website Builder › Event Templates`
+- **Header Actions:** `Categories` outline button (→ `/templates/categories`), `Add Template` primary button (→ `/templates/create`)
+- **Filters:** Search input (`w-56`), Category `<Select>` filter (dynamic from `useTemplateCategories`), Type `<Select>` filter (wedding / engagement / birthday / anniversary / baby_shower / corporate / festival), View switcher (Table `<List>` / Grid `<LayoutGrid>`)
+- **Table Columns:** `#` (GripVertical + index), `Preview` (12×9 thumbnail img OR color-bg name card), `Template Name` (+ 🔥 Popular badge), `Category` (primary/10 pill), `Type` (muted cap badge), `Style` (purple-500/10 badge), `Customizable` (Yes=emerald/No=muted), `Status` (Switch → `useToggleTemplateStatus`), `Actions` (Pencil → `/create?id=X`, Trash → `DeleteDialog`)
+- **Grid View:** 4-column responsive color-bg cards with type, name, edit & delete buttons
+- **Pagination:** Interactive footer with Previous / page buttons / Next (10 per page)
+- **Hooks Used:** `useTemplates`, `useTemplateCategories`, `useSaveTemplate`, `useToggleTemplateStatus`, `useDeleteTemplate`
+
+#### 🟢 Templates Create/Edit Page (`templates/create/page.tsx`)
+- **URL Pattern:** `/admin/website-builder/templates/create` (new) or `/create?id=123` (edit — loads via `useTemplateById`)
+- **Form Sections (left column):**
+  1. **Template Type Cards:** 5 type selector cards (`wedding`, `engagement`, `birthday`, `anniversary`, `other`) with icon + label
+  2. **Basic Info:** `Template Name` (counted, max 100), `Category` (`<Select>` from `useTemplateCategories`), `Description` (counted textarea, max 300)
+  3. **Design Style Grid:** 5 style cards (`classic`, `modern`, `minimal`, `floral`, `traditional`) with gradient preview backgrounds
+  4. **Visual Settings:** `Primary Color` hex color picker (`<input type="color">`), `Thumbnail Image` upload (base64 `FileReader`), `Preview URL` input, `Template File URL` input
+  5. **Options:** `Allow Customization` switch, `Mark as Popular` switch, `Published` (is_active) switch, `Draft Mode` (is_draft) switch
+- **Live Preview (right column):** Device switcher (🖥️ Desktop / 📱 Mobile), styled invitation card with dynamic `primary_color` background, template name, category, style badges
+- **Save Logic:** Uses `useSaveTemplate()` — detects edit mode via `?id=` query param. On success, redirects back to `/admin/website-builder/templates`
+
+#### 🟢 How It Works Page (`how-it-works/page.tsx`)
+- **Header Actions:** `Preview` outline button (opens public output modal), `Add Next Step` primary button (opens Add Modal), `Save All Steps` emerald button (with `<Loader2 animate-spin />` spinner)
+- **Step Card Layout (12-col grid per card):**
+  - Col 1-2: **Step Number Badge** (rounded-full bg-primary circle), **Icon Box** (rounded-full bg-primary/10, 14×14), `Change` button → inline icon picker popover
+  - Col 3-4: **Illustration Box** (14×24 rounded-xl thumbnail), `Change Image` label button → `<input type="file" hidden>` (FileReader → base64)
+  - Col 5-9: **Title** (`BuilderCountedInput`, max 60) + **Description** (`BuilderCountedTextarea`, max 200)
+  - Col 10-12: **Highlight Title** (`BuilderCountedInput`, max 30) + **Highlight Subtext** (`BuilderCountedInput`, max 30)
+  - Right column: Active `<Switch>`, `<GripVertical>` drag handle, Edit `<Pencil>` button (→ Edit Modal), Delete `<Trash2>` button (→ `DeleteDialog`)
+- **Drag & Drop:** `draggable={true}`, `onDragStart/onDragOver/onDrop` handlers — on drop calls `useSaveHowItWorksSteps(updated)` immediately + `toast.success`
+- **Icon Presets:** `gift`, `sparkles`, `share-2`, `qr-code`, `sliders`, `image`, `zap`, `heart`
+- **Add Modal (Dialog):** Icon picker box + Single image upload + Title + Description + Highlight Title + Highlight Subtext + Step Order + Active switch → calls `useCreateHowItWorksStep()`
+- **Edit Modal (Dialog):** Same form pre-filled from `steps[editingStepIdx]` → calls `useUpdateHowItWorksStep()` if `target.id` exists
+- **Inline Active Toggle:** Immediately calls `useToggleHowItWorksStatus()` when `<Switch>` changes
+- **Validation:** All 4 text fields required; inline `border-red-500 ring-1 ring-red-500 bg-red-50/20` error state on blank fields
+- **Hooks Used:** `useHowItWorksData`, `useCreateHowItWorksStep`, `useUpdateHowItWorksStep`, `useDeleteHowItWorksStep`, `useSaveHowItWorksSteps`, `useToggleHowItWorksStatus`
+
+#### 🟢 Pricing Plans Create/Edit Page (`pricing-plans/create/page.tsx`)
+- **URL Pattern:** `/admin/website-builder/pricing-plans/create` (new) or `/create?id=123` (edit)
+- **Breadcrumb:** `Dashboard › Website Builder › Pricing Plans › Add New Plan`
+- **Form Sections (left column, numbered cards):**
+  1. **Basic Information:** Plan Name (counted, max 60), Plan Subtitle (counted, max 120), Plan For cards (`Individuals` / `Companies`)
+  2. **Pricing Details:** Currency `<Select>` (₹ INR, $ USD, € EUR, £ GBP), Price Monthly (number input), Price Yearly (number input), Period Label input (`/month`)
+  3. **Plan Settings:** `Popular Plan` switch, `Active Plan` switch, Badge Text (counted, max 25), Badge Style cards (Filled / Outline / Soft Filled / Soft Outline)
+  4. **Features & Limits:** `+ Add Feature` input row → appends `PlanFeatureItem` to list; each feature has text + included checkbox + delete
+  5. **Preview:** Device switcher (Monitor / Smartphone), live pricing card with dynamic styles
+- **Save Logic:** Merges edited plan back into `dbPlans` array, calls `useSavePricingPlans(updatedPlans)` — on success redirects to `/admin/website-builder/pricing-plans`
+
+---
+
+### 19. Reusable Component: `builder-data-table.tsx`
+
+File: [`_components/builder-data-table.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/builder-data-table.tsx)
+
+```ts
+// Core Props Interface
+interface BuilderDataTableProps<T> {
+    columns: Column<T>[];           // Typed column definitions with custom cell renderers
+    data: T[];                      // Generic row data array
+    isLoading?: boolean;            // Shows spinner loader row
+    searchQuery?: string;           // Controlled search input value
+    onSearchChange?: (v: string) => void;  // Search change handler
+    filters?: FilterConfig[];       // Array of dropdown filter configs
+    onReorder?: (from: number, to: number) => void;  // Drag-and-drop reorder callback
+    pageSize?: number;              // Defaults to 10
+    emptyMessage?: string;          // Empty state message text
+}
+
+interface Column<T> {
+    key: string;
+    header: string;
+    align?: 'left' | 'center' | 'right';
+    render: (row: T, idx: number) => React.ReactNode;
+}
+
+interface FilterConfig {
+    value: string;
+    onChange: (val: string) => void;
+    options: { label: string; value: string }[];
+    placeholder?: string;
+    width?: string;
+}
+```
+
+---
+
+### 20. Complete `_components/` Directory Reference
+
+| File | Purpose |
+|---|---|
+| [`advance-slider-content.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/advance-slider-content.tsx) | Advance slider form with multiple slides, button link mode |
+| [`builder-data-table.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/builder-data-table.tsx) | Reusable generic table with search, filters, pagination, drag & drop |
+| [`builder-field.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/builder-field.tsx) | `BuilderCountedInput` + `BuilderCountedTextarea` — character-counted form field components |
+| [`draggable-item-list.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/draggable-item-list.tsx) | Reusable drag-and-drop list container |
+| [`faq-categories-builder-content.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/faq-categories-builder-content.tsx) | FAQ categories table + modal (icon picker, color picker, status switch) |
+| [`faq-form-content.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/faq-form-content.tsx) | FAQ create/edit 2-column form (question, tags, rich answer, settings) |
+| [`faqs-list-content.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/faqs-list-content.tsx) | FAQs list table with search, category + status filters |
+| [`features-content.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/features-content.tsx) | Old inline features content (superseded by split `features/page.tsx` + `features/create/page.tsx`) |
+| [`footer-content.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/footer-content.tsx) | Footer settings form |
+| [`gallery-content.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/gallery-content.tsx) | Gallery image upload + live preview with category filters |
+| [`header-content.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/header-content.tsx) | Header/logo settings form |
+| [`hero-section-content.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/hero-section-content.tsx) | Hero section form with button link mode (Page dropdown / Custom URL) |
+| [`login-page-content.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/login-page-content.tsx) | Login page builder with Desktop/Mobile preview switcher |
+| [`multi-select-pages.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/multi-select-pages.tsx) | Multi-select pages component for nav menu |
+| [`nav-menu-content.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/nav-menu-content.tsx) | Nav menu items management |
+| [`pricing-plans-content.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/pricing-plans-content.tsx) | Pricing plans matrix + plan list + add/edit form views |
+| [`seo-content.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/seo-content.tsx) | SEO settings with keyword badges, robots meta, language select |
+| [`simple-slider-content.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/simple-slider-content.tsx) | Simple slider slides management form |
+| [`testimonials-content.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/testimonials-content.tsx) | Testimonials form + management table + live preview card |
+| [`theme-color-content.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/theme-color-content.tsx) | Admin dashboard theme color picker (CSS variable injection) |
+| [`ui-block-content.tsx`](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/ui-block-content.tsx) | Web UI Block visibility toggle controls + INITIAL_BLOCKS |
+
+---
+
+### 21. Key Patterns Summary (Quick Reference for Claude)
+
+#### ✅ Standard API Client Import
+```ts
+import { apiClient } from '@/lib/api-client';
+// All requests go through Next.js proxy → Backend
+// apiClient.get('/website-builder/xxx')  →  /api/v1/website-builder/xxx
+```
+
+#### ✅ Standard TanStack Query Hook Pattern
+```ts
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiClient } from '@/lib/api-client';
+import { toast } from 'sonner';
+
+// Query key naming convention: ['website-builder-<module-name>']
+export function useModuleData() {
+    return useQuery({
+        queryKey: ['website-builder-module-name'],
+        queryFn: async () => {
+            const res = await apiClient.get('/website-builder/module-name');
+            return (res.data?.data || res.data || []) as ModuleItem[];
+        },
+    });
+}
+
+// Mutation with invalidation
+export function useToggleModuleStatus() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ id, is_active }: { id: string | number; is_active: boolean }) => {
+            const res = await apiClient.patch(`/website-builder/module-name/${id}/status`, { is_active });
+            return res.data;
+        },
+        onSuccess: () => {
+            toast.success('Status updated successfully!');
+            queryClient.invalidateQueries({ queryKey: ['website-builder-module-name'] });
+        },
+        onError: (err: any) => {
+            toast.error(err.response?.data?.message || err.message || 'Error updating status.');
+        },
+    });
+}
+```
+
+#### ✅ Standard `BuilderCountedInput` / `BuilderCountedTextarea` Usage
+```tsx
+import { BuilderCountedInput, BuilderCountedTextarea } from '../_components/builder-field';
+
+<BuilderCountedInput
+    label="Title"
+    required
+    placeholder="Enter title..."
+    value={title}
+    onChange={(val) => setTitle(val)}
+    maxLength={60}
+    inputClassName="!h-9 text-xs border-border bg-card text-foreground"
+/>
+
+<BuilderCountedTextarea
+    label="Description"
+    required
+    placeholder="Enter description..."
+    value={desc}
+    onChange={(val) => setDesc(val)}
+    maxLength={200}
+    textareaClassName="min-h-[70px] text-xs border-border bg-card text-foreground"
+/>
+```
+
+#### ✅ Standard Delete Dialog Usage
+```tsx
+import { DeleteDialog } from '@/components/common/delete-dialog';
+
+<DeleteDialog
+    open={deleteId !== null}
+    onOpenChange={(open) => !open && setDeleteId(null)}
+    onConfirm={confirmDelete}
+    isDeleting={deleteMutation.isPending}
+    title="Delete Item"
+    description="Are you sure you want to delete this item? This action cannot be undone."
+/>
+```
+
+#### ✅ Standard Page Header Pattern
+```tsx
+{/* Top Header Bar */}
+<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-4">
+    <div>
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
+            <span>Dashboard</span><span>›</span>
+            <span>Website Builder</span><span>›</span>
+            <span className="font-semibold text-foreground">Module Name</span>
+        </div>
+        <h1 className="text-xl font-extrabold tracking-tight text-foreground">Module Name</h1>
+        <p className="text-xs text-muted-foreground">Module description text here.</p>
+    </div>
+    <div className="flex items-center gap-2">
+        {/* Action Buttons */}
+        <Button size="sm" disabled={isSaving} onClick={handleSave}
+            className="h-9 px-4 text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs gap-1.5">
+            {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            {isSaving ? 'Saving...' : 'Save Changes'}
+        </Button>
+    </div>
+</div>
+```
+
+#### ✅ Standard Table Action Buttons Pattern
+```tsx
+{/* Edit Button */}
+<Link href={`/admin/website-builder/module/create?id=${item.id}`}>
+    <Button type="button" variant="outline" size="icon"
+        className="h-8 w-8 rounded-lg p-0 border-border text-muted-foreground hover:border-primary hover:text-primary hover:bg-primary/5 cursor-pointer">
+        <Pencil className="h-3.5 w-3.5" />
+    </Button>
+</Link>
+
+{/* Delete Button */}
+<Button type="button" variant="outline" size="icon"
+    onClick={() => item.id !== undefined && setDeleteId(item.id)}
+    className="h-8 w-8 rounded-lg p-0 text-rose-500 border-rose-200 hover:bg-rose-50 hover:border-rose-300 cursor-pointer">
+    <Trash2 className="h-3.5 w-3.5" />
+</Button>
+```
+
+---
+
+### 22. Database Tables — Full Reference
+
+| Table | Key Columns | Module |
+|---|---|---|
+| `vendor_website_ui_blocks` | `id`, `vendor_id` (=companyId), `block_key`, `is_visible`, `sort_order` | UI Blocks |
+| `company_website_pricing_settings` | `company_id`, `section_title`, `section_headings`, `yearly_discount_badge` | Pricing |
+| `company_website_pricing_plans` | `company_id`, `plan_name`, `subtitle`, `target_type`, `price_monthly`, `price_yearly`, `features_json`, `is_popular`, `is_active` | Pricing Plans |
+| `company_website_pricing_matrix_features` | `company_id`, `feature_name`, `plan_values_json` | Pricing Matrix |
+| `company_website_features` | `company_id`, `title`, `short_description`, `icon`, `custom_icon_url`, `feature_image_url`, `bullet_points_json`, `show_in_menu`, `menu_order`, `status`, `is_active` | Features |
+| `company_template_categories` | `company_id`, `name`, `slug`, `description`, `icon`, `color`, `sort_order`, `is_active` | Template Categories |
+| `company_templates` | `company_id`, `category_id`, `template_name`, `slug`, `description`, `template_type`, `design_style`, `primary_color`, `thumbnail_url`, `template_file_url`, `preview_url`, `is_active`, `allow_customize`, `is_draft`, `is_popular`, `sort_order` | Templates |
+| `company_website_how_it_works` | `company_id`, `step_number`, `title`, `description`, `highlight_title`, `highlight_subtext`, `icon`, `illustration_url`, `is_active`, `sort_order` | How It Works |
+| `company_website_faq_categories` | `company_id`, `name`, `slug`, `icon`, `color`, `description`, `sort_order`, `is_active` | FAQ Categories |
+| `company_website_faqs` | `company_id`, `category_id`, `question`, `answer`, `tags_json`, `display_order`, `is_featured`, `status`, `is_active` | FAQs |
+
+> ⚠️ **LONGTEXT Columns:** All `icon`, `illustration_url`, `thumbnail_url`, `template_file_url`, `custom_icon_url`, `feature_image_url`, `image_url`, `description` columns that store base64 data URLs are auto-migrated to `LONGTEXT` via `ensure<Module>Table()` auto-migration functions in the controller.
+
+---
+
+### 23. Session 3 Verification Checklist
+
+- [x] All 9 database tables confirmed with full column reference
+- [x] All 30+ backend API routes fully documented in routes reference table
+- [x] `useFeatures.ts` — 7 hooks fully documented with `FeatureItem` interface
+- [x] `useHowItWorks.ts` — 6 hooks fully documented with `HowItWorksStep` interface
+- [x] `useTemplates.ts` — 9 hooks fully documented with `Template` + `TemplateCategory` interfaces
+- [x] `useWebsiteFaqs.ts` + `useWebsiteFaqCategories.ts` — hooks documented
+- [x] `templates/create/page.tsx` — full 5-section form + live preview documented
+- [x] `pricing-plans/create/page.tsx` — full 5-section form + live card preview documented
+- [x] `how-it-works/page.tsx` — inline editing, drag & drop, dual modal system documented
+- [x] `features/page.tsx` — table with dual-switch (status + menu), icon presets documented
+- [x] All 21 `_components/` files catalogued with purpose
+- [x] All standard patterns (API client, TanStack Query, BuilderCountedInput, Delete Dialog, page header, action buttons) documented as reusable blueprints
 
