@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Save, Plus, Trash2, Sparkles, PanelLeft, ImageIcon, ListChecks, Check, Monitor, Smartphone, HelpCircle, RotateCcw, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { BuilderCountedInput, BuilderCountedTextarea } from './builder-field';
+import { useCompanyLoginSettings } from '@/hooks/useCompanyWebsiteBuilder';
+import { PageLoader } from '@/components/common/page-loader';
 import { cn } from '@/lib/utils';
 
 interface BulletRow {
@@ -22,6 +24,8 @@ const initialBullets: BulletRow[] = [
 ];
 
 export function LoginPageContent() {
+    const { data: loginData, isLoading, save, isSaving } = useCompanyLoginSettings();
+
     const [enabled, setEnabled] = useState(true);
     const [eyebrow, setEyebrow] = useState('Event workspace');
     const [title, setTitle] = useState('Everything for your event, in one place.');
@@ -29,14 +33,39 @@ export function LoginPageContent() {
     const [showBackgroundImage, setShowBackgroundImage] = useState(false);
     const [backgroundImage, setBackgroundImage] = useState('');
     const [bullets, setBullets] = useState<BulletRow[]>(initialBullets);
-    const [isSaving, setIsSaving] = useState(false);
     const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
+
+    useEffect(() => {
+        if (loginData && Object.keys(loginData).length > 0) {
+            if (loginData.title) setTitle(loginData.title);
+            if (loginData.subtitle) setDescription(loginData.subtitle);
+            if (loginData.bg_image_url) {
+                setBackgroundImage(loginData.bg_image_url);
+                setShowBackgroundImage(true);
+            }
+            if (loginData.is_active !== undefined) setEnabled(Boolean(loginData.is_active));
+        }
+    }, [loginData]);
 
     const MAX_BULLETS = 5;
     const EYEBROW_MAX = 40;
     const TITLE_MAX = 60;
     const DESCRIPTION_MAX = 100;
     const BULLET_MAX = 40;
+
+    const handleSave = async () => {
+        try {
+            await save({
+                title,
+                subtitle: description,
+                bg_image_url: showBackgroundImage ? backgroundImage : '',
+                is_active: enabled ? 1 : 0,
+            });
+            toast.success('Login page settings saved successfully');
+        } catch (err: any) {
+            toast.error(err?.message || 'Failed to save login page settings');
+        }
+    };
 
     const handleReset = () => {
         setEnabled(true);
@@ -73,16 +102,9 @@ export function LoginPageContent() {
         setBullets(bullets.filter((b) => b.id !== id));
     };
 
-    const handleSave = () => {
-        setIsSaving(true);
-        setTimeout(() => {
-            setIsSaving(false);
-            toast.success('Login Page settings saved successfully!');
-        }, 500);
-    };
-
     return (
         <div className="space-y-4">
+            <PageLoader open={isSaving} text="Saving Login Page Settings..." />
             {/* Page Header */}
             <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-4">
                 <div>

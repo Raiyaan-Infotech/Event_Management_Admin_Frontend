@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Save, Sparkles, Trash2, Phone, Mail, MapPin, Monitor, Smartphone, Lock, HelpCircle, RotateCcw, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { BuilderCountedInput, BuilderCountedTextarea } from './builder-field';
 import { MultiSelectPages } from './multi-select-pages';
+import { useCompanyFooterSettings } from '@/hooks/useCompanyWebsiteBuilder';
+import { PageLoader } from '@/components/common/page-loader';
 
 type ContactType = 'default' | 'alternative';
 type PreviewDevice = 'desktop' | 'mobile';
@@ -34,6 +36,8 @@ const initialSelectedPages = [
 ];
 
 export function FooterContent() {
+    const { data: footerData, isLoading, save, isSaving } = useCompanyFooterSettings();
+
     const [companyLogo, setCompanyLogo] = useState('');
     const [companyName, setCompanyName] = useState('RA EVENTS');
     const [shortDescription, setShortDescription] = useState('Full-service event management, wedding planning, corporate galas, and customized decor packages tailored to your special occasions.');
@@ -52,10 +56,24 @@ export function FooterContent() {
     const [newsletterEnabled, setNewsletterEnabled] = useState(true);
     const [showSocialLinks, setShowSocialLinks] = useState(true);
     const [previewDevice, setPreviewDevice] = useState<PreviewDevice>('desktop');
-    const [isSaving, setIsSaving] = useState(false);
 
-    const copyright = '© 2026 RA Events. All rights reserved.';
-    const poweredBy = 'Powered by EventCraft Website Builder';
+    useEffect(() => {
+        if (footerData && Object.keys(footerData).length > 0) {
+            if (footerData.logo_url) setCompanyLogo(footerData.logo_url);
+            if (footerData.company_name) setCompanyName(footerData.company_name);
+            if (footerData.description) setShortDescription(footerData.description);
+            if (footerData.contact_type) setContactType(footerData.contact_type as ContactType);
+            if (footerData.mobile) setDefaultContact((prev) => ({ ...prev, mobile: footerData.mobile || '' }));
+            if (footerData.email) setDefaultContact((prev) => ({ ...prev, email: footerData.email || '' }));
+            if (footerData.address) setDefaultContact((prev) => ({ ...prev, address: footerData.address || '' }));
+            if (footerData.top_list_heading) setTopListHeading(footerData.top_list_heading);
+            if (footerData.show_newsletter !== undefined) setNewsletterEnabled(Boolean(footerData.show_newsletter));
+            if (footerData.show_social_links !== undefined) setShowSocialLinks(Boolean(footerData.show_social_links));
+            if (footerData.quick_links_json && Array.isArray(footerData.quick_links_json)) {
+                setSelectedPages(footerData.quick_links_json);
+            }
+        }
+    }, [footerData]);
 
     const activeContact = contactType === 'alternative' ? alternativeContact : defaultContact;
 
@@ -68,18 +86,8 @@ export function FooterContent() {
         { label: 'Contact Us', value: 'contact-us' },
     ];
 
-    const handleReset = () => {
-        setCompanyLogo('');
-        setCompanyName('RA EVENTS');
-        setShortDescription('Full-service event management, wedding planning, corporate galas, and customized decor packages tailored to your special occasions.');
-        setContactType('default');
-        setDefaultContact(initialDefaultContact);
-        setTopListHeading('Quick Links');
-        setSelectedPages(initialSelectedPages);
-        setNewsletterEnabled(true);
-        setShowSocialLinks(true);
-        toast.info('Footer settings reset to defaults.');
-    };
+    const copyright = '© 2026 RA Events. All rights reserved.';
+    const poweredBy = 'Powered by EventCraft Website Builder';
 
     const handleLogoSelect = (file: File) => {
         const reader = new FileReader();
@@ -92,7 +100,7 @@ export function FooterContent() {
 
     const quickLinkLabels = selectedPages
         .map((val) => pageOptions.find((opt) => opt.value === val)?.label)
-        .filter(Boolean);
+        .filter((lbl): lbl is string => Boolean(lbl));
 
     const updateActiveContact = (patch: Partial<ContactBlock>) => {
         if (contactType === 'alternative') {
@@ -102,16 +110,30 @@ export function FooterContent() {
         }
     };
 
-    const handleSave = () => {
-        setIsSaving(true);
-        setTimeout(() => {
-            setIsSaving(false);
-            toast.success('Footer settings saved successfully!');
-        }, 500);
+    const handleSave = async () => {
+        try {
+            await save({
+                logo_url: companyLogo,
+                company_name: companyName,
+                description: shortDescription,
+                contact_type: contactType,
+                mobile: activeContact.mobile,
+                email: activeContact.email,
+                address: activeContact.address,
+                top_list_heading: topListHeading,
+                quick_links_json: selectedPages,
+                show_newsletter: newsletterEnabled ? 1 : 0,
+                show_social_links: showSocialLinks ? 1 : 0,
+            });
+            toast.success('Footer settings saved successfully');
+        } catch (err: any) {
+            toast.error(err?.message || 'Failed to save footer settings');
+        }
     };
 
     return (
         <div className="space-y-6">
+            <PageLoader open={isSaving} text="Saving Footer Settings..." />
             {/* Page Header */}
             <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-5">
                 <div>

@@ -28,19 +28,27 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSelect: (value: string) => void;
+  socialOnly?: boolean;
 }
 
-export function IconPickerDialog({ open, onOpenChange, onSelect }: Props) {
+export function IconPickerDialog({ open, onOpenChange, onSelect, socialOnly = false }: Props) {
   const [collection, setCollection] = useState('simple-icons');
   const [search, setSearch] = useState('');
   const [allIcons, setAllIcons] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    if (socialOnly) {
+      setCollection('simple-icons');
+    }
+  }, [socialOnly]);
+
+  useEffect(() => {
     if (!open) return;
     setLoading(true);
     setAllIcons([]);
-    fetch(`https://api.iconify.design/collection?prefix=${collection}&pretty=0`)
+    const activePrefix = socialOnly ? 'simple-icons' : collection;
+    fetch(`https://api.iconify.design/collection?prefix=${activePrefix}&pretty=0`)
       .then(r => r.json())
       .then(data => {
         const icons: string[] = [
@@ -51,7 +59,7 @@ export function IconPickerDialog({ open, onOpenChange, onSelect }: Props) {
       })
       .catch(() => setAllIcons([]))
       .finally(() => setLoading(false));
-  }, [collection, open]);
+  }, [collection, open, socialOnly]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -59,8 +67,10 @@ export function IconPickerDialog({ open, onOpenChange, onSelect }: Props) {
     return list.slice(0, 240);
   }, [allIcons, search]);
 
+  const activeCollection = socialOnly ? 'simple-icons' : collection;
+
   const handleSelect = (iconName: string) => {
-    onSelect(toFieldValue(collection, iconName));
+    onSelect(toFieldValue(activeCollection, iconName));
     onOpenChange(false);
     setSearch('');
   };
@@ -71,25 +81,31 @@ export function IconPickerDialog({ open, onOpenChange, onSelect }: Props) {
         <DialogHeader className="pb-0">
           <DialogTitle className="flex items-center gap-2">
             <LayoutGrid className="h-4 w-4" />
-            Icon Picker
+            {socialOnly ? 'Social Icon Picker' : 'Icon Picker'}
           </DialogTitle>
         </DialogHeader>
 
         <div className="flex gap-1.5 flex-wrap">
-          {COLLECTIONS.map(c => (
-            <Button key={c.prefix} type="button" size="sm"
-              variant={collection === c.prefix ? 'default' : 'outline'}
-              className="h-7 text-xs px-3"
-              onClick={() => { setCollection(c.prefix); setSearch(''); }}
-            >
-              {c.label}
+          {socialOnly ? (
+            <Button type="button" size="sm" variant="default" className="h-7 text-xs px-3">
+              Social Icons
             </Button>
-          ))}
+          ) : (
+            COLLECTIONS.map(c => (
+              <Button key={c.prefix} type="button" size="sm"
+                variant={collection === c.prefix ? 'default' : 'outline'}
+                className="h-7 text-xs px-3"
+                onClick={() => { setCollection(c.prefix); setSearch(''); }}
+              >
+                {c.label}
+              </Button>
+            ))
+          )}
         </div>
 
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-          <Input className="pl-9 pr-9" placeholder="Search icons..." value={search}
+          <Input className="pl-9 pr-9" placeholder={socialOnly ? "Search social icons..." : "Search icons..."} value={search}
             onChange={e => setSearch(e.target.value)} autoFocus />
           {search && (
             <button type="button" onClick={() => setSearch('')}

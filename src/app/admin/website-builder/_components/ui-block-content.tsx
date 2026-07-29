@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
+import { useCompanyUiBlocks } from '@/hooks/useCompanyWebsiteBuilder';
+import { PageLoader } from '@/components/common/page-loader';
 import {
     GripVertical,
     FileText,
@@ -73,27 +75,46 @@ const INITIAL_BLOCKS: UiBlockItem[] = [
     { id: 'templates', label: 'Templates Library', description: 'Event invitation card and website template manager.', icon: FileText, visible: true, locked: false, required: false },
     { id: 'faqs', label: 'FAQs Builder', description: 'Frequently asked questions and FAQ categories module.', icon: HelpCircle, visible: true, locked: false, required: false },
     { id: 'how-it-works', label: 'How It Works', description: 'Step-by-step workflow overview module.', icon: HelpCircle, visible: true, locked: false, required: false },
+    { id: 'video-tutorials', label: 'Video Tutorials', description: 'Video tutorials and category taxonomy module.', icon: Monitor, visible: true, locked: false, required: false },
 ];
 
-export function UIBlockContent() {
+export function UiBlockContent() {
+    const { data: companyUiBlocks = [], replace: replaceCompanyUiBlocks, isPending: isSaving } = useCompanyUiBlocks();
     const [blocks, setBlocks] = useState<UiBlockItem[]>(INITIAL_BLOCKS);
     const [filter, setFilter] = useState<UiBlockFilter>('all');
 
-    const saveUiBlocksMutation = useSaveUiBlocks();
-    const isSaving = saveUiBlocksMutation.isPending;
+    useEffect(() => {
+        if (companyUiBlocks && companyUiBlocks.length > 0) {
+            setBlocks((prev) =>
+                prev.map((block) => {
+                    const found = companyUiBlocks.find((b: any) => b.block_key === block.id || b.id === block.id);
+                    if (found) {
+                        return {
+                            ...block,
+                            visible: found.is_visible !== undefined ? Boolean(found.is_visible) : block.visible,
+                        };
+                    }
+                    return block;
+                })
+            );
+        }
+    }, [companyUiBlocks]);
 
-    const handleSave = () => {
-        const payload: UiBlockPayloadItem[] = blocks.map((item, index) => ({
-            id: item.id,
-            label: item.label,
-            description: item.description,
-            visible: item.visible,
-            locked: item.locked,
-            required: item.required,
-            sort_order: index + 1,
-        }));
-
-        saveUiBlocksMutation.mutate(payload);
+    const handleSave = async () => {
+        try {
+            await replaceCompanyUiBlocks(
+                blocks.map((item, index) => ({
+                    block_key: item.id,
+                    label: item.label,
+                    is_visible: item.visible ? 1 : 0,
+                    sort_order: index + 1,
+                    is_active: 1,
+                }))
+            );
+            toast.success('Web UI Blocks saved successfully');
+        } catch (err: any) {
+            toast.error(err?.message || 'Failed to save Web UI blocks');
+        }
     };
 
     const dragIndex = useRef<number | null>(null);
@@ -156,6 +177,7 @@ export function UIBlockContent() {
 
     return (
         <div className="space-y-6">
+            <PageLoader open={isSaving} text="Saving Web UI Blocks..." />
             {/* Page Header */}
             <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-5">
                 <div>

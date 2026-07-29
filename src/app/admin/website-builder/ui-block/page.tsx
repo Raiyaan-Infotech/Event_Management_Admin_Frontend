@@ -1,4 +1,4 @@
-import { UIBlockContent } from "../_components/ui-block-content";
+import { UiBlockContent } from "../_components/ui-block-content";
 
 export const metadata = {
     title: "Web UI Block | Website Builder",
@@ -6,5 +6,5 @@ export const metadata = {
 };
 
 export default function WebUIBlockPage() {
-    return <UIBlockContent />;
+    return <UiBlockContent />;
 }

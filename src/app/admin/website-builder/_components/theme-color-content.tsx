@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Save, Sparkles, Palette, Check, HelpCircle, RotateCcw, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useCompanyThemeSettings } from '@/hooks/useCompanyWebsiteBuilder';
+import { PageLoader } from '@/components/common/page-loader';
 
 interface AdminPalette {
     id: string;
@@ -27,6 +29,8 @@ const ADMIN_PALETTES: AdminPalette[] = [
 ];
 
 export function ThemeColorContent() {
+    const { data: themeData, isLoading, save, isSaving } = useCompanyThemeSettings();
+
     const [selectedPaletteId, setSelectedPaletteId] = useState('p1');
     const [pendingPaletteId, setPendingPaletteId] = useState('p1');
     const [isCustom, setIsCustom] = useState(false);
@@ -36,7 +40,19 @@ export function ThemeColorContent() {
         secondary_text_color: '#475569',
         paragraph_color: '#334155',
     });
-    const [isSaving, setIsSaving] = useState(false);
+
+    useEffect(() => {
+        if (themeData && Object.keys(themeData).length > 0) {
+            if (themeData.primary_color) {
+                setCustomColors({
+                    primary_bg_color: themeData.primary_color || '#1e3a8a',
+                    primary_text_color: themeData.text_color || '#0f172a',
+                    secondary_text_color: themeData.secondary_color || '#475569',
+                    paragraph_color: themeData.accent_color || '#334155',
+                });
+            }
+        }
+    }, [themeData]);
 
     const activePalette = ADMIN_PALETTES.find((p) => p.id === selectedPaletteId) || ADMIN_PALETTES[0];
 
@@ -72,16 +88,23 @@ export function ThemeColorContent() {
         toast.info('Palette selection applied.');
     };
 
-    const handleSave = () => {
-        setIsSaving(true);
-        setTimeout(() => {
-            setIsSaving(false);
-            toast.success('Theme Color saved successfully!');
-        }, 500);
+    const handleSave = async () => {
+        try {
+            await save({
+                primary_color: currentColors.primary_bg_color,
+                text_color: currentColors.primary_text_color,
+                secondary_color: currentColors.secondary_text_color,
+                accent_color: currentColors.paragraph_color,
+            });
+            toast.success('Theme color settings saved successfully');
+        } catch (err: any) {
+            toast.error(err?.message || 'Failed to save theme colors');
+        }
     };
 
     return (
         <div className="space-y-6">
+            <PageLoader open={isSaving} text="Saving Theme Colors..." />
             <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-5">
                 <div>
                     <h1 className="mt-1 text-2xl font-bold tracking-tight">Theme Color</h1>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     Save,
     Loader2,
@@ -22,6 +22,8 @@ import { Switch } from '@/components/ui/switch';
 import { BuilderCountedInput } from './builder-field';
 import { MultiSelectPages } from './multi-select-pages';
 import { DraggableItemList, AddCustomLinkRow, type DraggableItemListItem, type ChildMenuItem } from './draggable-item-list';
+import { useCompanyBasicInformation, useCompanyMenuItems } from '@/hooks/useCompanyWebsiteBuilder';
+import { PageLoader } from '@/components/common/page-loader';
 
 const initialSelectedPages = [
     'home',
@@ -34,14 +36,49 @@ const initialSelectedPages = [
 ];
 
 export function NavMenuContent() {
+    const { data: basicInfo, save: saveBasic, isSaving: isSavingBasic } = useCompanyBasicInformation();
+    const { data: savedMenuItems = [], replace: replaceMenuItems, isSaving: isSavingItems } = useCompanyMenuItems();
+
     const [logoUrl, setLogoUrl] = useState<string>('');
     const [companyName, setCompanyName] = useState('RA EVENTS');
     const [city, setCity] = useState('Melapalayam (Tirunelveli)');
     const [showLogin, setShowLogin] = useState(true);
     const [showSignIn, setShowSignIn] = useState(true);
     const [menuHeading, setMenuHeading] = useState('Nav Menu');
-    const [isSaving, setIsSaving] = useState(false);
     const [selectedPages, setSelectedPages] = useState<string[]>(initialSelectedPages);
+
+    const [menuItems, setMenuItems] = useState<DraggableItemListItem[]>([
+        { id: 'home', label: 'Home', icon: Home, children: [] },
+        { id: 'about-us', label: 'About Us', icon: Users, children: [] },
+        { id: 'pages', label: 'Pages', icon: FileText, children: [] },
+        { id: 'service', label: 'Service', icon: MessageSquareQuote, children: [] },
+        { id: 'events', label: 'Events', icon: Calendar, children: [] },
+    ]);
+
+    useEffect(() => {
+        if (basicInfo && Object.keys(basicInfo).length > 0) {
+            if (basicInfo.logo_url) setLogoUrl(basicInfo.logo_url);
+            if (basicInfo.company_name) setCompanyName(basicInfo.company_name);
+            if (basicInfo.city) setCity(basicInfo.city);
+            if (basicInfo.show_login !== undefined) setShowLogin(Boolean(basicInfo.show_login));
+            if (basicInfo.show_signin !== undefined) setShowSignIn(Boolean(basicInfo.show_signin));
+        }
+    }, [basicInfo]);
+
+    useEffect(() => {
+        if (savedMenuItems && savedMenuItems.length > 0) {
+            setMenuItems(
+                savedMenuItems.map((item: any) => ({
+                    id: String(item.id || item.label),
+                    label: item.label,
+                    icon: FileText,
+                    children: [],
+                }))
+            );
+        }
+    }, [savedMenuItems]);
+
+    const isSaving = isSavingBasic || isSavingItems;
 
     const handleLogoSelect = (file: File) => {
         const reader = new FileReader();
@@ -72,15 +109,6 @@ export function NavMenuContent() {
         { label: 'Gallery', value: 'gallery', icon: FileText },
         { label: 'Contact Us', value: 'contact-us', icon: FileText },
     ];
-
-    // Menu Items for drag and drop list
-    const [menuItems, setMenuItems] = useState<DraggableItemListItem[]>([
-        { id: 'home', label: 'Home', icon: Home, children: [] },
-        { id: 'about-us', label: 'About Us', icon: Users, children: [] },
-        { id: 'pages', label: 'Pages', icon: FileText, children: [] },
-        { id: 'service', label: 'Service', icon: MessageSquareQuote, children: [] },
-        { id: 'events', label: 'Events', icon: Calendar, children: [] },
-    ]);
 
     const handleAddChild = (parentId: string | number, child: ChildMenuItem) => {
         setMenuItems((prev) =>
@@ -122,16 +150,35 @@ export function NavMenuContent() {
         toast.success(`Menu item "${item.label}" removed.`);
     };
 
-    const handleSave = () => {
-        setIsSaving(true);
-        setTimeout(() => {
-            setIsSaving(false);
-            toast.success('Nav Menu brand, settings, and order saved successfully!');
-        }, 500);
+    const handleSave = async () => {
+        try {
+            await saveBasic({
+                logo_url: logoUrl,
+                company_name: companyName,
+                city,
+                show_login: showLogin ? 1 : 0,
+                show_signin: showSignIn ? 1 : 0,
+            });
+
+            await replaceMenuItems(
+                menuItems.map((item, idx) => ({
+                    label: item.label,
+                    url: item.description || `/${item.id}`,
+                    sort_order: idx + 1,
+                    is_visible: 1,
+                    is_active: 1,
+                }))
+            );
+
+            toast.success('Nav menu brand and ordering saved successfully');
+        } catch (err: any) {
+            toast.error(err?.message || 'Failed to save nav menu settings');
+        }
     };
 
     return (
         <div className="space-y-6">
+            <PageLoader open={isSaving} text="Saving Nav Menu Settings..." />
             {/* Page Header */}
             <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-5">
                 <div>

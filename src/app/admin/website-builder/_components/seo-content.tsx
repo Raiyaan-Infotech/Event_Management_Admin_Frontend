@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Save, Sparkles, FileText, Settings2, Upload, Crop, Trash2, HelpCircle, RotateCcw, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -12,8 +12,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { BuilderCountedInput, BuilderCountedTextarea } from './builder-field';
 import { MediaCropDialog } from '@/components/common/media-crop-dialog';
+import { useCompanySeoSettings } from '@/hooks/useCompanyWebsiteBuilder';
+import { PageLoader } from '@/components/common/page-loader';
 
 export function SeoContent() {
+    const { data: seoData, isLoading, save, isSaving } = useCompanySeoSettings();
+
     const [metaTitle, setMetaTitle] = useState('Eventify - Best Event Management & Planning Services');
     const [metaDescription, setMetaDescription] = useState('Eventify offers top-notch event management and planning services for weddings, corporate events, birthdays, and more.');
     const [keywords, setKeywords] = useState('event management, event planning, wedding events, corporate events, birthday parties');
@@ -30,7 +34,21 @@ export function SeoContent() {
     const [siteName, setSiteName] = useState('Eventify');
     const [sitemapEnabled, setSitemapEnabled] = useState(true);
     const [structuredData, setStructuredData] = useState(false);
-    const [isSaving, setIsSaving] = useState(false);
+
+    useEffect(() => {
+        if (seoData && Object.keys(seoData).length > 0) {
+            if (seoData.default_title) setMetaTitle(seoData.default_title);
+            if (seoData.default_description) setMetaDescription(seoData.default_description);
+            if (seoData.default_keywords) setKeywords(seoData.default_keywords);
+            if (seoData.og_image_url) setOgImageUrl(seoData.og_image_url);
+            if (seoData.author) setAuthor(seoData.author);
+            if (seoData.language) setLanguage(seoData.language);
+            if (seoData.site_name) setSiteName(seoData.site_name);
+            if (seoData.canonical_url) setCanonicalUrl(seoData.canonical_url);
+            if (seoData.sitemap_enabled !== undefined) setSitemapEnabled(Boolean(seoData.sitemap_enabled));
+            if (seoData.structured_data_enabled !== undefined) setStructuredData(Boolean(seoData.structured_data_enabled));
+        }
+    }, [seoData]);
 
     const TITLE_MAX = 60;
     const DESC_MAX = 160;
@@ -70,16 +88,29 @@ export function SeoContent() {
         toast.success('OG Image cropped and updated successfully.');
     };
 
-    const handleSave = () => {
-        setIsSaving(true);
-        setTimeout(() => {
-            setIsSaving(false);
-            toast.success('SEO settings saved successfully!');
-        }, 500);
+    const handleSave = async () => {
+        try {
+            await save({
+                default_title: metaTitle,
+                default_description: metaDescription,
+                default_keywords: keywords,
+                og_image_url: ogImageUrl,
+                author,
+                language,
+                site_name: siteName,
+                canonical_url: canonicalUrl,
+                sitemap_enabled: sitemapEnabled ? 1 : 0,
+                structured_data_enabled: structuredData ? 1 : 0,
+            });
+            toast.success('SEO settings saved successfully');
+        } catch (err: any) {
+            toast.error(err?.message || 'Failed to save SEO settings');
+        }
     };
 
     return (
         <div className="space-y-6">
+            <PageLoader open={isSaving} text="Saving SEO Settings..." />
             <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-5">
                 <div>
                     <h1 className="mt-1 text-2xl font-bold tracking-tight">SEO Settings</h1>

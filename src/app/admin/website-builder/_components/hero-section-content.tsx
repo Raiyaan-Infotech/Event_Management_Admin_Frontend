@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     Save,
     RotateCcw,
@@ -26,6 +26,8 @@ import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { BuilderCountedInput, BuilderCountedTextarea } from './builder-field';
 import { MediaCropDialog } from '@/components/common/media-crop-dialog';
+import { useCompanyHeroSection } from '@/hooks/useCompanyWebsiteBuilder';
+import { PageLoader } from '@/components/common/page-loader';
 import { cn } from '@/lib/utils';
 
 type PreviewDevice = 'desktop' | 'mobile';
@@ -36,10 +38,12 @@ type ContentAlign = 'left' | 'center' | 'right';
 type LinkTargetMode = 'page' | 'custom';
 
 export function HeroSectionContent() {
+    const { data: heroData, isLoading, save, isSaving } = useCompanyHeroSection();
+
     // Hero Content
     const [badgeText, setBadgeText] = useState('Best Event Management');
     const [title, setTitle] = useState('We Create Unforgettable Moments');
-    const [description, setDescription] = useState('From elegant weddings to corporate events, we handle every detail with creativity and perfection. Let us bring your dream event to life.');
+    const [description, setDescription] = useState('From elegant weddings to corporate events, we handle every detail with creativity and perfection.');
     const [heroImage, setHeroImage] = useState('');
 
     // Button 1
@@ -59,26 +63,72 @@ export function HeroSectionContent() {
     // Middle Column Settings
     const [heroHeight, setHeroHeight] = useState<HeroHeight>('medium');
     const [overlayEnabled, setOverlayEnabled] = useState(true);
-    const [overlayColor, setOverlayColor] = useState('#0B0D17');
+    const [overlayColor, setOverlayColor] = useState('#000000');
     const [overlayOpacity, setOverlayOpacity] = useState(60);
-
-    // Mobile Settings
-    const [hideBtn2Mobile, setHideBtn2Mobile] = useState(false);
-    const [centerMobile, setCenterMobile] = useState(true);
-    const [mobileHeroHeight, setMobileHeroHeight] = useState('medium-500');
-
-    // Layout & Alignment
     const [buttonLayout, setButtonLayout] = useState<ButtonLayout>('left');
     const [contentAlign, setContentAlign] = useState<ContentAlign>('left');
 
     const [previewDevice, setPreviewDevice] = useState<PreviewDevice>('desktop');
-    const [isSaving, setIsSaving] = useState(false);
 
     // Cropper State
     const [cropOpen, setCropOpen] = useState(false);
     const [cropImageRaw, setCropImageRaw] = useState('');
     const [cropFileName, setCropFileName] = useState('hero.jpg');
     const [cropMimeType, setCropMimeType] = useState('image/jpeg');
+
+    useEffect(() => {
+        if (heroData && Object.keys(heroData).length > 0) {
+            if (heroData.badge_text) setBadgeText(heroData.badge_text);
+            if (heroData.title) setTitle(heroData.title);
+            if (heroData.description) setDescription(heroData.description);
+            if (heroData.image_url) setHeroImage(heroData.image_url);
+            if (heroData.hero_height) setHeroHeight(heroData.hero_height as HeroHeight);
+            if (heroData.overlay_enabled !== undefined) setOverlayEnabled(Boolean(heroData.overlay_enabled));
+            if (heroData.overlay_color) setOverlayColor(heroData.overlay_color);
+            if (heroData.overlay_opacity !== undefined) setOverlayOpacity(Number(heroData.overlay_opacity));
+            if (heroData.button_layout) setButtonLayout(heroData.button_layout as ButtonLayout);
+            if (heroData.content_alignment) setContentAlign(heroData.content_alignment as ContentAlign);
+
+            if (heroData.button_1_json) {
+                setBtn1Enabled(Boolean(heroData.button_1_json.enabled));
+                setBtn1Label(heroData.button_1_json.label || 'Explore Events');
+                setBtn1Style(heroData.button_1_json.style || 'Primary');
+                setBtn1CustomUrl(heroData.button_1_json.url || '/events');
+            }
+            if (heroData.button_2_json) {
+                setBtn2Enabled(Boolean(heroData.button_2_json.enabled));
+                setBtn2Label(heroData.button_2_json.label || 'Contact Us');
+                setBtn2Style(heroData.button_2_json.style || 'Outline');
+                setBtn2CustomUrl(heroData.button_2_json.url || '/contact');
+            }
+        }
+    }, [heroData]);
+
+    const handleSave = async () => {
+        try {
+            await save({
+                badge_text: badgeText,
+                title,
+                description,
+                image_url: heroImage,
+                hero_height: heroHeight,
+                overlay_enabled: overlayEnabled ? 1 : 0,
+                overlay_color: overlayColor,
+                overlay_opacity: overlayOpacity,
+                button_layout: buttonLayout,
+                content_alignment: contentAlign,
+                button_1_json: { enabled: btn1Enabled, label: btn1Label, style: btn1Style, url: btn1CustomUrl },
+                button_2_json: { enabled: btn2Enabled, label: btn2Label, style: btn2Style, url: btn2CustomUrl },
+            });
+            toast.success('Hero section settings saved successfully');
+        } catch (err: any) {
+            toast.error(err?.message || 'Failed to save hero section');
+        }
+    };
+    // Mobile Settings
+    const [hideBtn2Mobile, setHideBtn2Mobile] = useState(false);
+    const [centerMobile, setCenterMobile] = useState(true);
+    const [mobileHeroHeight, setMobileHeroHeight] = useState('medium-500');
 
     const handleFileSelect = (file: File) => {
         setCropFileName(file.name);
@@ -108,17 +158,9 @@ export function HeroSectionContent() {
         setContentAlign('left');
         toast.info('Hero Section settings reset.');
     };
-
-    const handleSave = () => {
-        setIsSaving(true);
-        setTimeout(() => {
-            setIsSaving(false);
-            toast.success('Hero Section settings saved successfully!');
-        }, 500);
-    };
-
     return (
         <div className="space-y-4">
+            <PageLoader open={isSaving} text="Saving Hero Section Settings..." />
             {/* Header */}
             <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-3.5">
                 <div>
