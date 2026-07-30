@@ -133,6 +133,15 @@ export type CreateVideoTutorialPayload = {
 };
 export type UpdateVideoTutorialPayload = Partial<CreateVideoTutorialPayload>;
 
+function extractArrayData<T>(resData: any): T[] {
+    if (!resData) return [];
+    if (Array.isArray(resData)) return resData;
+    if (Array.isArray(resData.data)) return resData.data;
+    if (Array.isArray(resData.data?.data)) return resData.data.data;
+    if (Array.isArray(resData.result)) return resData.result;
+    return [];
+}
+
 /* ------------------------------------------------------------------ */
 /*  Video Tutorial Categories                                          */
 /* ------------------------------------------------------------------ */
@@ -143,7 +152,7 @@ export function useVideoTutorialCategories() {
         queryKey: CATEGORY_KEY,
         queryFn: async () => {
             const res = await apiClient.get('/website-builder/video-tutorial-categories');
-            return (res.data?.data || []) as VideoTutorialCategory[];
+            return extractArrayData<VideoTutorialCategory>(res.data);
         },
     });
 }
@@ -225,7 +234,7 @@ export function useVideoTutorialSubCategories(params?: { category_id?: number | 
         queryKey: [...SUBCATEGORY_KEY, params ?? {}],
         queryFn: async () => {
             const res = await apiClient.get('/website-builder/video-tutorial-subcategories', { params });
-            return (res.data?.data || []) as VideoTutorialSubCategory[];
+            return extractArrayData<VideoTutorialSubCategory>(res.data);
         },
     });
 }
@@ -307,7 +316,7 @@ export function useVideoTutorialDifficultyLevels() {
         queryKey: DIFFICULTY_KEY,
         queryFn: async () => {
             const res = await apiClient.get('/website-builder/video-tutorial-difficulty-levels');
-            return (res.data?.data || []) as VideoTutorialDifficultyLevel[];
+            return extractArrayData<VideoTutorialDifficultyLevel>(res.data);
         },
     });
 }
@@ -389,7 +398,7 @@ export function useVideoTutorialTypes() {
         queryKey: TYPE_KEY,
         queryFn: async () => {
             const res = await apiClient.get('/website-builder/video-tutorial-types');
-            return (res.data?.data || []) as VideoTutorialType[];
+            return extractArrayData<VideoTutorialType>(res.data);
         },
     });
 }
@@ -478,7 +487,7 @@ export function useVideoTutorials(params?: {
         queryKey: [...VIDEO_TUTORIAL_KEY, params ?? {}],
         queryFn: async () => {
             const res = await apiClient.get('/website-builder/video-tutorials', { params });
-            return (res.data?.data || []) as VideoTutorial[];
+            return extractArrayData<VideoTutorial>(res.data);
         },
     });
 }

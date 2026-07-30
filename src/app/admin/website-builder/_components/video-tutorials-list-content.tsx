@@ -275,7 +275,9 @@ export function VideoTutorialsListContent() {
                                 }}
                             >
                                 <SelectTrigger className="h-9 text-xs border-border bg-background text-foreground w-full">
-                                    <SelectValue placeholder="All Status" />
+                                    <SelectValue placeholder="All Status">
+                                        {selectedStatus === 'all' ? 'All Status' : selectedStatus === '1' ? 'Active' : 'Inactive'}
+                                    </SelectValue>
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">All Status</SelectItem>

@@ -29,8 +29,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+import { Icon } from '@iconify/react';
 import {
     useHowItWorksData,
     useHowItWorksStepDetail,
@@ -420,13 +421,13 @@ export default function HowItWorksPage() {
                                             {idx + 1}
                                         </div>
 
-                                        {/* Main Grid Content (Read-Only) */}
-                                        <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                                        {/* Main Row Content */}
+                                        <div className="flex-1 flex flex-col md:flex-row items-center gap-4 lg:gap-6 min-w-0">
                                             {/* Column 1: Icon Box */}
-                                            <div className="md:col-span-2 flex flex-col items-center justify-center text-center space-y-1 border-r border-border/50 pr-3 min-w-0">
+                                            <div className="flex flex-col items-center justify-center text-center space-y-1 border-r border-border/50 pr-4 shrink-0 w-20">
                                                 <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Icon</span>
-                                                <div className="h-12 w-12 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-xs shrink-0">
-                                                    <IconComp className="h-5 w-5" />
+                                                <div className="h-11 w-11 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-xs shrink-0">
+                                                    <Icon icon={item.icon?.includes(':') ? item.icon : `lucide:${item.icon || 'gift'}`} className="h-5 w-5" />
                                                 </div>
                                                 <span className="text-[10px] font-semibold text-muted-foreground capitalize truncate max-w-full">
                                                     {item.icon || 'gift'}
@@ -434,7 +435,7 @@ export default function HowItWorksPage() {
                                             </div>
 
                                             {/* Column 2: Illustration Image */}
-                                            <div className="md:col-span-2 flex flex-col items-center justify-center text-center space-y-1 border-r border-border/50 pr-3 min-w-0">
+                                            <div className="flex flex-col items-center justify-center text-center space-y-1 border-r border-border/50 pr-4 shrink-0 w-28">
                                                 <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Illustration</span>
                                                 <div className="h-14 w-24 rounded-xl border border-border overflow-hidden bg-muted/30 flex items-center justify-center shrink-0 shadow-xs">
                                                     {item.illustration_url ? (
@@ -445,8 +446,8 @@ export default function HowItWorksPage() {
                                                 </div>
                                             </div>
 
-                                            {/* Column 3: Title & Description (Read-Only Text) */}
-                                            <div className="md:col-span-5 space-y-1 min-w-0 pr-2">
+                                            {/* Column 3: Title & Description */}
+                                            <div className="flex-1 space-y-1 min-w-0 pr-4">
                                                 <h3 className="text-sm font-extrabold text-foreground truncate">
                                                     {item.title || <span className="italic text-muted-foreground">Untitled Step</span>}
                                                 </h3>
@@ -455,10 +456,10 @@ export default function HowItWorksPage() {
                                                 </p>
                                             </div>
 
-                                            {/* Column 4: Highlight Title & Subtext (Read-Only Box) */}
-                                            <div className="md:col-span-3 space-y-1">
+                                            {/* Column 4: Highlights */}
+                                            <div className="space-y-1 shrink-0 w-full md:w-64 lg:w-72">
                                                 <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Highlights</span>
-                                                <div className="p-2 rounded-xl border border-border bg-muted/20 space-y-0.5">
+                                                <div className="p-2.5 rounded-xl border border-border bg-muted/20 space-y-0.5">
                                                     <div className="text-xs font-bold text-foreground truncate">
                                                         {item.highlight_title || <span className="text-muted-foreground text-[11px] italic">No highlight title</span>}
                                                     </div>

@@ -177,7 +177,7 @@ export function TemplatesSection({ templates, theme, categories, onPreview, onUs
                 resetPaging();
               }}
               placeholder="Search templates for weddings, events..."
-              className="w-full rounded-full border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
+              className="w-full rounded-md border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
             />
           </div>
 
@@ -211,7 +211,7 @@ export function TemplatesSection({ templates, theme, categories, onPreview, onUs
               onClick={() =>
                 document.getElementById('templates-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
               }
-              className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-bold text-white shadow-sm"
+              className="inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-sm font-bold text-white shadow-sm"
               style={{ backgroundColor: theme.primaryButton }}
             >
               <FilterIcon className="h-3.5 w-3.5" />
@@ -249,12 +249,12 @@ export function TemplatesSection({ templates, theme, categories, onPreview, onUs
               <button
                 type="button"
                 onClick={() => setShowMoreCategories((s) => !s)}
-                className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-4 py-1.5 text-[13px] font-semibold text-slate-700"
+                className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-4 py-1.5 text-[13px] font-semibold text-slate-700"
               >
                 More <ChevronDown className="h-3.5 w-3.5" />
               </button>
               {showMoreCategories && (
-                <div className="absolute left-0 top-full z-20 mt-2 w-44 rounded-lg border border-slate-200 bg-white p-1 shadow-lg">
+                <div className="absolute left-0 top-full z-20 mt-2 w-44 rounded-md border border-slate-200 bg-white p-1 shadow-lg">
                   {overflowPills.map((label) => (
                     <button
                       key={label}
@@ -299,7 +299,7 @@ export function TemplatesSection({ templates, theme, categories, onPreview, onUs
             <button
               type="button"
               onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
-              className="inline-flex items-center gap-2 rounded-full border px-6 py-2.5 text-sm font-bold transition-colors hover:text-white"
+              className="inline-flex items-center gap-2 rounded-md border px-6 py-2.5 text-sm font-bold transition-colors hover:text-white"
               style={{ borderColor: theme.primaryButton, color: theme.primaryButton }}
               onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = theme.primaryButton)}
               onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
@@ -326,7 +326,7 @@ function SelectField({
   icon?: React.ReactNode;
 }) {
   return (
-    <div className="relative inline-flex items-center rounded-full border border-slate-200 bg-white py-2 pl-3 pr-7">
+    <div className="relative inline-flex items-center rounded-md border border-slate-200 bg-white py-2 pl-3 pr-7">
       {icon && <span className="mr-1.5">{icon}</span>}
       <select
         value={value}
@@ -359,7 +359,7 @@ function CategoryPill({
     <button
       type="button"
       onClick={onClick}
-      className="rounded-full border px-4 py-1.5 text-[13px] font-semibold transition-colors"
+      className="rounded-md border px-4 py-1.5 text-[13px] font-semibold transition-colors"
       style={
         isActive
           ? { backgroundColor: `${theme.primaryButton}14`, borderColor: `${theme.primaryButton}66`, color: theme.primaryButton }
@@ -387,7 +387,7 @@ function TemplateCard({
   onUseTemplate?: (template: TemplateItem) => void;
 }) {
   return (
-    <div className="flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs transition hover:shadow-md">
+    <div className="flex flex-col overflow-hidden rounded-md border border-slate-200 bg-white shadow-xs transition hover:shadow-md">
       <div className="relative aspect-[3/4] w-full overflow-hidden bg-slate-100">
         {template.thumbnailUrl ? (
           <img src={template.thumbnailUrl} alt={template.title} className="h-full w-full object-cover" />
@@ -401,7 +401,7 @@ function TemplateCard({
           type="button"
           onClick={onToggleFavorite}
           aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-          className="absolute right-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 shadow-sm"
+          className="absolute right-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-md bg-white/90 shadow-sm"
         >
           <Heart
             className="h-3.5 w-3.5"

@@ -36,7 +36,7 @@ function VideoTutorialsSectionBase({ videos, theme }: { videos: VideoTutorialIte
               href={vid.videoUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="group overflow-hidden rounded-2xl border border-slate-100 bg-slate-50/50 shadow-xs transition duration-300 hover:-translate-y-1 hover:border-slate-200 hover:bg-white hover:shadow-lg"
+              className="group overflow-hidden rounded-md border border-slate-100 bg-slate-50/50 shadow-xs transition duration-300 hover:-translate-y-1 hover:border-slate-200 hover:bg-white hover:shadow-lg"
             >
               <div className="relative aspect-video w-full overflow-hidden bg-slate-900">
                 {vid.thumbnailUrl ? (
@@ -50,7 +50,7 @@ function VideoTutorialsSectionBase({ videos, theme }: { videos: VideoTutorialIte
                 )}
                 <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/20">
                   <div
-                    className="flex h-14 w-14 items-center justify-center rounded-full text-white shadow-xl transition duration-300 group-hover:scale-110"
+                    className="flex h-14 w-14 items-center justify-center rounded-md text-white shadow-xl transition duration-300 group-hover:scale-110"
                     style={{ backgroundColor: theme.primaryButton }}
                   >
                     <Play className="ml-1 h-6 w-6 fill-current" />

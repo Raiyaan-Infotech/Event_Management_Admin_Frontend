@@ -41,6 +41,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 
 const ICON_OPTIONS = [
     { label: 'Rocket (Getting Started)', value: 'Rocket', icon: Rocket },
@@ -366,7 +367,10 @@ export function FaqCategoriesBuilderContent() {
                                             if (error) setError('');
                                         }}
                                         maxLength={50}
-                                        inputClassName="!h-10 text-xs border-border bg-background text-foreground"
+                                        inputClassName={cn(
+                                            '!h-10 text-xs border-border bg-background text-foreground',
+                                            error && 'border-red-500 ring-1 ring-red-500 bg-red-50/10'
+                                        )}
                                     />
                                     <p className="text-[10px] text-muted-foreground mt-1">
                                         Enter a clear and relevant name for this FAQ category.

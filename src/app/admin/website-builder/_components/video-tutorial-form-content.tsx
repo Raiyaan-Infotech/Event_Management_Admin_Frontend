@@ -39,6 +39,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 
 interface VideoTutorialFormContentProps {
     id?: number;
@@ -159,6 +160,14 @@ export function VideoTutorialFormContent({ id }: VideoTutorialFormContentProps) 
         if (!title.trim()) newErr.title = 'Tutorial title is required';
         if (!shortDescription.trim()) newErr.short_description = 'Short description is required';
         if (!categoryId) newErr.category_id = 'Category is required';
+        if (sortOrder === undefined || sortOrder === null || isNaN(sortOrder) || sortOrder <= 0) {
+            newErr.sort_order = 'Display order is required';
+        }
+        if (videoSource === 'upload' && !videoFileUrl.trim()) {
+            newErr.video_file = 'Video file is required';
+        } else if ((videoSource === 'youtube' || videoSource === 'vimeo') && !videoUrl.trim()) {
+            newErr.video_url = 'Video URL is required';
+        }
 
         if (Object.keys(newErr).length > 0) {
             setErrors(newErr);
@@ -278,12 +287,16 @@ export function VideoTutorialFormContent({ id }: VideoTutorialFormContentProps) 
                                 </Label>
                                 <BuilderCountedInput
                                     value={title}
-                                    onChange={setTitle}
+                                    onChange={(val) => {
+                                        setTitle(val);
+                                        if (errors.title) setErrors((e) => ({ ...e, title: '' }));
+                                    }}
                                     maxLength={100}
                                     placeholder="Enter tutorial title..."
                                     className="bg-background text-xs border-border"
+                                    inputClassName={cn(errors.title && 'border-red-500 ring-1 ring-red-500 bg-red-50/10')}
                                 />
-                                {errors.title && <p className="text-xs text-rose-500">{errors.title}</p>}
+                                {errors.title && <p className="text-xs text-rose-500 font-semibold">{errors.title}</p>}
                                 <p className="text-[11px] text-muted-foreground">Enter a clear and attractive title for your video tutorial.</p>
                             </div>
 
@@ -294,13 +307,17 @@ export function VideoTutorialFormContent({ id }: VideoTutorialFormContentProps) 
                                 </Label>
                                 <BuilderCountedTextarea
                                     value={shortDescription}
-                                    onChange={setShortDescription}
+                                    onChange={(val) => {
+                                        setShortDescription(val);
+                                        if (errors.short_description) setErrors((e) => ({ ...e, short_description: '' }));
+                                    }}
                                     maxLength={200}
                                     rows={3}
                                     placeholder="Enter a brief description about this tutorial..."
                                     className="bg-background text-xs border-border"
+                                    textareaClassName={cn(errors.short_description && 'border-red-500 ring-1 ring-red-500 bg-red-50/10')}
                                 />
-                                {errors.short_description && <p className="text-xs text-rose-500">{errors.short_description}</p>}
+                                {errors.short_description && <p className="text-xs text-rose-500 font-semibold">{errors.short_description}</p>}
                                 <p className="text-[11px] text-muted-foreground">This will be displayed on the tutorial card.</p>
                             </div>
 
@@ -316,9 +333,13 @@ export function VideoTutorialFormContent({ id }: VideoTutorialFormContentProps) 
                                         onValueChange={(val) => {
                                             setCategoryId(val);
                                             setSubcategoryId('');
+                                            if (errors.category_id) setErrors((e) => ({ ...e, category_id: '' }));
                                         }}
                                     >
-                                        <SelectTrigger className="h-9 text-xs border-border bg-background text-foreground w-full">
+                                        <SelectTrigger className={cn(
+                                            'h-9 text-xs border-border bg-background text-foreground w-full',
+                                            errors.category_id && 'border-red-500 ring-1 ring-red-500 bg-red-50/10'
+                                        )}>
                                             <SelectValue placeholder="Select a category">
                                                 {categories.find((c) => String(c.id) === String(categoryId))?.name}
                                             </SelectValue>
@@ -331,7 +352,7 @@ export function VideoTutorialFormContent({ id }: VideoTutorialFormContentProps) 
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                    {errors.category_id && <p className="text-xs text-rose-500">{errors.category_id}</p>}
+                                    {errors.category_id && <p className="text-xs text-rose-500 font-semibold">{errors.category_id}</p>}
                                 </div>
 
                                 {/* Sub Category Dropdown */}
@@ -395,7 +416,10 @@ export function VideoTutorialFormContent({ id }: VideoTutorialFormContentProps) 
                                             type="radio"
                                             name="videoSource"
                                             checked={videoSource === 'upload'}
-                                            onChange={() => setVideoSource('upload')}
+                                            onChange={() => {
+                                                setVideoSource('upload');
+                                                if (errors.video_file || errors.video_url) setErrors((e) => ({ ...e, video_file: '', video_url: '' }));
+                                            }}
                                             className="accent-primary"
                                         />
                                         Upload Video
@@ -405,7 +429,10 @@ export function VideoTutorialFormContent({ id }: VideoTutorialFormContentProps) 
                                             type="radio"
                                             name="videoSource"
                                             checked={videoSource === 'youtube'}
-                                            onChange={() => setVideoSource('youtube')}
+                                            onChange={() => {
+                                                setVideoSource('youtube');
+                                                if (errors.video_file || errors.video_url) setErrors((e) => ({ ...e, video_file: '', video_url: '' }));
+                                            }}
                                             className="accent-primary"
                                         />
                                         YouTube Link
@@ -415,7 +442,10 @@ export function VideoTutorialFormContent({ id }: VideoTutorialFormContentProps) 
                                             type="radio"
                                             name="videoSource"
                                             checked={videoSource === 'vimeo'}
-                                            onChange={() => setVideoSource('vimeo')}
+                                            onChange={() => {
+                                                setVideoSource('vimeo');
+                                                if (errors.video_file || errors.video_url) setErrors((e) => ({ ...e, video_file: '', video_url: '' }));
+                                            }}
                                             className="accent-primary"
                                         />
                                         Vimeo Link
@@ -429,11 +459,17 @@ export function VideoTutorialFormContent({ id }: VideoTutorialFormContentProps) 
                                     <Label className="text-xs font-bold text-foreground">
                                         Upload Video File <span className="text-rose-500">*</span>
                                     </Label>
-                                    <div className="border-2 border-dashed border-primary/30 rounded-2xl p-6 bg-primary/5 text-center space-y-3 relative group hover:border-primary transition-colors">
+                                    <div className={cn(
+                                        'border-2 border-dashed rounded-2xl p-6 text-center space-y-3 relative group transition-colors',
+                                        errors.video_file ? 'border-red-500 ring-1 ring-red-500 bg-red-50/10' : 'border-primary/30 bg-primary/5 hover:border-primary'
+                                    )}>
                                         <input
                                             type="file"
                                             accept="video/*"
-                                            onChange={handleVideoFileUpload}
+                                            onChange={(e) => {
+                                                handleVideoFileUpload(e);
+                                                if (errors.video_file) setErrors((err) => ({ ...err, video_file: '' }));
+                                            }}
                                             className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                                         />
                                         <div className="h-12 w-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto shadow-xs">
@@ -453,6 +489,7 @@ export function VideoTutorialFormContent({ id }: VideoTutorialFormContentProps) 
                                             </p>
                                         )}
                                     </div>
+                                    {errors.video_file && <p className="text-xs text-rose-500 font-semibold">{errors.video_file}</p>}
                                 </div>
                             ) : (
                                 <div className="space-y-1.5">
@@ -461,10 +498,17 @@ export function VideoTutorialFormContent({ id }: VideoTutorialFormContentProps) 
                                     </Label>
                                     <Input
                                         value={videoUrl}
-                                        onChange={(e) => setVideoUrl(e.target.value)}
+                                        onChange={(e) => {
+                                            setVideoUrl(e.target.value);
+                                            if (errors.video_url) setErrors((err) => ({ ...err, video_url: '' }));
+                                        }}
                                         placeholder={videoSource === 'youtube' ? 'https://www.youtube.com/watch?v=...' : 'https://vimeo.com/...'}
-                                        className="bg-background text-xs border-border"
+                                        className={cn(
+                                            'bg-background text-xs border-border',
+                                            errors.video_url && 'border-red-500 ring-1 ring-red-500 bg-red-50/10'
+                                        )}
                                     />
+                                    {errors.video_url && <p className="text-xs text-rose-500 font-semibold">{errors.video_url}</p>}
                                 </div>
                             )}
 
@@ -646,10 +690,17 @@ export function VideoTutorialFormContent({ id }: VideoTutorialFormContentProps) 
                                     type="number"
                                     min={1}
                                     value={sortOrder}
-                                    onChange={(e) => setSortOrder(parseInt(e.target.value, 10) || 1)}
-                                    className="bg-background text-xs border-border"
+                                    onChange={(e) => {
+                                        setSortOrder(parseInt(e.target.value, 10));
+                                        if (errors.sort_order) setErrors((err) => ({ ...err, sort_order: '' }));
+                                    }}
+                                    className={cn(
+                                        'bg-background text-xs border-border',
+                                        errors.sort_order && 'border-red-500 ring-1 ring-red-500 bg-red-50/10'
+                                    )}
                                 />
                                 <p className="text-[11px] text-muted-foreground">Set the order in which this tutorial will appear.</p>
+                                {errors.sort_order && <p className="text-xs text-rose-500 font-semibold">{errors.sort_order}</p>}
                             </div>
 
                             {/* Featured Tutorial Switch */}

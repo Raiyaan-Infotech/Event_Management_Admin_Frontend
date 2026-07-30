@@ -1,7 +1,27 @@
 'use client';
 
 import * as React from 'react';
-import { Award, IndianRupee, LayoutDashboard, Palette, Radio, Users } from 'lucide-react';
+import {
+  Award,
+  IndianRupee,
+  LayoutDashboard,
+  LayoutGrid,
+  Palette,
+  Radio,
+  Users,
+  MapPin,
+  UserCheck,
+  Calendar,
+  Video,
+  Image as ImageIcon,
+  QrCode,
+  Heart,
+  Gift,
+  MessageCircle,
+  Bell,
+  ArrowRight,
+} from 'lucide-react';
+import { Icon } from '@iconify/react';
 import type { ThemeColors } from './preview-shared';
 
 export type FeatureItem = {
@@ -9,16 +29,47 @@ export type FeatureItem = {
   title: string;
   description: string;
   iconKey?: string;
+  /** From `custom_icon_url`. Takes priority over `iconKey` when present. */
+  customIconUrl?: string;
+  /** From `bullet_points_json` — real column, currently null on most rows.
+   *  Renders no list until an admin populates it for a feature. */
+  bulletPoints?: string[];
+  /** Still no backing column in the API response — defaults to "View Feature". */
+  ctaLabel?: string;
 };
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   'lucide:layout-dashboard': LayoutDashboard,
+  'lucide:layout-grid': LayoutGrid,
   'lucide:award': Award,
   'lucide:palette': Palette,
   'lucide:users': Users,
+  'lucide:user-check': UserCheck,
   'lucide:radio': Radio,
   'lucide:indian-rupee': IndianRupee,
+  'lucide:map-pin': MapPin,
+  'lucide:calendar': Calendar,
+  'lucide:video': Video,
+  'lucide:image': ImageIcon,
+  'lucide:qr-code': QrCode,
+  'lucide:heart': Heart,
+  'lucide:gift': Gift,
+  'lucide:message-circle': MessageCircle,
+  'lucide:bell': Bell,
 };
+
+// Rotating accent palette — there's no per-feature color column in the schema,
+// so each card cycles through this set by index instead of using one flat theme color.
+const ACCENTS: { bg: string; fg: string }[] = [
+  { bg: '#F3E8FF', fg: '#7C3AED' }, // purple
+  { bg: '#FEE2E2', fg: '#DC2626' }, // red
+  { bg: '#DBEAFE', fg: '#2563EB' }, // blue
+  { bg: '#D1FAE5', fg: '#059669' }, // green
+  { bg: '#FFEDD5', fg: '#EA580C' }, // orange
+  { bg: '#FCE7F3', fg: '#DB2777' }, // pink
+  { bg: '#CFFAFE', fg: '#0891B2' }, // teal
+  { bg: '#FEF3C7', fg: '#D97706' }, // amber
+];
 
 function FeaturesSectionBase({ features, theme }: { features: FeatureItem[]; theme: ThemeColors }) {
   if (!features || !features.length) return null;
@@ -27,35 +78,72 @@ function FeaturesSectionBase({ features, theme }: { features: FeatureItem[]; the
     <section id="features" className="w-full border-t border-slate-100 bg-white py-16 sm:py-20">
       <div className="mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-8">
         <div className="mb-12 text-center">
-          <span className="mb-3 inline-flex rounded px-3 py-1 text-[12px] font-bold text-white" style={{ backgroundColor: theme.primaryButton }}>
-            Why Choose Us
+          <span className="text-[12px] font-bold uppercase tracking-wider" style={{ color: theme.primaryButton }}>
+            Features
           </span>
-          <h2 className="mt-4 text-[28px] font-black leading-tight tracking-tight sm:text-[36px]" style={{ color: theme.primaryText }}>
-            Features & Key Advantages
+          <h2
+            className="mt-3 text-[28px] font-black leading-tight tracking-tight sm:text-[36px]"
+            style={{ color: theme.primaryText }}
+          >
+            All the Features You Need
           </h2>
-          <div className="mx-auto mt-3 h-[3px] w-12 rounded-full" style={{ backgroundColor: theme.primaryButton }} />
+          <p className="mx-auto mt-3 max-w-2xl text-[14px] font-medium" style={{ color: theme.paragraph }}>
+            Powerful tools to inspire, manage and enhance your event experience.
+          </p>
         </div>
 
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {features.map((item) => {
-            const IconComp = (item.iconKey && ICON_MAP[item.iconKey]) || LayoutDashboard;
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {features.map((item, index) => {
+            const accent = ACCENTS[index % ACCENTS.length];
+            const iconName = item.iconKey
+              ? item.iconKey.includes(':')
+                ? item.iconKey
+                : `lucide:${item.iconKey}`
+              : 'lucide:sparkles';
+
             return (
               <div
                 key={item.id}
                 className="group relative rounded-xl border border-slate-100 bg-slate-50/50 p-6 shadow-xs transition duration-300 hover:-translate-y-1 hover:border-slate-200 hover:bg-white hover:shadow-md"
               >
                 <div
-                  className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg text-white shadow-sm transition duration-300 group-hover:scale-110"
-                  style={{ backgroundColor: theme.primaryButton }}
+                  className="mb-4 flex h-11 w-11 items-center justify-center rounded-lg transition duration-300 group-hover:scale-110"
+                  style={{ backgroundColor: accent.bg }}
                 >
-                  <IconComp className="h-6 w-6" />
+                  {item.customIconUrl ? (
+                    <img src={item.customIconUrl} alt="" className="h-5 w-5 object-contain" />
+                  ) : (
+                    <Icon icon={iconName} className="h-5 w-5" style={{ color: accent.fg }} />
+                  )}
                 </div>
-                <h3 className="text-[17px] font-bold text-slate-900" style={{ color: theme.primaryText }}>
+
+                <h3 className="text-[16px] font-bold" style={{ color: theme.primaryText }}>
                   {item.title}
                 </h3>
-                <p className="mt-2 text-[13px] font-medium leading-6 text-slate-600">
-                  {item.description}
-                </p>
+
+                {item.description && (
+                  <p className="mt-1.5 text-[13px] font-medium leading-6 text-slate-600">{item.description}</p>
+                )}
+
+                {item.bulletPoints && item.bulletPoints.length > 0 && (
+                  <ul className="mt-3 space-y-1.5">
+                    {item.bulletPoints.slice(0, 4).map((point, i) => (
+                      <li key={i} className="flex items-start gap-2 text-[12.5px] font-medium text-slate-600">
+                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: accent.fg }} />
+                        {point}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                <a
+                  href="#"
+                  className="mt-4 inline-flex items-center gap-1 text-[13px] font-bold transition-colors"
+                  style={{ color: accent.fg }}
+                >
+                  {item.ctaLabel || 'View Feature'}
+                  <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                </a>
               </div>
             );
           })}

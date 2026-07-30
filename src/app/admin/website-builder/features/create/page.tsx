@@ -36,6 +36,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { Icon } from '@iconify/react';
+import { IconPickerDialog } from '@/components/common/icon-picker-dialog';
 import {
     useFeaturesData,
     useSaveFeaturesList,
@@ -74,7 +76,8 @@ function FeatureFormContent() {
     const { data: dbFeatures, isLoading: isFeaturesLoading } = useFeaturesData();
     const saveFeaturesMutation = useSaveFeaturesList();
 
-    const [selectedIcon, setSelectedIcon] = useState('calendar');
+    const [selectedIcon, setSelectedIcon] = useState('lucide:sparkles');
+    const [iconPickerOpen, setIconPickerOpen] = useState(false);
     const [title, setTitle] = useState('');
     const [shortDesc, setShortDesc] = useState('');
     const [detailedDesc, setDetailedDesc] = useState('');
@@ -250,46 +253,53 @@ function FeatureFormContent() {
                                 <Label className="text-xs font-bold text-foreground">
                                     Feature Icon <span className="text-destructive">*</span>
                                 </Label>
-                                <div className="grid grid-cols-6 gap-2">
-                                    {ICON_PRESETS.map(({ name, Icon }) => (
-                                        <button
-                                            key={name}
-                                            type="button"
-                                            onClick={() => {
-                                                setSelectedIcon(name);
-                                                setCustomIconUrl('');
-                                            }}
-                                            className={cn(
-                                                'flex h-12 items-center justify-center rounded-xl border p-2 transition-all cursor-pointer',
-                                                selectedIcon === name && !customIconUrl
-                                                    ? 'border-primary bg-primary/10 ring-2 ring-primary/20 text-primary'
-                                                    : 'border-border bg-card hover:bg-accent text-muted-foreground'
-                                            )}
-                                        >
-                                            <Icon className="h-5 w-5" />
-                                        </button>
-                                    ))}
-                                    <label className={cn(
-                                        'col-span-2 flex flex-col items-center justify-center rounded-xl border border-dashed p-2 text-center relative cursor-pointer transition-all',
-                                        customIconUrl ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-muted/40 hover:bg-muted/60 text-muted-foreground'
-                                    )}>
+                                <div className="flex flex-wrap items-center gap-3">
+                                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-border bg-card shadow-xs">
+                                        {customIconUrl ? (
+                                            <img src={customIconUrl} alt="Custom Icon" className="h-6 w-6 object-contain" />
+                                        ) : (
+                                            <Icon icon={selectedIcon || 'lucide:sparkles'} className="h-6 w-6 text-primary" />
+                                        )}
+                                    </div>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setIconPickerOpen(true)}
+                                        className="h-10 text-xs font-semibold border-border hover:bg-accent gap-1.5 cursor-pointer"
+                                    >
+                                        <Sparkles className="h-3.5 w-3.5 text-primary" /> Select / Change Icon
+                                    </Button>
+                                    <label className="flex h-10 items-center justify-center rounded-md border border-dashed border-border bg-muted/40 px-3 text-xs font-semibold text-muted-foreground hover:bg-muted/60 cursor-pointer transition-colors">
                                         <input
                                             type="file"
                                             accept="image/*"
                                             onChange={handleCustomIconUpload}
-                                            className="absolute inset-0 opacity-0 cursor-pointer"
+                                            className="hidden"
                                         />
-                                        {customIconUrl ? (
-                                            <img src={customIconUrl} alt="Custom Icon" className="h-6 w-6 object-contain rounded-md" />
-                                        ) : (
-                                            <>
-                                                <Upload className="h-4 w-4 mb-1" />
-                                                <span className="text-[10px] font-bold text-foreground">Upload Custom</span>
-                                                <span className="text-[9px]">SVG/PNG Max 2MB</span>
-                                            </>
-                                        )}
+                                        <Upload className="h-3.5 w-3.5 mr-1.5" /> Upload Custom Image
                                     </label>
+                                    {customIconUrl ? (
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => setCustomIconUrl('')}
+                                            className="h-10 text-xs text-rose-500 hover:text-rose-600 hover:bg-rose-50"
+                                        >
+                                            <X className="h-3.5 w-3.5 mr-1" /> Clear Custom Image
+                                        </Button>
+                                    ) : null}
                                 </div>
+                                <IconPickerDialog
+                                    open={iconPickerOpen}
+                                    onOpenChange={setIconPickerOpen}
+                                    onSelect={(val) => {
+                                        setSelectedIcon(val);
+                                        setCustomIconUrl('');
+                                        setIconPickerOpen(false);
+                                    }}
+                                />
                             </div>
 
                             <BuilderCountedInput
@@ -596,7 +606,7 @@ function FeatureFormContent() {
                                             {customIconUrl ? (
                                                 <img src={customIconUrl} alt="Icon" className="h-6 w-6 object-contain" />
                                             ) : (
-                                                <CurrentIcon className="h-6 w-6 text-white" />
+                                                <Icon icon={selectedIcon?.includes(':') ? selectedIcon : `lucide:${selectedIcon || 'sparkles'}`} className="h-6 w-6 text-white" />
                                             )}
                                         </div>
                                         <Badge variant="outline" className="text-[10px] font-bold text-primary border-primary/30">

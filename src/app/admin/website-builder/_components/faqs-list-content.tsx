@@ -221,16 +221,8 @@ export function FaqsListContent() {
                             </Select>
                         </div>
 
-                        {/* Filter & Reset Buttons */}
+                        {/* Reset Button */}
                         <div className="flex items-center gap-2 shrink-0">
-                            <Button
-                                size="sm"
-                                onClick={handleApplyFilter}
-                                className="h-9 px-4 gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 font-bold text-xs shadow-xs whitespace-nowrap"
-                            >
-                                <Filter className="h-3.5 w-3.5" />
-                                Filter
-                            </Button>
                             <Button
                                 variant="outline"
                                 size="sm"

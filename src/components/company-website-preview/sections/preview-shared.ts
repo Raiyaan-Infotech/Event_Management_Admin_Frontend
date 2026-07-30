@@ -152,12 +152,19 @@ export function viewKeyFromHref(href: unknown): string {
   if (key === '' || key === '/' || key === 'home') return 'home';
   if (key.includes('gallery')) return 'gallery';
   if (key.includes('contact')) return 'contact';
+  if (key.includes('template')) return 'templates';
+  if (key.includes('pricing') || key.includes('plan')) return 'pricing-plans';
+  if (key.includes('feature') || key.includes('service')) return 'features';
+  if (key.includes('how-it-works') || key.includes('howitworks') || key.includes('workflow') || key.includes('process')) return 'how-it-works';
+  if (key.includes('testimonial') || key.includes('review')) return 'testimonials';
+  if (key.includes('faq')) return 'faqs';
+  if (key.includes('video') || key.includes('tutorial')) return 'video-tutorials';
   return key;
 }
 
 export function findPageForViewKey(key: string, pages: LegalPage[]): LegalPage | null {
-  if (!key || key === 'home' || key === 'gallery' || key === 'contact') return null;
-  const exact = pages.find((page) => viewKeyFromHref(page.slug) === key);
+  if (!key || key === 'home') return null;
+  const exact = pages.find((page) => viewKeyFromHref(page.slug) === key || page.slug?.toLowerCase().replace(/^\/+/, '') === key);
   if (exact) return exact;
   const norm = (v: unknown) => String(v ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
   const target = norm(key);
@@ -236,15 +243,17 @@ export function buildSocialLinks(socialLinks: AnyRecord[]) {
 
 // ── Nav Menu ─────────────────────────────────────────────────────────────────
 
-const FALLBACK_NAV: NavItem[] = [
+export const FALLBACK_NAV: NavItem[] = [
   { id: 'home', label: 'Home', href: '/', children: [] },
-  { id: 'about-us', label: 'About Us', href: '/about-us', children: [] },
+  { id: 'features', label: 'Features', href: '/features', children: [] },
+  { id: 'templates', label: 'Templates', href: '/templates', children: [] },
+  { id: 'pricing-plans', label: 'Pricing', href: '/pricing-plans', children: [] },
   { id: 'gallery', label: 'Gallery', href: '/gallery', children: [] },
-  { id: 'contact-us', label: 'Contact Us', href: '/contact-us', children: [] },
+  { id: 'contact', label: 'Contact Us', href: '/contact', children: [] },
 ];
 
 export function buildNavItems(menuItems: AnyRecord[], pages: AnyRecord[]) {
-  const rawItems = menuItems
+  const rawItems = (menuItems || [])
     .filter((item) => !item.parent_id && boolValue(item.is_visible, true))
     .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0));
 

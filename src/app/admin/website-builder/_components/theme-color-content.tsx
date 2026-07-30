@@ -1,9 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Save, Sparkles, Palette, Check, HelpCircle, RotateCcw, Loader2 } from 'lucide-react';
+import { Save, Palette, HelpCircle, RotateCcw, Loader2, Type } from 'lucide-react';
 import { toast } from 'sonner';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -28,11 +27,23 @@ const ADMIN_PALETTES: AdminPalette[] = [
     { id: 'p4', name: 'Midnight Onyx & Violet', primaryBg: '#581c87', primaryText: '#3b0764', secondaryText: '#4b5563', paragraph: '#1f2937' },
 ];
 
+const FONT_OPTIONS = [
+    { id: 'Inter', name: 'Inter (Modern & Clean)' },
+    { id: 'Roboto', name: 'Roboto (Geometric & Versatile)' },
+    { id: 'Open Sans', name: 'Open Sans (Neutral & Readable)' },
+    { id: 'Montserrat', name: 'Montserrat (Elegant Header)' },
+    { id: 'Poppins', name: 'Poppins (Geometric & Friendly)' },
+    { id: 'Lato', name: 'Lato (Warm & Humanist)' },
+    { id: 'Playfair Display', name: 'Playfair Display (Luxury Serif)' },
+    { id: 'Outfit', name: 'Outfit (Trendy & Modern)' },
+];
+
 export function ThemeColorContent() {
     const { data: themeData, isLoading, save, isSaving } = useCompanyThemeSettings();
 
     const [selectedPaletteId, setSelectedPaletteId] = useState('p1');
     const [pendingPaletteId, setPendingPaletteId] = useState('p1');
+    const [selectedFont, setSelectedFont] = useState('Inter');
     const [isCustom, setIsCustom] = useState(false);
     const [customColors, setCustomColors] = useState({
         primary_bg_color: '#1e3a8a',
@@ -43,7 +54,21 @@ export function ThemeColorContent() {
 
     useEffect(() => {
         if (themeData && Object.keys(themeData).length > 0) {
+            if (themeData.font_family) {
+                setSelectedFont(themeData.font_family);
+            }
             if (themeData.primary_color) {
+                const primaryColor = (themeData.primary_color || '').toLowerCase();
+                const matched = ADMIN_PALETTES.find((p) => p.primaryBg.toLowerCase() === primaryColor);
+                if (matched) {
+                    setSelectedPaletteId(matched.id);
+                    setPendingPaletteId(matched.id);
+                    setIsCustom(false);
+                } else {
+                    setIsCustom(true);
+                    setPendingPaletteId('custom');
+                }
+
                 setCustomColors({
                     primary_bg_color: themeData.primary_color || '#1e3a8a',
                     primary_text_color: themeData.text_color || '#0f172a',
@@ -68,6 +93,7 @@ export function ThemeColorContent() {
     const handleReset = () => {
         setSelectedPaletteId('p1');
         setPendingPaletteId('p1');
+        setSelectedFont('Inter');
         setIsCustom(false);
         setCustomColors({
             primary_bg_color: '#1e3a8a',
@@ -75,7 +101,7 @@ export function ThemeColorContent() {
             secondary_text_color: '#475569',
             paragraph_color: '#334155',
         });
-        toast.info('Theme colors reset to defaults.');
+        toast.info('Theme colors and fonts reset to defaults.');
     };
 
     const handleApply = () => {
@@ -95,8 +121,9 @@ export function ThemeColorContent() {
                 text_color: currentColors.primary_text_color,
                 secondary_color: currentColors.secondary_text_color,
                 accent_color: currentColors.paragraph_color,
+                font_family: selectedFont,
             });
-            toast.success('Theme color settings saved successfully');
+            toast.success('Theme color and font settings saved successfully');
         } catch (err: any) {
             toast.error(err?.message || 'Failed to save theme colors');
         }
@@ -104,14 +131,14 @@ export function ThemeColorContent() {
 
     return (
         <div className="space-y-6">
-            <PageLoader open={isSaving} text="Saving Theme Colors..." />
+            <PageLoader open={isSaving} text="Saving Theme Settings..." />
             <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-5">
                 <div>
-                    <h1 className="mt-1 text-2xl font-bold tracking-tight">Theme Color</h1>
-                    <p className="text-sm text-muted-foreground">Select a website color palette or customize 4-color hex codes.</p>
+                    <h1 className="mt-1 text-2xl font-bold tracking-tight">Theme & Branding</h1>
+                    <p className="text-sm text-muted-foreground">Select website color palettes, custom hex codes, and font typography.</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => toast.info('Select site color scheme presets or enter custom 4-color hex palette.')} className="h-8 px-3 text-xs font-semibold text-slate-600 border-slate-200 hover:bg-slate-50">
+                    <Button variant="outline" size="sm" onClick={() => toast.info('Select site color scheme presets and font family for your website.')} className="h-8 px-3 text-xs font-semibold text-slate-600 border-slate-200 hover:bg-slate-50">
                         <HelpCircle className="h-3.5 w-3.5 text-slate-400 mr-1" /> How It Works
                     </Button>
                     <Button variant="outline" size="sm" onClick={handleReset} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
@@ -119,7 +146,7 @@ export function ThemeColorContent() {
                     </Button>
                     <Button size="sm" onClick={handleSave} disabled={isSaving} className="h-8 px-4 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs">
                         {isSaving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
-                        {isSaving ? 'Saving...' : 'Save Theme Color'}
+                        {isSaving ? 'Saving...' : 'Save Theme Settings'}
                     </Button>
                 </div>
             </div>
@@ -135,11 +162,15 @@ export function ThemeColorContent() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="flex flex-wrap items-center gap-3">
-                        <div className="flex-1 min-w-[200px]">
-                            <Label className="text-xs font-semibold text-muted-foreground mb-1 block">Color Palette</Label>
+                        <div className="flex-1 min-w-[240px]">
+                            <Label className="text-xs font-semibold text-muted-foreground mb-1 block">Color Palette Preset</Label>
                             <Select value={pendingPaletteId} onValueChange={setPendingPaletteId}>
                                 <SelectTrigger className="h-10 text-xs">
-                                    <SelectValue />
+                                    <SelectValue placeholder="Select Palette">
+                                        {pendingPaletteId === 'custom'
+                                            ? 'Custom 4-Color Palette'
+                                            : ADMIN_PALETTES.find((p) => p.id === pendingPaletteId)?.name || 'Royal Sapphire (Default)'}
+                                    </SelectValue>
                                 </SelectTrigger>
                                 <SelectContent>
                                     {ADMIN_PALETTES.map((pal) => (
@@ -161,14 +192,49 @@ export function ThemeColorContent() {
 
                         <div className="pt-5">
                             <Button type="button" variant="outline" onClick={handleApply} disabled={pendingPaletteId === selectedPaletteId && !isCustom} className="h-10 text-xs">
-                                Apply
+                                Apply Palette
                             </Button>
                         </div>
                     </div>
                 </CardContent>
             </Card>
 
-            {/* Section 2: Swatch Color Rows */}
+            {/* Section 2: Font Family Selector */}
+            <Card>
+                <CardHeader className="flex flex-row items-center gap-2 space-y-0">
+                    <Type className="h-4 w-4 text-primary" />
+                    <div>
+                        <CardTitle className="text-lg">Typography & Font Family</CardTitle>
+                        <CardDescription>Select the typography font applied to all website preview text.</CardDescription>
+                    </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="flex flex-wrap items-center gap-3">
+                        <div className="flex-1 min-w-[240px]">
+                            <Label className="text-xs font-semibold text-muted-foreground mb-1 block">Primary Font Family</Label>
+                            <Select value={selectedFont} onValueChange={setSelectedFont}>
+                                <SelectTrigger className="h-10 text-xs">
+                                    <SelectValue placeholder="Select Font Family">
+                                        {FONT_OPTIONS.find((f) => f.id === selectedFont)?.name || selectedFont}
+                                    </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {FONT_OPTIONS.map((font) => (
+                                        <SelectItem key={font.id} value={font.id}>
+                                            {font.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="pt-5 text-sm font-semibold text-slate-700" style={{ fontFamily: `'${selectedFont}', sans-serif` }}>
+                            Preview: The quick brown fox jumps over the lazy dog.
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Section 3: Swatch Color Rows */}
             <Card>
                 <CardHeader>
                     <CardTitle className="text-lg">{isCustom ? 'Custom Colors' : activePalette.name}</CardTitle>
@@ -212,3 +278,4 @@ export function ThemeColorContent() {
         </div>
     );
 }
+

@@ -199,7 +199,9 @@ export function VideoTutorialCategoriesContent() {
                         <div className="w-full sm:w-36 shrink-0">
                             <Select value={selectedStatus} onValueChange={(val) => { setSelectedStatus(val); setPage(1); }}>
                                 <SelectTrigger className="h-9 text-xs border-border bg-background text-foreground w-full">
-                                    <SelectValue placeholder="All Status" />
+                                    <SelectValue placeholder="All Status">
+                                        {selectedStatus === 'all' ? 'All Status' : selectedStatus === '1' ? 'Active' : 'Inactive'}
+                                    </SelectValue>
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">All Status</SelectItem>

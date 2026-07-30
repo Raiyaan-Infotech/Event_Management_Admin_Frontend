@@ -49,10 +49,10 @@ function TestimonialsSectionBase({ testimonials, theme }: { testimonials: Testim
         <div className="relative">
           {canSlide ? (
             <>
-              <button type="button" onClick={() => setActiveIndex((c) => (c - 1 + testimonials.length) % testimonials.length)} aria-label="Previous testimonial" className="absolute -left-2 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-lg transition hover:-translate-x-0.5">
+              <button type="button" onClick={() => setActiveIndex((c) => (c - 1 + testimonials.length) % testimonials.length)} aria-label="Previous testimonial" className="absolute -left-2 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-700 shadow-lg transition hover:-translate-x-0.5">
                 <ChevronLeft className="h-5 w-5" />
               </button>
-              <button type="button" onClick={() => setActiveIndex((c) => (c + 1) % testimonials.length)} aria-label="Next testimonial" className="absolute -right-2 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-lg transition hover:translate-x-0.5">
+              <button type="button" onClick={() => setActiveIndex((c) => (c + 1) % testimonials.length)} aria-label="Next testimonial" className="absolute -right-2 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-700 shadow-lg transition hover:translate-x-0.5">
                 <ChevronRight className="h-5 w-5" />
               </button>
             </>
@@ -62,12 +62,12 @@ function TestimonialsSectionBase({ testimonials, theme }: { testimonials: Testim
             {visibleTestimonials.map(({ item, index, position }) => {
               const isActive = position === 'active';
               return (
-                <article key={`${item.id}-${position}`} className={cn('relative flex flex-col items-center text-center rounded-xl bg-white px-6 py-7 shadow-lg transition-all duration-300', isActive ? 'z-10 min-h-[360px] md:-translate-y-2 md:px-8 md:py-8' : 'min-h-[320px] md:scale-[0.94] md:opacity-90', canSlide && !isActive && 'hidden md:flex')}>
+                <article key={`${item.id}-${position}`} className={cn('relative flex flex-col items-center text-center rounded-md bg-white px-6 py-7 shadow-lg transition-all duration-300', isActive ? 'z-10 min-h-[360px] md:-translate-y-2 md:px-8 md:py-8' : 'min-h-[320px] md:scale-[0.94] md:opacity-90', canSlide && !isActive && 'hidden md:flex')}>
                   <Quote className="mb-3 h-7 w-7 fill-current" style={{ color: theme.primaryButton }} />
                   {item.photoUrl ? (
-                    <img src={item.photoUrl} alt={item.name} className="h-16 w-16 rounded-full object-cover shadow-sm" />
+                    <img src={item.photoUrl} alt={item.name} className="h-16 w-16 rounded-md object-cover shadow-sm" />
                   ) : (
-                    <span className="flex h-16 w-16 items-center justify-center rounded-full text-[15px] font-black text-white shadow-sm" style={{ backgroundColor: theme.primaryButton }}>
+                    <span className="flex h-16 w-16 items-center justify-center rounded-md text-[15px] font-black text-white shadow-sm" style={{ backgroundColor: theme.primaryButton }}>
                       {initials(item.name)}
                     </span>
                   )}
@@ -91,7 +91,7 @@ function TestimonialsSectionBase({ testimonials, theme }: { testimonials: Testim
         {canSlide ? (
           <div className="mt-8 flex items-center justify-center gap-2">
             {testimonials.map((item, index) => (
-              <button key={item.id} type="button" onClick={() => setActiveIndex(index)} aria-label={`Show testimonial ${index + 1}`} className={cn('h-2.5 rounded-full transition-all', index === activeIndex ? 'w-6' : 'w-2.5 bg-slate-300')} style={index === activeIndex ? { backgroundColor: theme.primaryButton } : undefined} />
+              <button key={item.id} type="button" onClick={() => setActiveIndex(index)} aria-label={`Show testimonial ${index + 1}`} className={cn('h-2.5 rounded-md transition-all', index === activeIndex ? 'w-6' : 'w-2.5 bg-slate-300')} style={index === activeIndex ? { backgroundColor: theme.primaryButton } : undefined} />
             ))}
           </div>
         ) : null}

@@ -23,6 +23,7 @@ import {
     Search,
     Save,
 } from 'lucide-react';
+import { Icon } from '@iconify/react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -178,7 +179,6 @@ export default function FeaturesPage() {
                                     </tr>
                                 ) : filteredFeatures.length > 0 ? (
                                     filteredFeatures.map((item, idx) => {
-                                        const IconComp = getIconComponent(item.icon);
                                         return (
                                             <tr key={item.id || idx} className="hover:bg-muted/30 transition-colors">
                                                 <td className="py-3.5 px-3.5 text-center text-muted-foreground font-mono">
@@ -188,8 +188,12 @@ export default function FeaturesPage() {
                                                     </div>
                                                 </td>
                                                 <td className="py-3.5 px-3.5 text-center">
-                                                    <div className="h-8 w-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mx-auto">
-                                                        <IconComp className="h-4 w-4" />
+                                                    <div className="h-8 w-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mx-auto overflow-hidden">
+                                                        {item.icon?.startsWith('http') || item.icon?.startsWith('data:') ? (
+                                                            <img src={item.icon} alt="Icon" className="h-4 w-4 object-contain" />
+                                                        ) : (
+                                                            <Icon icon={item.icon || 'lucide:sparkles'} className="h-4 w-4" />
+                                                        )}
                                                     </div>
                                                 </td>
                                                 <td className="py-3.5 px-3.5 font-bold text-foreground">

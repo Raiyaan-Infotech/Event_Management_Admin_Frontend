@@ -100,6 +100,25 @@ export function CompanyWebsitePreview() {
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
+  // ── Font Family Hook ───────────────────────────────────────────────────────
+  const fontFamily = String((themeRaw as AnyRecord)?.font_family || (themeRaw as AnyRecord)?.font || (basicInfoRaw as AnyRecord)?.font_family || 'Inter');
+
+  React.useEffect(() => {
+    if (typeof document === 'undefined' || !fontFamily) return;
+    const fontName = fontFamily.trim();
+    if (['Inter', 'Arial', 'sans-serif'].includes(fontName)) return;
+    const fontSlug = fontName.replace(/\s+/g, '+');
+    const href = `https://fonts.googleapis.com/css2?family=${fontSlug}:wght@300;400;500;600;700;800;900&display=swap`;
+    let link = document.querySelector(`link[data-preview-font="${fontSlug}"]`) as HTMLLinkElement;
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.setAttribute('data-preview-font', fontSlug);
+      link.href = href;
+      document.head.appendChild(link);
+    }
+  }, [fontFamily]);
+
   // ── Refresh ──────────────────────────────────────────────────────────────────
   const handleRefresh = () => {
     queryClient.invalidateQueries({ queryKey: ['company-website-builder'] });
@@ -128,12 +147,26 @@ export function CompanyWebsitePreview() {
   const email = String(basicInfo.email || '').toLowerCase();
 
   // Features mapping
-  const features = (featuresRaw as AnyRecord[]).map((f) => ({
+  const features = (featuresRaw as AnyRecord[]).map((f) => {
+  let bulletPoints: string[] = [];
+  if (f.bullet_points_json) {
+    try {
+      bulletPoints = typeof f.bullet_points_json === 'string' ? JSON.parse(f.bullet_points_json) : f.bullet_points_json;
+    } catch {
+      bulletPoints = [];
+    }
+  }
+ 
+  return {
     id: Number(f.id),
     title: String(f.title || ''),
     description: String(f.short_description || f.description || ''),
     iconKey: String(f.icon || f.icon_key || ''),
-  }));
+    customIconUrl: f.custom_icon_url ? String(f.custom_icon_url) : undefined,
+    bulletPoints,
+    // no cta_label column yet — leave undefined so the component's "View Feature" default applies
+  };
+});
 
   // How it works mapping
   const howItWorksSteps = (howItWorksRaw as AnyRecord[]).map((s) => ({
@@ -142,29 +175,38 @@ export function CompanyWebsitePreview() {
     title: String(s.title || ''),
     description: String(s.description || ''),
     iconKey: String(s.icon || s.icon_key || ''),
+    imageUrl: s.illustration_url || s.image_url || s.photo_url || s.thumbnail_url ? String(s.illustration_url || s.image_url || s.photo_url || s.thumbnail_url) : undefined,
+    badgeTitle: s.highlight_title || s.badge_title || s.badge_text ? String(s.highlight_title || s.badge_title || s.badge_text) : undefined,
+    badgeSub: s.highlight_subtext || s.badge_sub || s.badge_subtitle ? String(s.highlight_subtext || s.badge_sub || s.badge_subtitle) : undefined,
   }));
 
   // Pricing mapping
-  const pricingPlans = (pricingPlansRaw as AnyRecord[]).map((p) => {
-    let bullets: string[] = [];
-    const raw = p.features_json || p.bullet_points_json;
-    if (raw) {
-      try {
-        bullets = typeof raw === 'string' ? JSON.parse(raw) : raw;
-      } catch {
-        bullets = [];
-      }
+  // Replace the existing "Pricing mapping" block in company-website-preview.tsx with this.
+const pricingPlans = (pricingPlansRaw as AnyRecord[]).map((p) => {
+  let bulletPoints: string[] = [];
+  if (p.features_json) {
+    try {
+      bulletPoints = typeof p.features_json === 'string' ? JSON.parse(p.features_json) : p.features_json;
+    } catch {
+      bulletPoints = [];
     }
-    return {
-      id: Number(p.id),
-      name: String(p.plan_name || p.name || ''),
-      price: Number(p.price_monthly || p.price || 0),
-      billingPeriod: String(p.period_label || p.billing_period || 'per event'),
-      description: String(p.subtitle || p.description || ''),
-      isFeatured: Boolean(p.is_popular || p.is_featured),
-      bulletPoints: Array.isArray(bullets) ? bullets : [],
-    };
-  });
+  }
+
+  return {
+    id: Number(p.id),
+    planName: String(p.plan_name || ''),
+    subtitle: String(p.subtitle || ''),
+    targetType: p.target_type ? String(p.target_type) : undefined,
+    currencySymbol: String(p.currency || '₹'),
+    priceMonthly: Number(p.price_monthly || 0),
+    priceYearly: Number(p.price_yearly || 0),
+    periodLabel: String(p.period_label || 'per event'),
+    badgeText: p.badge_text ? String(p.badge_text) : undefined,
+    badgeStyle: p.badge_style ? String(p.badge_style) : undefined,
+    isPopular: Boolean(p.is_popular),
+    bulletPoints: Array.isArray(bulletPoints) ? bulletPoints : [],
+  };
+});
 
   // FAQs mapping
   const faqs = (faqsRaw as AnyRecord[]).map((fq) => ({
@@ -205,17 +247,29 @@ export function CompanyWebsitePreview() {
     'advance-slider': sliderNode,
     'basic-slider': sliderNode,
     features: <FeaturesSection features={features} theme={theme} />,
+    services: <FeaturesSection features={features} theme={theme} />,
     'how-it-works': <HowItWorksSection steps={howItWorksSteps} theme={theme} />,
+    process: <HowItWorksSection steps={howItWorksSteps} theme={theme} />,
+    workflow: <HowItWorksSection steps={howItWorksSteps} theme={theme} />,
     'gallery-images': <GallerySection categories={galleryCategories} items={galleryItems} theme={theme} />,
+    gallery: <GallerySection categories={galleryCategories} items={galleryItems} theme={theme} />,
     'gallery-categories': null,
     testimonials: <TestimonialsSection testimonials={testimonials} theme={theme} />,
+    reviews: <TestimonialsSection testimonials={testimonials} theme={theme} />,
     'basic-clients': <LogoWallSection title="Our Clients" members={clients} theme={theme} kind="clients" />,
     'basic-sponsors': <LogoWallSection title="Our Sponsors" members={sponsors} theme={theme} kind="sponsors" muted />,
     'pricing-plans': <PricingSection plans={pricingPlans} theme={theme} />,
+    pricing: <PricingSection plans={pricingPlans} theme={theme} />,
+    plans: <PricingSection plans={pricingPlans} theme={theme} />,
     templates: <TemplatesSection templates={templates} theme={theme} />,
     faqs: <FaqsSection faqs={faqs} theme={theme} />,
+    faq: <FaqsSection faqs={faqs} theme={theme} />,
     'video-tutorials': <VideoTutorialsSection videos={videoTutorials} theme={theme} />,
+    videos: <VideoTutorialsSection videos={videoTutorials} theme={theme} />,
+    tutorials: <VideoTutorialsSection videos={videoTutorials} theme={theme} />,
     contact_us: contact ? <ContactSection contact={contact} theme={theme} /> : null,
+    contact: contact ? <ContactSection contact={contact} theme={theme} /> : null,
+    'contact-us': contact ? <ContactSection contact={contact} theme={theme} /> : null,
   };
 
   const defaultHomeOrder = [
@@ -267,10 +321,10 @@ export function CompanyWebsitePreview() {
 
   const activePage = findPageForViewKey(activeKey, legalPages);
   let mainContent: React.ReactNode;
-  if (activeKey === 'gallery') {
-    mainContent = <GallerySection categories={galleryCategories} items={galleryItems} theme={theme} />;
-  } else if (activeKey === 'contact' && contact) {
-    mainContent = <ContactSection contact={contact} theme={theme} />;
+  if (activeKey === 'home') {
+    mainContent = <>{homeSections}</>;
+  } else if (activeKey in homeSectionByKey && homeSectionByKey[activeKey] !== null) {
+    mainContent = homeSectionByKey[activeKey];
   } else if (activePage) {
     mainContent = (
       <section className="w-full bg-white py-16">
@@ -304,9 +358,9 @@ export function CompanyWebsitePreview() {
         '--preview-primary-text': theme.primaryText,
         '--preview-secondary-text': theme.secondaryText,
         '--preview-primary-button': theme.primaryButton,
-        '--preview-card-radius': '12px',
+        '--preview-card-radius': '0px',
         color: theme.primaryText,
-        fontFamily: 'Inter, "Inter Fallback", ui-sans-serif, system-ui, -apple-system, sans-serif',
+        fontFamily: `'${fontFamily}', Inter, "Inter Fallback", ui-sans-serif, system-ui, sans-serif`,
       } as React.CSSProperties}
     >
       {/* Floating refresh button */}

@@ -24,11 +24,11 @@ function GallerySectionBase({ categories, items, theme }: { categories: GalleryC
 
         {categories.length > 0 ? (
           <div className="mb-10 flex flex-wrap items-center justify-center gap-2.5">
-            <button type="button" onClick={() => setActiveCategory('all')} className={cn('inline-flex h-9 items-center justify-center rounded-full px-5 text-[13px] font-bold transition', activeCategory === 'all' ? 'text-white shadow-sm' : 'border border-slate-200 bg-white text-slate-700 hover:border-slate-300')} style={activeCategory === 'all' ? { backgroundColor: theme.primaryButton } : undefined}>
+            <button type="button" onClick={() => setActiveCategory('all')} className={cn('inline-flex h-9 items-center justify-center rounded-md px-5 text-[13px] font-bold transition', activeCategory === 'all' ? 'text-white shadow-sm' : 'border border-slate-200 bg-white text-slate-700 hover:border-slate-300')} style={activeCategory === 'all' ? { backgroundColor: theme.primaryButton } : undefined}>
               All
             </button>
             {categories.map((cat) => (
-              <button key={cat.id} type="button" onClick={() => setActiveCategory(cat.id)} className={cn('inline-flex h-9 items-center justify-center rounded-full px-5 text-[13px] font-bold transition', activeCategory === cat.id ? 'text-white shadow-sm' : 'border border-slate-200 bg-white text-slate-700 hover:border-slate-300')} style={activeCategory === cat.id ? { backgroundColor: theme.primaryButton } : undefined}>
+              <button key={cat.id} type="button" onClick={() => setActiveCategory(cat.id)} className={cn('inline-flex h-9 items-center justify-center rounded-md px-5 text-[13px] font-bold transition', activeCategory === cat.id ? 'text-white shadow-sm' : 'border border-slate-200 bg-white text-slate-700 hover:border-slate-300')} style={activeCategory === cat.id ? { backgroundColor: theme.primaryButton } : undefined}>
                 {cat.name}
               </button>
             ))}
@@ -38,7 +38,7 @@ function GallerySectionBase({ categories, items, theme }: { categories: GalleryC
         {filteredItems.length > 0 ? (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
             {filteredItems.map((item) => (
-              <div key={item.id} className="group relative aspect-[4/3] overflow-hidden rounded-xl bg-slate-100">
+              <div key={item.id} className="group relative aspect-[4/3] overflow-hidden rounded-md bg-slate-100">
                 {item.imageUrl ? (
                   <img src={item.imageUrl} alt={item.altText} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
                 ) : (

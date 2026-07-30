@@ -71,7 +71,7 @@ function HeaderSectionBase({ theme, header, navItems, socialLinks, companyName, 
       <div className="shadow-sm bg-white">
         <div className="mx-auto flex min-h-[74px] w-full max-w-[1280px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
           {/* Logo */}
-          <a href="/" onClick={(e) => handleNavClick(e, { href: '/' })} className="flex min-w-0 items-center gap-3">
+          <a href="/" onClick={(e) => handleNavClick(e, { href: '/' })} className="flex shrink-0 items-center gap-3">
             {companyLogo ? (
               <img src={companyLogo} alt={`${companyName} logo`} className="h-12 max-w-[170px] shrink-0 object-contain" />
             ) : (
@@ -82,43 +82,66 @@ function HeaderSectionBase({ theme, header, navItems, socialLinks, companyName, 
                 {companyName.split(/\s+/).slice(0, 2).map((p) => p[0]).join('').toUpperCase()}
               </span>
             )}
-            <span className="min-w-0">
-              <span className="block truncate text-[14px] font-black uppercase leading-4 tracking-[0.12em]" style={{ color: theme.primaryButton }}>
+            <span className="shrink-0">
+              <span className="block text-[14px] font-black uppercase leading-4 tracking-[0.12em]" style={{ color: theme.primaryButton }}>
                 {companyName}
               </span>
             </span>
           </a>
 
           {/* Desktop nav */}
-          <nav className="hidden items-center gap-7 text-[13px] font-bold lg:flex" style={{ color: theme.primaryButton }}>
-            {navItems.map((item) => {
-              const isActive = viewKeyFromHref(item.href) === activeKey;
-              if (item.children.length) {
-                return (
-                  <div key={item.id} className="group relative">
-                    <a href={item.href} onClick={(e) => handleNavClick(e, item)} className="flex items-center gap-1 py-7 transition hover:opacity-70" style={{ color: isActive ? theme.primaryButton : undefined }}>
-                      {item.label} <ChevronDown className="h-3.5 w-3.5 transition group-hover:rotate-180" />
+          {(() => {
+            const VISIBLE_LIMIT = 7;
+            const visibleItems = navItems.length > VISIBLE_LIMIT ? navItems.slice(0, VISIBLE_LIMIT - 1) : navItems;
+            const overflowItems = navItems.length > VISIBLE_LIMIT ? navItems.slice(VISIBLE_LIMIT - 1) : [];
+
+            return (
+              <nav className="hidden items-center gap-6 text-[13px] font-bold lg:flex" style={{ color: theme.primaryButton }}>
+                {visibleItems.map((item) => {
+                  const isActive = viewKeyFromHref(item.href) === activeKey;
+                  if (item.children.length) {
+                    return (
+                      <div key={item.id} className="group relative shrink-0">
+                        <a href={item.href} onClick={(e) => handleNavClick(e, item)} className="flex items-center gap-1 py-7 whitespace-nowrap transition hover:opacity-70" style={{ color: isActive ? theme.primaryButton : undefined }}>
+                          {item.label} <ChevronDown className="h-3.5 w-3.5 transition group-hover:rotate-180" />
+                        </a>
+                        <div className="invisible absolute left-0 top-full z-30 min-w-[200px] -translate-y-1 rounded-xl border border-slate-100 bg-white py-2 opacity-0 shadow-xl transition-all group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
+                          {item.children.map((child) => (
+                            <a key={child.label} href={child.href} onClick={(e) => handleNavClick(e, child)} className="block px-4 py-2 text-[12px] font-semibold text-slate-700 whitespace-nowrap transition hover:bg-slate-50" style={{ color: theme.primaryButton }}>
+                              {child.label}
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
+                  return (
+                    <a key={item.id} href={item.href} onClick={(e) => handleNavClick(e, item)} className="flex shrink-0 items-center gap-1 py-7 whitespace-nowrap transition hover:opacity-70" style={{ color: theme.primaryButton, fontWeight: isActive ? 900 : undefined }}>
+                      <span className="relative whitespace-nowrap">
+                        {item.label}
+                        {isActive ? <span className="absolute -bottom-6 left-0 h-0.5 w-full rounded-full" style={{ backgroundColor: theme.primaryButton }} /> : null}
+                      </span>
                     </a>
-                    <div className="invisible absolute left-0 top-full z-30 min-w-[200px] -translate-y-1 rounded-xl border border-slate-100 bg-white py-2 opacity-0 shadow-xl transition-all group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
-                      {item.children.map((child) => (
-                        <a key={child.label} href={child.href} onClick={(e) => handleNavClick(e, child)} className="block px-4 py-2 text-[12px] font-semibold text-slate-700 transition hover:bg-slate-50" style={{ color: theme.primaryButton }}>
-                          {child.label}
+                  );
+                })}
+
+                {overflowItems.length > 0 && (
+                  <div className="group relative shrink-0">
+                    <button type="button" className="flex items-center gap-1 py-7 whitespace-nowrap transition hover:opacity-70" style={{ color: theme.primaryButton }}>
+                      More <ChevronDown className="h-3.5 w-3.5 transition group-hover:rotate-180" />
+                    </button>
+                    <div className="invisible absolute right-0 top-full z-30 min-w-[180px] -translate-y-1 rounded-xl border border-slate-100 bg-white py-2 opacity-0 shadow-xl transition-all group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
+                      {overflowItems.map((item) => (
+                        <a key={item.id} href={item.href} onClick={(e) => handleNavClick(e, item)} className="block px-4 py-2 text-[12px] font-semibold text-slate-700 whitespace-nowrap transition hover:bg-slate-50" style={{ color: theme.primaryButton }}>
+                          {item.label}
                         </a>
                       ))}
                     </div>
                   </div>
-                );
-              }
-              return (
-                <a key={item.id} href={item.href} onClick={(e) => handleNavClick(e, item)} className="flex items-center gap-1 py-7 transition hover:opacity-70" style={{ color: theme.primaryButton, fontWeight: isActive ? 900 : undefined }}>
-                  <span className="relative">
-                    {item.label}
-                    {isActive ? <span className="absolute -bottom-6 left-0 h-0.5 w-full rounded-full" style={{ backgroundColor: theme.primaryButton }} /> : null}
-                  </span>
-                </a>
-              );
-            })}
-          </nav>
+                )}
+              </nav>
+            );
+          })()}
 
           {/* Auth buttons */}
           <div className="hidden items-center gap-2 lg:flex">

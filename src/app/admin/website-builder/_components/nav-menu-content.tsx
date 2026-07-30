@@ -4,18 +4,22 @@ import { useEffect, useState } from 'react';
 import {
     Save,
     Loader2,
-    Sparkles,
     Home,
     Users,
     FileText,
     MessageSquareQuote,
-    Calendar,
     X,
     HelpCircle,
     RotateCcw,
+    Sparkles,
+    LayoutGrid,
+    HelpCircle as FaqIcon,
+    Video,
+    DollarSign,
+    Layers,
+    PhoneCall,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -25,14 +29,29 @@ import { DraggableItemList, AddCustomLinkRow, type DraggableItemListItem, type C
 import { useCompanyBasicInformation, useCompanyMenuItems } from '@/hooks/useCompanyWebsiteBuilder';
 import { PageLoader } from '@/components/common/page-loader';
 
+const pageOptions = [
+    { label: 'Home', value: 'home', icon: Home },
+    { label: 'Features', value: 'features', icon: Sparkles },
+    { label: 'Templates', value: 'templates', icon: Layers },
+    { label: 'How It Works', value: 'how-it-works', icon: PhoneCall },
+    { label: 'Pricing', value: 'pricing-plans', icon: DollarSign },
+    { label: 'Testimonials', value: 'testimonials', icon: MessageSquareQuote },
+    { label: 'Videos', value: 'video-tutorials', icon: Video },
+    { label: 'FAQs', value: 'faqs', icon: FaqIcon },
+    { label: 'Gallery', value: 'gallery', icon: LayoutGrid },
+    { label: 'Contact Us', value: 'contact', icon: PhoneCall },
+    { label: 'About Us', value: 'about-us', icon: Users },
+    { label: 'Services', value: 'services', icon: FileText },
+];
+
 const initialSelectedPages = [
     'home',
-    'about-us',
-    'pages',
-    'service',
-    'events',
+    'features',
+    'templates',
+    'how-it-works',
+    'pricing-plans',
     'gallery',
-    'contact-us',
+    'contact',
 ];
 
 export function NavMenuContent() {
@@ -49,10 +68,12 @@ export function NavMenuContent() {
 
     const [menuItems, setMenuItems] = useState<DraggableItemListItem[]>([
         { id: 'home', label: 'Home', icon: Home, children: [] },
-        { id: 'about-us', label: 'About Us', icon: Users, children: [] },
-        { id: 'pages', label: 'Pages', icon: FileText, children: [] },
-        { id: 'service', label: 'Service', icon: MessageSquareQuote, children: [] },
-        { id: 'events', label: 'Events', icon: Calendar, children: [] },
+        { id: 'features', label: 'Features', icon: Sparkles, children: [] },
+        { id: 'templates', label: 'Templates', icon: Layers, children: [] },
+        { id: 'how-it-works', label: 'How It Works', icon: PhoneCall, children: [] },
+        { id: 'pricing-plans', label: 'Pricing', icon: DollarSign, children: [] },
+        { id: 'gallery', label: 'Gallery', icon: LayoutGrid, children: [] },
+        { id: 'contact', label: 'Contact Us', icon: PhoneCall, children: [] },
     ]);
 
     useEffect(() => {
@@ -67,14 +88,19 @@ export function NavMenuContent() {
 
     useEffect(() => {
         if (savedMenuItems && savedMenuItems.length > 0) {
-            setMenuItems(
-                savedMenuItems.map((item: any) => ({
-                    id: String(item.id || item.label),
+            const items = savedMenuItems.map((item: any) => {
+                const opt = pageOptions.find((p) => p.value === item.url?.replace(/^\/+/, '')) ||
+                    pageOptions.find((p) => p.label.toLowerCase() === item.label.toLowerCase());
+                return {
+                    id: opt ? opt.value : String(item.id || item.label.toLowerCase().replace(/\s+/g, '-')),
                     label: item.label,
-                    icon: FileText,
+                    icon: opt?.icon || FileText,
                     children: [],
-                }))
-            );
+                    description: item.url,
+                };
+            });
+            setMenuItems(items);
+            setSelectedPages(items.map((i) => i.id));
         }
     }, [savedMenuItems]);
 
@@ -100,15 +126,43 @@ export function NavMenuContent() {
         toast.info('Nav menu settings reset to defaults.');
     };
 
-    const pageOptions = [
-        { label: 'Home', value: 'home', icon: Home },
-        { label: 'About Us', value: 'about-us', icon: Users },
-        { label: 'Pages', value: 'pages', icon: FileText },
-        { label: 'Service', value: 'service', icon: MessageSquareQuote },
-        { label: 'Events', value: 'events', icon: Calendar },
-        { label: 'Gallery', value: 'gallery', icon: FileText },
-        { label: 'Contact Us', value: 'contact-us', icon: FileText },
-    ];
+    const handleSelectedPagesChange = (newSelected: string[]) => {
+        setSelectedPages(newSelected);
+
+        const updatedMenuItems: DraggableItemListItem[] = [];
+
+        newSelected.forEach((pageVal) => {
+            const opt = pageOptions.find((p) => p.value === pageVal);
+            const label = opt ? opt.label : pageVal;
+            const existing = menuItems.find((m) => m.id === pageVal || m.label.toLowerCase() === label.toLowerCase());
+
+            if (existing) {
+                updatedMenuItems.push(existing);
+            } else {
+                let targetUrl = `/${pageVal}`;
+                if (pageVal === 'home') targetUrl = '/';
+                else if (pageVal === 'contact') targetUrl = '/contact';
+                else if (pageVal === 'pricing-plans') targetUrl = '/pricing-plans';
+
+                updatedMenuItems.push({
+                    id: pageVal,
+                    label,
+                    icon: opt?.icon || FileText,
+                    children: [],
+                    description: targetUrl,
+                });
+            }
+        });
+
+        // Retain custom links
+        menuItems.forEach((item) => {
+            if (String(item.id).startsWith('custom-') && !updatedMenuItems.some((m) => m.id === item.id)) {
+                updatedMenuItems.push(item);
+            }
+        });
+
+        setMenuItems(updatedMenuItems);
+    };
 
     const handleAddChild = (parentId: string | number, child: ChildMenuItem) => {
         setMenuItems((prev) =>
@@ -146,7 +200,9 @@ export function NavMenuContent() {
     };
 
     const handleDeleteMenuItem = (item: DraggableItemListItem) => {
-        setMenuItems(menuItems.filter((i) => i.id !== item.id));
+        const nextItems = menuItems.filter((i) => i.id !== item.id);
+        setMenuItems(nextItems);
+        setSelectedPages(nextItems.map((i) => String(i.id)));
         toast.success(`Menu item "${item.label}" removed.`);
     };
 
@@ -161,13 +217,23 @@ export function NavMenuContent() {
             });
 
             await replaceMenuItems(
-                menuItems.map((item, idx) => ({
-                    label: item.label,
-                    url: item.description || `/${item.id}`,
-                    sort_order: idx + 1,
-                    is_visible: 1,
-                    is_active: 1,
-                }))
+                menuItems.map((item, idx) => {
+                    let targetUrl = item.description;
+                    if (!targetUrl || targetUrl === `/${item.id}`) {
+                        if (item.id === 'home' || item.label.toLowerCase() === 'home') targetUrl = '/';
+                        else if (item.id === 'contact-us' || item.id === 'contact') targetUrl = '/contact';
+                        else if (item.id === 'pricing' || item.id === 'pricing-plans') targetUrl = '/pricing-plans';
+                        else if (item.id === 'videos' || item.id === 'video-tutorials') targetUrl = '/video-tutorials';
+                        else targetUrl = `/${String(item.id).replace(/^\/+/, '')}`;
+                    }
+                    return {
+                        label: item.label,
+                        url: targetUrl,
+                        sort_order: idx + 1,
+                        is_visible: 1,
+                        is_active: 1,
+                    };
+                })
             );
 
             toast.success('Nav menu brand and ordering saved successfully');
@@ -298,14 +364,14 @@ export function NavMenuContent() {
                     />
 
                     <p className="text-[10px] font-medium text-muted-foreground">
-                        This list is now connected to the Pages module and updates from your saved pages.
+                        Select pages and UI blocks to display in the website navigation menu.
                     </p>
 
                     <MultiSelectPages
                         label="Select Pages"
                         value={selectedPages}
                         options={pageOptions}
-                        onChange={setSelectedPages}
+                        onChange={handleSelectedPagesChange}
                         placeholder="Add page"
                     />
                 </CardContent>

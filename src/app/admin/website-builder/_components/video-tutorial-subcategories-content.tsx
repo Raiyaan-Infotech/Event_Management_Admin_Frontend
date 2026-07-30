@@ -38,6 +38,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 
 const PRESET_COLORS = [
     '#8B5CF6',
@@ -110,6 +111,9 @@ export function VideoTutorialSubCategoriesContent() {
         const newErr: Record<string, string> = {};
         if (!categoryId) newErr.category_id = 'Category is required';
         if (!name.trim()) newErr.name = 'Sub Category name is required';
+        if (sortOrder === undefined || sortOrder === null || isNaN(sortOrder) || sortOrder <= 0) {
+            newErr.sort_order = 'Display order is required';
+        }
 
         if (Object.keys(newErr).length > 0) {
             setErrors(newErr);
@@ -224,7 +228,9 @@ export function VideoTutorialSubCategoriesContent() {
                         <div className="w-full sm:w-36 shrink-0">
                             <Select value={selectedStatus} onValueChange={(val) => { setSelectedStatus(val); setPage(1); }}>
                                 <SelectTrigger className="h-9 text-xs border-border bg-background text-foreground w-full">
-                                    <SelectValue placeholder="All Status" />
+                                    <SelectValue placeholder="All Status">
+                                        {selectedStatus === 'all' ? 'All Status' : selectedStatus === '1' ? 'Active' : 'Inactive'}
+                                    </SelectValue>
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">All Status</SelectItem>
@@ -403,8 +409,8 @@ export function VideoTutorialSubCategoriesContent() {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
                                     <Label className="text-xs font-bold text-foreground">Category <span className="text-rose-500">*</span></Label>
-                                    <Select value={categoryId} onValueChange={setCategoryId}>
-                                        <SelectTrigger className="h-9 text-xs border-border bg-background text-foreground w-full">
+                                    <Select value={categoryId} onValueChange={(val) => { setCategoryId(val); if (errors.category_id) setErrors((e) => ({ ...e, category_id: '' })); }}>
+                                        <SelectTrigger className={cn("h-9 text-xs border-border bg-background text-foreground w-full", errors.category_id && "border-red-500 ring-1 ring-red-500 bg-red-50/10")}>
                                             <SelectValue placeholder="Select a category" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -413,19 +419,20 @@ export function VideoTutorialSubCategoriesContent() {
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                    {errors.category_id && <p className="text-xs text-rose-500">{errors.category_id}</p>}
+                                    {errors.category_id && <p className="text-xs text-rose-500 font-semibold">{errors.category_id}</p>}
                                 </div>
 
                                 <div className="space-y-1.5">
                                     <Label className="text-xs font-bold text-foreground">Sub Category Name <span className="text-rose-500">*</span></Label>
                                     <BuilderCountedInput
                                         value={name}
-                                        onChange={setName}
+                                        onChange={(val) => { setName(val); if (errors.name) setErrors((e) => ({ ...e, name: '' })); }}
                                         maxLength={50}
                                         placeholder="Enter sub category name..."
                                         className="bg-background text-xs border-border"
+                                        inputClassName={cn(errors.name && "border-red-500 ring-1 ring-red-500 bg-red-50/10")}
                                     />
-                                    {errors.name && <p className="text-xs text-rose-500">{errors.name}</p>}
+                                    {errors.name && <p className="text-xs text-rose-500 font-semibold">{errors.name}</p>}
                                 </div>
                             </div>
 
@@ -486,10 +493,17 @@ export function VideoTutorialSubCategoriesContent() {
                                         type="number"
                                         min={1}
                                         value={sortOrder}
-                                        onChange={(e) => setSortOrder(parseInt(e.target.value, 10) || 1)}
-                                        className="bg-background text-xs border-border"
+                                        onChange={(e) => {
+                                            setSortOrder(parseInt(e.target.value, 10));
+                                            if (errors.sort_order) setErrors((err) => ({ ...err, sort_order: '' }));
+                                        }}
+                                        className={cn(
+                                            'bg-background text-xs border-border',
+                                            errors.sort_order && 'border-red-500 ring-1 ring-red-500 bg-red-50/10'
+                                        )}
                                     />
                                     <p className="text-[11px] text-muted-foreground">Set the order in which this sub category will appear.</p>
+                                    {errors.sort_order && <p className="text-xs text-rose-500 font-semibold">{errors.sort_order}</p>}
                                 </div>
 
                                 <div className="space-y-1.5">

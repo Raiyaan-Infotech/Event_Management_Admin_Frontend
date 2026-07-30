@@ -19,6 +19,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 
 interface FaqFormContentProps {
     id?: number;
@@ -42,7 +43,7 @@ export function FaqFormContent({ id }: FaqFormContentProps) {
     const [sortOrder, setSortOrder] = useState<number>(1);
     const [isFeatured, setIsFeatured] = useState(false);
 
-    const [errors, setErrors] = useState<{ question?: string; category?: string; answer?: string }>({});
+    const [errors, setErrors] = useState<{ question?: string; category?: string; answer?: string; displayOrder?: string }>({});
 
     useEffect(() => {
         if (faq) {
@@ -61,7 +62,7 @@ export function FaqFormContent({ id }: FaqFormContentProps) {
     const isSaving = createMutation.isPending || updateMutation.isPending;
 
     const handleSave = () => {
-        const newErrors: { question?: string; category?: string; answer?: string } = {};
+        const newErrors: { question?: string; category?: string; answer?: string; displayOrder?: string } = {};
 
         if (!question.trim()) {
             newErrors.question = 'Question is required';
@@ -71,6 +72,9 @@ export function FaqFormContent({ id }: FaqFormContentProps) {
         }
         if (!answer.trim() || answer === '<p></p>') {
             newErrors.answer = 'Answer is required';
+        }
+        if (sortOrder === undefined || sortOrder === null || isNaN(sortOrder) || sortOrder <= 0) {
+            newErrors.displayOrder = 'Display order is required';
         }
 
         if (Object.keys(newErrors).length > 0) {
@@ -122,7 +126,7 @@ export function FaqFormContent({ id }: FaqFormContentProps) {
                         Add a frequently asked question and answer to help your users.
                     </p>
                 </div>
-                <div>
+                <div className="flex items-center gap-3">
                     <Button
                         variant="outline"
                         size="sm"
@@ -130,7 +134,20 @@ export function FaqFormContent({ id }: FaqFormContentProps) {
                         className="gap-2 border-border bg-card hover:bg-accent text-foreground font-semibold"
                     >
                         <ArrowLeft className="h-4 w-4" />
-                        Back to FAQs
+                        Cancel
+                    </Button>
+                    <Button
+                        size="sm"
+                        onClick={handleSave}
+                        disabled={isSaving}
+                        className="h-9 px-4 gap-2 bg-primary text-primary-foreground hover:bg-primary/90 font-bold shadow-xs cursor-pointer"
+                    >
+                        {isSaving ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                            <Save className="h-4 w-4" />
+                        )}
+                        {isSaving ? 'Saving...' : 'Save FAQ'}
                     </Button>
                 </div>
             </div>
@@ -157,7 +174,10 @@ export function FaqFormContent({ id }: FaqFormContentProps) {
                                         if (errors.question) setErrors(prev => ({ ...prev, question: undefined }));
                                     }}
                                     maxLength={200}
-                                    textareaClassName="min-h-[90px] text-xs border-border bg-background text-foreground"
+                                    textareaClassName={cn(
+                                        'min-h-[90px] text-xs border-border bg-background text-foreground',
+                                        errors.question && 'border-red-500 ring-1 ring-red-500 bg-red-50/10'
+                                    )}
                                 />
                                 <p className="text-[11px] text-muted-foreground mt-1">
                                     Enter a clear and concise question.
@@ -179,7 +199,10 @@ export function FaqFormContent({ id }: FaqFormContentProps) {
                                         if (errors.category) setErrors(prev => ({ ...prev, category: undefined }));
                                     }}
                                 >
-                                    <SelectTrigger className="h-10 text-xs border-border bg-background text-foreground">
+                                    <SelectTrigger className={cn(
+                                        'h-10 text-xs border-border bg-background text-foreground',
+                                        errors.category && 'border-red-500 ring-1 ring-red-500 bg-red-50/10'
+                                    )}>
                                         <SelectValue placeholder="Select a category">
                                             {categories.find(c => String(c.id) === categoryId)?.name || ''}
                                         </SelectValue>
@@ -224,7 +247,10 @@ export function FaqFormContent({ id }: FaqFormContentProps) {
                                 </span>
                             </div>
 
-                            <div className="border border-border rounded-xl overflow-hidden bg-background">
+                            <div className={cn(
+                                'border rounded-xl overflow-hidden bg-background transition-all',
+                                errors.answer ? 'border-red-500 ring-1 ring-red-500' : 'border-border'
+                            )}>
                                 <RichTextEditor
                                     value={answer}
                                     onChange={(val) => {
@@ -281,12 +307,21 @@ export function FaqFormContent({ id }: FaqFormContentProps) {
                             <Input
                                 type="number"
                                 value={sortOrder}
-                                onChange={(e) => setSortOrder(Number(e.target.value))}
-                                className="h-10 text-xs border-border bg-background text-foreground"
+                                onChange={(e) => {
+                                    setSortOrder(Number(e.target.value));
+                                    if (errors.displayOrder) setErrors(prev => ({ ...prev, displayOrder: undefined }));
+                                }}
+                                className={cn(
+                                    'h-10 text-xs border-border bg-background text-foreground',
+                                    errors.displayOrder && 'border-red-500 ring-1 ring-red-500 bg-red-50/10'
+                                )}
                             />
                             <p className="text-[11px] text-muted-foreground">
                                 Set the order in which this FAQ will appear.
                             </p>
+                            {errors.displayOrder && (
+                                <p className="text-xs font-semibold text-red-500 mt-1">{errors.displayOrder}</p>
+                            )}
                         </div>
 
                         {/* Featured FAQ Toggle */}
@@ -310,31 +345,6 @@ export function FaqFormContent({ id }: FaqFormContentProps) {
                     </div>
                 </CardContent>
             </Card>
-
-            {/* Bottom Action Bar */}
-            <div className="flex items-center gap-3 pt-2">
-                <Button
-                    size="sm"
-                    onClick={handleSave}
-                    disabled={isSaving}
-                    className="h-10 px-5 gap-2 bg-primary text-primary-foreground hover:bg-primary/90 font-bold shadow-sm"
-                >
-                    {isSaving ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                        <Save className="h-4 w-4" />
-                    )}
-                    {isSaving ? 'Saving...' : 'Save FAQ'}
-                </Button>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => router.push('/admin/website-builder/faqs')}
-                    className="h-10 px-5 border-border bg-card hover:bg-accent text-foreground font-semibold"
-                >
-                    Cancel
-                </Button>
-            </div>
         </div>
     );
 }
