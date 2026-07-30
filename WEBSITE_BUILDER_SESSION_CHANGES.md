@@ -1120,3 +1120,85 @@ import { DeleteDialog } from '@/components/common/delete-dialog';
 - [x] All 21 `_components/` files catalogued with purpose
 - [x] All standard patterns (API client, TanStack Query, BuilderCountedInput, Delete Dialog, page header, action buttons) documented as reusable blueprints
 
+---
+
+## Session 4 — Website Builder Restructure, Page-First Navigation, Per-Page UI Blocks, Highlights Customization & Login CTA Modules
+
+> **Date:** 2026-07-30 | **Backend:** `D:\Jamal\Event_Management_Admin_Backend` | **Frontend:** `D:\Jamal\Event_Management_Admin_Frontend`
+
+---
+
+### 1. Page-First Sidebar Navigation Restructure (`app-sidebar.tsx`)
+
+File: [app-sidebar.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/admin/app-sidebar.tsx)
+
+- **Architecture Change:** Reorganized the Website Builder sidebar so each core page is a parent collapsible item containing all its child sections in exact visual display sequence:
+  - **Home**: Header, Navbar, Hero Section, Highlights (Outline), Template, Highlights (BG Filled), Testimonials, Login & Demo, Footer
+  - **Features**: Header, Navbar, Hero Section, Features, Sign In with Price Plan, Highlights, Sign In & Demo, Footer
+  - **Template**: Header, Navbar, Hero Section, Template, Sign In with Price Plan, Highlights, Footer
+  - **Pricing**: Header, Navbar, Hero Section, Plans & Pricing, Plan Features, Highlights, Contact & Signup Demo, Footer
+  - **How It's Work**: Header, Navbar, Hero Section, Videos, Highlights, Signup Demo, Footer
+  - **Contact**: Header, Navbar, Hero Section, Highlights, Contact form with Map, FAQ's, Chat & Signup Demo, Footer
+- **Parent-Level General & Settings**: Promoted **Theme Color**, **SEO Settings**, **Login Page**, and **Custom Pages** directly to parent-level items under Website Builder.
+
+---
+
+### 2. Per-Page UI Blocks Manager (`ui-block-content.tsx` & `ui-block/[page]/page.tsx`)
+
+Files: [ui-block-content.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/ui-block-content.tsx), [page.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/ui-block/[page]/page.tsx)
+
+- **Dynamic Page Route**: Created `/admin/website-builder/ui-block/[page]` supporting per-page UI block configuration (`home`, `features`, `template`, `pricing`, `how-it-works`, `contact`).
+- **Page Tabs Control**: Rendered top segmented page tabs (`Home`, `Features`, `Template`, `Pricing`, `How It Works`, `Contact`) with instant URL navigation.
+- **Fixed Global Sections**: Header, Navbar, Hero Section, and Footer rendered as fixed, required global rows.
+- **`pageSlug` Query Support in `useUiBlocks.ts`**: Updated `useUiBlocksData(pageSlug)` and `useSaveUiBlocks()` to pass `?page_slug={slug}` query parameters to backend `/website-builder/ui-blocks`.
+
+---
+
+### 3. Highlights Customization Module (`useHighlights.ts` & `highlights-content.tsx`)
+
+Files: [useHighlights.ts](file:///d:/Jamal/Event_Management_Admin_Frontend/src/hooks/useHighlights.ts), [highlights-content.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/highlights-content.tsx), [page.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/highlights/[page]/[instance]/page.tsx)
+
+- **Raw SQL Database Migration**: Executed `scratch/setup_highlights_table_raw.js` creating `company_website_highlights` on both Local MySQL and Live Production MySQL (Aiven Cloud):
+  ```sql
+  CREATE TABLE IF NOT EXISTS company_website_highlights (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      company_id INT NOT NULL,
+      page_slug VARCHAR(100) NOT NULL,
+      instance INT DEFAULT 1,
+      settings_json LONGTEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY company_page_instance (company_id, page_slug, instance)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  ```
+- **Backend API Endpoints**:
+  - `GET /api/v1/website-builder/highlights?page_slug={slug}&instance={id}`
+  - `PUT /api/v1/website-builder/highlights`
+- **Full Customizer Admin Panel**:
+  - 4 configuration cards: `1. Highlight Items Manager` (add/edit/delete/reorder items, Lucide icon selector, title & description inputs), `2. Layout & Alignment` (items per row 2-6, icon shape circle/square/rounded, icon style filled/outline, alignment left/center/right), `3. Color Customization` (icon bg color, icon color, title color, description color pickers), `4. Background Settings & Presets` (solid, gradient, image background + overlay opacity slider).
+  - Live interactive preview panel with real-time style rendering.
+  - Save button with animated `<Loader2 className="animate-spin" />` spinner and dynamic theme tokens (`bg-primary text-primary-foreground`).
+
+---
+
+### 4. Live Preview Section Components (`highlights-section.tsx` & `login-demo-section.tsx`)
+
+Files: [highlights-section.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/company-website-preview/sections/highlights-section.tsx), [login-demo-section.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/company-website-preview/sections/login-demo-section.tsx)
+
+- **`HighlightsSection` Component**: Reads live customized settings via `useHighlights(pageSlug, instance)` and renders exact items, icons, colors, layout grid, and background styles.
+- **`LoginDemoSection` Component**: Created 5 page-specific static CTA variants:
+  - `LoginDemoSection` (Home page CTA)
+  - `SignInDemoSection` (Features & Template pages CTA)
+  - `ContactSignupDemoSection` (Pricing page CTA)
+  - `SignupDemoSection` (How It Works page CTA)
+  - `ChatSignupDemoSection` (Contact page CTA)
+
+---
+
+### 5. Multi-Page Live Website Preview (`company-website-preview.tsx`)
+
+File: [company-website-preview.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/company-website-preview/company-website-preview.tsx)
+
+- Updated live preview renderer (`pageContents`) to support full multi-page section sequences for `home`, `features`, `template`, `pricing`, `how-it-works`, and `contact` pages with fixed Header, Navbar, Hero Section, and Footer across all page views.
+
+
