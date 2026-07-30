@@ -12,18 +12,18 @@ export interface UiBlockPayloadItem {
     sort_order: number;
 }
 
-export function useUiBlocksData() {
+export function useUiBlocksData(pageSlug?: string) {
     return useQuery({
-        queryKey: ['website-builder-ui-blocks'],
+        queryKey: ['website-builder-ui-blocks', pageSlug || 'all'],
         queryFn: async () => {
-            const res = await apiClient.get('/website-builder/ui-blocks');
+            const endpoint = pageSlug
+                ? `/website-builder/ui-blocks?page_slug=${pageSlug}`
+                : '/website-builder/ui-blocks';
+            const res = await apiClient.get(endpoint);
             // DB rows use block_key column; normalize to id for consistency with the in-memory block definitions
-            const rows = (res.data.data ?? []) as Array<Record<string, unknown>>;
+            const rows = (res.data?.data ?? res.data ?? []) as Array<Record<string, unknown>>;
             return rows.map((row) => ({
                 ...row,
-                // IMPORTANT: row.id is the integer DB primary key (1, 2, 3…).
-                // row.block_key is the string identifier ("pricing-plans" etc.)
-                // We MUST use block_key so sidebar uiBlockKey lookups match correctly.
                 id: (row.block_key ?? row.id) as string,
                 visible: row.is_visible === 1 || row.is_visible === true || row.visible === true,
             })) as UiBlockPayloadItem[];
@@ -31,12 +31,15 @@ export function useUiBlocksData() {
     });
 }
 
-export function useSaveUiBlocks() {
+export function useSaveUiBlocks(pageSlug?: string) {
     const queryClient = useQueryClient();
 
     return useMutation({
         mutationFn: async (blocks: UiBlockPayloadItem[]) => {
-            const res = await apiClient.put('/website-builder/ui-blocks', { items: blocks });
+            const payload = pageSlug
+                ? { page_slug: pageSlug, items: blocks }
+                : { items: blocks };
+            const res = await apiClient.put('/website-builder/ui-blocks', payload);
             return res.data;
         },
         onSuccess: () => {

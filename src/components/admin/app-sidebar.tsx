@@ -40,6 +40,8 @@ import {
   DollarSign,
   Video,
   Plus,
+  Sparkles,
+  Lock,
 } from "lucide-react";
 import {
   Sidebar,
@@ -163,89 +165,181 @@ const menuItems: MenuItem[] = [
     labelKey: "Website Builder",
     icon: Globe,
     children: [
-      { labelKey: "Header", href: "/admin/website-builder/header", icon: FileText, uiBlockKey: "basic-information" },
-      { labelKey: "Nav Menu", href: "/admin/website-builder/nav-menu", icon: Menu, uiBlockKey: "nav-menu" },
-      { labelKey: "Login Page", href: "/admin/website-builder/login-page", icon: LogIn, uiBlockKey: "login-page" },
-      { labelKey: "Web UI Block", href: "/admin/website-builder/ui-block", icon: Monitor },
-      { labelKey: "SEO Settings", href: "/admin/website-builder/seo", icon: Search, uiBlockKey: "seo" },
-      { labelKey: "Footer Settings", href: "/admin/website-builder/footer", icon: Settings, uiBlockKey: "footer" },
-      { labelKey: "Theme Color", href: "/admin/website-builder/theme-color", icon: Palette, uiBlockKey: "theme-color" },
+      // ── HOME PAGE ──────────────────────────────────────────────────────
       {
-        labelKey: "Pages",
+        labelKey: "Home",
+        icon: Monitor,
+        children: [
+          { labelKey: "Header", href: "/admin/website-builder/header", icon: FileText },
+          { labelKey: "Navbar", href: "/admin/website-builder/nav-menu", icon: Menu },
+          { labelKey: "Hero Section", href: "/admin/website-builder/hero-section", icon: Monitor },
+          { labelKey: "Highlights (Outline)", href: "/admin/website-builder/highlights/home/1", icon: Sparkles },
+          { labelKey: "Template", href: "/admin/website-builder/templates", icon: LayoutGrid },
+          { labelKey: "Highlights (BG Filled)", href: "/admin/website-builder/highlights/home/2", icon: Sparkles },
+          { labelKey: "Testimonials", href: "/admin/website-builder/testimonials", icon: Star },
+          { labelKey: "Login & Demo", href: "/admin/website-builder/ui-block/home", icon: LogIn },
+          { labelKey: "Footer", href: "/admin/website-builder/footer", icon: Settings },
+        ],
+      },
+      // ── FEATURES PAGE ─────────────────────────────────────────────────
+      {
+        labelKey: "Features",
+        icon: Layers,
+        children: [
+          { labelKey: "Header", href: "/admin/website-builder/header", icon: FileText },
+          { labelKey: "Navbar", href: "/admin/website-builder/nav-menu", icon: Menu },
+          { labelKey: "Hero Section", href: "/admin/website-builder/hero-section", icon: Monitor },
+          { labelKey: "Features", href: "/admin/website-builder/features", icon: Layers },
+          { labelKey: "Sign In with Price Plan", href: "/admin/website-builder/ui-block/features", icon: DollarSign },
+          { labelKey: "Highlights", href: "/admin/website-builder/highlights/features/1", icon: Sparkles },
+          { labelKey: "Sign In & Demo", href: "/admin/website-builder/ui-block/features", icon: LogIn },
+          { labelKey: "Footer", href: "/admin/website-builder/footer", icon: Settings },
+        ],
+      },
+      // ── TEMPLATE PAGE ─────────────────────────────────────────────────
+      {
+        labelKey: "Template",
+        icon: LayoutGrid,
+        children: [
+          { labelKey: "Header", href: "/admin/website-builder/header", icon: FileText },
+          { labelKey: "Navbar", href: "/admin/website-builder/nav-menu", icon: Menu },
+          { labelKey: "Hero Section", href: "/admin/website-builder/hero-section", icon: Monitor },
+          { labelKey: "Template", href: "/admin/website-builder/templates", icon: LayoutGrid },
+          { labelKey: "Sign In with Price Plan", href: "/admin/website-builder/ui-block/template", icon: DollarSign },
+          { labelKey: "Highlights", href: "/admin/website-builder/highlights/template/1", icon: Sparkles },
+          { labelKey: "Footer", href: "/admin/website-builder/footer", icon: Settings },
+        ],
+      },
+      // ── PRICING PAGE ──────────────────────────────────────────────────
+      {
+        labelKey: "Pricing",
+        icon: DollarSign,
+        children: [
+          { labelKey: "Header", href: "/admin/website-builder/header", icon: FileText },
+          { labelKey: "Navbar", href: "/admin/website-builder/nav-menu", icon: Menu },
+          { labelKey: "Hero Section", href: "/admin/website-builder/hero-section", icon: Monitor },
+          { labelKey: "Plans & Pricing", href: "/admin/website-builder/pricing-plans", icon: DollarSign },
+          { labelKey: "Plan Features", href: "/admin/website-builder/features", icon: Layers },
+          { labelKey: "Highlights", href: "/admin/website-builder/highlights/pricing/1", icon: Sparkles },
+          { labelKey: "Contact & Signup Demo", href: "/admin/website-builder/ui-block/pricing", icon: LogIn },
+          { labelKey: "Footer", href: "/admin/website-builder/footer", icon: Settings },
+        ],
+      },
+      // ── HOW IT WORKS PAGE ─────────────────────────────────────────────
+      {
+        labelKey: "How It's Work",
+        icon: HelpCircle,
+        children: [
+          { labelKey: "Header", href: "/admin/website-builder/header", icon: FileText },
+          { labelKey: "Navbar", href: "/admin/website-builder/nav-menu", icon: Menu },
+          { labelKey: "Hero Section", href: "/admin/website-builder/hero-section", icon: Monitor },
+          { labelKey: "Videos", href: "/admin/website-builder/video-tutorials", icon: Video },
+          { labelKey: "Highlights", href: "/admin/website-builder/highlights/how-it-works/1", icon: Sparkles },
+          { labelKey: "Signup Demo", href: "/admin/website-builder/ui-block/how-it-works", icon: LogIn },
+          { labelKey: "Footer", href: "/admin/website-builder/footer", icon: Settings },
+        ],
+      },
+      // ── CONTACT PAGE ──────────────────────────────────────────────────
+      {
+        labelKey: "Contact",
+        icon: Mail,
+        children: [
+          { labelKey: "Header", href: "/admin/website-builder/header", icon: FileText },
+          { labelKey: "Navbar", href: "/admin/website-builder/nav-menu", icon: Menu },
+          { labelKey: "Hero Section", href: "/admin/website-builder/hero-section", icon: Monitor },
+          { labelKey: "Highlights", href: "/admin/website-builder/highlights/contact/1", icon: Sparkles },
+          { labelKey: "Contact form with Map", href: "/admin/website-builder/contact-us", icon: Mail },
+          { labelKey: "FAQ's", href: "/admin/website-builder/faqs", icon: HelpCircle },
+          { labelKey: "Chat & Signup Demo", href: "/admin/website-builder/ui-block/contact", icon: LogIn },
+          { labelKey: "Footer", href: "/admin/website-builder/footer", icon: Settings },
+        ],
+      },
+      // ── OTHER SETTINGS & CONTENT MODULES ──────────────────────────────
+      {
+        labelKey: "Content Modules",
+        icon: Layers,
+        children: [
+          { labelKey: "Features Builder", href: "/admin/website-builder/features", icon: Layers, uiBlockKey: "features" },
+          { labelKey: "How It Works", href: "/admin/website-builder/how-it-works", icon: HelpCircle, uiBlockKey: "how-it-works" },
+          { labelKey: "Pricing Plans", href: "/admin/website-builder/pricing-plans", icon: DollarSign, uiBlockKey: "pricing-plans" },
+          { labelKey: "Testimonials", href: "/admin/website-builder/testimonials", icon: Star, uiBlockKey: "testimonials" },
+          {
+            labelKey: "Event Templates",
+            icon: LayoutGrid,
+            uiBlockKey: "templates",
+            children: [
+              { labelKey: "Event Templates", href: "/admin/website-builder/templates", icon: LayoutGrid },
+              { labelKey: "Template Categories", href: "/admin/website-builder/templates/categories", icon: Folder },
+            ],
+          },
+          {
+            labelKey: "FAQs",
+            icon: HelpCircle,
+            uiBlockKey: "faqs",
+            children: [
+              { labelKey: "All FAQs", href: "/admin/website-builder/faqs", icon: HelpCircle },
+              { labelKey: "FAQ Categories", href: "/admin/website-builder/faqs/categories", icon: Folder },
+            ],
+          },
+          {
+            labelKey: "Video Tutorials",
+            icon: Video,
+            uiBlockKey: "video-tutorials",
+            children: [
+              { labelKey: "All Video Tutorials", href: "/admin/website-builder/video-tutorials", icon: Video },
+              { labelKey: "Categories", href: "/admin/website-builder/video-tutorials/categories", icon: Folder },
+              { labelKey: "Sub Categories", href: "/admin/website-builder/video-tutorials/subcategories", icon: Folder },
+              { labelKey: "Difficulty Levels", href: "/admin/website-builder/video-tutorials/difficulty-levels", icon: BarChart2 },
+              { labelKey: "Tutorial Types", href: "/admin/website-builder/video-tutorials/types", icon: Sliders },
+            ],
+          },
+          {
+            labelKey: "Contact Us",
+            icon: Mail,
+            uiBlockKey: "contact_us",
+            children: [
+              { labelKey: "Contact Settings", href: "/admin/website-builder/contact-us", icon: Mail },
+              { labelKey: "Categories", href: "/admin/website-builder/contact-us/categories", icon: Folder },
+              { labelKey: "Contact List", href: "/admin/website-builder/contact-us/list", icon: FileText },
+            ],
+          },
+          {
+            labelKey: "Gallery",
+            icon: GalleryHorizontal,
+            children: [
+              { labelKey: "Gallery Images", href: "/admin/website-builder/gallery", icon: GalleryHorizontal, uiBlockKey: "gallery-images" },
+              { labelKey: "Gallery Categories", href: "/admin/website-builder/gallery/categories", icon: Folder, uiBlockKey: "gallery-categories" },
+            ],
+          },
+          {
+            labelKey: "Slider",
+            icon: Folder,
+            children: [
+              { labelKey: "Simple Slider", href: "/admin/website-builder/simple-slider", icon: Folder, uiBlockKey: "basic-slider" },
+              { labelKey: "Advance Slider", href: "/admin/website-builder/advance-slider", icon: Calendar, uiBlockKey: "advance-slider" },
+            ],
+          },
+          {
+            labelKey: "Portfolio",
+            icon: Award,
+            children: [
+              { labelKey: "Sponsors", href: "/admin/website-builder/sponsors", icon: Award, uiBlockKey: "basic-sponsors" },
+              { labelKey: "Clients", href: "/admin/website-builder/clients", icon: Users, uiBlockKey: "basic-clients" },
+            ],
+          },
+        ],
+      },
+      // ── GENERAL SETTINGS (flat, no parent group) ──────────────────────
+      { labelKey: "Theme Color", href: "/admin/website-builder/theme-color", icon: Palette, uiBlockKey: "theme-color" },
+      { labelKey: "SEO Settings", href: "/admin/website-builder/seo", icon: Search, uiBlockKey: "seo" },
+      { labelKey: "Login Page", href: "/admin/website-builder/login-page", icon: LogIn, uiBlockKey: "login-page" },
+      {
+        labelKey: "Custom Pages",
         icon: FileText,
         uiBlockKey: "pages",
         children: [
           { labelKey: "Pages List", href: "/admin/website-builder/pages", icon: FileText },
           { labelKey: "Create Page", href: "/admin/website-builder/pages/create", icon: FileText },
-        ],
-      },
-      {
-        labelKey: "Contact Us",
-        icon: Mail,
-        uiBlockKey: "contact_us",
-        children: [
-          { labelKey: "Contact Settings", href: "/admin/website-builder/contact-us", icon: Mail },
-          { labelKey: "Categories", href: "/admin/website-builder/contact-us/categories", icon: Folder },
-          { labelKey: "Contact List", href: "/admin/website-builder/contact-us/list", icon: FileText },
-        ],
-      },
-      { labelKey: "Hero Section", href: "/admin/website-builder/hero-section", icon: Monitor, uiBlockKey: "hero-section" },
-      {
-        labelKey: "Slider",
-        icon: Folder,
-        children: [
-          { labelKey: "Simple Slider", href: "/admin/website-builder/simple-slider", icon: Folder, uiBlockKey: "basic-slider" },
-          { labelKey: "Advance Slider", href: "/admin/website-builder/advance-slider", icon: Calendar, uiBlockKey: "advance-slider" },
-        ],
-      },
-      {
-        labelKey: "Gallery",
-        icon: GalleryHorizontal,
-        children: [
-          { labelKey: "Gallery Images", href: "/admin/website-builder/gallery", icon: GalleryHorizontal, uiBlockKey: "gallery-images" },
-          { labelKey: "Gallery Categories", href: "/admin/website-builder/gallery/categories", icon: Folder, uiBlockKey: "gallery-categories" },
-        ],
-      },
-      { labelKey: "Testimonials", href: "/admin/website-builder/testimonials", icon: Star, uiBlockKey: "testimonials" },
-      { labelKey: "Pricing Plans", href: "/admin/website-builder/pricing-plans", icon: DollarSign, uiBlockKey: "pricing-plans" },
-      { labelKey: "Features Builder", href: "/admin/website-builder/features", icon: Layers, uiBlockKey: "features" },
-      { labelKey: "How It Works", href: "/admin/website-builder/how-it-works", icon: HelpCircle, uiBlockKey: "how-it-works" },
-      {
-        labelKey: "Event Templates",
-        icon: LayoutGrid,
-        uiBlockKey: "templates",
-        children: [
-          { labelKey: "Event Templates", href: "/admin/website-builder/templates", icon: LayoutGrid },
-          { labelKey: "Template Categories", href: "/admin/website-builder/templates/categories", icon: Folder },
-        ],
-      },
-      {
-        labelKey: "FAQs",
-        icon: HelpCircle,
-        uiBlockKey: "faqs",
-        children: [
-          { labelKey: "All FAQs", href: "/admin/website-builder/faqs", icon: HelpCircle },
-          { labelKey: "FAQ Categories", href: "/admin/website-builder/faqs/categories", icon: Folder },
-        ],
-      },
-      {
-        labelKey: "Video Tutorials",
-        icon: Video,
-        uiBlockKey: "video-tutorials",
-        children: [
-          { labelKey: "All Video Tutorials", href: "/admin/website-builder/video-tutorials", icon: Video },
-          { labelKey: "Categories", href: "/admin/website-builder/video-tutorials/categories", icon: Folder },
-          { labelKey: "Sub Categories", href: "/admin/website-builder/video-tutorials/subcategories", icon: Folder },
-          { labelKey: "Difficulty Levels", href: "/admin/website-builder/video-tutorials/difficulty-levels", icon: BarChart2 },
-          { labelKey: "Tutorial Types", href: "/admin/website-builder/video-tutorials/types", icon: Sliders },
-        ],
-      },
-      {
-        labelKey: "Portfolio",
-        icon: Award,
-        children: [
-          { labelKey: "Sponsors", href: "/admin/website-builder/sponsors", icon: Award, uiBlockKey: "basic-sponsors" },
-          { labelKey: "Clients", href: "/admin/website-builder/clients", icon: Users, uiBlockKey: "basic-clients" },
         ],
       },
     ],

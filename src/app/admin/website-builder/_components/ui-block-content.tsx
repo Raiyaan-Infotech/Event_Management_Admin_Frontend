@@ -1,10 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-
+import { useRouter } from 'next/navigation';
 import { useEffect, useState, useMemo, useRef } from 'react';
-import { useCompanyUiBlocks } from '@/hooks/useCompanyWebsiteBuilder';
-import { PageLoader } from '@/components/common/page-loader';
 import {
     GripVertical,
     FileText,
@@ -27,6 +25,11 @@ import {
     HelpCircle,
     Loader2,
     ExternalLink,
+    Layers,
+    LayoutGrid,
+    DollarSign,
+    Video,
+    LogIn,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -34,12 +37,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useSaveUiBlocks, type UiBlockPayloadItem } from '@/hooks/useUiBlocks';
+import { useUiBlocksData, useSaveUiBlocks, type UiBlockPayloadItem } from '@/hooks/useUiBlocks';
 import { cn } from '@/lib/utils';
+import { PageLoader } from '@/components/common/page-loader';
 
 type UiBlockFilter = 'all' | 'visible' | 'hidden';
 
-interface UiBlockItem {
+export interface UiBlockItem {
     id: string;
     label: string;
     description: string;
@@ -47,98 +51,138 @@ interface UiBlockItem {
     visible: boolean;
     locked: boolean;
     required: boolean;
+    editUrl?: string;
 }
 
-const INITIAL_BLOCKS: UiBlockItem[] = [
-    { id: 'basic-information', label: 'Header', description: 'Website logo, company name, and header details.', icon: FileText, visible: true, locked: true, required: true },
-    { id: 'nav-menu', label: 'Nav Menu', description: 'Website navigation menu settings.', icon: List, visible: true, locked: true, required: true },
-    { id: 'login-page', label: 'Login Page', description: 'Vendor/user login page builder.', icon: Monitor, visible: true, locked: false, required: false },
-    { id: 'ui-block', label: 'Web UI Block', description: 'Sidebar visibility and block ordering.', icon: Monitor, visible: true, locked: true, required: true },
-    { id: 'seo', label: 'SEO Settings', description: 'Search engine metadata settings.', icon: Search, visible: true, locked: false, required: false },
-    { id: 'footer', label: 'Footer Settings', description: 'Website footer configuration.', icon: Settings, visible: true, locked: true, required: true },
-    { id: 'theme-color', label: 'Theme Color', description: 'Website theme color configuration.', icon: Palette, visible: true, locked: true, required: true },
-    { id: 'pages', label: 'Pages', description: 'Create and manage website pages.', icon: FileText, visible: true, locked: false, required: true },
-    { id: 'about-us', label: 'About Us', description: 'System page module.', icon: FileText, visible: true, locked: true, required: true },
-    { id: 'service', label: 'Service', description: 'System page module.', icon: FileText, visible: true, locked: false, required: false },
-    { id: 'events', label: 'Events', description: 'System page module.', icon: FileText, visible: true, locked: false, required: false },
-    { id: 'terms-conditions', label: 'Terms & Conditions', description: 'System page module.', icon: FileText, visible: true, locked: true, required: true },
-    { id: 'privacy-policy', label: 'Privacy Policy', description: 'System page module.', icon: FileText, visible: true, locked: true, required: true },
-    { id: 'maintenance', label: 'Maintenance', description: 'System page module.', icon: FileText, visible: true, locked: true, required: true },
-    { id: 'contact_us', label: 'Contact Us', description: 'Contact form builder module.', icon: Mail, visible: true, locked: false, required: true },
-    { id: 'hero-section', label: 'Hero Section', description: 'Homepage hero section content.', icon: Monitor, visible: true, locked: false, required: true },
-    { id: 'basic-slider', label: 'Simple Slider', description: 'Basic homepage slider.', icon: SlidersHorizontal, visible: false, locked: false, required: false },
-    { id: 'advance-slider', label: 'Advance Slider', description: 'Advanced homepage slider.', icon: SlidersHorizontal, visible: true, locked: false, required: false },
-    { id: 'gallery-images', label: 'Gallery Images', description: 'Gallery image management.', icon: GalleryHorizontal, visible: true, locked: false, required: true },
-    { id: 'gallery-categories', label: 'Gallery Categories', description: 'Gallery category management.', icon: Folder, visible: true, locked: true, required: true },
-    { id: 'testimonials', label: 'Testimonials', description: 'Customer testimonial management.', icon: Star, visible: true, locked: false, required: false },
-    { id: 'basic-sponsors', label: 'Sponsors', description: 'Sponsor logo section.', icon: Users, visible: true, locked: false, required: false },
-    { id: 'basic-clients', label: 'Clients', description: 'Client logo section.', icon: Users, visible: true, locked: false, required: false },
-    { id: 'pricing-plans', label: 'Pricing Plans', description: 'Company promotional pricing plans section.', icon: FileText, visible: true, locked: false, required: false },
-    { id: 'features', label: 'Features Builder', description: 'Interactive features and key benefits section.', icon: FileText, visible: true, locked: false, required: false },
-    { id: 'templates', label: 'Templates Library', description: 'Event invitation card and website template manager.', icon: FileText, visible: true, locked: false, required: false },
-    { id: 'faqs', label: 'FAQs Builder', description: 'Frequently asked questions and FAQ categories module.', icon: HelpCircle, visible: true, locked: false, required: false },
-    { id: 'how-it-works', label: 'How It Works', description: 'Step-by-step workflow overview module.', icon: HelpCircle, visible: true, locked: false, required: false },
-    { id: 'video-tutorials', label: 'Video Tutorials', description: 'Video tutorials and category taxonomy module.', icon: Monitor, visible: true, locked: false, required: false },
+export const PAGES_CONFIG = [
+    { slug: 'home', title: 'Home Page' },
+    { slug: 'features', title: 'Features Page' },
+    { slug: 'template', title: 'Template Page' },
+    { slug: 'pricing', title: 'Pricing Page' },
+    { slug: 'how-it-works', title: "How It's Work" },
+    { slug: 'contact', title: 'Contact Page' },
 ];
 
-export function UiBlockContent() {
-    const { data: companyUiBlocks = [], replace: replaceCompanyUiBlocks, isPending: isSaving } = useCompanyUiBlocks();
-    const [blocks, setBlocks] = useState<UiBlockItem[]>(INITIAL_BLOCKS);
+export const GLOBAL_TOP_BLOCKS: UiBlockItem[] = [
+    { id: 'announcement', label: 'Announcement', description: 'Top header bar announcement message.', icon: FileText, visible: true, locked: true, required: true, editUrl: '/admin/website-builder/header' },
+    { id: 'navbar', label: 'Navbar', description: 'Main navigation header menu.', icon: List, visible: true, locked: true, required: true, editUrl: '/admin/website-builder/nav-menu' },
+    { id: 'hero-section', label: 'Hero Section', description: 'Primary top hero banner.', icon: Monitor, visible: true, locked: true, required: true, editUrl: '/admin/website-builder/hero-section' },
+];
+
+export const GLOBAL_BOTTOM_BLOCKS: UiBlockItem[] = [
+    { id: 'footer', label: 'Footer', description: 'Global website footer columns and copyright.', icon: Settings, visible: true, locked: true, required: true, editUrl: '/admin/website-builder/footer' },
+];
+
+export const PAGE_SPECIFIC_BLOCKS_MAP: Record<string, UiBlockItem[]> = {
+    home: [
+        { id: 'home_highlights_1', label: 'Highlights (Outline)', description: 'Outline styled highlight cards section.', icon: Sparkles, visible: true, locked: false, required: false, editUrl: '/admin/website-builder/highlights/home/1' },
+        { id: 'templates', label: 'Template Showcase', description: 'Featured invitation templates list.', icon: LayoutGrid, visible: true, locked: false, required: false, editUrl: '/admin/website-builder/templates' },
+        { id: 'home_highlights_2', label: 'Highlights (Background Filled)', description: 'Filled background style highlight cards section.', icon: Sparkles, visible: true, locked: false, required: false, editUrl: '/admin/website-builder/highlights/home/2' },
+        { id: 'testimonials', label: 'Testimonials', description: 'Client reviews and feedback carousel.', icon: Star, visible: true, locked: false, required: false, editUrl: '/admin/website-builder/testimonials' },
+        { id: 'login_demo', label: 'Login & Demo', description: 'Home page Login & Demo callout banner.', icon: LogIn, visible: true, locked: false, required: false },
+    ],
+    features: [
+        { id: 'features', label: 'Features', description: 'Detailed feature showcase list.', icon: Layers, visible: true, locked: false, required: false, editUrl: '/admin/website-builder/features' },
+        { id: 'sign_in_price_plan', label: 'Sign In with Price Plan', description: 'Sign in callout with price plan overview.', icon: DollarSign, visible: true, locked: false, required: false },
+        { id: 'features_highlights_1', label: 'Highlights', description: 'Features page highlights block.', icon: Sparkles, visible: true, locked: false, required: false, editUrl: '/admin/website-builder/highlights/features/1' },
+        { id: 'sign_in_demo', label: 'Sign In & Demo', description: 'Features page Sign In & Demo CTA banner.', icon: LogIn, visible: true, locked: false, required: false },
+    ],
+    template: [
+        { id: 'templates', label: 'Template', description: 'Invitation templates grid section.', icon: LayoutGrid, visible: true, locked: false, required: false, editUrl: '/admin/website-builder/templates' },
+        { id: 'sign_in_price_plan', label: 'Sign In with Price Plan', description: 'Sign in callout with price plan overview.', icon: DollarSign, visible: true, locked: false, required: false },
+        { id: 'template_highlights_1', label: 'Highlights', description: 'Template page highlights section.', icon: Sparkles, visible: true, locked: false, required: false, editUrl: '/admin/website-builder/highlights/template/1' },
+    ],
+    pricing: [
+        { id: 'plans_pricing', label: 'Plans & Pricing', description: 'Promotional pricing tiers and toggle.', icon: DollarSign, visible: true, locked: false, required: false, editUrl: '/admin/website-builder/pricing-plans' },
+        { id: 'plan_features', label: 'Plan Features', description: 'Detailed feature comparison table.', icon: Layers, visible: true, locked: false, required: false },
+        { id: 'pricing_highlights_1', label: 'Highlights', description: 'Pricing page highlights section.', icon: Sparkles, visible: true, locked: false, required: false, editUrl: '/admin/website-builder/highlights/pricing/1' },
+        { id: 'contact_signup_demo', label: 'Contact & Signup Demo', description: 'Contact & demo signup callout banner.', icon: LogIn, visible: true, locked: false, required: false },
+    ],
+    'how-it-works': [
+        { id: 'videos', label: 'Videos', description: 'How it works video tutorials section.', icon: Video, visible: true, locked: false, required: false, editUrl: '/admin/website-builder/video-tutorials' },
+        { id: 'howitworks_highlights_1', label: 'Highlights', description: 'How it works highlights section.', icon: Sparkles, visible: true, locked: false, required: false, editUrl: '/admin/website-builder/highlights/how-it-works/1' },
+        { id: 'signup_demo', label: 'Signup Demo', description: 'Signup demo callout banner.', icon: LogIn, visible: true, locked: false, required: false },
+    ],
+    contact: [
+        { id: 'contact_highlights_1', label: 'Highlights', description: 'Contact page highlights section.', icon: Sparkles, visible: true, locked: false, required: false, editUrl: '/admin/website-builder/highlights/contact/1' },
+        { id: 'contact_map', label: 'Contact Form with Map', description: 'Interactive contact form and location map.', icon: Mail, visible: true, locked: false, required: false, editUrl: '/admin/website-builder/contact-us' },
+        { id: 'faqs', label: 'FAQ\'s', description: 'Frequently asked questions accordion.', icon: HelpCircle, visible: true, locked: false, required: false, editUrl: '/admin/website-builder/faqs' },
+        { id: 'chat_signup_demo', label: 'Chat & Signup Demo', description: 'Live chat & signup demo banner.', icon: LogIn, visible: true, locked: false, required: false },
+    ],
+};
+
+interface UiBlockContentProps {
+    initialPageSlug?: string;
+}
+
+export function UiBlockContent({ initialPageSlug = 'home' }: UiBlockContentProps) {
+    const router = useRouter();
+    const activePageSlug = PAGES_CONFIG.some((p) => p.slug === initialPageSlug) ? initialPageSlug : 'home';
+    const activePageTitle = PAGES_CONFIG.find((p) => p.slug === activePageSlug)?.title || 'Page';
+
+    const { data: dbBlocks = [], isLoading } = useUiBlocksData(activePageSlug);
+    const saveMutation = useSaveUiBlocks(activePageSlug);
+
+    const initialMiddleBlocks = PAGE_SPECIFIC_BLOCKS_MAP[activePageSlug] || PAGE_SPECIFIC_BLOCKS_MAP.home;
+    const [middleBlocks, setMiddleBlocks] = useState<UiBlockItem[]>(initialMiddleBlocks);
     const [filter, setFilter] = useState<UiBlockFilter>('all');
 
     useEffect(() => {
-        if (companyUiBlocks && companyUiBlocks.length > 0) {
-            setBlocks((prev) =>
-                prev.map((block) => {
-                    const found = companyUiBlocks.find((b: any) => b.block_key === block.id || b.id === block.id);
-                    if (found) {
-                        return {
-                            ...block,
-                            visible: found.is_visible !== undefined ? Boolean(found.is_visible) : block.visible,
-                        };
-                    }
-                    return block;
-                })
-            );
+        const defaultList = PAGE_SPECIFIC_BLOCKS_MAP[activePageSlug] || PAGE_SPECIFIC_BLOCKS_MAP.home;
+        if (dbBlocks && dbBlocks.length > 0) {
+            // Reorder and apply visibility based on dbBlocks
+            const merged = defaultList.map((block) => {
+                const found = dbBlocks.find((b: any) => b.id === block.id || b.block_key === block.id);
+                return {
+                    ...block,
+                    visible: found ? Boolean(found.visible) : block.visible,
+                    sort_order: found ? Number(found.sort_order || 0) : 999,
+                };
+            });
+            // Sort by DB sort order if present
+            merged.sort((a: any, b: any) => a.sort_order - b.sort_order);
+            setMiddleBlocks(merged);
+        } else {
+            setMiddleBlocks(defaultList);
         }
-    }, [companyUiBlocks]);
+    }, [dbBlocks, activePageSlug]);
+
+    const handlePageChange = (slug: string) => {
+        router.push(`/admin/website-builder/ui-block/${slug}`);
+    };
 
     const handleSave = async () => {
         try {
-            await replaceCompanyUiBlocks(
-                blocks.map((item, index) => ({
-                    block_key: item.id,
-                    label: item.label,
-                    is_visible: item.visible ? 1 : 0,
-                    sort_order: index + 1,
-                    is_active: 1,
-                }))
-            );
-            toast.success('Web UI Blocks saved successfully');
+            const payload: UiBlockPayloadItem[] = middleBlocks.map((item, index) => ({
+                id: item.id,
+                label: item.label,
+                description: item.description,
+                visible: item.visible,
+                locked: item.locked,
+                required: item.required,
+                sort_order: index + 1,
+            }));
+            await saveMutation.mutateAsync(payload);
         } catch (err: any) {
-            toast.error(err?.message || 'Failed to save Web UI blocks');
+            toast.error(err?.message || 'Failed to save UI blocks');
         }
     };
 
     const dragIndex = useRef<number | null>(null);
 
-    const visibleCount = blocks.filter((item) => item.visible).length;
-    const hiddenCount = blocks.length - visibleCount;
+    const visibleCount = middleBlocks.filter((item) => item.visible).length;
+    const hiddenCount = middleBlocks.length - visibleCount;
 
-    const filteredBlocks = useMemo(() => {
-        if (filter === 'visible') return blocks.filter((item) => item.visible);
-        if (filter === 'hidden') return blocks.filter((item) => !item.visible);
-        return blocks;
-    }, [blocks, filter]);
+    const filteredMiddleBlocks = useMemo(() => {
+        if (filter === 'visible') return middleBlocks.filter((item) => item.visible);
+        if (filter === 'hidden') return middleBlocks.filter((item) => !item.visible);
+        return middleBlocks;
+    }, [middleBlocks, filter]);
 
     const handleVisibilityChange = (id: string, visible: boolean) => {
-        setBlocks((prev) =>
+        setMiddleBlocks((prev) =>
             prev.map((item) => {
                 if (item.id === id) {
-                    if (item.required) {
-                        toast.error('Required blocks cannot be hidden.');
-                        return item;
-                    }
                     return { ...item, visible };
                 }
                 return item;
@@ -147,7 +191,7 @@ export function UiBlockContent() {
     };
 
     const handleDragStart = (index: number) => {
-        if (filter !== 'all' || blocks[index]?.locked) return;
+        if (filter !== 'all') return;
         dragIndex.current = index;
     };
 
@@ -162,42 +206,53 @@ export function UiBlockContent() {
 
         if (fromIndex === targetIndex) return;
 
-        const next = [...blocks];
+        const next = [...middleBlocks];
         const moved = next[fromIndex];
-        if (!moved || moved.locked) return;
+        if (!moved) return;
 
         next.splice(fromIndex, 1);
         next.splice(targetIndex, 0, moved);
-        setBlocks(next);
+        setMiddleBlocks(next);
         toast.success(`Reordered ${moved.label}`);
     };
 
     const handleResetDefaults = () => {
-        setBlocks(INITIAL_BLOCKS);
+        const defaultList = PAGE_SPECIFIC_BLOCKS_MAP[activePageSlug] || PAGE_SPECIFIC_BLOCKS_MAP.home;
+        setMiddleBlocks(defaultList);
         setFilter('all');
-        toast.success('UI blocks reset to default layout');
+        toast.success(`Reset ${activePageTitle} UI blocks to default order.`);
     };
 
     return (
         <div className="space-y-6">
-            <PageLoader open={isSaving} text="Saving Web UI Blocks..." />
+            <PageLoader open={saveMutation.isPending} text={`Saving ${activePageTitle} UI Blocks...`} />
+
             {/* Page Header */}
             <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-5">
                 <div>
-                    <h1 className="mt-1 text-2xl font-bold tracking-tight">Web UI Block</h1>
-                    <p className="text-sm text-muted-foreground">Manage your website UI blocks and UI Block settings.</p>
+                    <h1 className="mt-1 text-2xl font-bold tracking-tight">Pages / UI Block - Enable / Disable</h1>
+                    <p className="text-sm text-muted-foreground">
+                        Manage section layout sequence and show/hide UI blocks for <strong>{activePageTitle}</strong>.
+                    </p>
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => toast.info('Organize and toggle visibility for website layout blocks.')} className="h-8 px-3 text-xs font-semibold text-slate-600 border-slate-200 hover:bg-slate-50">
-                        <HelpCircle className="h-3.5 w-3.5 text-slate-400 mr-1" /> How It Works
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleResetDefaults}
+                        className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50"
+                    >
+                        <RotateCcw className="h-3.5 w-3.5 text-rose-500 mr-1" /> Reset Page Blocks
                     </Button>
-                    <Button variant="outline" size="sm" onClick={handleResetDefaults} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
-                        <RotateCcw className="h-3.5 w-3.5 text-rose-500 mr-1" /> Reset
-                    </Button>
-                    <Button size="sm" onClick={handleSave} disabled={isSaving} className="h-8 px-4 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs">
-                        {isSaving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
-                        {isSaving ? 'Saving...' : 'Save Changes'}
+                    <Button
+                        size="sm"
+                        onClick={handleSave}
+                        disabled={saveMutation.isPending}
+                        className="h-8 px-4 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
+                    >
+                        {saveMutation.isPending ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+                        {saveMutation.isPending ? 'Saving...' : 'Save Block Layout'}
                     </Button>
                     <Button size="sm" asChild className="h-8 px-4 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs">
                         <Link href="/website-preview" target="_blank" rel="noopener noreferrer">
@@ -207,23 +262,39 @@ export function UiBlockContent() {
                 </div>
             </div>
 
-            {/* Main Super Admin Card Table */}
+            {/* Page Navigation Tabs */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b">
+                {PAGES_CONFIG.map((p) => {
+                    const isActive = p.slug === activePageSlug;
+                    return (
+                        <button
+                            key={p.slug}
+                            type="button"
+                            onClick={() => handlePageChange(p.slug)}
+                            className={cn(
+                                'flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-t-lg transition-all border-b-2 whitespace-nowrap',
+                                isActive
+                                    ? 'bg-primary/10 text-primary border-primary font-extrabold'
+                                    : 'text-muted-foreground border-transparent hover:bg-muted hover:text-foreground'
+                            )}
+                        >
+                            <Monitor className="h-3.5 w-3.5" />
+                            {p.title}
+                        </button>
+                    );
+                })}
+            </div>
+
+            {/* Main Page Blocks Card Table */}
             <Card className="shadow-sm">
                 <CardHeader className="pb-3 border-b">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                            <CardTitle className="text-lg font-bold">UI Blocks</CardTitle>
-                            <CardDescription className="text-xs">Manage the sections that appear in this builder sidebar.</CardDescription>
+                            <CardTitle className="text-lg font-bold">{activePageTitle} — Section Blocks</CardTitle>
+                            <CardDescription className="text-xs">
+                                Top (Announcement, Navbar, Hero Section) & Footer are fixed globally across all pages. Drag & toggle the middle sections below.
+                            </CardDescription>
                         </div>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={handleResetDefaults}
-                            className="h-8 px-3 text-xs gap-1.5"
-                        >
-                            <RotateCcw className="h-3.5 w-3.5" /> Reset Layout
-                        </Button>
                     </div>
                 </CardHeader>
                 <CardContent className="p-0">
@@ -239,7 +310,7 @@ export function UiBlockContent() {
                                     : 'border-input bg-background text-muted-foreground hover:bg-muted'
                             )}
                         >
-                            All Blocks <Badge className="text-[10px] bg-emerald-800/20 text-emerald-950 font-bold px-1.5 py-0 border-0">{blocks.length}</Badge>
+                            All Sections <Badge className="text-[10px] bg-emerald-800/20 text-emerald-950 font-bold px-1.5 py-0 border-0">{middleBlocks.length + 4}</Badge>
                         </button>
 
                         <button
@@ -252,7 +323,7 @@ export function UiBlockContent() {
                                     : 'border-input bg-background text-muted-foreground hover:bg-muted'
                             )}
                         >
-                            Visible <Badge variant="secondary" className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0">{visibleCount}</Badge>
+                            Visible <Badge variant="secondary" className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0">{visibleCount + 4}</Badge>
                         </button>
 
                         <button
@@ -269,22 +340,62 @@ export function UiBlockContent() {
                         </button>
                     </div>
 
-                    {/* Super Admin Styled Table */}
+                    {/* Table View */}
                     <div className="overflow-x-auto">
                         <Table>
                             <TableHeader className="bg-muted/40">
                                 <TableRow>
                                     <TableHead className="w-[40px]"></TableHead>
-                                    <TableHead className="font-bold text-xs">BLOCK / SECTION</TableHead>
-                                    <TableHead className="font-bold text-xs w-[180px]">STATUS</TableHead>
-                                    <TableHead className="font-bold text-xs w-[100px] text-right">ACTIONS</TableHead>
+                                    <TableHead className="font-bold text-xs">SECTION BLOCK</TableHead>
+                                    <TableHead className="font-bold text-xs w-[180px]">VISIBILITY</TableHead>
+                                    <TableHead className="font-bold text-xs w-[140px] text-right">EDIT CONTENT</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {filteredBlocks.map((item) => {
-                                    const realIndex = blocks.findIndex((b) => b.id === item.id);
+                                {/* ── Global Pinned Top Blocks ── */}
+                                {GLOBAL_TOP_BLOCKS.map((item) => {
                                     const Icon = item.icon;
-                                    const dragDisabled = filter !== 'all' || item.locked;
+                                    return (
+                                        <TableRow key={item.id} className="bg-slate-50/80 border-b border-slate-200/60">
+                                            <TableCell className="w-[40px] pr-0">
+                                                <Lock className="h-3.5 w-3.5 text-slate-400" />
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border bg-slate-200/60 text-slate-700">
+                                                        <Icon className="h-4 w-4" />
+                                                    </div>
+                                                    <div>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="font-bold text-xs text-slate-800">{item.label}</span>
+                                                            <Badge variant="outline" className="text-[9px] border-slate-300 bg-slate-100 text-slate-600 font-bold uppercase">
+                                                                Fixed Global (Top)
+                                                            </Badge>
+                                                        </div>
+                                                        <p className="text-[11px] text-slate-500">{item.description}</p>
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                                                    Always Visible
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                {item.editUrl && (
+                                                    <Button variant="ghost" size="sm" asChild className="h-7 text-xs text-blue-600 font-semibold hover:bg-blue-50">
+                                                        <Link href={item.editUrl}>Edit</Link>
+                                                    </Button>
+                                                )}
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })}
+
+                                {/* ── Dynamic Page-Specific Middle Blocks ── */}
+                                {filteredMiddleBlocks.map((item, realIndex) => {
+                                    const Icon = item.icon;
+                                    const dragDisabled = filter !== 'all';
 
                                     return (
                                         <TableRow
@@ -297,7 +408,6 @@ export function UiBlockContent() {
                                             onDrop={() => handleDrop(realIndex)}
                                             className="group hover:bg-muted/30 transition-colors"
                                         >
-                                            {/* Drag Handle */}
                                             <TableCell className="w-[40px] pr-0">
                                                 <GripVertical
                                                     className={cn(
@@ -306,8 +416,6 @@ export function UiBlockContent() {
                                                     )}
                                                 />
                                             </TableCell>
-
-                                            {/* Block Icon + Label + Description + Required Badge */}
                                             <TableCell>
                                                 <div className="flex items-center gap-3">
                                                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border bg-primary/10 text-primary">
@@ -316,18 +424,14 @@ export function UiBlockContent() {
                                                     <div className="space-y-0.5">
                                                         <div className="flex items-center gap-2">
                                                             <span className="font-semibold text-sm text-foreground">{item.label}</span>
-                                                            {item.required && (
-                                                                <Badge variant="outline" className="text-[10px] border-primary/30 bg-primary/5 text-primary font-semibold">
-                                                                    Required
-                                                                </Badge>
-                                                            )}
+                                                            <Badge variant="outline" className="text-[10px] border-primary/30 bg-primary/5 text-primary font-semibold">
+                                                                #{realIndex + 1} Position
+                                                            </Badge>
                                                         </div>
                                                         <p className="text-xs text-muted-foreground">{item.description}</p>
                                                     </div>
                                                 </div>
                                             </TableCell>
-
-                                            {/* Status Column */}
                                             <TableCell>
                                                 <div className="flex items-center gap-3">
                                                     <div className="flex items-center gap-1.5 text-xs font-semibold text-primary">
@@ -336,20 +440,59 @@ export function UiBlockContent() {
                                                     </div>
                                                     <Switch
                                                         checked={item.visible}
-                                                        disabled={item.required}
                                                         onCheckedChange={(val) => handleVisibilityChange(item.id, val)}
                                                     />
                                                 </div>
                                             </TableCell>
-
-                                            {/* Actions Column */}
                                             <TableCell className="text-right">
-                                                {item.locked ? (
-                                                    <Badge variant="outline" className="gap-1 text-[11px] font-semibold border-slate-200 bg-slate-100 text-slate-500 shadow-none">
-                                                        <Lock className="h-3 w-3 text-slate-400" /> Locked
-                                                    </Badge>
+                                                {item.editUrl ? (
+                                                    <Button variant="ghost" size="sm" asChild className="h-7 text-xs text-blue-600 font-semibold hover:bg-blue-50">
+                                                        <Link href={item.editUrl}>Edit Form</Link>
+                                                    </Button>
                                                 ) : (
-                                                    <span className="text-xs text-slate-400 font-mono">•••</span>
+                                                    <Badge variant="outline" className="text-[10px] text-slate-400 font-mono">
+                                                        Hardcoded UI
+                                                    </Badge>
+                                                )}
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })}
+
+                                {/* ── Global Pinned Bottom Block ── */}
+                                {GLOBAL_BOTTOM_BLOCKS.map((item) => {
+                                    const Icon = item.icon;
+                                    return (
+                                        <TableRow key={item.id} className="bg-slate-50/80 border-t border-slate-200/60">
+                                            <TableCell className="w-[40px] pr-0">
+                                                <Lock className="h-3.5 w-3.5 text-slate-400" />
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border bg-slate-200/60 text-slate-700">
+                                                        <Icon className="h-4 w-4" />
+                                                    </div>
+                                                    <div>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="font-bold text-xs text-slate-800">{item.label}</span>
+                                                            <Badge variant="outline" className="text-[9px] border-slate-300 bg-slate-100 text-slate-600 font-bold uppercase">
+                                                                Fixed Global (Bottom)
+                                                            </Badge>
+                                                        </div>
+                                                        <p className="text-[11px] text-slate-500">{item.description}</p>
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                                                    Always Visible
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                {item.editUrl && (
+                                                    <Button variant="ghost" size="sm" asChild className="h-7 text-xs text-blue-600 font-semibold hover:bg-blue-50">
+                                                        <Link href={item.editUrl}>Edit</Link>
+                                                    </Button>
                                                 )}
                                             </TableCell>
                                         </TableRow>

@@ -194,3 +194,4 @@ export const useCompanyPricingPlans = () => useList<any>('pricing-plans', 'prici
 export const useCompanyFaqs = () => useList<any>('faqs', 'faqs');
 export const useCompanyVideoTutorials = () => useList<any>('video-tutorials', 'video-tutorials');
 export const useCompanyTemplates = () => useList<any>('templates', 'templates');
+export const useCompanyHighlights = () => useList<any>('highlights', 'highlights');

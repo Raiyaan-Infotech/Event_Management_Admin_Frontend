@@ -60,8 +60,14 @@ import { FeaturesSection } from './sections/features-section';
 import { HowItWorksSection } from './sections/how-it-works-section';
 import { PricingSection } from './sections/pricing-section';
 import { FaqsSection } from './sections/faqs-section';
-import { VideoTutorialsSection } from './sections/video-tutorials-section';
-import { TemplatesSection } from './sections/templates-section';
+import { HighlightsSection } from './sections/highlights-section';
+import {
+  LoginDemoSection,
+  SignInDemoSection,
+  ContactSignupDemoSection,
+  SignupDemoSection,
+  ChatSignupDemoSection,
+} from './sections/login-demo-section';
 
 export function CompanyWebsitePreview() {
   const queryClient = useQueryClient();
@@ -239,92 +245,94 @@ const pricingPlans = (pricingPlansRaw as AnyRecord[]).map((p) => {
   isPopular: Boolean(t.is_popular),
 }));
 
-  // ── UI Block-ordered home sections ─────────────────────────────────────────
-  const sliderNode = sliderMeta && slides.length > 0 ? <SliderSection slides={slides} meta={sliderMeta} theme={theme} /> : null;
+  // ── Render Page Sections ──────────────────────────────────────────────────
+  const heroNode = <HeroSection hero={hero} theme={theme} />;
 
-  const homeSectionByKey: Record<string, React.ReactNode> = {
-    'hero-section': <HeroSection hero={hero} theme={theme} />,
-    'advance-slider': sliderNode,
-    'basic-slider': sliderNode,
-    features: <FeaturesSection features={features} theme={theme} />,
-    services: <FeaturesSection features={features} theme={theme} />,
-    'how-it-works': <HowItWorksSection steps={howItWorksSteps} theme={theme} />,
-    process: <HowItWorksSection steps={howItWorksSteps} theme={theme} />,
-    workflow: <HowItWorksSection steps={howItWorksSteps} theme={theme} />,
-    'gallery-images': <GallerySection categories={galleryCategories} items={galleryItems} theme={theme} />,
-    gallery: <GallerySection categories={galleryCategories} items={galleryItems} theme={theme} />,
-    'gallery-categories': null,
-    testimonials: <TestimonialsSection testimonials={testimonials} theme={theme} />,
-    reviews: <TestimonialsSection testimonials={testimonials} theme={theme} />,
-    'basic-clients': <LogoWallSection title="Our Clients" members={clients} theme={theme} kind="clients" />,
-    'basic-sponsors': <LogoWallSection title="Our Sponsors" members={sponsors} theme={theme} kind="sponsors" muted />,
-    'pricing-plans': <PricingSection plans={pricingPlans} theme={theme} />,
-    pricing: <PricingSection plans={pricingPlans} theme={theme} />,
-    plans: <PricingSection plans={pricingPlans} theme={theme} />,
-    templates: <TemplatesSection templates={templates} theme={theme} />,
-    faqs: <FaqsSection faqs={faqs} theme={theme} />,
-    faq: <FaqsSection faqs={faqs} theme={theme} />,
-    'video-tutorials': <VideoTutorialsSection videos={videoTutorials} theme={theme} />,
-    videos: <VideoTutorialsSection videos={videoTutorials} theme={theme} />,
-    tutorials: <VideoTutorialsSection videos={videoTutorials} theme={theme} />,
-    contact_us: contact ? <ContactSection contact={contact} theme={theme} /> : null,
-    contact: contact ? <ContactSection contact={contact} theme={theme} /> : null,
-    'contact-us': contact ? <ContactSection contact={contact} theme={theme} /> : null,
+  const pageContents: Record<string, React.ReactNode> = {
+    home: (
+      <>
+        {heroNode}
+        <HighlightsSection pageSlug="home" instance={1} theme={theme} variant="outline" />
+        <TemplatesSection templates={templates} theme={theme} />
+        <HighlightsSection pageSlug="home" instance={2} theme={theme} variant="filled" />
+        <TestimonialsSection testimonials={testimonials} theme={theme} />
+        <LoginDemoSection theme={theme} companyName={companyName} />
+      </>
+    ),
+    features: (
+      <>
+        {heroNode}
+        <FeaturesSection features={features} theme={theme} />
+        <SignInDemoSection theme={theme} />
+        <HighlightsSection pageSlug="features" instance={1} theme={theme} variant="filled" />
+        <SignInDemoSection theme={theme} />
+      </>
+    ),
+    template: (
+      <>
+        {heroNode}
+        <TemplatesSection templates={templates} theme={theme} />
+        <SignInDemoSection theme={theme} />
+        <HighlightsSection pageSlug="template" instance={1} theme={theme} variant="filled" />
+      </>
+    ),
+    templates: (
+      <>
+        {heroNode}
+        <TemplatesSection templates={templates} theme={theme} />
+        <SignInDemoSection theme={theme} />
+        <HighlightsSection pageSlug="template" instance={1} theme={theme} variant="filled" />
+      </>
+    ),
+    pricing: (
+      <>
+        {heroNode}
+        <PricingSection plans={pricingPlans} theme={theme} />
+        <HighlightsSection pageSlug="pricing" instance={1} theme={theme} variant="filled" />
+        <ContactSignupDemoSection theme={theme} />
+      </>
+    ),
+    'pricing-plans': (
+      <>
+        {heroNode}
+        <PricingSection plans={pricingPlans} theme={theme} />
+        <HighlightsSection pageSlug="pricing" instance={1} theme={theme} variant="filled" />
+        <ContactSignupDemoSection theme={theme} />
+      </>
+    ),
+    'how-it-works': (
+      <>
+        {heroNode}
+        <HowItWorksSection steps={howItWorksSteps} theme={theme} />
+        <HighlightsSection pageSlug="how-it-works" instance={1} theme={theme} variant="filled" />
+        <SignupDemoSection theme={theme} />
+      </>
+    ),
+    contact: (
+      <>
+        {heroNode}
+        <HighlightsSection pageSlug="contact" instance={1} theme={theme} variant="filled" />
+        {contact ? <ContactSection contact={contact} theme={theme} /> : null}
+        <FaqsSection faqs={faqs} theme={theme} />
+        <ChatSignupDemoSection theme={theme} />
+      </>
+    ),
+    'contact-us': (
+      <>
+        {heroNode}
+        <HighlightsSection pageSlug="contact" instance={1} theme={theme} variant="filled" />
+        {contact ? <ContactSection contact={contact} theme={theme} /> : null}
+        <FaqsSection faqs={faqs} theme={theme} />
+        <ChatSignupDemoSection theme={theme} />
+      </>
+    ),
   };
-
-  const defaultHomeOrder = [
-    'hero-section',
-    'advance-slider',
-    'features',
-    'how-it-works',
-    'gallery-images',
-    'testimonials',
-    'basic-clients',
-    'basic-sponsors',
-    'pricing-plans',
-    'templates',
-    'faqs',
-    'video-tutorials',
-    'contact_us',
-  ];
-
-  const orderedHomeKeys = (() => {
-    const blocks = (uiBlocksRaw as AnyRecord[]);
-    const saved = blocks
-      .filter((b) => Boolean(b.is_visible !== undefined ? b.is_visible : true))
-      .slice()
-      .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0))
-      .map((b) => String(b.block_key || ''))
-      .filter((key) => key in homeSectionByKey && homeSectionByKey[key] !== null);
-
-    if (!saved.length) return defaultHomeOrder;
-
-    const topKeys = ['hero-section', 'advance-slider', 'basic-slider'].filter((k) => saved.includes(k));
-    const restKeys = saved.filter((k) => !topKeys.includes(k));
-    const finalOrder = [...topKeys, ...restKeys];
-
-    const seen = new Set(finalOrder);
-    return [...finalOrder, ...defaultHomeOrder.filter((key) => !seen.has(key))];
-  })();
-
-  const homeSections: React.ReactNode[] = [];
-  let sliderShown = false;
-  for (const key of orderedHomeKeys) {
-    const node = homeSectionByKey[key];
-    if (!node) continue;
-    if (key === 'advance-slider' || key === 'basic-slider') {
-      if (sliderShown) continue;
-      sliderShown = true;
-    }
-    homeSections.push(<React.Fragment key={key}>{node}</React.Fragment>);
-  }
 
   const activePage = findPageForViewKey(activeKey, legalPages);
   let mainContent: React.ReactNode;
-  if (activeKey === 'home') {
-    mainContent = <>{homeSections}</>;
-  } else if (activeKey in homeSectionByKey && homeSectionByKey[activeKey] !== null) {
-    mainContent = homeSectionByKey[activeKey];
+
+  if (activeKey in pageContents) {
+    mainContent = pageContents[activeKey];
   } else if (activePage) {
     mainContent = (
       <section className="w-full bg-white py-16">
@@ -335,7 +343,7 @@ const pricingPlans = (pricingPlansRaw as AnyRecord[]).map((p) => {
       </section>
     );
   } else {
-    mainContent = <>{homeSections}</>;
+    mainContent = pageContents.home;
   }
 
   // ── Loading Screen ──────────────────────────────────────────────────────────
