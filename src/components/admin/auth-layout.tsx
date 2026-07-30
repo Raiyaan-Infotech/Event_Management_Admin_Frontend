@@ -1,25 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSettingsByGroup } from "@/hooks/use-settings";
+import { usePublicSettings } from "@/hooks/use-settings";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
-  const { data: settings } = useSettingsByGroup("appearance");
+  const { data: publicSettings } = usePublicSettings();
   const [backgroundImage, setBackgroundImage] = useState("");
 
   useEffect(() => {
-    if (settings) {
-      const bgSetting = settings.find((s) => s.key === "login_background_urls");
-      if (bgSetting?.value) {
-        const urls = bgSetting.value.split(",").filter(Boolean);
-        if (urls.length > 0) {
-          // Pick a random background image
-          const randomImage = urls[Math.floor(Math.random() * urls.length)];
-          setBackgroundImage(randomImage);
-        }
+    const bgUrlsStr = publicSettings?.login_background_urls;
+    if (bgUrlsStr) {
+      const urls = bgUrlsStr.split(",").filter(Boolean);
+      if (urls.length > 0) {
+        const randomImage = urls[Math.floor(Math.random() * urls.length)];
+        setBackgroundImage(randomImage);
       }
     }
-  }, [settings]);
+  }, [publicSettings]);
 
   return (
     <div className="min-h-screen flex">

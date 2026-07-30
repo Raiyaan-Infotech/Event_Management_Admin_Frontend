@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import apiClient from '@/lib/api-client';
+import api from '@/lib/api-client';
 
 export interface CompanyBasicInformation {
   id?: number;
@@ -83,16 +83,16 @@ const useSingleton = <T>(key: string, endpoint: string) => {
   const query = useQuery<T>({
     queryKey: ['company-website-builder', key],
     queryFn: async () => {
-      const res: any = await apiClient.get(`/website-builder/${endpoint}`);
-      return res.data?.data || res.data || {};
+      const data: any = await api.get(`/website-builder/${endpoint}`);
+      return (data && typeof data === 'object' ? data : {}) as T;
     },
     staleTime: 0,
   });
 
   const mutation = useMutation({
     mutationFn: async (payload: T) => {
-      const res: any = await apiClient.put(`/website-builder/${endpoint}`, payload);
-      return res.data?.data || res.data;
+      const data: any = await api.put(`/website-builder/${endpoint}`, payload);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['company-website-builder', key] });
@@ -109,8 +109,7 @@ const useList = <T extends { id?: number }>(key: string, endpoint: string) => {
   const query = useQuery<T[]>({
     queryKey: ['company-website-builder', key],
     queryFn: async () => {
-      const res: any = await apiClient.get(`/website-builder/${endpoint}`);
-      const data = res.data?.data || res.data || [];
+      const data: any = await api.get(`/website-builder/${endpoint}`);
       return Array.isArray(data) ? data : [];
     },
     staleTime: 0,
@@ -118,8 +117,8 @@ const useList = <T extends { id?: number }>(key: string, endpoint: string) => {
 
   const createMutation = useMutation({
     mutationFn: async (payload: Partial<T>) => {
-      const res: any = await apiClient.post(`/website-builder/${endpoint}`, payload);
-      return res.data?.data || res.data;
+      const data: any = await api.post(`/website-builder/${endpoint}`, payload);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['company-website-builder', key] });
@@ -128,8 +127,8 @@ const useList = <T extends { id?: number }>(key: string, endpoint: string) => {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, ...payload }: Partial<T> & { id: number }) => {
-      const res: any = await apiClient.put(`/website-builder/${endpoint}/${id}`, payload);
-      return res.data?.data || res.data;
+      const data: any = await api.put(`/website-builder/${endpoint}/${id}`, payload);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['company-website-builder', key] });
@@ -138,8 +137,8 @@ const useList = <T extends { id?: number }>(key: string, endpoint: string) => {
 
   const replaceMutation = useMutation({
     mutationFn: async (items: Partial<T>[]) => {
-      const res: any = await apiClient.put(`/website-builder/${endpoint}`, { items });
-      return res.data?.data || res.data;
+      const data: any = await api.put(`/website-builder/${endpoint}`, { items });
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['company-website-builder', key] });
@@ -148,8 +147,8 @@ const useList = <T extends { id?: number }>(key: string, endpoint: string) => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      const res: any = await apiClient.delete(`/website-builder/${endpoint}/${id}`);
-      return res.data;
+      const data: any = await api.delete(`/website-builder/${endpoint}/${id}`);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['company-website-builder', key] });
@@ -181,6 +180,7 @@ export const useCompanyPages = () => useList<any>('pages', 'pages');
 export const useCompanyMenuItems = () => useList<any>('menu-items', 'menu-items');
 export const useCompanyUiBlocks = () => useList<any>('company-ui-blocks', 'company-ui-blocks');
 export const useCompanySliders = () => useList<any>('sliders', 'sliders');
+export const useCompanySliderItems = () => useList<any>('slider-items', 'slider-items');
 export const useCompanyGalleryCategories = () => useList<any>('gallery-categories', 'gallery-categories');
 export const useCompanyGalleryItems = () => useList<any>('gallery-items', 'gallery-items');
 export const useCompanyContactCategories = () => useList<any>('contact-categories', 'contact-categories');
@@ -188,3 +188,9 @@ export const useCompanyContactMessages = () => useList<any>('contact-messages', 
 export const useCompanyTestimonials = () => useList<any>('testimonials', 'testimonials');
 export const useCompanyClients = () => useList<any>('clients', 'clients');
 export const useCompanySponsors = () => useList<any>('sponsors', 'sponsors');
+export const useCompanyFeatures = () => useList<any>('features', 'features');
+export const useCompanyHowItWorks = () => useList<any>('how-it-works', 'how-it-works');
+export const useCompanyPricingPlans = () => useList<any>('pricing-plans', 'pricing-plans');
+export const useCompanyFaqs = () => useList<any>('faqs', 'faqs');
+export const useCompanyVideoTutorials = () => useList<any>('video-tutorials', 'video-tutorials');
+export const useCompanyTemplates = () => useList<any>('templates', 'templates');

@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { useCompanyUiBlocks } from '@/hooks/useCompanyWebsiteBuilder';
 import { PageLoader } from '@/components/common/page-loader';
@@ -24,6 +26,7 @@ import {
     Sparkles,
     HelpCircle,
     Loader2,
+    ExternalLink,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -195,6 +198,11 @@ export function UiBlockContent() {
                     <Button size="sm" onClick={handleSave} disabled={isSaving} className="h-8 px-4 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs">
                         {isSaving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
                         {isSaving ? 'Saving...' : 'Save Changes'}
+                    </Button>
+                    <Button size="sm" asChild className="h-8 px-4 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs">
+                        <Link href="/website-preview" target="_blank" rel="noopener noreferrer">
+                            <ExternalLink className="h-3.5 w-3.5 mr-1" /> Preview Website
+                        </Link>
                     </Button>
                 </div>
             </div>

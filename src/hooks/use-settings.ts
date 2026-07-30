@@ -61,6 +61,10 @@ export function useSettingsByGroup(group: string) {
     queryKey: queryKeys.settings.group(group),
     queryFn: () => settingsApi.getByGroup(group),
     enabled: !!group,
+    retry: (failureCount, error: any) => {
+      if (error?.response?.status === 401) return false;
+      return failureCount < 2;
+    },
   });
 }
 

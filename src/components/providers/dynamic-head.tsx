@@ -1,16 +1,22 @@
 "use client";
 
 import { useEffect } from "react";
-import { useSettingsByGroup } from "@/hooks/use-settings";
+import { usePublicSettings, useSettingsByGroup } from "@/hooks/use-settings";
 
 export function DynamicHead() {
-  const { data: settings } = useSettingsByGroup("appearance");
+  const { data: publicSettings } = usePublicSettings();
+  const { data: appearanceSettings } = useSettingsByGroup("appearance");
 
   useEffect(() => {
-    if (!settings) return;
+    const adminTitle =
+      appearanceSettings?.find((s) => s.key === "admin_title")?.value ||
+      publicSettings?.admin_title ||
+      publicSettings?.site_title;
 
-    const adminTitle = settings.find((s) => s.key === "admin_title")?.value;
-    const faviconUrl = settings.find((s) => s.key === "admin_favicon_url")?.value;
+    const faviconUrl =
+      appearanceSettings?.find((s) => s.key === "admin_favicon_url")?.value ||
+      publicSettings?.admin_favicon_url ||
+      publicSettings?.favicon_url;
 
     // Update document title
     if (adminTitle) {
@@ -27,7 +33,8 @@ export function DynamicHead() {
       }
       link.href = faviconUrl;
     }
-  }, [settings]);
+  }, [publicSettings, appearanceSettings]);
 
   return null;
 }
+

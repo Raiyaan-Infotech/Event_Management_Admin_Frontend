@@ -40,9 +40,11 @@ apiClient.interceptors.request.use(
     if (typeof window !== 'undefined') {
       const currentCompanyId = localStorage.getItem('currentCompanyId');
 
-      // If present, add X-Company-Id header
-      if (currentCompanyId) {
+      // If present and valid, add X-Company-Id header (default to 1)
+      if (currentCompanyId && currentCompanyId !== 'undefined' && currentCompanyId !== 'null') {
         config.headers['X-Company-Id'] = currentCompanyId;
+      } else {
+        config.headers['X-Company-Id'] = '1';
       }
     }
 
@@ -56,34 +58,25 @@ apiClient.interceptors.request.use(
 // Response interceptor for error handling and approval detection
 apiClient.interceptors.response.use(
   (response) => {
-    // Detect approval-required responses (HTTP 202 or approval_required flag)
     const data = response.data;
     if (response.status === 202 || data?.approval_required === true) {
       const approvalMsg = data?.message || 'Your request has been sent for approval.';
-      
-      // Approvals are a successful queueing of a request, not an error. Show consistently.
       toast.info(approvalMsg);
-
-      // Invalidate approval queries to update pending count
       queryClient.invalidateQueries({ queryKey: queryKeys.approvals.pending() });
       queryClient.invalidateQueries({ queryKey: queryKeys.approvals.lists() });
-
-      // Throw custom error so mutation hooks know this was an approval, not a success
       throw new ApprovalRequiredError(
         data?.message || 'Approval required',
         data?.data
       );
     }
-
     return response;
   },
   (error: AxiosError) => {
     if (error.response?.status === 401) {
-      // Redirect to login if unauthorized
       if (typeof window !== 'undefined' &&
           !window.location.pathname.includes('/auth') &&
-          !window.location.pathname.startsWith('/vendor')) {
-        // Clear all auth cookies immediately so Next.js middleware won't bounce back to /admin
+          !window.location.pathname.startsWith('/vendor') &&
+          !window.location.pathname.startsWith('/website-preview')) {
         document.cookie = 'access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
         document.cookie = 'refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
         document.cookie = 'auth_pending=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';

@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSmartLogin } from "@/hooks/use-auth";
-import { useSettingsByGroup } from "@/hooks/use-settings";
+import { usePublicSettings } from "@/hooks/use-settings";
 import { PageLoader } from "@/components/common/page-loader";
 
 const loginSchema = z.object({
@@ -24,7 +24,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const loginMutation = useSmartLogin();
-  const { data: settings } = useSettingsByGroup("appearance");
+  const { data: publicSettings } = usePublicSettings();
 
   const {
     register,
@@ -45,9 +45,9 @@ export default function LoginPage() {
     return () => clearTimeout(timer);
   }, []);
 
-  const adminLogoUrl = settings?.find((s) => s.key === "site_logo_url")?.value || "";
-  const adminTitle = settings?.find((s) => s.key === "admin_title")?.value || "Admin Login";
-  const backgroundImage = settings?.find((s) => s.key === "login_background_url")?.value || "";
+  const adminLogoUrl = publicSettings?.site_logo_url || publicSettings?.logo_url || "";
+  const adminTitle = publicSettings?.admin_title || publicSettings?.site_title || "Admin Login";
+  const backgroundImage = publicSettings?.login_background_url || (publicSettings?.login_background_urls ? publicSettings.login_background_urls.split(",")[0] : "");
 
   const onSubmit = (data: LoginFormData) => {
     loginMutation.mutate(data, {

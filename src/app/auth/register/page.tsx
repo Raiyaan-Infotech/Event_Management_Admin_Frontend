@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRegister } from "@/hooks/use-auth";
-import { useSettingsByGroup } from "@/hooks/use-settings";
+import { usePublicSettings } from "@/hooks/use-settings";
 import { PageLoader } from "@/components/common/page-loader";
 
 const registerSchema = z
@@ -30,7 +30,7 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
   const registerMutation = useRegister();
-  const { data: settings } = useSettingsByGroup("appearance");
+  const { data: publicSettings } = usePublicSettings();
   const [backgroundImage, setBackgroundImage] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -45,17 +45,15 @@ export default function RegisterPage() {
   });
 
   useEffect(() => {
-    if (settings) {
-      const bgSetting = settings.find((s) => s.key === "login_background_urls");
-      if (bgSetting?.value) {
-        const urls = bgSetting.value.split(",").filter(Boolean);
-        if (urls.length > 0) {
-          const randomImage = urls[Math.floor(Math.random() * urls.length)];
-          setBackgroundImage(randomImage);
-        }
+    const bgUrlsStr = publicSettings?.login_background_urls || publicSettings?.login_background_url;
+    if (bgUrlsStr) {
+      const urls = bgUrlsStr.split(",").filter(Boolean);
+      if (urls.length > 0) {
+        const randomImage = urls[Math.floor(Math.random() * urls.length)];
+        setBackgroundImage(randomImage);
       }
     }
-  }, [settings]);
+  }, [publicSettings]);
 
   const onSubmit = (data: RegisterFormData) => {
     const { confirmPassword, fullName, ...rest } = data;

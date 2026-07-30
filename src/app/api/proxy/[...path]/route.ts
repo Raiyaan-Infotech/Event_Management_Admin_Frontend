@@ -1,18 +1,47 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+export const maxDuration = 60;
+
 const PORTAL_TYPE = 'admin';
-const ALLOWED_COOKIE_NAMES = new Set(["access_token","refresh_token"]);
-const PROXY_TIMEOUT_MS = 25000;
+const ALLOWED_COOKIE_NAMES = new Set(["access_token", "refresh_token"]);
+const PROXY_TIMEOUT_MS = 50000;
+
+function getBackendBaseUrl(): string {
+  let url = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1').trim();
+  url = url.replace(/\/+$/, '');
+  if (!url.endsWith('/api/v1')) {
+    if (url.endsWith('/api')) {
+      url += '/v1';
+    } else {
+      url += '/api/v1';
+    }
+  }
+  return url;
+}
+
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...init, signal: controller.signal });
+    return res;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
 
 async function forwardRequest(request: NextRequest, path: string, method: string) {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), PROXY_TIMEOUT_MS);
-
   try {
-    const strippedPath = path.startsWith('v1/') ? path.slice(3) : path;
+    const baseUrl = getBackendBaseUrl();
+    let strippedPath = path;
+    if (strippedPath.startsWith('v1/')) {
+      strippedPath = strippedPath.slice(3);
+    } else if (strippedPath.startsWith('api/v1/')) {
+      strippedPath = strippedPath.slice(7);
+    }
+
     const searchParams = request.nextUrl.search;
-    const backendUrl = `${BACKEND_URL}/${strippedPath}${searchParams}`;
+    const backendUrl = `${baseUrl}/${strippedPath}${searchParams}`;
 
     let body: BodyInit | undefined;
     if (method !== 'GET' && method !== 'HEAD') {
@@ -27,7 +56,7 @@ async function forwardRequest(request: NextRequest, path: string, method: string
     // Force backend mail/auth context for this frontend app.
     headers.set('x-portal-type', PORTAL_TYPE);
 
-    // localhost shares cookies across ports. Forward only this portal's auth cookies.
+    // Forward auth cookies
     const portalCookies = request.cookies
       .getAll()
       .filter((cookie) => ALLOWED_COOKIE_NAMES.has(cookie.name));
@@ -38,14 +67,23 @@ async function forwardRequest(request: NextRequest, path: string, method: string
       headers.delete('cookie');
     }
 
-    const backendResponse = await fetch(backendUrl, {
+    const fetchOptions: RequestInit = {
       method,
       headers,
       body,
       credentials: 'include',
       cache: 'no-store',
-      signal: controller.signal,
-    });
+    };
+
+    let backendResponse: Response;
+    try {
+      backendResponse = await fetchWithTimeout(backendUrl, fetchOptions, PROXY_TIMEOUT_MS);
+    } catch (err) {
+      // Retry once after 1.5s delay if cold start timed out or aborted
+      console.warn(`[Proxy:${PORTAL_TYPE}] Initial attempt failed for ${backendUrl}, retrying for cold-start...`, err);
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      backendResponse = await fetchWithTimeout(backendUrl, fetchOptions, PROXY_TIMEOUT_MS);
+    }
 
     if (process.env.NODE_ENV !== 'production') {
       console.log(`[Proxy:${PORTAL_TYPE}] Forwarding ${method} to ${backendUrl}`);
@@ -76,8 +114,6 @@ async function forwardRequest(request: NextRequest, path: string, method: string
       { success: false, message: 'Proxy request failed: Backend unreachable or timed out' },
       { status: 504 }
     );
-  } finally {
-    clearTimeout(timeoutId);
   }
 }
 
@@ -115,3 +151,4 @@ export async function OPTIONS(request: NextRequest, { params }: { params: Promis
   const { path: pathArray } = await params;
   return forwardRequest(request, pathArray.join('/'), 'OPTIONS');
 }
+
