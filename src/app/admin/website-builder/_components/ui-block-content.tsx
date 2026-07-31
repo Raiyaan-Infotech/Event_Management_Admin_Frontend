@@ -35,6 +35,7 @@ import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useUiBlocksData, useSaveUiBlocks, type UiBlockPayloadItem } from '@/hooks/useUiBlocks';
@@ -64,7 +65,7 @@ export const PAGES_CONFIG = [
 ];
 
 export const GLOBAL_TOP_BLOCKS: UiBlockItem[] = [
-    { id: 'announcement', label: 'Announcement', description: 'Top header bar announcement message.', icon: FileText, visible: true, locked: true, required: true, editUrl: '/admin/website-builder/header' },
+    { id: 'header', label: 'Header', description: 'Top bar contacts, social links, logo, and topbar settings.', icon: FileText, visible: true, locked: true, required: true, editUrl: '/admin/website-builder/header' },
     { id: 'navbar', label: 'Navbar', description: 'Main navigation header menu.', icon: List, visible: true, locked: true, required: true, editUrl: '/admin/website-builder/nav-menu' },
     { id: 'hero-section', label: 'Hero Section', description: 'Primary top hero banner.', icon: Monitor, visible: true, locked: true, required: true, editUrl: '/admin/website-builder/hero-section' },
 ];
@@ -79,35 +80,35 @@ export const PAGE_SPECIFIC_BLOCKS_MAP: Record<string, UiBlockItem[]> = {
         { id: 'templates', label: 'Template Showcase', description: 'Featured invitation templates list.', icon: LayoutGrid, visible: true, locked: false, required: false, editUrl: '/admin/website-builder/templates' },
         { id: 'home_highlights_2', label: 'Highlights (Background Filled)', description: 'Filled background style highlight cards section.', icon: Sparkles, visible: true, locked: false, required: false, editUrl: '/admin/website-builder/highlights/home/2' },
         { id: 'testimonials', label: 'Testimonials', description: 'Client reviews and feedback carousel.', icon: Star, visible: true, locked: false, required: false, editUrl: '/admin/website-builder/testimonials' },
-        { id: 'login_demo', label: 'Login & Demo', description: 'Home page Login & Demo callout banner.', icon: LogIn, visible: true, locked: false, required: false },
+        { id: 'login_demo', label: 'Login & Demo', description: 'Home page Login & Demo callout banner.', icon: LogIn, visible: true, locked: false, required: false, editUrl: '/admin/website-builder/login-demo/home' },
     ],
     features: [
         { id: 'features', label: 'Features', description: 'Detailed feature showcase list.', icon: Layers, visible: true, locked: false, required: false, editUrl: '/admin/website-builder/features' },
-        { id: 'sign_in_price_plan', label: 'Sign In with Price Plan', description: 'Sign in callout with price plan overview.', icon: DollarSign, visible: true, locked: false, required: false },
+        { id: 'sign_in_price_plan', label: 'Sign In with Price Plan', description: 'Sign in callout with price plan overview.', icon: DollarSign, visible: true, locked: false, required: false, editUrl: '/admin/website-builder/pricing-plans' },
         { id: 'features_highlights_1', label: 'Highlights', description: 'Features page highlights block.', icon: Sparkles, visible: true, locked: false, required: false, editUrl: '/admin/website-builder/highlights/features/1' },
-        { id: 'sign_in_demo', label: 'Sign In & Demo', description: 'Features page Sign In & Demo CTA banner.', icon: LogIn, visible: true, locked: false, required: false },
+        { id: 'sign_in_demo', label: 'Sign In & Demo', description: 'Features page Sign In & Demo CTA banner.', icon: LogIn, visible: true, locked: false, required: false, editUrl: '/admin/website-builder/login-demo/features' },
     ],
     template: [
         { id: 'templates', label: 'Template', description: 'Invitation templates grid section.', icon: LayoutGrid, visible: true, locked: false, required: false, editUrl: '/admin/website-builder/templates' },
-        { id: 'sign_in_price_plan', label: 'Sign In with Price Plan', description: 'Sign in callout with price plan overview.', icon: DollarSign, visible: true, locked: false, required: false },
+        { id: 'sign_in_price_plan', label: 'Sign In with Price Plan', description: 'Sign in callout with price plan overview.', icon: DollarSign, visible: true, locked: false, required: false, editUrl: '/admin/website-builder/pricing-plans' },
         { id: 'template_highlights_1', label: 'Highlights', description: 'Template page highlights section.', icon: Sparkles, visible: true, locked: false, required: false, editUrl: '/admin/website-builder/highlights/template/1' },
     ],
     pricing: [
         { id: 'plans_pricing', label: 'Plans & Pricing', description: 'Promotional pricing tiers and toggle.', icon: DollarSign, visible: true, locked: false, required: false, editUrl: '/admin/website-builder/pricing-plans' },
-        { id: 'plan_features', label: 'Plan Features', description: 'Detailed feature comparison table.', icon: Layers, visible: true, locked: false, required: false },
+        { id: 'plan_features', label: 'Plan Features', description: 'Detailed feature comparison table.', icon: Layers, visible: true, locked: false, required: false, editUrl: '/admin/website-builder/features' },
         { id: 'pricing_highlights_1', label: 'Highlights', description: 'Pricing page highlights section.', icon: Sparkles, visible: true, locked: false, required: false, editUrl: '/admin/website-builder/highlights/pricing/1' },
-        { id: 'contact_signup_demo', label: 'Contact & Signup Demo', description: 'Contact & demo signup callout banner.', icon: LogIn, visible: true, locked: false, required: false },
+        { id: 'contact_signup_demo', label: 'Contact & Signup Demo', description: 'Contact & demo signup callout banner.', icon: LogIn, visible: true, locked: false, required: false, editUrl: '/admin/website-builder/login-demo/pricing' },
     ],
     'how-it-works': [
         { id: 'videos', label: 'Videos', description: 'How it works video tutorials section.', icon: Video, visible: true, locked: false, required: false, editUrl: '/admin/website-builder/video-tutorials' },
         { id: 'howitworks_highlights_1', label: 'Highlights', description: 'How it works highlights section.', icon: Sparkles, visible: true, locked: false, required: false, editUrl: '/admin/website-builder/highlights/how-it-works/1' },
-        { id: 'signup_demo', label: 'Signup Demo', description: 'Signup demo callout banner.', icon: LogIn, visible: true, locked: false, required: false },
+        { id: 'signup_demo', label: 'Signup Demo', description: 'Signup demo callout banner.', icon: LogIn, visible: true, locked: false, required: false, editUrl: '/admin/website-builder/login-demo/how-it-works' },
     ],
     contact: [
         { id: 'contact_highlights_1', label: 'Highlights', description: 'Contact page highlights section.', icon: Sparkles, visible: true, locked: false, required: false, editUrl: '/admin/website-builder/highlights/contact/1' },
         { id: 'contact_map', label: 'Contact Form with Map', description: 'Interactive contact form and location map.', icon: Mail, visible: true, locked: false, required: false, editUrl: '/admin/website-builder/contact-us' },
         { id: 'faqs', label: 'FAQ\'s', description: 'Frequently asked questions accordion.', icon: HelpCircle, visible: true, locked: false, required: false, editUrl: '/admin/website-builder/faqs' },
-        { id: 'chat_signup_demo', label: 'Chat & Signup Demo', description: 'Live chat & signup demo banner.', icon: LogIn, visible: true, locked: false, required: false },
+        { id: 'chat_signup_demo', label: 'Chat & Signup Demo', description: 'Live chat & signup demo banner.', icon: LogIn, visible: true, locked: false, required: false, editUrl: '/admin/website-builder/login-demo/contact' },
     ],
 };
 
@@ -216,6 +217,8 @@ export function UiBlockContent({ initialPageSlug = 'home' }: UiBlockContentProps
         toast.success(`Reordered ${moved.label}`);
     };
 
+    const [previewOpen, setPreviewOpen] = useState(false);
+
     const handleResetDefaults = () => {
         const defaultList = PAGE_SPECIFIC_BLOCKS_MAP[activePageSlug] || PAGE_SPECIFIC_BLOCKS_MAP.home;
         setMiddleBlocks(defaultList);
@@ -228,15 +231,23 @@ export function UiBlockContent({ initialPageSlug = 'home' }: UiBlockContentProps
             <PageLoader open={saveMutation.isPending} text={`Saving ${activePageTitle} UI Blocks...`} />
 
             {/* Page Header */}
-            <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-5">
                 <div>
-                    <h1 className="mt-1 text-2xl font-bold tracking-tight">Pages / UI Block - Enable / Disable</h1>
+                    <h1 className="text-2xl font-bold tracking-tight">Pages / UI Block - Enable / Disable</h1>
                     <p className="text-sm text-muted-foreground">
                         Manage section layout sequence and show/hide UI blocks for <strong>{activePageTitle}</strong>.
                     </p>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2 shrink-0 sm:justify-end">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPreviewOpen(true)}
+                        className="h-8 px-3 text-xs font-semibold text-emerald-700 border-emerald-300 hover:bg-emerald-50"
+                    >
+                        <Eye className="h-3.5 w-3.5 text-emerald-600 mr-1" /> Live Preview
+                    </Button>
                     <Button
                         variant="outline"
                         size="sm"
@@ -253,11 +264,6 @@ export function UiBlockContent({ initialPageSlug = 'home' }: UiBlockContentProps
                     >
                         {saveMutation.isPending ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
                         {saveMutation.isPending ? 'Saving...' : 'Save Block Layout'}
-                    </Button>
-                    <Button size="sm" asChild className="h-8 px-4 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs">
-                        <Link href="/website-preview" target="_blank" rel="noopener noreferrer">
-                            <ExternalLink className="h-3.5 w-3.5 mr-1" /> Preview Website
-                        </Link>
                     </Button>
                 </div>
             </div>
@@ -366,8 +372,11 @@ export function UiBlockContent({ initialPageSlug = 'home' }: UiBlockContentProps
                                                         <Icon className="h-4 w-4" />
                                                     </div>
                                                     <div>
-                                                        <div className="flex items-center gap-2">
+                                                        <div className="flex flex-wrap items-center gap-2">
                                                             <span className="font-bold text-xs text-slate-800">{item.label}</span>
+                                                            <Badge variant="outline" className="text-[9px] border-emerald-300 bg-emerald-50 text-emerald-700 font-extrabold uppercase">
+                                                                Parent: Home (Common for all pages)
+                                                            </Badge>
                                                             <Badge variant="outline" className="text-[9px] border-slate-300 bg-slate-100 text-slate-600 font-bold uppercase">
                                                                 Fixed Global (Top)
                                                             </Badge>
@@ -473,8 +482,11 @@ export function UiBlockContent({ initialPageSlug = 'home' }: UiBlockContentProps
                                                         <Icon className="h-4 w-4" />
                                                     </div>
                                                     <div>
-                                                        <div className="flex items-center gap-2">
+                                                        <div className="flex flex-wrap items-center gap-2">
                                                             <span className="font-bold text-xs text-slate-800">{item.label}</span>
+                                                            <Badge variant="outline" className="text-[9px] border-emerald-300 bg-emerald-50 text-emerald-700 font-extrabold uppercase">
+                                                                Parent: Home (Common for all pages)
+                                                            </Badge>
                                                             <Badge variant="outline" className="text-[9px] border-slate-300 bg-slate-100 text-slate-600 font-bold uppercase">
                                                                 Fixed Global (Bottom)
                                                             </Badge>
@@ -503,6 +515,48 @@ export function UiBlockContent({ initialPageSlug = 'home' }: UiBlockContentProps
                     </div>
                 </CardContent>
             </Card>
+
+            {/* Live Page Layout Preview Modal Dialog */}
+            <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+                <DialogContent className="max-w-4xl border-slate-200">
+                    <DialogHeader>
+                        <div className="flex items-center gap-2">
+                            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                            <DialogTitle className="text-sm font-bold text-slate-900">{activePageTitle} Layout — Live Preview</DialogTitle>
+                        </div>
+                        <DialogDescription className="text-xs text-slate-500">
+                            Sequence of active UI section blocks configured for {activePageTitle}.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="p-4 bg-slate-900 text-white rounded-xl space-y-3 my-2 max-h-[65vh] overflow-y-auto">
+                        <div className="p-3 bg-slate-800 border border-slate-700 rounded-lg text-xs font-bold flex items-center justify-between text-slate-300">
+                            <span>1. Announcement & Global Header Bar</span>
+                            <Badge className="text-[9px] bg-blue-500/20 text-blue-300 border-0 font-extrabold">Fixed Global</Badge>
+                        </div>
+                        <div className="p-3 bg-slate-800 border border-slate-700 rounded-lg text-xs font-bold flex items-center justify-between text-slate-300">
+                            <span>2. Navbar & Main Navigation</span>
+                            <Badge className="text-[9px] bg-blue-500/20 text-blue-300 border-0 font-extrabold">Fixed Global</Badge>
+                        </div>
+                        <div className="p-3 bg-slate-800 border border-slate-700 rounded-lg text-xs font-bold flex items-center justify-between text-slate-300">
+                            <span>3. Hero Section Module ({activePageTitle})</span>
+                            <Badge className="text-[9px] bg-emerald-500/20 text-emerald-300 border-0 font-extrabold">Active</Badge>
+                        </div>
+
+                        {middleBlocks.filter((b) => b.visible).map((blk, idx) => (
+                            <div key={blk.id} className="p-3 bg-slate-850 border border-slate-700 rounded-lg text-xs font-bold flex items-center justify-between text-slate-100">
+                                <span>{idx + 4}. {blk.label} ({blk.description})</span>
+                                <Badge className="text-[9px] bg-emerald-500/20 text-emerald-300 border-0 font-extrabold font-mono">Visible</Badge>
+                            </div>
+                        ))}
+
+                        <div className="p-3 bg-slate-800 border border-slate-700 rounded-lg text-xs font-bold flex items-center justify-between text-slate-300">
+                            <span>{middleBlocks.filter((b) => b.visible).length + 4}. Company Footer Block</span>
+                            <Badge className="text-[9px] bg-blue-500/20 text-blue-300 border-0 font-extrabold">Fixed Global</Badge>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

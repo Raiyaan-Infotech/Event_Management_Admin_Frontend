@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCompanyThemeSettings } from '@/hooks/useCompanyWebsiteBuilder';
 import { parseThemeColors } from '@/components/company-website-preview/sections/preview-shared';
@@ -159,6 +160,7 @@ export function LoginDemoContent({ initialPageSlug = 'home' }: LoginDemoContentP
         toast.info('Reset to default variant.');
     };
 
+    const [previewOpen, setPreviewOpen] = useState(false);
     const activeVariantDetails = LOGIN_DEMO_VARIANTS.find((v) => v.id === selectedVariant) || LOGIN_DEMO_VARIANTS[0];
 
     return (
@@ -174,12 +176,22 @@ export function LoginDemoContent({ initialPageSlug = 'home' }: LoginDemoContentP
                     </p>
                 </div>
 
-                <Button variant="outline" size="sm" onClick={handleReset} className="gap-2 self-start sm:self-auto">
-                    <RotateCcw className="h-4 w-4" /> Reset Default
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPreviewOpen(true)}
+                        className="gap-1.5 text-xs font-semibold text-emerald-700 border-emerald-300 hover:bg-emerald-50 h-8"
+                    >
+                        <Eye className="h-3.5 w-3.5 text-emerald-600" /> Live Preview
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleReset} className="gap-2 h-8 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
+                        <RotateCcw className="h-3.5 w-3.5" /> Reset Default
+                    </Button>
+                </div>
             </div>
 
-            {/* Top Selection Box & Apply Button (Matches Mockup Diagram) */}
+            {/* Selection Box & Apply Button */}
             <Card className="border-border shadow-sm">
                 <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
@@ -234,18 +246,20 @@ export function LoginDemoContent({ initialPageSlug = 'home' }: LoginDemoContentP
                 </CardContent>
             </Card>
 
-            {/* Bottom Live Preview Box */}
-            <Card className="border-border shadow-md overflow-hidden">
-                <CardHeader className="bg-muted/40 border-b py-3 px-4">
-                    <div className="flex items-center justify-between">
+            {/* Live Preview Modal Dialog */}
+            <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+                <DialogContent className="max-w-5xl border-border bg-card">
+                    <DialogHeader>
                         <div className="flex items-center gap-2">
-                            <CardTitle className="text-sm font-bold text-foreground">Live Preview</CardTitle>
+                            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                            <DialogTitle className="text-sm font-bold text-foreground">Login & Demo Block — Live Preview</DialogTitle>
                         </div>
-                    </div>
-                </CardHeader>
+                        <DialogDescription className="text-xs text-muted-foreground">
+                            Variant: {activeVariantDetails.title} ({currentPageConfig.title})
+                        </DialogDescription>
+                    </DialogHeader>
 
-                <CardContent className="p-0 bg-background">
-                    <div className="w-full border-t border-b overflow-hidden shadow-inner">
+                    <div className="w-full border rounded-xl overflow-hidden shadow-inner my-2 bg-background">
                         {selectedVariant === 'variant_1' && <LoginDemoSection theme={theme} companyName="Event Management" />}
                         {selectedVariant === 'variant_2' && <FeaturesFirstHighlightSection theme={theme} companyName="Event Management" />}
                         {selectedVariant === 'variant_3' && <ContactSignupDemoSection theme={theme} companyName="Event Management" />}
@@ -254,8 +268,8 @@ export function LoginDemoContent({ initialPageSlug = 'home' }: LoginDemoContentP
                         {selectedVariant === 'variant_6' && <SignInDemoSection theme={theme} companyName="Event Management" />}
                         {selectedVariant === 'variant_7' && <TemplateDemoSection theme={theme} companyName="Event Management" />}
                     </div>
-                </CardContent>
-            </Card>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

@@ -9,10 +9,12 @@ import {
     HelpCircle,
     RotateCcw,
     Image as ImageIcon,
+    Eye,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
     Select,
     SelectContent,
@@ -36,6 +38,7 @@ export function GalleryContent() {
     const [city, setCity] = useState('New York, USA');
     const [activeFilter, setActiveFilter] = useState('All');
     const [isSaving, setIsSaving] = useState(false);
+    const [previewOpen, setPreviewOpen] = useState(false);
 
     const [categories, setCategories] = useState([
         'All',
@@ -118,6 +121,14 @@ export function GalleryContent() {
                 </div>
 
                 <div className="flex items-center gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPreviewOpen(true)}
+                        className="h-8 text-xs gap-1.5 text-emerald-700 border-emerald-300 hover:bg-emerald-50 font-semibold"
+                    >
+                        <Eye className="h-3.5 w-3.5 text-emerald-600" /> Live Preview
+                    </Button>
                     <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5 text-slate-600 border-slate-200">
                         <HelpCircle className="h-3.5 w-3.5 text-slate-400" /> How It Works
                     </Button>
@@ -130,71 +141,71 @@ export function GalleryContent() {
                 </div>
             </div>
 
-            {/* 2-Column Main Workspace */}
-            <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
-                {/* Left Column: Form Controls (4/12 width) */}
-                <div className="space-y-4 xl:col-span-4">
-                    {/* Panel 1: Gallery Information */}
+            {/* Main Workspace (6+6 Cols) */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                {/* Left Column: Gallery Info */}
+                <div className="md:col-span-5 space-y-4">
                     <Card className="shadow-xs border-slate-200">
                         <CardHeader className="py-3 px-4 border-b bg-slate-50/50">
                             <CardTitle className="text-xs font-bold text-slate-800 uppercase tracking-wide">
                                 Gallery Information
                             </CardTitle>
-                            <CardDescription className="text-[11px] text-slate-500">
-                                Add details about the event gallery.
-                            </CardDescription>
                         </CardHeader>
                         <CardContent className="p-4 space-y-4">
                             <BuilderCountedInput
-                                label="Event Name"
-                                required
+                                label="Event Title"
                                 value={eventName}
                                 onChange={setEventName}
                                 maxLength={100}
-                                inputClassName="!h-9 text-xs"
+                                placeholder="Sarah & Michael Wedding"
                             />
-
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-black uppercase tracking-wide text-slate-600">
-                                    Event Type <span className="text-rose-500">*</span>
-                                </label>
+                                <label className="text-xs font-bold text-slate-700 uppercase">Event Type</label>
                                 <Select value={eventType} onValueChange={setEventType}>
-                                    <SelectTrigger className="h-9 w-full text-xs font-semibold bg-card border-slate-200">
-                                        <SelectValue placeholder="Select category" />
+                                    <SelectTrigger className="h-9 text-xs border-slate-200">
+                                        <SelectValue placeholder="Select event type" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="wedding">Wedding Decor</SelectItem>
-                                        <SelectItem value="corporate">Corporate Summits</SelectItem>
-                                        <SelectItem value="private">Private Parties</SelectItem>
-                                        <SelectItem value="exhibition">Exhibition</SelectItem>
+                                        <SelectItem value="wedding">Wedding Celebration</SelectItem>
+                                        <SelectItem value="corporate">Corporate Event</SelectItem>
+                                        <SelectItem value="birthday">Birthday Gala</SelectItem>
+                                        <SelectItem value="reception">Reception Party</SelectItem>
                                     </SelectContent>
                                 </Select>
-                                <p className="text-[10px] text-slate-400 font-medium">Create a gallery category first</p>
                             </div>
-
                             <BuilderCountedInput
-                                label="City"
-                                required
+                                label="City / Location"
                                 value={city}
                                 onChange={setCity}
                                 maxLength={100}
-                                inputClassName="!h-9 text-xs"
+                                placeholder="New York, USA"
                             />
                         </CardContent>
                     </Card>
+                </div>
 
-                    {/* Panel 2: Gallery Images */}
+                {/* Right Column: Upload Images & Categories */}
+                <div className="md:col-span-7 space-y-4">
                     <Card className="shadow-xs border-slate-200">
-                        <CardHeader className="py-3 px-4 border-b bg-slate-50/50">
+                        <CardHeader className="py-3 px-4 border-b bg-slate-50/50 flex flex-row items-center justify-between">
                             <CardTitle className="text-xs font-bold text-slate-800 uppercase tracking-wide">
-                                Gallery Images
+                                Gallery Images ({images.length})
                             </CardTitle>
-                            <CardDescription className="text-[11px] text-slate-500">
-                                Upload multiple images for this gallery.
-                            </CardDescription>
+                            <Button
+                                size="sm"
+                                onClick={() => {
+                                    const newCat = prompt('Enter new category name:');
+                                    if (newCat) {
+                                        setCategories([...categories, newCat]);
+                                        toast.success(`Category "${newCat}" added.`);
+                                    }
+                                }}
+                                className="h-7 text-xs gap-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+                            >
+                                <Plus className="h-3.5 w-3.5" /> Add Category
+                            </Button>
                         </CardHeader>
                         <CardContent className="p-4 space-y-4">
-                            {/* Hidden File Input */}
                             <input
                                 type="file"
                                 ref={fileInputRef}
@@ -203,11 +214,9 @@ export function GalleryContent() {
                                 accept="image/*"
                                 className="hidden"
                             />
-
-                            {/* Dropzone */}
                             <div
                                 onClick={() => fileInputRef.current?.click()}
-                                className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-xl p-6 bg-slate-50/50 hover:bg-slate-100/50 hover:border-blue-400 transition-all cursor-pointer text-center group"
+                                className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-xl p-6 bg-slate-50/50 hover:bg-slate-100/60 cursor-pointer transition-all text-center group"
                             >
                                 <div className="h-10 w-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                                     <Upload className="h-5 w-5" />
@@ -215,16 +224,10 @@ export function GalleryContent() {
                                 <p className="text-xs font-bold text-slate-800">
                                     <span className="text-blue-600 hover:underline">Click to upload</span> or drag and drop
                                 </p>
-                                <p className="text-[10px] text-slate-400 mt-1 max-w-[200px]">
-                                    Recommended: 1200x800px gallery image (Max: 5MB each)
-                                </p>
+                                <p className="text-[10px] text-slate-400 mt-1">Recommended: 1200x800px (Max: 5MB each)</p>
                             </div>
 
-                            <p className="text-[10px] text-slate-400 font-medium text-center">
-                                You can upload up to 50 images.
-                            </p>
-
-                            {/* Thumbnails preview */}
+                            {/* Image Thumbnails */}
                             {images.length > 0 && (
                                 <div className="grid grid-cols-4 gap-2 pt-2 border-t border-slate-100">
                                     {images.map((img) => (
@@ -241,13 +244,10 @@ export function GalleryContent() {
                                             )}
                                             <button
                                                 type="button"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleRemoveImage(img.id);
-                                                }}
-                                                className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white"
+                                                onClick={() => handleRemoveImage(img.id)}
+                                                className="absolute top-1 right-1 h-6 w-6 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                                             >
-                                                <Trash2 className="h-3.5 w-3.5 text-red-400 hover:text-red-300" />
+                                                <Trash2 className="h-3.5 w-3.5" />
                                             </button>
                                         </div>
                                     ))}
@@ -256,90 +256,75 @@ export function GalleryContent() {
                         </CardContent>
                     </Card>
                 </div>
-
-                {/* Right Column: Live Preview Workspace (8/12 width) */}
-                <div className="xl:col-span-8">
-                    <Card className="shadow-xs border-slate-200">
-                        <CardHeader className="py-3 px-4 border-b flex flex-row items-center justify-between space-y-0 bg-slate-50/50">
-                            <div className="flex items-center gap-2">
-                                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                                <div>
-                                    <CardTitle className="text-xs font-bold text-slate-900">Gallery Preview</CardTitle>
-                                    <CardDescription className="text-[11px] text-slate-500">
-                                        This is how your gallery will appear on the website.
-                                    </CardDescription>
-                                </div>
-                            </div>
-                            <Button
-                                size="sm"
-                                onClick={() => {
-                                    const newCat = prompt('Enter new category name:');
-                                    if (newCat) {
-                                        setCategories([...categories, newCat]);
-                                        toast.success(`Category "${newCat}" added.`);
-                                    }
-                                }}
-                                className="h-8 text-xs gap-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold"
-                            >
-                                <Plus className="h-3.5 w-3.5" /> Add Category
-                            </Button>
-                        </CardHeader>
-
-                        <CardContent className="p-5 space-y-5">
-                            {/* Category Filter Pills */}
-                            <div className="flex flex-wrap gap-1.5">
-                                {categories.map((cat) => {
-                                    const isSelected = activeFilter.toLowerCase() === cat.toLowerCase();
-                                    return (
-                                        <button
-                                            key={cat}
-                                            type="button"
-                                            onClick={() => setActiveFilter(cat)}
-                                            className={cn(
-                                                'px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer',
-                                                isSelected
-                                                    ? 'bg-blue-600 text-white shadow-xs'
-                                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                                            )}
-                                        >
-                                            {cat}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-
-                            {/* Responsive 4-Column Image Grid */}
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                {visibleImages.length > 0 ? (
-                                    visibleImages.map((img) => (
-                                        <div
-                                            key={img.id}
-                                            className="group relative aspect-[4/3] rounded-xl border border-slate-200 bg-slate-100 overflow-hidden shadow-2xs transition-all hover:shadow-md"
-                                        >
-                                            {img.url ? (
-                                                <img src={img.url} alt={img.alt} className="h-full w-full object-cover" />
-                                            ) : (
-                                                <div className="h-full w-full bg-gradient-to-br from-slate-200 via-slate-100 to-slate-200 flex flex-col items-center justify-center p-2 text-center">
-                                                    <ImageIcon className="h-6 w-6 text-slate-400 mb-1" />
-                                                    <span className="text-[10px] font-semibold text-slate-500 line-clamp-1">
-                                                        {img.alt || 'Gallery Image'}
-                                                    </span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div className="col-span-full py-16 text-center border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50">
-                                        <ImageIcon className="mx-auto h-8 w-8 text-slate-300 mb-2" />
-                                        <p className="text-xs font-bold text-slate-600">No Gallery Images Found</p>
-                                        <p className="text-[11px] text-slate-400 mt-1">Upload images from the left panel to display in this category.</p>
-                                    </div>
-                                )}
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
             </div>
+
+            {/* Live Preview Modal Dialog */}
+            <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+                <DialogContent className="max-w-4xl border-slate-200">
+                    <DialogHeader>
+                        <div className="flex items-center gap-2">
+                            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                            <DialogTitle className="text-sm font-bold text-slate-900">Gallery — Live Preview</DialogTitle>
+                        </div>
+                        <DialogDescription className="text-xs text-slate-500">
+                            This is how your event gallery will appear on the live website.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="py-3 space-y-4">
+                        {/* Category Filter Pills */}
+                        <div className="flex flex-wrap gap-1.5">
+                            {categories.map((cat) => {
+                                const isSelected = activeFilter.toLowerCase() === cat.toLowerCase();
+                                return (
+                                    <button
+                                        key={cat}
+                                        type="button"
+                                        onClick={() => setActiveFilter(cat)}
+                                        className={cn(
+                                            'px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer',
+                                            isSelected
+                                                ? 'bg-blue-600 text-white shadow-xs'
+                                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                        )}
+                                    >
+                                        {cat}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* Responsive Image Grid */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            {visibleImages.length > 0 ? (
+                                visibleImages.map((img) => (
+                                    <div
+                                        key={img.id}
+                                        className="group relative aspect-[4/3] rounded-xl border border-slate-200 bg-slate-100 overflow-hidden shadow-2xs transition-all hover:shadow-md"
+                                    >
+                                        {img.url ? (
+                                            <img src={img.url} alt={img.alt} className="h-full w-full object-cover" />
+                                        ) : (
+                                            <div className="h-full w-full bg-gradient-to-br from-slate-200 via-slate-100 to-slate-200 flex flex-col items-center justify-center p-2 text-center">
+                                                <ImageIcon className="h-6 w-6 text-slate-400 mb-1" />
+                                                <span className="text-[10px] font-semibold text-slate-500 line-clamp-1">
+                                                    {img.alt || 'Gallery Image'}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="col-span-full py-14 text-center border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50">
+                                    <ImageIcon className="mx-auto h-8 w-8 text-slate-300 mb-2" />
+                                    <p className="text-xs font-bold text-slate-600">No Gallery Images Found</p>
+                                    <p className="text-[11px] text-slate-400 mt-1">Upload images to display in this category.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

@@ -21,6 +21,7 @@ export interface CompanyBasicInformation {
 
 export interface CompanyHeroSection {
   id?: number;
+  page_slug?: string;
   image_url?: string;
   badge_text?: string;
   title?: string;
@@ -78,12 +79,15 @@ export interface CompanySeoSettings {
 
 // ── Generic Singleton Custom Hooks ──────────────────────────────────────────
 
-const useSingleton = <T>(key: string, endpoint: string) => {
+const useSingleton = <T>(key: string, endpoint: string, pageSlug?: string) => {
   const queryClient = useQueryClient();
+  const queryKey = pageSlug ? ['company-website-builder', key, pageSlug] : ['company-website-builder', key];
+  const url = pageSlug ? `/website-builder/${endpoint}?page=${pageSlug}` : `/website-builder/${endpoint}`;
+
   const query = useQuery<T>({
-    queryKey: ['company-website-builder', key],
+    queryKey,
     queryFn: async () => {
-      const data: any = await api.get(`/website-builder/${endpoint}`);
+      const data: any = await api.get(url);
       return (data && typeof data === 'object' ? data : {}) as T;
     },
     staleTime: 0,
@@ -91,11 +95,12 @@ const useSingleton = <T>(key: string, endpoint: string) => {
 
   const mutation = useMutation({
     mutationFn: async (payload: T) => {
-      const data: any = await api.put(`/website-builder/${endpoint}`, payload);
+      const payloadWithPage = pageSlug ? { ...payload, page_slug: pageSlug } : payload;
+      const data: any = await api.put(url, payloadWithPage);
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['company-website-builder', key] });
+      queryClient.invalidateQueries({ queryKey });
     },
   });
 
@@ -168,7 +173,92 @@ const useList = <T extends { id?: number }>(key: string, endpoint: string) => {
 // ── Exported Module Hooks ──────────────────────────────────────────────────
 
 export const useCompanyBasicInformation = () => useSingleton<CompanyBasicInformation>('basic-info', 'basic-information');
-export const useCompanyHeroSection = () => useSingleton<CompanyHeroSection>('hero-section', 'hero-section');
+
+export const useCompanyHeroSection = (pageSlug: string = 'home') => {
+  const queryClient = useQueryClient();
+  const queryKey = ['company-website-builder', 'hero-section', pageSlug];
+  const url = `/website-builder/hero-section?page=${pageSlug}`;
+
+  const query = useQuery<CompanyHeroSection>({
+    queryKey,
+    queryFn: async () => {
+      const data: any = await api.get(url);
+      const backendObject = data && typeof data === 'object' ? data : {};
+
+      let storedMap: Record<string, CompanyHeroSection> = {};
+      try {
+        if (backendObject.design_json) {
+          storedMap = typeof backendObject.design_json === 'string'
+            ? JSON.parse(backendObject.design_json)
+            : backendObject.design_json;
+        }
+      } catch (e) {}
+
+      if (!storedMap || Object.keys(storedMap).length === 0) {
+        try {
+          const local = typeof window !== 'undefined' ? localStorage.getItem('company_hero_sections_map') : null;
+          if (local) storedMap = JSON.parse(local);
+        } catch (e) {}
+      }
+
+      if (storedMap && storedMap[pageSlug]) {
+        return { ...backendObject, ...storedMap[pageSlug], page_slug: pageSlug };
+      }
+
+      if (backendObject.page_slug === pageSlug) {
+        return backendObject as CompanyHeroSection;
+      }
+
+      if (pageSlug === 'home') {
+        return backendObject as CompanyHeroSection;
+      }
+
+      return {
+        ...backendObject,
+        page_slug: pageSlug,
+        badge_text: pageSlug === 'features' ? 'Features Showcase' : pageSlug === 'pricing' ? 'Simple Pricing' : pageSlug === 'contact' ? 'Get In Touch' : pageSlug === 'how-it-works' ? 'How It Works' : pageSlug === 'template' ? 'Event Templates' : 'Premier Event Management',
+        title: pageSlug === 'features' ? 'Everything You Need To Plan Flawless Events' : pageSlug === 'pricing' ? 'Flexible Pricing Tiers For Every Event' : pageSlug === 'contact' ? 'Let Us Help You Bring Your Event To Life' : pageSlug === 'how-it-works' ? 'Simple Steps To Create & Manage Events' : pageSlug === 'template' ? 'Discover Beautiful Event Invitation Templates' : 'We Create Unforgettable Moments',
+        description: pageSlug === 'features' ? 'Explore powerful management tools for guest lists, tickets, vendor coordination, and live analytics.' : pageSlug === 'pricing' ? 'Choose the perfect plan tailored to your event size and management requirements.' : pageSlug === 'contact' ? 'Have questions or need a custom quote? Reach out to our expert event planning team.' : pageSlug === 'how-it-works' ? 'Watch tutorials and learn how to configure your event website in minutes.' : pageSlug === 'template' ? 'Pick a template, customize design elements, and publish your website instantly.' : 'From elegant weddings to corporate events, we handle every detail with creativity and perfection.',
+      };
+    },
+    staleTime: 0,
+  });
+
+  const mutation = useMutation({
+    mutationFn: async (payload: CompanyHeroSection) => {
+      let storedMap: Record<string, CompanyHeroSection> = {};
+      try {
+        const local = typeof window !== 'undefined' ? localStorage.getItem('company_hero_sections_map') : null;
+        if (local) storedMap = JSON.parse(local);
+      } catch (e) {}
+
+      const updatedMap = {
+        ...storedMap,
+        [pageSlug]: { ...payload, page_slug: pageSlug },
+      };
+
+      try {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('company_hero_sections_map', JSON.stringify(updatedMap));
+        }
+      } catch (e) {}
+
+      const finalPayload = {
+        ...payload,
+        page_slug: pageSlug,
+        design_json: updatedMap,
+      };
+
+      const data: any = await api.put(url, finalPayload);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['company-website-builder', 'hero-section'] });
+    },
+  });
+
+  return { ...query, save: mutation.mutateAsync, isSaving: mutation.isPending };
+};
 export const useCompanyFooterSettings = () => useSingleton<CompanyFooterSettings>('footer', 'footer');
 export const useCompanySeoSettings = () => useSingleton<CompanySeoSettings>('seo', 'seo');
 export const useCompanyLoginSettings = () => useSingleton<any>('login-settings', 'login-settings');

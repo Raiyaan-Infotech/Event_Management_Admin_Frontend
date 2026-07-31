@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Save, Sparkles, Trash2, Phone, Mail, MapPin, Monitor, Smartphone, Lock, HelpCircle, RotateCcw, Loader2 } from 'lucide-react';
+import { Save, Sparkles, Trash2, Phone, Mail, MapPin, Monitor, Smartphone, Lock, HelpCircle, RotateCcw, Loader2, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import { BuilderCountedInput, BuilderCountedTextarea } from './builder-field';
 import { MultiSelectPages } from './multi-select-pages';
@@ -37,6 +38,7 @@ const initialSelectedPages = [
 
 export function FooterContent() {
     const { data: footerData, isLoading, save, isSaving } = useCompanyFooterSettings();
+    const [previewOpen, setPreviewOpen] = useState(false);
 
     const [companyLogo, setCompanyLogo] = useState('');
     const [companyName, setCompanyName] = useState('RA EVENTS');
@@ -140,85 +142,95 @@ export function FooterContent() {
                     <h1 className="mt-1 text-2xl font-bold tracking-tight">Footer Settings</h1>
                     <p className="text-sm text-muted-foreground">Manage footer company description, quick links, newsletter block, and contact info.</p>
                 </div>
-                <Button size="sm" onClick={handleSave} disabled={isSaving} className="gap-2">
-                    <Save className="h-4 w-4" /> {isSaving ? 'Saving...' : 'Save Changes'}
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPreviewOpen(true)}
+                        className="h-8 px-3 text-xs font-semibold text-emerald-700 border-emerald-300 hover:bg-emerald-50"
+                    >
+                        <Eye className="h-3.5 w-3.5 text-emerald-600 mr-1" /> Live Preview
+                    </Button>
+                    <Button size="sm" onClick={handleSave} disabled={isSaving} className="gap-2 h-8 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs">
+                        <Save className="h-3.5 w-3.5" /> {isSaving ? 'Saving...' : 'Save Changes'}
+                    </Button>
+                </div>
             </div>
 
-            {/* Main Section Layout: Form Settings + Live Preview */}
-            <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-                {/* Form Settings (7 cols) */}
-                <div className="xl:col-span-7 space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Column 1: Company Info & Contact Info */}
-                        <div className="space-y-4">
-                            {/* Card 1: Company Information */}
-                            <Card>
-                                <CardHeader className="pb-3">
-                                    <CardTitle className="text-sm font-bold">Company Information</CardTitle>
-                                    <CardDescription className="text-xs">Footer brand logo, name, and description.</CardDescription>
-                                </CardHeader>
-                                <CardContent className="space-y-3">
-                                    {/* Logo Upload */}
-                                    <div className="space-y-1.5 w-full">
-                                        <label className="text-xs font-semibold text-muted-foreground">Company Logo</label>
-                                        {companyLogo ? (
-                                            <div className="relative flex h-16 w-full items-center justify-center rounded-lg border bg-card p-2 overflow-hidden">
-                                                <img src={companyLogo} alt="Footer Logo" className="h-full w-full object-contain" />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setCompanyLogo('')}
-                                                    className="absolute top-1.5 right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-slate-800 text-white hover:bg-slate-900"
-                                                >
-                                                    <Trash2 className="h-3 w-3" />
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <div className="relative flex flex-col items-center justify-center h-16 w-full rounded-lg border border-dashed bg-muted/20 hover:bg-muted/30 cursor-pointer p-2 text-center">
-                                                <input
-                                                    type="file"
-                                                    accept="image/*"
-                                                    onChange={(e) => {
-                                                        const file = e.target.files?.[0];
-                                                        if (file) handleLogoSelect(file);
-                                                    }}
-                                                    className="absolute inset-0 opacity-0 cursor-pointer"
-                                                />
-                                                <span className="text-xs font-semibold text-primary">+ Upload Logo</span>
-                                            </div>
-                                        )}
+            {/* Main Section Layout: Form Settings (Full Width) */}
+            <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Column 1: Company Info & Contact Info */}
+                    <div className="space-y-4">
+                        {/* Card 1: Company Information */}
+                        <Card>
+                            <CardHeader className="pb-3">
+                                <CardTitle className="text-sm font-bold">Company Information</CardTitle>
+                                <CardDescription className="text-xs">Footer brand logo, name, and description.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                                {/* Logo Upload */}
+                                <div className="space-y-1.5 w-full">
+                                    <label className="text-xs font-semibold text-muted-foreground">Company Logo</label>
+                                    {companyLogo ? (
+                                        <div className="relative flex h-16 w-full items-center justify-center rounded-lg border bg-card p-2 overflow-hidden">
+                                            <img src={companyLogo} alt="Footer Logo" className="h-full w-full object-contain" />
+                                            <button
+                                                type="button"
+                                                onClick={() => setCompanyLogo('')}
+                                                className="absolute top-1.5 right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-slate-800 text-white hover:bg-slate-900"
+                                            >
+                                                <Trash2 className="h-3 w-3" />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="relative flex flex-col items-center justify-center h-16 w-full rounded-lg border border-dashed bg-muted/20 hover:bg-muted/30 cursor-pointer p-2 text-center">
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                className="absolute inset-0 opacity-0 cursor-pointer"
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) handleLogoSelect(file);
+                                                }}
+                                            />
+                                            <p className="text-xs font-semibold text-foreground">Click to upload logo</p>
+                                            <p className="text-[10px] text-muted-foreground">PNG, SVG or WEBP (Max 2MB)</p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <BuilderCountedInput
+                                    label="Company Name"
+                                    value={companyName}
+                                    onChange={setCompanyName}
+                                    maxLength={60}
+                                />
+
+                                <BuilderCountedTextarea
+                                    label="Short Description"
+                                    value={shortDescription}
+                                    onChange={setShortDescription}
+                                    maxLength={240}
+                                    rows={3}
+                                />
+                            </CardContent>
+                        </Card>
+
+                        {/* Card 2: Contact Information */}
+                        <Card>
+                            <CardHeader className="pb-3">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <CardTitle className="text-sm font-bold">Contact Information</CardTitle>
+                                        <CardDescription className="text-xs">Footer contact block mode.</CardDescription>
                                     </div>
-
-                                    <BuilderCountedInput
-                                        label="Company Name"
-                                        value={companyName}
-                                        onChange={setCompanyName}
-                                        maxLength={100}
-                                    />
-
-                                    <BuilderCountedTextarea
-                                        label="Short Description"
-                                        value={shortDescription}
-                                        onChange={setShortDescription}
-                                        maxLength={200}
-                                        rows={3}
-                                    />
-                                </CardContent>
-                            </Card>
-
-                            {/* Card 2: Contact Info */}
-                            <Card>
-                                <CardHeader className="pb-3">
-                                    <CardTitle className="text-sm font-bold">Contact Info</CardTitle>
-                                    <CardDescription className="text-xs">Footer contact info block details.</CardDescription>
-                                </CardHeader>
-                                <CardContent className="space-y-3">
-                                    <div className="flex items-center gap-1 rounded-lg border p-1 bg-muted/30 w-fit">
+                                    <div className="flex gap-1 rounded-lg border p-1 bg-muted/40">
                                         <button
                                             type="button"
                                             onClick={() => setContactType('default')}
-                                            className={`rounded-md px-2.5 py-1 text-[11px] font-semibold transition-all ${
-                                                contactType === 'default' ? 'bg-primary text-primary-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
+                                            className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-all ${
+                                                contactType === 'default' ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground'
                                             }`}
                                         >
                                             Default
@@ -226,117 +238,120 @@ export function FooterContent() {
                                         <button
                                             type="button"
                                             onClick={() => setContactType('alternative')}
-                                            className={`rounded-md px-2.5 py-1 text-[11px] font-semibold transition-all ${
-                                                contactType === 'alternative' ? 'bg-primary text-primary-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
+                                            className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-all ${
+                                                contactType === 'alternative' ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground'
                                             }`}
                                         >
                                             Alternative
                                         </button>
                                     </div>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                                <BuilderCountedInput
+                                    label="Mobile"
+                                    value={activeContact.mobile}
+                                    onChange={(v) => updateActiveContact({ mobile: v })}
+                                    maxLength={20}
+                                />
+                                <BuilderCountedInput
+                                    label="Email"
+                                    value={activeContact.email}
+                                    onChange={(v) => updateActiveContact({ email: v })}
+                                    maxLength={80}
+                                />
+                                <BuilderCountedTextarea
+                                    label="Address"
+                                    value={activeContact.address}
+                                    onChange={(v) => updateActiveContact({ address: v })}
+                                    maxLength={160}
+                                    rows={2}
+                                />
+                            </CardContent>
+                        </Card>
+                    </div>
 
-                                    <BuilderCountedInput
-                                        label="Mobile"
-                                        value={activeContact.mobile}
-                                        onChange={(val) => updateActiveContact({ mobile: val })}
-                                        maxLength={30}
-                                    />
-                                    <BuilderCountedInput
-                                        label="Email"
-                                        value={activeContact.email}
-                                        onChange={(val) => updateActiveContact({ email: val })}
-                                        maxLength={100}
-                                    />
-                                    <BuilderCountedTextarea
-                                        label="Address"
-                                        value={activeContact.address}
-                                        onChange={(val) => updateActiveContact({ address: val })}
-                                        maxLength={200}
-                                        rows={2}
-                                    />
-                                </CardContent>
-                            </Card>
-                        </div>
+                    {/* Column 2: Menu Settings & Footer Bottom */}
+                    <div className="space-y-4">
+                        {/* Card 3: Menu Settings */}
+                        <Card>
+                            <CardHeader className="pb-3">
+                                <CardTitle className="text-sm font-bold">Menu Settings</CardTitle>
+                                <CardDescription className="text-xs">Quick links heading, pages, and toggles.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                                <BuilderCountedInput
+                                    label="Top List Heading"
+                                    value={topListHeading}
+                                    onChange={setTopListHeading}
+                                    maxLength={80}
+                                />
 
-                        {/* Column 2: Menu Settings & Footer Bottom */}
-                        <div className="space-y-4">
-                            {/* Card 3: Menu Settings */}
-                            <Card>
-                                <CardHeader className="pb-3">
-                                    <CardTitle className="text-sm font-bold">Menu Settings</CardTitle>
-                                    <CardDescription className="text-xs">Quick links heading, pages, and toggles.</CardDescription>
-                                </CardHeader>
-                                <CardContent className="space-y-3">
-                                    <BuilderCountedInput
-                                        label="Top List Heading"
-                                        value={topListHeading}
-                                        onChange={setTopListHeading}
-                                        maxLength={80}
-                                    />
+                                <MultiSelectPages
+                                    label="Add Pages to Quick Links"
+                                    value={selectedPages}
+                                    options={pageOptions}
+                                    onChange={setSelectedPages}
+                                    placeholder="Add page"
+                                />
 
-                                    <MultiSelectPages
-                                        label="Add Pages to Quick Links"
-                                        value={selectedPages}
-                                        options={pageOptions}
-                                        onChange={setSelectedPages}
-                                        placeholder="Add page"
-                                    />
-
-                                    <div className="flex items-center justify-between rounded-lg border p-2.5 bg-card">
-                                        <div>
-                                            <h4 className="font-semibold text-xs text-foreground">Enable Newsletter</h4>
-                                            <p className="text-[10px] text-muted-foreground">Display subscribe input.</p>
-                                        </div>
-                                        <Switch checked={newsletterEnabled} onCheckedChange={setNewsletterEnabled} />
+                                <div className="flex items-center justify-between rounded-lg border p-2.5 bg-card">
+                                    <div>
+                                        <h4 className="font-semibold text-xs text-foreground">Enable Newsletter</h4>
+                                        <p className="text-[10px] text-muted-foreground">Display subscribe input.</p>
                                     </div>
+                                    <Switch checked={newsletterEnabled} onCheckedChange={setNewsletterEnabled} />
+                                </div>
 
-                                    <div className="flex items-center justify-between rounded-lg border p-2.5 bg-card">
-                                        <div>
-                                            <h4 className="font-semibold text-xs text-foreground">Show Social Links</h4>
-                                            <p className="text-[10px] text-muted-foreground">Display social icon links.</p>
-                                        </div>
-                                        <Switch checked={showSocialLinks} onCheckedChange={setShowSocialLinks} />
+                                <div className="flex items-center justify-between rounded-lg border p-2.5 bg-card">
+                                    <div>
+                                        <h4 className="font-semibold text-xs text-foreground">Show Social Links</h4>
+                                        <p className="text-[10px] text-muted-foreground">Display social icon links.</p>
                                     </div>
-                                </CardContent>
-                            </Card>
+                                    <Switch checked={showSocialLinks} onCheckedChange={setShowSocialLinks} />
+                                </div>
+                            </CardContent>
+                        </Card>
 
-                            {/* Card 4: Footer Bottom */}
-                            <Card>
-                                <CardHeader className="pb-3">
-                                    <CardTitle className="text-sm font-bold flex items-center gap-1.5">
-                                        Footer Bottom <Lock className="h-3 w-3 text-muted-foreground" />
-                                    </CardTitle>
-                                    <CardDescription className="text-xs">Copyright statement & platform attribution.</CardDescription>
-                                </CardHeader>
-                                <CardContent className="space-y-3">
-                                    <BuilderCountedInput
-                                        label="Copyright"
-                                        value={copyright}
-                                        onChange={() => undefined}
-                                        maxLength={120}
-                                        lockInput
-                                        showCount={false}
-                                    />
-                                    <BuilderCountedInput
-                                        label="Powered By"
-                                        value={poweredBy}
-                                        onChange={() => undefined}
-                                        maxLength={80}
-                                        lockInput
-                                        showCount={false}
-                                    />
-                                </CardContent>
-                            </Card>
-                        </div>
+                        {/* Card 4: Footer Bottom */}
+                        <Card>
+                            <CardHeader className="pb-3">
+                                <CardTitle className="text-sm font-bold flex items-center gap-1.5">
+                                    Footer Bottom <Lock className="h-3 w-3 text-muted-foreground" />
+                                </CardTitle>
+                                <CardDescription className="text-xs">Copyright statement & platform attribution.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                                <BuilderCountedInput
+                                    label="Copyright"
+                                    value={copyright}
+                                    onChange={() => undefined}
+                                    maxLength={120}
+                                    lockInput
+                                    showCount={false}
+                                />
+                                <BuilderCountedInput
+                                    label="Powered By"
+                                    value={poweredBy}
+                                    onChange={() => undefined}
+                                    maxLength={80}
+                                    lockInput
+                                    showCount={false}
+                                />
+                            </CardContent>
+                        </Card>
                     </div>
                 </div>
+            </div>
 
-                {/* Live Responsive Preview Card (5 cols) */}
-                <div className="xl:col-span-5 space-y-4">
-                    <Card className="sticky top-6">
-                        <CardHeader className="pb-3 border-b flex flex-row items-center justify-between">
-                            <div>
-                                <CardTitle className="text-base font-bold">Live Footer Preview</CardTitle>
-                                <CardDescription className="text-xs">Real-time footer layout preview.</CardDescription>
+            {/* Live Preview Modal Dialog */}
+            <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+                <DialogContent className="max-w-4xl border-slate-200">
+                    <DialogHeader>
+                        <div className="flex items-center justify-between pr-6">
+                            <div className="flex items-center gap-2">
+                                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                                <DialogTitle className="text-sm font-bold text-slate-900">Footer — Live Preview</DialogTitle>
                             </div>
                             <div className="flex items-center gap-1 rounded-lg border p-1 bg-muted/40">
                                 <button
@@ -358,76 +373,80 @@ export function FooterContent() {
                                     <Smartphone className="h-3.5 w-3.5" /> Mobile
                                 </button>
                             </div>
-                        </CardHeader>
-                        <CardContent className="p-4">
-                            <div className={`mx-auto rounded-xl border overflow-hidden bg-[#0B0D17] text-white shadow-xl transition-all duration-300 ${
-                                previewDevice === 'mobile' ? 'max-w-[320px]' : 'w-full'
-                            }`}>
-                                <div className={`p-5 gap-4 ${previewDevice === 'mobile' ? 'flex flex-col' : 'grid grid-cols-3'}`}>
-                                    {/* Brand Column */}
-                                    <div className="space-y-2">
-                                        {companyLogo ? (
-                                            <img src={companyLogo} alt={companyName} className="h-8 object-contain" />
-                                        ) : (
-                                            <p className="text-sm font-bold text-white tracking-wide">{companyName}</p>
-                                        )}
-                                        <p className="text-[10px] leading-relaxed text-white/60">{shortDescription}</p>
-                                    </div>
+                        </div>
+                        <DialogDescription className="text-xs text-slate-500">
+                            Real-time footer layout preview.
+                        </DialogDescription>
+                    </DialogHeader>
 
-                                    {/* Links Column */}
-                                    <div className="space-y-1.5">
-                                        <p className="text-xs font-bold text-white">{topListHeading}</p>
-                                        {quickLinkLabels.length > 0 ? (
-                                            quickLinkLabels.map((lbl) => (
-                                                <p key={lbl} className="text-[10px] text-white/60 hover:text-white transition-colors cursor-pointer">{lbl}</p>
-                                            ))
-                                        ) : (
-                                            <p className="text-[10px] italic text-white/30">No pages selected</p>
-                                        )}
-                                    </div>
-
-                                    {/* Contact Column */}
-                                    <div className="space-y-1.5">
-                                        <p className="text-xs font-bold text-white">Contact Us</p>
-                                        <div className="flex items-center gap-1.5 text-[10px] text-white/60">
-                                            <Phone className="h-3 w-3 text-primary shrink-0" />
-                                            <span>{activeContact.mobile}</span>
-                                        </div>
-                                        <div className="flex items-center gap-1.5 text-[10px] text-white/60">
-                                            <Mail className="h-3 w-3 text-primary shrink-0" />
-                                            <span>{activeContact.email}</span>
-                                        </div>
-                                        <div className="flex items-start gap-1.5 text-[10px] text-white/60">
-                                            <MapPin className="h-3 w-3 text-primary shrink-0 mt-0.5" />
-                                            <span>{activeContact.address}</span>
-                                        </div>
-
-                                        {newsletterEnabled && (
-                                            <div className="mt-2 flex gap-1">
-                                                <input
-                                                    type="email"
-                                                    placeholder="Your email"
-                                                    readOnly
-                                                    className="w-full rounded-l-md bg-white/10 px-2 py-1 text-[9px] text-white outline-none"
-                                                />
-                                                <div className="rounded-r-md bg-primary px-2 py-1 text-[9px] font-bold text-primary-foreground shrink-0 cursor-pointer">
-                                                    Subscribe
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
+                    <div className="p-2">
+                        <div className={`mx-auto rounded-xl border overflow-hidden bg-[#0B0D17] text-white shadow-xl transition-all duration-300 ${
+                            previewDevice === 'mobile' ? 'max-w-[320px]' : 'w-full'
+                        }`}>
+                            <div className={`p-5 gap-4 ${previewDevice === 'mobile' ? 'flex flex-col' : 'grid grid-cols-3'}`}>
+                                {/* Brand Column */}
+                                <div className="space-y-2">
+                                    {companyLogo ? (
+                                        <img src={companyLogo} alt={companyName} className="h-8 object-contain" />
+                                    ) : (
+                                        <p className="text-sm font-bold text-white tracking-wide">{companyName}</p>
+                                    )}
+                                    <p className="text-[10px] leading-relaxed text-white/60">{shortDescription}</p>
                                 </div>
 
-                                {/* Footer Bottom Bar */}
-                                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 px-5 py-2.5 text-[9px] text-white/40">
-                                    <span>{copyright}</span>
-                                    <span>{poweredBy}</span>
+                                {/* Links Column */}
+                                <div className="space-y-1.5">
+                                    <p className="text-xs font-bold text-white">{topListHeading}</p>
+                                    {quickLinkLabels.length > 0 ? (
+                                        quickLinkLabels.map((lbl) => (
+                                            <p key={lbl} className="text-[10px] text-white/60 hover:text-white transition-colors cursor-pointer">{lbl}</p>
+                                        ))
+                                    ) : (
+                                        <p className="text-[10px] italic text-white/30">No pages selected</p>
+                                    )}
+                                </div>
+
+                                {/* Contact Column */}
+                                <div className="space-y-1.5">
+                                    <p className="text-xs font-bold text-white">Contact Us</p>
+                                    <div className="flex items-center gap-1.5 text-[10px] text-white/60">
+                                        <Phone className="h-3 w-3 text-primary shrink-0" />
+                                        <span>{activeContact.mobile}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 text-[10px] text-white/60">
+                                        <Mail className="h-3 w-3 text-primary shrink-0" />
+                                        <span>{activeContact.email}</span>
+                                    </div>
+                                    <div className="flex items-start gap-1.5 text-[10px] text-white/60">
+                                        <MapPin className="h-3 w-3 text-primary shrink-0 mt-0.5" />
+                                        <span>{activeContact.address}</span>
+                                    </div>
+
+                                    {newsletterEnabled && (
+                                        <div className="mt-2 flex gap-1">
+                                            <input
+                                                type="email"
+                                                placeholder="Your email"
+                                                readOnly
+                                                className="w-full rounded-l-md bg-white/10 px-2 py-1 text-[9px] text-white outline-none"
+                                            />
+                                            <div className="rounded-r-md bg-primary px-2 py-1 text-[9px] font-bold text-primary-foreground shrink-0 cursor-pointer">
+                                                Subscribe
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
-                        </CardContent>
-                    </Card>
-                </div>
-            </div>
+
+                            {/* Footer Bottom Bar */}
+                            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 px-5 py-2.5 text-[9px] text-white/40">
+                                <span>{copyright}</span>
+                                <span>{poweredBy}</span>
+                            </div>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

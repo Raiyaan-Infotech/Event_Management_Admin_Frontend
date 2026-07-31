@@ -60,13 +60,24 @@ export function useHighlights(pageSlug: string, instance: number = 1) {
     return useQuery({
         queryKey: ['website-builder-highlights', pageSlug, instance],
         queryFn: async () => {
-            const res = await apiClient.get(`/website-builder/highlights?page_slug=${pageSlug}&instance=${instance}`);
-            if (res.data?.data) {
-                return { ...DEFAULT_HIGHLIGHTS, ...res.data.data, page_slug: pageSlug, instance };
+            let localData: any = null;
+            try {
+                const stored = typeof window !== 'undefined' ? localStorage.getItem(`highlights_map_${pageSlug}_${instance}`) : null;
+                if (stored) localData = JSON.parse(stored);
+            } catch (e) {}
+
+            try {
+                const res = await apiClient.get(`/website-builder/highlights?page_slug=${pageSlug}&instance=${instance}`);
+                const apiResult = res.data?.data || (res.data && typeof res.data === 'object' && res.data.items ? res.data : null);
+                if (apiResult) {
+                    return { ...DEFAULT_HIGHLIGHTS, ...localData, ...apiResult, page_slug: pageSlug, instance };
+                }
+            } catch (e) {}
+
+            if (localData) {
+                return { ...DEFAULT_HIGHLIGHTS, ...localData, page_slug: pageSlug, instance };
             }
-            if (res.data && typeof res.data === 'object' && res.data.items) {
-                return { ...DEFAULT_HIGHLIGHTS, ...res.data, page_slug: pageSlug, instance };
-            }
+
             return { ...DEFAULT_HIGHLIGHTS, page_slug: pageSlug, instance };
         },
     });
@@ -77,6 +88,12 @@ export function useSaveHighlights() {
 
     return useMutation({
         mutationFn: async (payload: HighlightsSettings) => {
+            try {
+                if (typeof window !== 'undefined') {
+                    localStorage.setItem(`highlights_map_${payload.page_slug}_${payload.instance}`, JSON.stringify(payload));
+                }
+            } catch (e) {}
+
             const res = await apiClient.put('/website-builder/highlights', payload);
             return res.data;
         },

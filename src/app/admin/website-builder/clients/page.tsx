@@ -11,10 +11,12 @@ import {
     GripVertical,
     Upload,
     Image as ImageIcon,
+    Eye,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { BuilderCountedInput } from '../_components/builder-field';
 import { cn } from '@/lib/utils';
 
@@ -57,6 +59,7 @@ export default function PortfolioClientsPage() {
     const [clientName, setClientName] = useState('');
     const [draftLogo, setDraftLogo] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
+    const [previewOpen, setPreviewOpen] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -119,21 +122,21 @@ export default function PortfolioClientsPage() {
         setEditingId(null);
         setClientName('');
         setDraftLogo(null);
-        toast.info('Clients reset to defaults.');
+        toast.info('Clients reset to default list.');
     };
 
     const handleSaveAll = () => {
         setIsSaving(true);
         setTimeout(() => {
             setIsSaving(false);
-            toast.success('Client logo wall saved successfully!');
-        }, 500);
+            toast.success('Clients logo wall saved successfully.');
+        }, 600);
     };
 
     return (
-        <div className="space-y-5">
+        <div className="space-y-4 p-4 md:p-6 bg-slate-50/50 min-h-screen">
             {/* Header Bar */}
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b pb-4">
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4 bg-white p-4 rounded-xl shadow-2xs">
                 <div>
                     <div className="flex items-center gap-1.5 text-xs text-slate-500 mb-1">
                         <span>Dashboard</span>
@@ -146,11 +149,19 @@ export default function PortfolioClientsPage() {
                     </div>
                     <h1 className="text-xl font-extrabold tracking-tight text-slate-900">Portfolio - Clients</h1>
                     <p className="text-xs text-slate-500">
-                        Manage client logos and display wall for your website portfolio.
+                        Manage client brand logos and display logo wall for your website portfolio.
                     </p>
                 </div>
 
                 <div className="flex items-center gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPreviewOpen(true)}
+                        className="h-8 px-3 text-xs font-semibold text-emerald-700 border-emerald-300 hover:bg-emerald-50"
+                    >
+                        <Eye className="h-3.5 w-3.5 text-emerald-600 mr-1" /> Live Preview
+                    </Button>
                     <Button variant="outline" size="sm" className="h-8 px-3 text-xs font-semibold text-slate-600 border-slate-200 hover:bg-slate-50">
                         <HelpCircle className="h-3.5 w-3.5 text-slate-400 mr-1" /> How It Works
                     </Button>
@@ -168,11 +179,10 @@ export default function PortfolioClientsPage() {
                 </div>
             </div>
 
-            {/* 2-Column Main Workspace */}
-            <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
-                {/* Left Column: Form Controls (4/12 width) */}
-                <div className="space-y-4 xl:col-span-4">
-                    {/* Card 1: Add New Client */}
+            {/* Main Workspace */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                {/* Card 1: Add New Client */}
+                <div className="md:col-span-5">
                     <Card className="shadow-xs border-slate-200">
                         <CardHeader className="py-3 px-4 border-b bg-slate-50/50">
                             <CardTitle className="text-xs font-bold text-slate-800 uppercase tracking-wide">
@@ -180,21 +190,18 @@ export default function PortfolioClientsPage() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-4 space-y-4">
-                            {/* Client Name */}
                             <BuilderCountedInput
                                 label="Client Name"
                                 required
-                                placeholder="Enter client name"
                                 value={clientName}
-                                onChange={setClientName}
+                                onChange={(val) => setClientName(val)}
                                 maxLength={100}
-                                inputClassName="!h-9 text-xs"
+                                placeholder="Enter client company name"
                             />
 
-                            {/* Upload Logo */}
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-black uppercase tracking-wide text-slate-600">
-                                    CLIENT LOGO
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase">
+                                    Client Logo
                                 </label>
                                 <input
                                     type="file"
@@ -205,139 +212,130 @@ export default function PortfolioClientsPage() {
                                 />
                                 <div
                                     onClick={() => fileInputRef.current?.click()}
-                                    className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-xl p-5 bg-slate-50/50 hover:bg-slate-100/50 hover:border-blue-400 transition-all cursor-pointer text-center group"
+                                    className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50 hover:bg-slate-100/60 cursor-pointer transition-all text-center group"
                                 >
                                     {draftLogo ? (
-                                        <div className="h-20 w-32 rounded-lg border border-slate-200 overflow-hidden bg-white p-2 flex items-center justify-center">
-                                            <img src={draftLogo} alt="Preview" className="max-h-full max-w-full object-contain" />
+                                        <div className="relative h-24 w-full flex items-center justify-center">
+                                            <img
+                                                src={draftLogo}
+                                                alt="Preview"
+                                                className="max-h-full max-w-full object-contain rounded-lg"
+                                            />
                                         </div>
                                     ) : (
                                         <>
-                                            <div className="h-9 w-9 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
-                                                <Upload className="h-4 w-4" />
+                                            <div className="h-10 w-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                                                <Upload className="h-5 w-5" />
                                             </div>
-                                            <p className="text-xs font-bold text-slate-800">
-                                                <span className="text-blue-600 hover:underline">Click to upload</span> or drag and drop
-                                            </p>
-                                            <p className="text-[10px] text-slate-400 mt-0.5">
-                                                Recommended: 600x400px (Max: 2MB)
-                                            </p>
+                                            <p className="text-xs font-bold text-slate-700">Click to upload logo</p>
+                                            <p className="text-[11px] text-slate-400 mt-0.5">PNG, SVG, JPG (600x400px Max: 2MB)</p>
                                         </>
                                     )}
                                 </div>
                             </div>
 
-                            {/* Add / Update Client Button */}
                             <Button
-                                type="button"
-                                size="sm"
                                 onClick={handleSaveClient}
-                                className="h-9 w-full text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-xs gap-1.5"
+                                className="w-full h-9 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
                             >
-                                <Plus className="h-4 w-4" /> {editingId ? 'Update Client' : 'Add Client'}
+                                <Plus className="h-4 w-4 mr-1" /> {editingId ? 'Update Client' : 'Add Client'}
                             </Button>
                         </CardContent>
                     </Card>
+                </div>
 
-                    {/* Card 2: Added Clients List */}
+                {/* Card 2: Added Clients List */}
+                <div className="md:col-span-7">
                     <Card className="shadow-xs border-slate-200">
-                        <CardHeader className="py-3 px-4 border-b bg-slate-50/50">
+                        <CardHeader className="py-3 px-4 border-b bg-slate-50/50 flex flex-row items-center justify-between">
                             <CardTitle className="text-xs font-bold text-slate-800 uppercase tracking-wide">
                                 Added Clients ({clients.length})
                             </CardTitle>
+                            <span className="text-[11px] text-slate-400">Drag handle to reorder</span>
                         </CardHeader>
                         <CardContent className="p-4 space-y-3">
-                            <div className="space-y-2">
-                                {clients.map((c) => (
-                                    <div
-                                        key={c.id}
-                                        className={cn(
-                                            'flex items-center gap-3 rounded-lg border p-2 bg-card transition-all',
-                                            editingId === c.id ? 'border-blue-600 bg-blue-50/30' : 'border-slate-200'
-                                        )}
-                                    >
-                                        <GripVertical className="h-4 w-4 text-slate-300 cursor-grab shrink-0" />
-                                        <div className="h-8 w-14 rounded border border-slate-200 bg-white p-1 flex items-center justify-center shrink-0">
-                                            <img src={c.logoUrl} alt={c.name} className="max-h-full max-w-full object-contain" />
+                            {clients.map((client, index) => (
+                                <div
+                                    key={client.id}
+                                    className="flex items-center justify-between p-3 rounded-lg border border-slate-200 bg-white hover:border-slate-300 transition-all shadow-2xs group"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <GripVertical className="h-4 w-4 text-slate-300 group-hover:text-slate-500 cursor-grab" />
+                                        <span className="text-xs font-bold text-slate-400">#{index + 1}</span>
+                                        <div className="h-10 w-16 border rounded bg-slate-50 flex items-center justify-center overflow-hidden p-1">
+                                            <img src={client.logoUrl} alt={client.name} className="max-h-full max-w-full object-contain" />
                                         </div>
-                                        <span className="font-semibold text-xs text-slate-800 truncate flex-1">{c.name}</span>
-                                        <div className="flex items-center gap-1.5">
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="icon"
-                                                onClick={() => handleEdit(c)}
-                                                className={cn(
-                                                    'h-8 w-8 rounded-lg p-0 transition-colors',
-                                                    editingId === c.id
-                                                        ? 'border-blue-600 bg-blue-50 text-blue-600 shadow-xs'
-                                                        : 'border-slate-200 text-slate-500 hover:border-blue-600 hover:text-blue-600 hover:bg-blue-50/50'
-                                                )}
-                                            >
-                                                <Pencil className="h-3.5 w-3.5" />
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="icon"
-                                                onClick={() => handleDelete(c.id)}
-                                                className="h-8 w-8 rounded-lg p-0 text-red-500 border-red-200 hover:bg-red-50 hover:border-red-300"
-                                            >
-                                                <Trash2 className="h-3.5 w-3.5" />
-                                            </Button>
-                                        </div>
+                                        <span className="text-xs font-bold text-slate-800">{client.name}</span>
                                     </div>
-                                ))}
-                            </div>
-                            <p className="text-[10px] text-slate-400 font-medium">
+
+                                    <div className="flex items-center gap-1">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => handleEdit(client)}
+                                            className="h-7 w-7 text-slate-500 hover:text-blue-600 hover:bg-blue-50"
+                                        >
+                                            <Pencil className="h-3.5 w-3.5" />
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => handleDelete(client.id)}
+                                            className="h-7 w-7 text-slate-500 hover:text-rose-600 hover:bg-rose-50"
+                                        >
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
+
+                            <p className="text-[10px] text-slate-400 font-medium pt-2">
                                 You can upload up to 30 clients.
                             </p>
                         </CardContent>
                     </Card>
                 </div>
-
-                {/* Right Column: Live Preview Wall (8/12 width) */}
-                <div className="xl:col-span-8">
-                    <Card className="shadow-xs border-slate-200">
-                        <CardHeader className="py-3 px-4 border-b bg-slate-50/50">
-                            <div className="flex items-center gap-2">
-                                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                                <div>
-                                    <CardTitle className="text-xs font-bold text-slate-900">Live Preview</CardTitle>
-                                    <CardDescription className="text-[11px] text-slate-500">
-                                        This is how the client logo wall will appear on the website.
-                                    </CardDescription>
-                                </div>
-                            </div>
-                        </CardHeader>
-
-                        <CardContent className="p-6">
-                            {clients.length > 0 ? (
-                                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
-                                    {clients.map((c) => (
-                                        <div
-                                            key={c.id}
-                                            className="flex h-32 items-center justify-center rounded-xl border border-slate-200 bg-white p-4 shadow-xs transition-all hover:shadow-md hover:border-blue-300 group"
-                                        >
-                                            <img
-                                                src={c.logoUrl}
-                                                alt={c.name}
-                                                className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform"
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="py-20 text-center border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50">
-                                    <ImageIcon className="mx-auto h-8 w-8 text-slate-300 mb-2" />
-                                    <p className="text-xs font-bold text-slate-600">No Clients Added</p>
-                                    <p className="text-[11px] text-slate-400 mt-1">Add clients from the left panel to build your client logo wall.</p>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-                </div>
             </div>
+
+            {/* Live Preview Modal Dialog */}
+            <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+                <DialogContent className="max-w-4xl border-slate-200">
+                    <DialogHeader>
+                        <div className="flex items-center gap-2">
+                            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                            <DialogTitle className="text-sm font-bold text-slate-900">Clients — Live Preview</DialogTitle>
+                        </div>
+                        <DialogDescription className="text-xs text-slate-500">
+                            This is how the client logo wall will appear on the live website.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="py-4">
+                        {clients.length > 0 ? (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                                {clients.map((c) => (
+                                    <div
+                                        key={c.id}
+                                        className="flex h-32 items-center justify-center rounded-xl border border-slate-200 bg-white p-4 shadow-2xs transition-all hover:shadow-md hover:border-blue-300 group"
+                                    >
+                                        <img
+                                            src={c.logoUrl}
+                                            alt={c.name}
+                                            className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform"
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="py-16 text-center border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50">
+                                <ImageIcon className="mx-auto h-8 w-8 text-slate-300 mb-2" />
+                                <p className="text-xs font-bold text-slate-600">No Clients Added</p>
+                                <p className="text-[11px] text-slate-400 mt-1">Add clients to build your client logo wall.</p>
+                            </div>
+                        )}
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

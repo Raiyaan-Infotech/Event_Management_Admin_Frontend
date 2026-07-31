@@ -74,9 +74,16 @@ import {
 export function CompanyWebsitePreview() {
   const queryClient = useQueryClient();
 
+  // ── SPA Navigation ──────────────────────────────────────────────────────────
+  const [activeKey, setActiveKey] = React.useState('home');
+  const handleNavigate = React.useCallback((href: string) => {
+    setActiveKey(viewKeyFromHref(href));
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   // ── Data Hooks ──────────────────────────────────────────────────────────────
   const { data: basicInfoRaw = {} as AnyRecord, isLoading: l1 } = useCompanyBasicInformation();
-  const { data: heroRaw = {} as AnyRecord, isLoading: l2 } = useCompanyHeroSection();
+  const { data: heroRaw = {} as AnyRecord, isLoading: l2 } = useCompanyHeroSection(activeKey);
   const { data: footerRaw = {} as AnyRecord, isLoading: l3 } = useCompanyFooterSettings();
   const { data: themeRaw = {} as AnyRecord, isLoading: l4 } = useCompanyThemeSettings();
   const { data: contactRaw = {} as AnyRecord, isLoading: l5 } = useCompanyContactSettings();
@@ -100,13 +107,6 @@ export function CompanyWebsitePreview() {
   const { data: templatesRaw = [] } = useCompanyTemplates();
 
   const isLoading = l1 || l2 || l3 || l4 || l5 || l6 || l7 || l8 || l9;
-
-  // ── SPA Navigation ──────────────────────────────────────────────────────────
-  const [activeKey, setActiveKey] = React.useState('home');
-  const handleNavigate = React.useCallback((href: string) => {
-    setActiveKey(viewKeyFromHref(href));
-    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
 
   // ── Font Family Hook ───────────────────────────────────────────────────────
   const fontFamily = String((themeRaw as AnyRecord)?.font_family || (themeRaw as AnyRecord)?.font || (basicInfoRaw as AnyRecord)?.font_family || 'Inter');

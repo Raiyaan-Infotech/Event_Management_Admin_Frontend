@@ -165,20 +165,22 @@ const menuItems: MenuItem[] = [
     labelKey: "Website Builder",
     icon: Globe,
     children: [
+      // ── GLOBAL MAIN PARENT ITEMS ───────────────────────────────────────
+      { labelKey: "Header", href: "/admin/website-builder/header", icon: FileText },
+      { labelKey: "Navbar", href: "/admin/website-builder/nav-menu", icon: Menu },
+      { labelKey: "Footer", href: "/admin/website-builder/footer", icon: Settings },
+
       // ── HOME PAGE ──────────────────────────────────────────────────────
       {
         labelKey: "Home",
         icon: Monitor,
         children: [
-          { labelKey: "Header", href: "/admin/website-builder/header", icon: FileText },
-          { labelKey: "Navbar", href: "/admin/website-builder/nav-menu", icon: Menu },
           { labelKey: "Hero Section", href: "/admin/website-builder/hero-section", icon: Monitor },
           { labelKey: "Highlights (Outline)", href: "/admin/website-builder/highlights/home/1", icon: Sparkles },
           { labelKey: "Template", href: "/admin/website-builder/templates", icon: LayoutGrid },
           { labelKey: "Highlights (BG Filled)", href: "/admin/website-builder/highlights/home/2", icon: Sparkles },
           { labelKey: "Testimonials", href: "/admin/website-builder/testimonials", icon: Star },
           { labelKey: "Login & Demo", href: "/admin/website-builder/login-demo/home", icon: LogIn },
-          { labelKey: "Footer", href: "/admin/website-builder/footer", icon: Settings },
         ],
       },
       // ── FEATURES PAGE ─────────────────────────────────────────────────
@@ -186,6 +188,7 @@ const menuItems: MenuItem[] = [
         labelKey: "Features",
         icon: Layers,
         children: [
+          { labelKey: "Hero Section", href: "/admin/website-builder/hero-section?page=features", icon: Monitor },
           { labelKey: "Features", href: "/admin/website-builder/features", icon: Layers },
           { labelKey: "Sign In & Demo", href: "/admin/website-builder/login-demo/features?variant=variant_2", icon: LogIn },
           { labelKey: "Highlights", href: "/admin/website-builder/highlights/features/1", icon: Sparkles },
@@ -197,6 +200,7 @@ const menuItems: MenuItem[] = [
         labelKey: "Template",
         icon: LayoutGrid,
         children: [
+          { labelKey: "Hero Section", href: "/admin/website-builder/hero-section?page=template", icon: Monitor },
           { labelKey: "Template", href: "/admin/website-builder/templates", icon: LayoutGrid },
           { labelKey: "Sign In with Price Plan", href: "/admin/website-builder/login-demo/template", icon: DollarSign },
           { labelKey: "Highlights", href: "/admin/website-builder/highlights/template/1", icon: Sparkles },
@@ -207,6 +211,7 @@ const menuItems: MenuItem[] = [
         labelKey: "Pricing",
         icon: DollarSign,
         children: [
+          { labelKey: "Hero Section", href: "/admin/website-builder/hero-section?page=pricing", icon: Monitor },
           { labelKey: "Plans & Pricing", href: "/admin/website-builder/pricing-plans", icon: DollarSign },
           { labelKey: "Plan Features", href: "/admin/website-builder/features", icon: Layers },
           { labelKey: "Highlights", href: "/admin/website-builder/highlights/pricing/1", icon: Sparkles },
@@ -218,6 +223,7 @@ const menuItems: MenuItem[] = [
         labelKey: "How It's Work",
         icon: HelpCircle,
         children: [
+          { labelKey: "Hero Section", href: "/admin/website-builder/hero-section?page=how-it-works", icon: Monitor },
           { labelKey: "Videos", href: "/admin/website-builder/video-tutorials", icon: Video },
           { labelKey: "Highlights", href: "/admin/website-builder/highlights/how-it-works/1", icon: Sparkles },
           { labelKey: "Signup Demo", href: "/admin/website-builder/login-demo/how-it-works", icon: LogIn },
@@ -228,10 +234,20 @@ const menuItems: MenuItem[] = [
         labelKey: "Contact",
         icon: Mail,
         children: [
+          { labelKey: "Hero Section", href: "/admin/website-builder/hero-section?page=contact", icon: Monitor },
           { labelKey: "Highlights", href: "/admin/website-builder/highlights/contact/1", icon: Sparkles },
           { labelKey: "Contact form with Map", href: "/admin/website-builder/contact-us", icon: Mail },
           { labelKey: "FAQ's", href: "/admin/website-builder/faqs", icon: HelpCircle },
           { labelKey: "Chat & Signup Demo", href: "/admin/website-builder/login-demo/contact", icon: LogIn },
+        ],
+      },
+      // ── GALLERY MODULE ────────────────────────────────────────────────
+      {
+        labelKey: "Gallery",
+        icon: GalleryHorizontal,
+        children: [
+          { labelKey: "Gallery Images", href: "/admin/website-builder/gallery", icon: GalleryHorizontal },
+          { labelKey: "Gallery Categories", href: "/admin/website-builder/gallery/categories", icon: Folder },
         ],
       },
       // ── OTHER SETTINGS & CONTENT MODULES ──────────────────────────────
@@ -281,14 +297,6 @@ const menuItems: MenuItem[] = [
               { labelKey: "Contact Settings", href: "/admin/website-builder/contact-us", icon: Mail },
               { labelKey: "Categories", href: "/admin/website-builder/contact-us/categories", icon: Folder },
               { labelKey: "Contact List", href: "/admin/website-builder/contact-us/list", icon: FileText },
-            ],
-          },
-          {
-            labelKey: "Gallery",
-            icon: GalleryHorizontal,
-            children: [
-              { labelKey: "Gallery Images", href: "/admin/website-builder/gallery", icon: GalleryHorizontal, uiBlockKey: "gallery-images" },
-              { labelKey: "Gallery Categories", href: "/admin/website-builder/gallery/categories", icon: Folder, uiBlockKey: "gallery-categories" },
             ],
           },
           {

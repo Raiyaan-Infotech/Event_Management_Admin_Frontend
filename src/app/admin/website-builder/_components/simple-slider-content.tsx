@@ -12,10 +12,12 @@ import {
     HelpCircle,
     X,
     Image as ImageIcon,
+    Eye,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import {
     Select,
@@ -53,16 +55,11 @@ const sliderHeightOptions: { label: string; value: SliderHeight }[] = [
     { label: 'Small (400px)', value: 'small' },
     { label: 'Medium (600px)', value: 'medium' },
     { label: 'Large (800px)', value: 'large' },
-    { label: 'Full Screen', value: 'fullscreen' },
-];
-
-const targetModeOptions: { label: string; value: LinkTargetMode }[] = [
-    { label: 'Page', value: 'page' },
-    { label: 'Custom', value: 'custom' },
+    { label: 'Fullscreen', value: 'fullscreen' },
 ];
 
 export function SimpleSliderContent() {
-    // Top-level Slider Settings
+    const [previewOpen, setPreviewOpen] = useState(false);
     const [sliderTitle, setSliderTitle] = useState('Home Page Slider');
     const [sliderHeight, setSliderHeight] = useState<SliderHeight>('medium');
 
@@ -205,178 +202,59 @@ export function SimpleSliderContent() {
                         <span className="font-semibold text-slate-800">Simple Slider</span>
                     </div>
                 </div>
-
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" className="gap-1.5 text-xs text-slate-700 h-8">
-                        <HelpCircle className="h-3.5 w-3.5" /> How It Works
-                    </Button>
                     <Button
                         variant="outline"
                         size="sm"
-                        className="gap-1.5 text-xs text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 h-8"
-                        onClick={() => {
-                            if (editingSlideId) handleDeleteSlide(editingSlideId);
-                        }}
+                        onClick={() => setPreviewOpen(true)}
+                        className="gap-1.5 text-xs font-semibold text-emerald-700 border-emerald-300 hover:bg-emerald-50 h-8"
                     >
-                        <Trash2 className="h-3.5 w-3.5" /> Delete
+                        <Eye className="h-3.5 w-3.5 text-emerald-600" /> Live Preview
                     </Button>
-                    <Button
-                        size="sm"
-                        onClick={handleSave}
-                        disabled={isSaving}
-                        className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs h-8 px-4"
-                    >
-                        <Save className="h-3.5 w-3.5" /> {isSaving ? 'Updating...' : 'Update'}
+                    <Button variant="outline" size="sm" className="gap-1.5 text-xs text-slate-700 h-8">
+                        <HelpCircle className="h-3.5 w-3.5" /> How It Works
                     </Button>
                 </div>
             </div>
 
-            {/* 2-Column Main Layout Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-                {/* Left Column: Slide Settings Form Card (5 Cols) */}
                 <div className="lg:col-span-5 space-y-4">
                     <Card className="shadow-sm border-slate-200">
                         <CardHeader className="py-3 px-4 border-b">
                             <CardTitle className="text-sm font-bold text-slate-900">Slide Settings</CardTitle>
-                            <CardDescription className="text-xs text-slate-500">
-                                Add and edit slide information for the homepage slider.
-                            </CardDescription>
                         </CardHeader>
                         <CardContent className="p-4 space-y-4">
-                            {/* Slider Title */}
-                            <BuilderCountedInput
-                                label="Slider Title"
-                                value={sliderTitle}
-                                onChange={setSliderTitle}
-                                maxLength={100}
-                                inputClassName="!h-9 text-xs"
-                            />
-
-                            {/* Slider Height Radio Group */}
-                            <BuilderRadioGroup
-                                label="Slider Height"
-                                description="Set the height of the slider section."
-                                name="sliderHeight"
-                                options={sliderHeightOptions}
-                                value={sliderHeight}
-                                onChange={setSliderHeight}
-                            />
-
+                            <BuilderCountedInput label="Slider Title" value={sliderTitle} onChange={setSliderTitle} maxLength={100} />
+                            <BuilderRadioGroup label="Slider Height" name="sliderHeight" options={sliderHeightOptions} value={sliderHeight} onChange={setSliderHeight} />
                             {activeSlide && (
                                 <>
-                                    {/* Slide Title */}
-                                    <BuilderCountedInput
-                                        label="Slide Title"
-                                        value={activeSlide.title}
-                                        onChange={(val) => updateActiveSlide('title', val)}
-                                        maxLength={100}
-                                        inputClassName="!h-9 text-xs"
-                                    />
-
-                                    {/* Slide Description */}
-                                    <BuilderCountedTextarea
-                                        label="Slide Description"
-                                        value={activeSlide.description}
-                                        onChange={(val) => updateActiveSlide('description', val)}
-                                        maxLength={200}
-                                        rows={3}
-                                        textareaClassName="text-xs resize-none"
-                                    />
-
-                                    {/* Button Label */}
-                                    <BuilderCountedInput
-                                        label="Button Label"
-                                        value={activeSlide.buttonLabel}
-                                        onChange={(val) => updateActiveSlide('buttonLabel', val)}
-                                        maxLength={30}
-                                        inputClassName="!h-9 text-xs"
-                                    />
-
-                                    {/* Link Target Mode (Segmented Control Component) */}
-                                    <BuilderSegmentedControl
-                                        options={targetModeOptions}
-                                        value={activeSlide.targetMode}
-                                        onChange={(val) => updateActiveSlide('targetMode', val)}
-                                    />
-
-                                    {/* Button Page Dropdown Selector */}
-                                    {activeSlide.targetMode === 'page' && (
+                                    <BuilderCountedInput label="Slide Title" value={activeSlide.title} onChange={(val) => updateActiveSlide('title', val)} maxLength={100} />
+                                    <BuilderCountedTextarea label="Slide Description" value={activeSlide.description} onChange={(val) => updateActiveSlide('description', val)} maxLength={300} rows={3} />
+                                    <BuilderCountedInput label="Button Label" value={activeSlide.buttonLabel} onChange={(val) => updateActiveSlide('buttonLabel', val)} maxLength={50} />
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-semibold text-slate-700">Link Target</label>
+                                        <BuilderSegmentedControl options={[{ label: 'Page', value: 'page' }, { label: 'Custom URL', value: 'custom' }]} value={activeSlide.targetMode} onChange={(val) => updateActiveSlide('targetMode', val as LinkTargetMode)} />
+                                    </div>
+                                    {activeSlide.targetMode === 'page' ? (
                                         <div className="space-y-1.5">
-                                            <label className="text-[10px] font-black uppercase tracking-wide text-slate-600">
-                                                Button Page
-                                            </label>
-                                            <Select
-                                                value={activeSlide.customUrl || 'events'}
-                                                onValueChange={(val) => updateActiveSlide('customUrl', val)}
-                                            >
-                                                <SelectTrigger className="h-9 w-full text-xs font-semibold bg-card border-slate-200">
-                                                    <SelectValue placeholder="Select Page" />
-                                                </SelectTrigger>
+                                            <label className="text-xs font-semibold text-slate-700">Select Page</label>
+                                            <Select value={activeSlide.customUrl || '/events'} onValueChange={(val) => updateActiveSlide('customUrl', val)}>
+                                                <SelectTrigger className="h-9 text-xs border-slate-200"><SelectValue /></SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="home">Home</SelectItem>
-                                                    <SelectItem value="about">About Us</SelectItem>
-                                                    <SelectItem value="services">Services</SelectItem>
-                                                    <SelectItem value="events">Events</SelectItem>
-                                                    <SelectItem value="gallery">Gallery</SelectItem>
-                                                    <SelectItem value="contact">Contact Us</SelectItem>
+                                                    <SelectItem value="/about">About Us</SelectItem>
+                                                    <SelectItem value="/services">Services</SelectItem>
+                                                    <SelectItem value="/events">Events Portfolio</SelectItem>
+                                                    <SelectItem value="/contact">Contact Us</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </div>
+                                    ) : (
+                                        <BuilderCountedInput label="Custom URL" value={activeSlide.customUrl} onChange={(val) => updateActiveSlide('customUrl', val)} maxLength={200} />
                                     )}
-
-                                    {/* Custom URL */}
-                                    {activeSlide.targetMode === 'custom' && (
-                                        <BuilderCountedInput
-                                            label="Custom URL"
-                                            value={activeSlide.customUrl}
-                                            onChange={(val) => updateActiveSlide('customUrl', val)}
-                                            maxLength={200}
-                                            inputClassName="!h-9 text-xs font-mono"
-                                        />
-                                    )}
-
-                                    {/* SLIDE IMAGE Dropzone Component */}
-                                    <BuilderImageUploadDropzone
-                                        label="SLIDE IMAGE"
-                                        imageUrl={activeSlide.imageUrl}
-                                        onFileSelect={handleFileSelect}
-                                        onReCrop={() => {
-                                            setCropImageRaw(activeSlide.imageUrl);
-                                            setCropOpen(true);
-                                        }}
-                                        onRemove={() => updateActiveSlide('imageUrl', '')}
-                                        recommendedText="Recommended: 1920x800px (Max: 2MB)"
-                                    />
-
-                                    {/* Status Switch Component */}
-                                    <BuilderStatusSwitch
-                                        label="Status"
-                                        description="Enable or disable this slide."
-                                        checked={activeSlide.status}
-                                        onCheckedChange={(val) => updateActiveSlide('status', val)}
-                                    />
-
-                                    {/* Card Footer Actions */}
-                                    <div className="flex items-center justify-between pt-2 border-t mt-4">
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => {
-                                                toast.info('Slide edit cancelled.');
-                                            }}
-                                            className="gap-1.5 text-xs text-slate-600 h-8"
-                                        >
-                                            <X className="h-3.5 w-3.5" /> Cancel
-                                        </Button>
-                                        <Button
-                                            type="button"
-                                            size="sm"
-                                            onClick={() => {
-                                                toast.success('Slide details updated.');
-                                            }}
-                                            className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs h-8 px-4"
-                                        >
+                                    <BuilderImageUploadDropzone label="Slide Image" imageUrl={activeSlide.imageUrl} onFileSelect={handleFileSelect} onRemove={() => updateActiveSlide('imageUrl', '')} recommendedText="1920x800px (Max: 5MB)" />
+                                    <BuilderStatusSwitch label="Status" checked={activeSlide.status} onCheckedChange={(val) => updateActiveSlide('status', val)} />
+                                    <div className="pt-2">
+                                        <Button type="button" size="sm" onClick={handleSave} className="w-full h-9 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs gap-1.5">
                                             <Save className="h-3.5 w-3.5" /> Update Slide
                                         </Button>
                                     </div>
@@ -385,99 +263,7 @@ export function SimpleSliderContent() {
                         </CardContent>
                     </Card>
                 </div>
-
-                {/* Right Column: Live Preview + Slider Management (7 Cols) */}
                 <div className="lg:col-span-7 space-y-4">
-                    {/* Live Preview Card */}
-                    <Card className="shadow-sm border-slate-200 overflow-hidden">
-                        <CardHeader className="py-2.5 px-4 bg-slate-50/80 border-b flex flex-row items-center justify-between space-y-0">
-                            <div className="flex items-center gap-2">
-                                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                                <CardTitle className="text-xs font-semibold text-slate-700">
-                                    Live Preview <span className="font-normal text-slate-500">— This is how your slider will appear on the website.</span>
-                                </CardTitle>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="p-0 bg-slate-950">
-                            {previewSlide ? (
-                                <div
-                                    className={cn(
-                                        'relative flex flex-col justify-center px-8 text-white transition-all duration-300 overflow-hidden',
-                                        sliderHeight === 'small'
-                                            ? 'h-[220px]'
-                                            : sliderHeight === 'large'
-                                            ? 'h-[340px]'
-                                            : sliderHeight === 'fullscreen'
-                                            ? 'h-[400px]'
-                                            : 'h-[280px]'
-                                    )}
-                                    style={{
-                                        background: previewSlide.imageUrl
-                                            ? `linear-gradient(to right, rgba(15, 5, 29, 0.85), rgba(45, 11, 84, 0.7)), url(${previewSlide.imageUrl}) center/cover no-repeat`
-                                            : 'linear-gradient(135deg, #1B0534 0%, #2D0B54 50%, #1B0534 100%)',
-                                    }}
-                                >
-                                    {/* Left Navigation Arrow */}
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={prevPreview}
-                                        className="absolute left-3 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 text-white p-0 shadow-md"
-                                    >
-                                        <ChevronLeft className="h-4 w-4" />
-                                    </Button>
-
-                                    {/* Right Navigation Arrow */}
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={nextPreview}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 text-white p-0 shadow-md"
-                                    >
-                                        <ChevronRight className="h-4 w-4" />
-                                    </Button>
-
-                                    {/* Slide Content Box */}
-                                    <div className="max-w-md space-y-2.5 pl-4">
-                                        <h3 className="text-xl font-extrabold tracking-tight leading-snug text-white">
-                                            {previewSlide.title}
-                                        </h3>
-                                        <p className="text-xs text-white/80 leading-relaxed max-w-sm">
-                                            {previewSlide.description}
-                                        </p>
-                                        <div className="pt-1">
-                                            <Button
-                                                type="button"
-                                                className="inline-flex items-center gap-1.5 rounded-lg bg-[#6C47FF] hover:bg-[#5b3adb] px-4 py-2 text-xs font-bold text-white shadow-md h-8"
-                                            >
-                                                {previewSlide.buttonLabel}
-                                            </Button>
-                                        </div>
-                                    </div>
-
-                                    {/* Bottom Pagination Dots */}
-                                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5">
-                                        {slides.map((_, idx) => (
-                                            <Button
-                                                key={idx}
-                                                type="button"
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => setActivePreviewIndex(idx)}
-                                                className={cn(
-                                                    'h-1.5 p-0 rounded-full transition-all min-w-0 border-0',
-                                                    activePreviewIndex === idx ? 'w-5 bg-white' : 'w-1.5 bg-white/40 hover:bg-white/70'
-                                                )}
-                                            />
-                                        ))}
-                                    </div>
-                                </div>
-                            ) : null}
-                        </CardContent>
-                    </Card>
-
                     {/* Slider Management Card */}
                     <Card className="shadow-sm border-slate-200">
                         <CardHeader className="py-3 px-4 border-b flex flex-row items-center justify-between space-y-0">
@@ -616,6 +402,85 @@ export function SimpleSliderContent() {
                     </Card>
                 </div>
             </div>
+
+            {/* Live Preview Modal Dialog */}
+            <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+                <DialogContent className="max-w-4xl border-slate-200">
+                    <DialogHeader>
+                        <div className="flex items-center gap-2">
+                            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                            <DialogTitle className="text-sm font-bold text-slate-900">Simple Slider — Live Preview</DialogTitle>
+                        </div>
+                        <DialogDescription className="text-xs text-slate-500">
+                            This is how your homepage slider will appear on the live website.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="p-0 bg-slate-950 rounded-xl overflow-hidden my-2">
+                        {previewSlide ? (
+                            <div
+                                className={cn(
+                                    'relative flex flex-col justify-center px-8 text-white transition-all duration-300 overflow-hidden',
+                                    sliderHeight === 'small'
+                                        ? 'h-[240px]'
+                                        : sliderHeight === 'large'
+                                        ? 'h-[360px]'
+                                        : sliderHeight === 'fullscreen'
+                                        ? 'h-[440px]'
+                                        : 'h-[300px]'
+                                )}
+                                style={{
+                                    background: previewSlide.imageUrl
+                                        ? `linear-gradient(to right, rgba(15, 5, 29, 0.85), rgba(45, 11, 84, 0.7)), url(${previewSlide.imageUrl}) center/cover no-repeat`
+                                        : 'linear-gradient(135deg, #1B0534 0%, #2D0B54 50%, #1B0534 100%)',
+                                }}
+                            >
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={prevPreview}
+                                    className="absolute left-3 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 text-white p-0 shadow-md"
+                                >
+                                    <ChevronLeft className="h-4 w-4" />
+                                </Button>
+
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={nextPreview}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 text-white p-0 shadow-md"
+                                >
+                                    <ChevronRight className="h-4 w-4" />
+                                </Button>
+
+                                <div className="max-w-md space-y-2.5 pl-4">
+                                    <h3 className="text-xl font-extrabold tracking-tight leading-snug text-white">
+                                        {previewSlide.title}
+                                    </h3>
+                                    <p className="text-xs text-white/80 leading-relaxed max-w-sm">
+                                        {previewSlide.description}
+                                    </p>
+                                    <div className="pt-1">
+                                        <Button
+                                            type="button"
+                                            className="inline-flex items-center gap-1.5 rounded-lg bg-[#6C47FF] hover:bg-[#5b3adb] px-4 py-2 text-xs font-bold text-white shadow-md h-8"
+                                        >
+                                            {previewSlide.buttonLabel}
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="py-20 text-center text-white/40">
+                                <ImageIcon className="mx-auto h-8 w-8 mb-2 opacity-50" />
+                                <p className="text-xs font-bold">No Active Slides to Preview</p>
+                            </div>
+                        )}
+                    </div>
+                </DialogContent>
+            </Dialog>
 
             {/* Media Crop Dialog */}
             <MediaCropDialog

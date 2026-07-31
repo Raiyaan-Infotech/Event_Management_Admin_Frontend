@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import {
     Save,
     RotateCcw,
@@ -14,11 +15,13 @@ import {
     Mail,
     HelpCircle,
     Loader2,
+    Eye,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -37,8 +40,29 @@ type ButtonLayout = 'left' | 'center' | 'right' | 'space-between' | 'stack';
 type ContentAlign = 'left' | 'center' | 'right';
 type LinkTargetMode = 'page' | 'custom';
 
-export function HeroSectionContent() {
-    const { data: heroData, isLoading, save, isSaving } = useCompanyHeroSection();
+interface HeroSectionContentProps {
+    pageSlug?: string;
+}
+
+const PAGES_CONFIG = [
+    { slug: 'home', title: 'Home Page' },
+    { slug: 'features', title: 'Features Page' },
+    { slug: 'template', title: 'Template Page' },
+    { slug: 'pricing', title: 'Pricing Page' },
+    { slug: 'how-it-works', title: "How It's Work" },
+    { slug: 'contact', title: 'Contact Page' },
+];
+
+export function HeroSectionContent({ pageSlug = 'home' }: HeroSectionContentProps) {
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const urlPage = searchParams.get('page');
+    const activePageSlug = urlPage || pageSlug || 'home';
+    const activePageTitle = PAGES_CONFIG.find((p) => p.slug === activePageSlug)?.title || 'Home Page';
+
+    const { data: heroData, isLoading, save, isSaving } = useCompanyHeroSection(activePageSlug);
+
+    const [previewOpen, setPreviewOpen] = useState(false);
 
     // Hero Content
     const [badgeText, setBadgeText] = useState('Best Event Management');
@@ -78,35 +102,66 @@ export function HeroSectionContent() {
 
     useEffect(() => {
         if (heroData && Object.keys(heroData).length > 0) {
-            if (heroData.badge_text) setBadgeText(heroData.badge_text);
-            if (heroData.title) setTitle(heroData.title);
-            if (heroData.description) setDescription(heroData.description);
-            if (heroData.image_url) setHeroImage(heroData.image_url);
-            if (heroData.hero_height) setHeroHeight(heroData.hero_height as HeroHeight);
-            if (heroData.overlay_enabled !== undefined) setOverlayEnabled(Boolean(heroData.overlay_enabled));
-            if (heroData.overlay_color) setOverlayColor(heroData.overlay_color);
-            if (heroData.overlay_opacity !== undefined) setOverlayOpacity(Number(heroData.overlay_opacity));
-            if (heroData.button_layout) setButtonLayout(heroData.button_layout as ButtonLayout);
-            if (heroData.content_alignment) setContentAlign(heroData.content_alignment as ContentAlign);
+            setBadgeText(heroData.badge_text ?? '');
+            setTitle(heroData.title ?? '');
+            setDescription(heroData.description ?? '');
+            setHeroImage(heroData.image_url ?? '');
+            setHeroHeight((heroData.hero_height as HeroHeight) || 'medium');
+            setOverlayEnabled(heroData.overlay_enabled !== undefined ? Boolean(heroData.overlay_enabled) : true);
+            setOverlayColor(heroData.overlay_color || '#000000');
+            setOverlayOpacity(heroData.overlay_opacity !== undefined ? Number(heroData.overlay_opacity) : 60);
+            setButtonLayout((heroData.button_layout as ButtonLayout) || 'left');
+            setContentAlign((heroData.content_alignment as ContentAlign) || 'left');
 
             if (heroData.button_1_json) {
                 setBtn1Enabled(Boolean(heroData.button_1_json.enabled));
-                setBtn1Label(heroData.button_1_json.label || 'Explore Events');
+                setBtn1Label(heroData.button_1_json.label ?? '');
                 setBtn1Style(heroData.button_1_json.style || 'Primary');
-                setBtn1CustomUrl(heroData.button_1_json.url || '/events');
+                setBtn1CustomUrl(heroData.button_1_json.url ?? '');
+            } else {
+                setBtn1Enabled(true);
+                setBtn1Label('Explore Events');
+                setBtn1Style('Primary');
+                setBtn1CustomUrl('/events');
             }
+
             if (heroData.button_2_json) {
                 setBtn2Enabled(Boolean(heroData.button_2_json.enabled));
-                setBtn2Label(heroData.button_2_json.label || 'Contact Us');
+                setBtn2Label(heroData.button_2_json.label ?? '');
                 setBtn2Style(heroData.button_2_json.style || 'Outline');
-                setBtn2CustomUrl(heroData.button_2_json.url || '/contact');
+                setBtn2CustomUrl(heroData.button_2_json.url ?? '');
+            } else {
+                setBtn2Enabled(true);
+                setBtn2Label('Contact Us');
+                setBtn2Style('Outline');
+                setBtn2CustomUrl('/contact');
             }
+        } else {
+            setBadgeText('Best Event Management');
+            setTitle('We Create Unforgettable Moments');
+            setDescription('From elegant weddings to corporate events, we handle every detail with creativity and perfection.');
+            setHeroImage('');
+            setHeroHeight('medium');
+            setOverlayEnabled(true);
+            setOverlayColor('#000000');
+            setOverlayOpacity(60);
+            setButtonLayout('left');
+            setContentAlign('left');
+            setBtn1Enabled(true);
+            setBtn1Label('Explore Events');
+            setBtn1Style('Primary');
+            setBtn1CustomUrl('/events');
+            setBtn2Enabled(true);
+            setBtn2Label('Contact Us');
+            setBtn2Style('Outline');
+            setBtn2CustomUrl('/contact');
         }
-    }, [heroData]);
+    }, [heroData, activePageSlug]);
 
     const handleSave = async () => {
         try {
             await save({
+                page_slug: activePageSlug,
                 badge_text: badgeText,
                 title,
                 description,
@@ -120,7 +175,7 @@ export function HeroSectionContent() {
                 button_1_json: { enabled: btn1Enabled, label: btn1Label, style: btn1Style, url: btn1CustomUrl },
                 button_2_json: { enabled: btn2Enabled, label: btn2Label, style: btn2Style, url: btn2CustomUrl },
             });
-            toast.success('Hero section settings saved successfully');
+            toast.success(`Hero section settings for ${activePageTitle} saved successfully`);
         } catch (err: any) {
             toast.error(err?.message || 'Failed to save hero section');
         }
@@ -160,16 +215,24 @@ export function HeroSectionContent() {
     };
     return (
         <div className="space-y-4">
-            <PageLoader open={isSaving} text="Saving Hero Section Settings..." />
+            <PageLoader open={isSaving || isLoading} text={`Loading ${activePageTitle} Hero Section...`} />
+
             {/* Header */}
             <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-3.5">
                 <div>
-                    
-                    <h1 className="mt-1 text-xl font-bold tracking-tight">Hero Section</h1>
-                    <p className="text-xs text-muted-foreground">Manage your website hero section and Hero Section settings.</p>
+                    <h1 className="mt-1 text-xl font-bold tracking-tight">Hero Section — {activePageTitle}</h1>
+                    <p className="text-xs text-muted-foreground">Manage your website hero section and Hero Section settings for {activePageTitle}.</p>
                 </div>
 
                 <div className="flex items-center gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPreviewOpen(true)}
+                        className="h-8 px-3 text-xs font-semibold text-emerald-700 border-emerald-300 hover:bg-emerald-50"
+                    >
+                        <Eye className="h-3.5 w-3.5 text-emerald-600 mr-1" /> Live Preview
+                    </Button>
                     <Button variant="outline" size="sm" onClick={() => toast.info('Configure homepage hero title, subtitle, CTA buttons, and background banner.')} className="h-8 px-3 text-xs font-semibold text-slate-600 border-slate-200 hover:bg-slate-50">
                         <HelpCircle className="h-3.5 w-3.5 text-slate-400 mr-1" /> How It Works
                     </Button>
@@ -183,10 +246,33 @@ export function HeroSectionContent() {
                 </div>
             </div>
 
-            {/* Compact 3-Column Layout */}
-            <div className="grid grid-cols-1 xl:grid-cols-12 gap-3.5">
-                {/* Column 1: Hero Content, Button 1 & Button 2 (4 Cols) */}
-                <div className="xl:col-span-4 space-y-3">
+            {/* Page Navigation Tabs */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b">
+                {PAGES_CONFIG.map((p) => {
+                    const isActive = p.slug === activePageSlug;
+                    return (
+                        <button
+                            key={p.slug}
+                            type="button"
+                            onClick={() => router.push(`/admin/website-builder/hero-section?page=${p.slug}`)}
+                            className={cn(
+                                'flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-t-lg transition-all border-b-2 whitespace-nowrap cursor-pointer',
+                                isActive
+                                    ? 'bg-primary/10 text-primary border-primary font-extrabold'
+                                    : 'text-muted-foreground border-transparent hover:bg-muted hover:text-foreground'
+                            )}
+                        >
+                            <Monitor className="h-3.5 w-3.5" />
+                            {p.title}
+                        </button>
+                    );
+                })}
+            </div>
+
+            {/* 2-Column Expanded Form Layout (6 + 6 Cols) */}
+            <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
+                {/* Column 1: Hero Content, Button 1 & Button 2 (6 Cols) */}
+                <div className="xl:col-span-6 space-y-4">
                     {/* Hero Content Card */}
                     <Card className="shadow-xs border-slate-200">
                         <CardHeader className="py-2.5 px-3 border-b">
@@ -404,8 +490,8 @@ export function HeroSectionContent() {
                     </Card>
                 </div>
 
-                {/* Column 2: Height, Overlay, Mobile, Layout & Alignment (3.5 Cols) */}
-                <div className="xl:col-span-3 space-y-3">
+                {/* Column 2: Height, Overlay, Mobile, Layout & Alignment (6 Cols) */}
+                <div className="xl:col-span-6 space-y-4">
                     {/* Hero Height Card */}
                     <Card className="shadow-xs border-slate-200">
                         <CardHeader className="py-2 px-3 border-b">
@@ -556,9 +642,9 @@ export function HeroSectionContent() {
                                         type="button"
                                         onClick={() => setContentAlign(opt.value as ContentAlign)}
                                         className={cn(
-                                            'flex flex-col items-center justify-center py-1.5 px-1 rounded border text-[10px] font-bold transition-all',
+                                            'rounded border p-1.5 text-center text-xs font-semibold transition-colors',
                                             contentAlign === opt.value
-                                                ? 'border-blue-600 bg-blue-50/70 text-blue-700 shadow-xs'
+                                                ? 'border-blue-600 bg-blue-50 text-blue-600'
                                                 : 'border-slate-200 text-slate-500 hover:bg-slate-50'
                                         )}
                                     >
@@ -569,157 +655,158 @@ export function HeroSectionContent() {
                         </CardContent>
                     </Card>
                 </div>
+            </div>
 
-                {/* Column 3: Live Preview Card (4.5 Cols) */}
-                <div className="xl:col-span-5 space-y-3">
-                    <Card className="sticky top-4 shadow-sm border-slate-200">
-                        <CardHeader className="py-2 px-3 border-b flex flex-row items-center justify-between">
-                            <div>
-                                <div className="flex items-center gap-1.5">
-                                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                                    <CardTitle className="text-xs font-bold">Live Preview</CardTitle>
-                                </div>
-                                <CardDescription className="text-[10px]">Real-time website hero preview.</CardDescription>
+            {/* Live Preview Modal Dialog */}
+            <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+                <DialogContent className="max-w-4xl border-slate-200">
+                    <DialogHeader>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                                <DialogTitle className="text-sm font-bold text-slate-900">Hero Section — Live Preview</DialogTitle>
                             </div>
-
-                            <div className="flex items-center gap-1 rounded-lg border p-1 bg-muted/40">
+                            <div className="flex items-center gap-1 rounded-lg border p-1 bg-muted/40 mr-6">
                                 <button
                                     type="button"
                                     onClick={() => setPreviewDevice('desktop')}
                                     className={cn(
-                                        'flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-semibold',
+                                        'flex items-center gap-1 rounded px-2.5 py-0.5 text-xs font-semibold',
                                         previewDevice === 'desktop' ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground'
                                     )}
                                 >
-                                    <Monitor className="h-3 w-3" /> Desktop
+                                    <Monitor className="h-3.5 w-3.5" /> Desktop
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setPreviewDevice('mobile')}
                                     className={cn(
-                                        'flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-semibold',
+                                        'flex items-center gap-1 rounded px-2.5 py-0.5 text-xs font-semibold',
                                         previewDevice === 'mobile' ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground'
                                     )}
                                 >
-                                    <Smartphone className="h-3 w-3" /> Mobile
+                                    <Smartphone className="h-3.5 w-3.5" /> Mobile
                                 </button>
                             </div>
-                        </CardHeader>
+                        </div>
+                        <DialogDescription className="text-xs text-slate-500">
+                            Real-time interactive website hero preview.
+                        </DialogDescription>
+                    </DialogHeader>
 
-                        <CardContent className="p-3 bg-slate-100">
-                            <div className={cn(
-                                'mx-auto rounded-xl overflow-hidden shadow-xl transition-all duration-300 border border-slate-800',
-                                previewDevice === 'mobile' ? 'max-w-[320px]' : 'w-full'
-                            )}>
-                                {/* Simulated Website Header Bar */}
-                                <div className="bg-[#0B0D17] px-3 py-1.5 text-[9px] text-white/70 border-b border-white/10 flex items-center justify-between gap-2">
-                                    <div className="flex items-center gap-2.5 truncate">
-                                        <span className="flex items-center gap-1 shrink-0"><Phone className="h-2.5 w-2.5 text-blue-400" /> +91 98765 43210</span>
-                                        {previewDevice === 'desktop' && (
-                                            <span className="flex items-center gap-1 truncate"><Mail className="h-2.5 w-2.5 text-blue-400" /> hello@eventify.com</span>
-                                        )}
-                                    </div>
-                                    <div className="flex items-center gap-1 text-[8px] font-bold text-white/70 shrink-0">
-                                        <span className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-white/90 transition-colors">in</span>
-                                        <span className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-white/90 transition-colors">ig</span>
-                                    </div>
-                                </div>
-
-                                {/* Simulated Nav Bar */}
-                                <div className="bg-white px-3 py-1.5 flex items-center justify-between gap-2 text-xs text-slate-800 font-semibold border-b shadow-2xs">
-                                    <span className="font-bold text-xs tracking-tight text-slate-900 shrink-0 flex items-center gap-1">
-                                        <span className="h-2 w-2 rounded-full bg-blue-600 inline-block" />
-                                        Eventify
-                                    </span>
+                    <div className="p-4 bg-slate-100 rounded-xl overflow-hidden">
+                        <div className={cn(
+                            'mx-auto rounded-xl overflow-hidden shadow-xl transition-all duration-300 border border-slate-800',
+                            previewDevice === 'mobile' ? 'max-w-[340px]' : 'w-full'
+                        )}>
+                            {/* Simulated Website Header Bar */}
+                            <div className="bg-[#0B0D17] px-3 py-1.5 text-[9px] text-white/70 border-b border-white/10 flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2.5 truncate">
+                                    <span className="flex items-center gap-1 shrink-0"><Phone className="h-2.5 w-2.5 text-blue-400" /> +91 98765 43210</span>
                                     {previewDevice === 'desktop' && (
-                                        <div className="flex items-center gap-1.5 text-[9px] text-slate-600 font-medium truncate mx-1">
-                                            <span className="hover:text-blue-600 cursor-pointer">Home</span>
-                                            <span className="hover:text-blue-600 cursor-pointer">About</span>
-                                            <span className="hover:text-blue-600 cursor-pointer">Services</span>
-                                            <span className="hover:text-blue-600 cursor-pointer">Events</span>
-                                            <span className="hover:text-blue-600 cursor-pointer">Contact</span>
-                                        </div>
+                                        <span className="flex items-center gap-1 truncate"><Mail className="h-2.5 w-2.5 text-blue-400" /> hello@eventify.com</span>
                                     )}
-                                    <Button size="sm" className="h-5.5 text-[9px] px-2 bg-blue-600 hover:bg-blue-700 text-white font-bold shrink-0 whitespace-nowrap">
-                                        Book Now
-                                    </Button>
                                 </div>
+                                <div className="flex items-center gap-1 text-[8px] font-bold text-white/70 shrink-0">
+                                    <span className="px-1.5 py-0.5 rounded bg-white/10 text-white/90">in</span>
+                                    <span className="px-1.5 py-0.5 rounded bg-white/10 text-white/90">ig</span>
+                                </div>
+                            </div>
 
-                                {/* Hero Banner Live Container */}
+                            {/* Simulated Nav Bar */}
+                            <div className="bg-white px-3 py-2 flex items-center justify-between gap-2 text-xs text-slate-800 font-semibold border-b shadow-2xs">
+                                <span className="font-bold text-xs tracking-tight text-slate-900 shrink-0 flex items-center gap-1">
+                                    <span className="h-2 w-2 rounded-full bg-blue-600 inline-block" />
+                                    Eventify
+                                </span>
+                                {previewDevice === 'desktop' && (
+                                    <div className="flex items-center gap-2 text-[10px] text-slate-600 font-medium truncate mx-1">
+                                        <span>Home</span>
+                                        <span>About</span>
+                                        <span>Services</span>
+                                        <span>Events</span>
+                                        <span>Contact</span>
+                                    </div>
+                                )}
+                                <Button size="sm" className="h-6 text-[10px] px-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold shrink-0 whitespace-nowrap">
+                                    Book Now
+                                </Button>
+                            </div>
+
+                            {/* Hero Banner Live Container */}
+                            <div className={cn(
+                                'relative flex flex-col justify-center p-6 text-white min-h-[360px]',
+                                heroHeight === 'small' ? 'min-h-[280px]' : heroHeight === 'large' ? 'min-h-[460px]' : 'min-h-[360px]'
+                            )}>
+                                {/* Hero Background Image */}
+                                {heroImage ? (
+                                    <img src={heroImage} alt="Hero Background" className="absolute inset-0 h-full w-full object-cover" />
+                                ) : (
+                                    <div className="absolute inset-0 bg-[#0B0D17]" />
+                                )}
+
+                                {/* Overlay */}
+                                {overlayEnabled && (
+                                    <div
+                                        className="absolute inset-0 transition-opacity"
+                                        style={{ backgroundColor: overlayColor, opacity: overlayOpacity / 100 }}
+                                    />
+                                )}
+
+                                {/* Content Wrapper */}
                                 <div className={cn(
-                                    'relative flex flex-col justify-center p-5 text-white min-h-[340px]',
-                                    heroHeight === 'small' ? 'min-h-[260px]' : heroHeight === 'large' ? 'min-h-[440px]' : 'min-h-[340px]'
+                                    'relative z-10 space-y-3 max-w-xl',
+                                    contentAlign === 'center' || (previewDevice === 'mobile' && centerMobile)
+                                        ? 'mx-auto text-center'
+                                        : contentAlign === 'right'
+                                            ? 'ml-auto text-right'
+                                            : 'text-left'
                                 )}>
-                                    {/* Hero Background Image */}
-                                    {heroImage ? (
-                                        <img src={heroImage} alt="Hero Background" className="absolute inset-0 h-full w-full object-cover" />
-                                    ) : (
-                                        <div className="absolute inset-0 bg-[#0B0D17]" />
+                                    {badgeText && (
+                                        <span className="inline-flex items-center rounded-full bg-blue-600 px-3 py-0.5 text-[10px] font-bold text-white shadow-xs">
+                                            {badgeText}
+                                        </span>
                                     )}
 
-                                    {/* Overlay */}
-                                    {overlayEnabled && (
-                                        <div
-                                            className="absolute inset-0 transition-opacity"
-                                            style={{ backgroundColor: overlayColor, opacity: overlayOpacity / 100 }}
-                                        />
-                                    )}
+                                    <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white leading-tight">
+                                        {title || 'We Create Unforgettable Moments'}
+                                    </h1>
 
-                                    {/* Content Wrapper */}
+                                    <p className="text-xs text-slate-200 leading-relaxed max-w-md">
+                                        {description || 'From elegant weddings to corporate events, we handle every detail with creativity and perfection.'}
+                                    </p>
+
+                                    {/* Action Buttons */}
                                     <div className={cn(
-                                        'relative z-10 space-y-3 max-w-xl',
-                                        contentAlign === 'center' || (previewDevice === 'mobile' && centerMobile)
-                                            ? 'mx-auto text-center'
-                                            : contentAlign === 'right'
-                                                ? 'ml-auto text-right'
-                                                : 'text-left'
+                                        'flex flex-wrap gap-2 pt-1',
+                                        buttonLayout === 'center' || (previewDevice === 'mobile' && centerMobile)
+                                            ? 'justify-center'
+                                            : buttonLayout === 'right'
+                                                ? 'justify-end'
+                                                : buttonLayout === 'space-between'
+                                                    ? 'justify-between'
+                                                    : buttonLayout === 'stack'
+                                                        ? 'flex-col items-stretch'
+                                                        : 'justify-start'
                                     )}>
-                                        {badgeText && (
-                                            <span className="inline-flex items-center rounded-full bg-blue-600 px-2.5 py-0.5 text-[9px] font-bold text-white shadow-xs">
-                                                {badgeText}
-                                            </span>
+                                        {btn1Enabled && (
+                                            <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 h-8">
+                                                {btn1Label}
+                                            </Button>
                                         )}
 
-                                        <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white leading-tight">
-                                            {title || 'We Create Unforgettable Moments'}
-                                        </h1>
-
-                                        <p className="text-[11px] text-slate-200 leading-relaxed max-w-md">
-                                            {description || 'From elegant weddings to corporate events, we handle every detail with creativity and perfection.'}
-                                        </p>
-
-                                        {/* Action Buttons */}
-                                        <div className={cn(
-                                            'flex flex-wrap gap-2 pt-1',
-                                            buttonLayout === 'center' || (previewDevice === 'mobile' && centerMobile)
-                                                ? 'justify-center'
-                                                : buttonLayout === 'right'
-                                                    ? 'justify-end'
-                                                    : buttonLayout === 'space-between'
-                                                        ? 'justify-between'
-                                                        : buttonLayout === 'stack'
-                                                            ? 'flex-col items-stretch'
-                                                            : 'justify-start'
-                                        )}>
-                                            {btn1Enabled && (
-                                                <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 h-8">
-                                                    {btn1Label}
-                                                </Button>
-                                            )}
-
-                                            {btn2Enabled && !(previewDevice === 'mobile' && hideBtn2Mobile) && (
-                                                <Button variant="outline" size="sm" className="border-white/40 text-white hover:bg-white/10 font-bold text-xs px-4 h-8 bg-transparent">
-                                                    {btn2Label}
-                                                </Button>
-                                            )}
-                                        </div>
+                                        {btn2Enabled && !(previewDevice === 'mobile' && hideBtn2Mobile) && (
+                                            <Button variant="outline" size="sm" className="border-white/40 text-white hover:bg-white/10 font-bold text-xs px-4 h-8 bg-transparent">
+                                                {btn2Label}
+                                            </Button>
+                                        )}
                                     </div>
                                 </div>
                             </div>
-                        </CardContent>
-                    </Card>
-                </div>
-            </div>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
 
             {/* Media Crop Dialog */}
             <MediaCropDialog

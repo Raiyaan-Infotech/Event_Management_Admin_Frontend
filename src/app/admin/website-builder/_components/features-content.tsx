@@ -30,11 +30,13 @@ import {
     Pencil,
     Search,
     CheckCircle2,
+    Eye,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -96,6 +98,7 @@ export function FeaturesBuilderContent() {
     const [featureImageUrl, setFeatureImageUrl] = useState('');
 
     const isSaving = saveFeaturesMutation.isPending;
+    const [previewOpen, setPreviewOpen] = useState(false);
 
     // Load database features dynamically when query succeeds
     useEffect(() => {
@@ -219,6 +222,14 @@ export function FeaturesBuilderContent() {
                 </div>
 
                 <div className="flex items-center gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPreviewOpen(true)}
+                        className="h-8 px-3 text-xs font-semibold text-emerald-700 border-emerald-300 hover:bg-emerald-50"
+                    >
+                        <Eye className="h-3.5 w-3.5 text-emerald-600 mr-1" /> Live Preview
+                    </Button>
                     {viewMode === 'form' ? (
                         <>
                             <Button
@@ -402,10 +413,10 @@ export function FeaturesBuilderContent() {
                     </CardContent>
                 </Card>
             ) : (
-                /* PAGE 2: ADD / EDIT FEATURE FORM PAGE (WITH CENTERED HEADERS & LIVE PREVIEW) */
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                    {/* Left Column: 5 Form Section Cards (7 cols) */}
-                    <div className="lg:col-span-7 space-y-6">
+                /* PAGE 2: ADD / EDIT FEATURE FORM PAGE */
+                <div className="space-y-6">
+                    {/* Form Section Cards (12 cols) */}
+                    <div className="space-y-6">
                         {/* Section 1: Basic Information */}
                         <Card className="border-border bg-card shadow-xs">
                             <CardHeader className="py-3.5 px-4 border-b border-border flex flex-row items-center gap-3">
@@ -438,164 +449,131 @@ export function FeaturesBuilderContent() {
                                                 <Icon className="h-5 w-5" />
                                             </button>
                                         ))}
-                                        <div className="col-span-2 flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/40 p-2 text-center">
-                                            <Upload className="h-4 w-4 text-muted-foreground mb-1" />
-                                            <span className="text-[10px] font-bold text-foreground">Upload Custom</span>
-                                            <span className="text-[9px] text-muted-foreground">SVG/PNG Max 2MB</span>
-                                        </div>
                                     </div>
                                 </div>
 
-                                <BuilderCountedInput
-                                    label="Feature Title"
-                                    required
-                                    placeholder="e.g. Agenda & Schedule"
-                                    value={title}
-                                    onChange={setTitle}
-                                    maxLength={50}
-                                    inputClassName="!h-9 text-xs border-border bg-card text-foreground"
-                                />
+                                <div className="space-y-2">
+                                    <Label className="text-xs font-bold text-foreground">
+                                        Feature Title <span className="text-destructive">*</span>
+                                    </Label>
+                                    <Input
+                                        placeholder="e.g. Real-Time Agenda Builder"
+                                        value={title}
+                                        onChange={(e) => setTitle(e.target.value)}
+                                        className="h-9 text-xs border-border bg-card text-foreground"
+                                    />
+                                </div>
 
-                                <BuilderCountedInput
-                                    label="Short Description"
-                                    required
-                                    placeholder="e.g. Manage events and schedules with beautiful timelines."
-                                    value={shortDesc}
-                                    onChange={setShortDesc}
-                                    maxLength={120}
-                                    inputClassName="!h-9 text-xs border-border bg-card text-foreground"
-                                />
+                                <div className="space-y-2">
+                                    <Label className="text-xs font-bold text-foreground">
+                                        Short Description <span className="text-destructive">*</span>
+                                    </Label>
+                                    <Textarea
+                                        placeholder="Briefly explain what this feature does..."
+                                        rows={3}
+                                        value={shortDesc}
+                                        onChange={(e) => setShortDesc(e.target.value)}
+                                        className="text-xs border-border bg-card text-foreground"
+                                    />
+                                </div>
                             </CardContent>
                         </Card>
 
-                        {/* Section 2: Feature Description */}
+                        {/* Section 2: Detailed Content */}
                         <Card className="border-border bg-card shadow-xs">
                             <CardHeader className="py-3.5 px-4 border-b border-border flex flex-row items-center gap-3">
                                 <div className="h-7 w-7 rounded-full bg-emerald-500/20 text-emerald-600 font-extrabold flex items-center justify-center text-xs shrink-0">
                                     2
                                 </div>
                                 <div className="text-left">
-                                    <CardTitle className="text-sm font-bold text-foreground">Feature Description</CardTitle>
-                                    <CardDescription className="text-xs text-muted-foreground">Comprehensive detailed description</CardDescription>
+                                    <CardTitle className="text-sm font-bold text-foreground">Detailed Content</CardTitle>
+                                    <CardDescription className="text-xs text-muted-foreground">Comprehensive overview and feature bullet points</CardDescription>
                                 </div>
                             </CardHeader>
-                            <CardContent className="p-4 space-y-2">
-                                <BuilderCountedTextarea
-                                    label="Detailed Description"
-                                    required
-                                    placeholder="Explain how this feature helps guests or event hosts..."
-                                    value={detailedDesc}
-                                    onChange={setDetailedDesc}
-                                    maxLength={500}
-                                    textareaClassName="min-h-[100px] text-xs border-border bg-card text-foreground"
-                                />
+                            <CardContent className="p-4 space-y-4">
+                                <div className="space-y-2">
+                                    <Label className="text-xs font-bold text-foreground">Detailed Overview</Label>
+                                    <Textarea
+                                        placeholder="Add in-depth details about this feature..."
+                                        rows={4}
+                                        value={detailedDesc}
+                                        onChange={(e) => setDetailedDesc(e.target.value)}
+                                        className="text-xs border-border bg-card text-foreground"
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label className="text-xs font-bold text-foreground">Key Highlights (Bullet Points)</Label>
+                                    <div className="flex gap-2">
+                                        <Input
+                                            placeholder="Add a key highlight point..."
+                                            value={newBulletText}
+                                            onChange={(e) => setNewBulletText(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    handleAddBullet();
+                                                }
+                                            }}
+                                            className="h-9 text-xs border-border bg-card text-foreground"
+                                        />
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            onClick={handleAddBullet}
+                                            className="h-9 px-4 text-xs font-bold bg-primary text-primary-foreground"
+                                        >
+                                            <Plus className="h-4 w-4" /> Add
+                                        </Button>
+                                    </div>
+
+                                    {bullets.length > 0 ? (
+                                        <div className="space-y-2 pt-2">
+                                            {bullets.map((bullet, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    className="flex items-center justify-between p-2.5 rounded-xl border border-border bg-muted/30 text-xs font-semibold text-foreground"
+                                                >
+                                                    <span className="flex items-center gap-2">
+                                                        <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                                                        {bullet}
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleRemoveBullet(idx)}
+                                                        className="text-muted-foreground hover:text-destructive transition-colors p-1"
+                                                    >
+                                                        <X className="h-3.5 w-3.5" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : null}
+                                </div>
                             </CardContent>
                         </Card>
 
-                        {/* Section 3: Bullet Points */}
+                        {/* Section 3 & 4: Display & Navigation */}
                         <Card className="border-border bg-card shadow-xs">
                             <CardHeader className="py-3.5 px-4 border-b border-border flex flex-row items-center gap-3">
                                 <div className="h-7 w-7 rounded-full bg-emerald-500/20 text-emerald-600 font-extrabold flex items-center justify-center text-xs shrink-0">
                                     3
                                 </div>
                                 <div className="text-left">
-                                    <CardTitle className="text-sm font-bold text-foreground">Bullet Points (Key Benefits)</CardTitle>
-                                    <CardDescription className="text-xs text-muted-foreground">Highlight top features or capabilities</CardDescription>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="p-4 space-y-3">
-                                <div className="space-y-2">
-                                    {bullets.map((bullet, idx) => (
-                                        <div
-                                            key={idx}
-                                            className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 p-2 text-xs"
-                                        >
-                                            <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab shrink-0" />
-                                            <span className="flex-1 font-medium text-foreground">{bullet}</span>
-                                            <button
-                                                type="button"
-                                                onClick={() => handleRemoveBullet(idx)}
-                                                className="text-muted-foreground hover:text-destructive p-1 cursor-pointer"
-                                            >
-                                                <X className="h-3.5 w-3.5" />
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <div className="flex gap-2">
-                                    <Input
-                                        placeholder="Add bullet point (e.g. Easy to Update)"
-                                        value={newBulletText}
-                                        onChange={(e) => setNewBulletText(e.target.value)}
-                                        className="h-9 text-xs flex-1 border-border bg-card text-foreground"
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                                e.preventDefault();
-                                                handleAddBullet();
-                                            }
-                                        }}
-                                    />
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={handleAddBullet}
-                                        className="h-9 text-xs font-semibold border-primary/30 text-primary hover:bg-primary/10"
-                                    >
-                                        <Plus className="h-3.5 w-3.5 mr-1" /> Add Bullet Point
-                                    </Button>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Section 4: Display Settings */}
-                        <Card className="border-border bg-card shadow-xs">
-                            <CardHeader className="py-3.5 px-4 border-b border-border flex flex-row items-center gap-3">
-                                <div className="h-7 w-7 rounded-full bg-emerald-500/20 text-emerald-600 font-extrabold flex items-center justify-center text-xs shrink-0">
-                                    4
-                                </div>
-                                <div className="text-left">
-                                    <CardTitle className="text-sm font-bold text-foreground">Display Settings</CardTitle>
-                                    <CardDescription className="text-xs text-muted-foreground">Menu visibility, order, and status</CardDescription>
+                                    <CardTitle className="text-sm font-bold text-foreground">Display & Navigation Settings</CardTitle>
+                                    <CardDescription className="text-xs text-muted-foreground font-medium">Controls visibility and menu order</CardDescription>
                                 </div>
                             </CardHeader>
                             <CardContent className="p-4 space-y-4">
-                                <div className="space-y-2">
-                                    <Label className="text-xs font-bold text-foreground">
-                                        Show in Menu <span className="text-destructive">*</span>
-                                    </Label>
-                                    <div className="flex gap-3">
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowInMenu(true)}
-                                            className={cn(
-                                                'flex-1 rounded-xl border p-2.5 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer',
-                                                showInMenu
-                                                    ? 'border-primary bg-primary/10 text-primary ring-2 ring-primary/20'
-                                                    : 'border-border bg-card hover:bg-accent text-muted-foreground'
-                                            )}
-                                        >
-                                            <span className={cn('h-2.5 w-2.5 rounded-full', showInMenu ? 'bg-primary' : 'bg-muted')} />
-                                            Yes, show in menu
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowInMenu(false)}
-                                            className={cn(
-                                                'flex-1 rounded-xl border p-2.5 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer',
-                                                !showInMenu
-                                                    ? 'border-primary bg-primary/10 text-primary ring-2 ring-primary/20'
-                                                    : 'border-border bg-card hover:bg-accent text-muted-foreground'
-                                            )}
-                                        >
-                                            <span className={cn('h-2.5 w-2.5 rounded-full', !showInMenu ? 'bg-primary' : 'bg-muted')} />
-                                            No, hide from menu
-                                        </button>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="flex items-center justify-between rounded-xl border border-border p-3 bg-muted/20">
+                                        <div>
+                                            <span className="text-xs font-bold text-foreground">Show in Submenu</span>
+                                            <p className="text-[10px] text-muted-foreground">List under Features dropdown</p>
+                                        </div>
+                                        <Switch checked={showInMenu} onCheckedChange={setShowInMenu} />
                                     </div>
-                                </div>
 
-                                <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1">
                                         <Label className="text-xs font-bold text-foreground">
                                             Menu Order <span className="text-destructive">*</span>
@@ -606,7 +584,6 @@ export function FeaturesBuilderContent() {
                                             onChange={(e) => setMenuOrder(e.target.value)}
                                             className="h-9 text-xs border-border bg-card text-foreground"
                                         />
-                                        <span className="text-[10px] text-muted-foreground">Lower numbers show first</span>
                                     </div>
 
                                     <div className="space-y-1">
@@ -634,119 +611,97 @@ export function FeaturesBuilderContent() {
                                 </div>
                             </CardContent>
                         </Card>
-
-                        {/* Section 5: Additional Options */}
-                        <Card className="border-border bg-card shadow-xs">
-                            <CardHeader className="py-3.5 px-4 border-b border-border flex flex-row items-center gap-3">
-                                <div className="h-7 w-7 rounded-full bg-emerald-500/20 text-emerald-600 font-extrabold flex items-center justify-center text-xs shrink-0">
-                                    5
-                                </div>
-                                <div className="text-left">
-                                    <CardTitle className="text-sm font-bold text-foreground">Additional Options (Optional)</CardTitle>
-                                    <CardDescription className="text-xs text-muted-foreground">Feature image or media illustration</CardDescription>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="p-4 space-y-2">
-                                <Label className="text-xs font-bold text-foreground">Feature Image</Label>
-                                <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-muted/20 p-6 text-center hover:bg-muted/40 transition-all cursor-pointer">
-                                    <Upload className="h-6 w-6 text-muted-foreground mb-2" />
-                                    <span className="text-xs font-semibold text-foreground">Click to upload image</span>
-                                    <span className="text-[10px] text-muted-foreground mt-0.5">PNG, JPG or WEBP (Max 2MB) — Recommended size: 600 x 400px</span>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-
-                    {/* Right Column: Live Feature Card Preview (5 cols) */}
-                    <div className="lg:col-span-5 space-y-5 sticky top-6">
-                        <Card className="shadow-xs border-border bg-card overflow-hidden">
-                            <CardHeader className="py-3 px-4 border-b border-border flex flex-row items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <Sparkles className="h-4 w-4 text-amber-500" />
-                                    <CardTitle className="text-xs font-bold text-foreground uppercase tracking-wide">
-                                        Live Feature Card Preview
-                                    </CardTitle>
-                                </div>
-
-                                <div className="flex items-center border border-border rounded-lg p-0.5 bg-card">
-                                    <button
-                                        type="button"
-                                        onClick={() => setPreviewDevice('desktop')}
-                                        className={cn(
-                                            'p-1 rounded-md text-xs transition-colors cursor-pointer',
-                                            previewDevice === 'desktop'
-                                                ? 'bg-primary text-primary-foreground'
-                                                : 'text-muted-foreground hover:text-foreground'
-                                        )}
-                                        title="Desktop View"
-                                    >
-                                        <Monitor className="h-3.5 w-3.5" />
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setPreviewDevice('mobile')}
-                                        className={cn(
-                                            'p-1 rounded-md text-xs transition-colors cursor-pointer',
-                                            previewDevice === 'mobile'
-                                                ? 'bg-primary text-primary-foreground'
-                                                : 'text-muted-foreground hover:text-foreground'
-                                        )}
-                                        title="Mobile View"
-                                    >
-                                        <Smartphone className="h-3.5 w-3.5" />
-                                    </button>
-                                </div>
-                            </CardHeader>
-
-                            <CardContent className="p-5 flex justify-center bg-muted/10">
-                                <div
-                                    className={cn(
-                                        'transition-all duration-300 w-full',
-                                        previewDevice === 'mobile' ? 'max-w-[320px]' : 'max-w-full'
-                                    )}
-                                >
-                                    <div className="rounded-2xl border border-border bg-card p-5 shadow-lg space-y-4">
-                                        <div className="flex items-center justify-between">
-                                            <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-primary to-purple-600 text-white flex items-center justify-center shadow-md">
-                                                <CurrentIconComponent className="h-6 w-6 text-white" />
-                                            </div>
-                                            <Badge variant="outline" className="text-[10px] font-bold text-primary border-primary/30">
-                                                {status}
-                                            </Badge>
-                                        </div>
-
-                                        <div>
-                                            <h3 className="text-base font-extrabold text-foreground tracking-tight">
-                                                {title || 'Feature Title'}
-                                            </h3>
-                                            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                                                {shortDesc || 'Feature short description explaining key benefits for event organizers.'}
-                                            </p>
-                                        </div>
-
-                                        {detailedDesc ? (
-                                            <p className="text-[11px] text-muted-foreground/90 bg-muted/40 p-2.5 rounded-xl border border-border">
-                                                {detailedDesc}
-                                            </p>
-                                        ) : null}
-
-                                        {bullets.length > 0 ? (
-                                            <ul className="space-y-1.5 pt-1">
-                                                {bullets.map((bullet, idx) => (
-                                                    <li key={idx} className="flex items-center gap-2 text-xs font-semibold text-foreground">
-                                                        <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                                                        <span>{bullet}</span>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        ) : null}
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
                     </div>
                 </div>
             )}
+
+            {/* Live Feature Card Preview Modal Dialog */}
+            <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+                <DialogContent className="max-w-xl border-border bg-card">
+                    <DialogHeader>
+                        <div className="flex items-center gap-2">
+                            <Sparkles className="h-4 w-4 text-amber-500" />
+                            <DialogTitle className="text-sm font-bold text-foreground">Live Feature Card Preview</DialogTitle>
+                        </div>
+                        <DialogDescription className="text-xs text-muted-foreground">
+                            This is how the feature card will look to visitors on your site.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="p-4 flex flex-col items-center justify-center bg-muted/10 rounded-xl">
+                        <div className="flex items-center border border-border rounded-lg p-0.5 bg-card mb-4 self-end">
+                            <button
+                                type="button"
+                                onClick={() => setPreviewDevice('desktop')}
+                                className={cn(
+                                    'p-1 rounded-md text-xs transition-colors cursor-pointer',
+                                    previewDevice === 'desktop'
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'text-muted-foreground hover:text-foreground'
+                                )}
+                            >
+                                <Monitor className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setPreviewDevice('mobile')}
+                                className={cn(
+                                    'p-1 rounded-md text-xs transition-colors cursor-pointer',
+                                    previewDevice === 'mobile'
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'text-muted-foreground hover:text-foreground'
+                                )}
+                            >
+                                <Smartphone className="h-3.5 w-3.5" />
+                            </button>
+                        </div>
+
+                        <div
+                            className={cn(
+                                'transition-all duration-300 w-full',
+                                previewDevice === 'mobile' ? 'max-w-[320px]' : 'max-w-full'
+                            )}
+                        >
+                            <div className="rounded-2xl border border-border bg-card p-5 shadow-lg space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-primary to-purple-600 text-white flex items-center justify-center shadow-md">
+                                        <CurrentIconComponent className="h-6 w-6 text-white" />
+                                    </div>
+                                    <Badge variant="outline" className="text-[10px] font-bold text-primary border-primary/30">
+                                        {status}
+                                    </Badge>
+                                </div>
+
+                                <div>
+                                    <h3 className="text-base font-extrabold text-foreground tracking-tight">
+                                        {title || 'Feature Title'}
+                                    </h3>
+                                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                                        {shortDesc || 'Feature short description explaining key benefits for event organizers.'}
+                                    </p>
+                                </div>
+
+                                {detailedDesc ? (
+                                    <p className="text-[11px] text-muted-foreground/90 bg-muted/40 p-2.5 rounded-xl border border-border">
+                                        {detailedDesc}
+                                    </p>
+                                ) : null}
+
+                                {bullets.length > 0 ? (
+                                    <ul className="space-y-1.5 pt-1">
+                                        {bullets.map((bullet, idx) => (
+                                            <li key={idx} className="flex items-center gap-2 text-xs font-semibold text-foreground">
+                                                <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                                                <span>{bullet}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                ) : null}
+                            </div>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

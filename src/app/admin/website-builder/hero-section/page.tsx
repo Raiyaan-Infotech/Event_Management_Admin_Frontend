@@ -5,6 +5,12 @@ export const metadata = {
     description: "Configure main hero banner title, eyebrow, description, CTA buttons, and background overlay",
 };
 
-export default function HeroSectionPage() {
-    return <HeroSectionContent />;
+interface PageProps {
+    searchParams?: Promise<{ page?: string }>;
+}
+
+export default async function HeroSectionPage({ searchParams }: PageProps) {
+    const resolvedParams = searchParams ? await searchParams : {};
+    const pageSlug = resolvedParams.page || 'home';
+    return <HeroSectionContent pageSlug={pageSlug} />;
 }

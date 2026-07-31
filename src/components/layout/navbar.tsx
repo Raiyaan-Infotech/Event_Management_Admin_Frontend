@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, LogOut, Settings, User, Search, Clock, Mail, CheckCheck } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { Bell, LogOut, Settings, User, Search, Clock, Mail, CheckCheck, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -22,6 +23,7 @@ import { usePendingCount, useApprovals } from "@/hooks/use-approvals";
 import { useMailNotifications, useMarkNotificationsRead } from "@/hooks/use-admin-mail";
 
 export default function AdminNavbar() {
+  const pathname = usePathname();
   const { user } = useAuth();
   const logoutMutation = useLogout();
   const { data: pendingCount = 0 } = usePendingCount();
@@ -30,6 +32,8 @@ export default function AdminNavbar() {
   const markNotifRead = useMarkNotificationsRead();
   const mailUnread = notifData?.unread_count ?? 0;
   const mailNotifs = notifData?.notifications ?? [];
+
+  const isWebsiteBuilder = pathname?.includes('website-builder') || pathname?.includes('website-preview');
 
   const handleLogout = () => {
     logoutMutation.mutate();
@@ -71,6 +75,18 @@ export default function AdminNavbar() {
 
         {/* Right Actions */}
         <div className="flex items-center gap-2">
+          {/* Website Preview Button (Prominent in header right corner) */}
+          <Button
+            variant="default"
+            size="sm"
+            asChild
+            className="h-8 px-3 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm gap-1.5"
+          >
+            <Link href="/website-preview" target="_blank" rel="noopener noreferrer">
+              <ExternalLink className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Preview Website</span>
+            </Link>
+          </Button>
             {/* Mail Notifications Bell */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

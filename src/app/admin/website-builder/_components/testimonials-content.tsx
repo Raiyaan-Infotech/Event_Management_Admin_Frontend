@@ -15,10 +15,12 @@ import {
     Star,
     Upload,
     Image as ImageIcon,
+    Eye,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import { BuilderCountedInput, BuilderCountedTextarea } from './builder-field';
 import { cn } from '@/lib/utils';
@@ -99,6 +101,7 @@ export function TestimonialsContent() {
     const [editingId, setEditingId] = useState<string>(initialTestimonials[0].id);
     const [activePreviewIndex, setActivePreviewIndex] = useState(0);
     const [isSaving, setIsSaving] = useState(false);
+    const [previewOpen, setPreviewOpen] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -175,6 +178,14 @@ export function TestimonialsContent() {
                 </div>
 
                 <div className="flex items-center gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPreviewOpen(true)}
+                        className="h-8 px-3 text-xs font-semibold text-emerald-700 border-emerald-300 hover:bg-emerald-50"
+                    >
+                        <Eye className="h-3.5 w-3.5 text-emerald-600 mr-1" /> Live Preview
+                    </Button>
                     <Button variant="outline" size="sm" className="h-8 px-3 text-xs font-semibold text-slate-600 border-slate-200 hover:bg-slate-50">
                         <HelpCircle className="h-3.5 w-3.5 text-slate-400 mr-1" /> How It Works
                     </Button>
@@ -193,9 +204,9 @@ export function TestimonialsContent() {
             </div>
 
             {/* 2-Column Main Workspace */}
-            <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
-                {/* Left Column: Form Controls (4/12 width) */}
-                <div className="space-y-4 xl:col-span-4">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
+                {/* Left Column: Form Controls (5/12 width) */}
+                <div className="space-y-4 md:col-span-5">
                     <Card className="shadow-xs border-slate-200">
                         <CardHeader className="py-3 px-4 border-b bg-slate-50/50">
                             <CardTitle className="text-xs font-bold text-slate-800 uppercase tracking-wide">
@@ -217,13 +228,13 @@ export function TestimonialsContent() {
                                 inputClassName="!h-9 text-xs"
                             />
 
-                            {/* Customer Photo */}
+                            {/* Customer Photo Upload */}
                             <div className="space-y-1.5">
                                 <label className="text-[10px] font-black uppercase tracking-wide text-slate-600">
                                     Customer Photo
                                 </label>
                                 <div className="flex items-center gap-3">
-                                    <div className="relative h-24 w-24 rounded-2xl overflow-hidden border border-slate-200 bg-slate-900 shrink-0">
+                                    <div className="relative h-20 w-20 rounded-2xl overflow-hidden border border-slate-200 bg-slate-900 shrink-0">
                                         <img
                                             src={activeItem.photoUrl}
                                             alt={activeItem.customerName}
@@ -231,7 +242,6 @@ export function TestimonialsContent() {
                                         />
                                     </div>
 
-                                    {/* Upload Dropzone */}
                                     <input
                                         type="file"
                                         ref={fileInputRef}
@@ -264,259 +274,110 @@ export function TestimonialsContent() {
                                 inputClassName="!h-9 text-xs"
                             />
 
-                            {/* Feedback Textarea */}
+                            {/* Feedback Text */}
                             <BuilderCountedTextarea
-                                label="Feedback"
+                                label="Customer Feedback"
+                                required
                                 value={activeItem.feedback}
                                 onChange={(val) => updateActiveItem({ feedback: val })}
-                                maxLength={1000}
-                                textareaClassName="min-h-[100px] text-xs"
+                                maxLength={500}
+                                rows={3}
                             />
 
-                            {/* Show Rating Toggle */}
-                            <div className="rounded-lg border border-slate-200 p-2.5 flex items-center justify-between bg-card">
-                                <div className="space-y-0.5">
-                                    <label className="text-xs font-bold text-slate-800">Show Rating</label>
-                                    <p className="text-[10px] text-slate-500">Display star rating for this testimonial.</p>
-                                </div>
-                                <Switch
-                                    checked={activeItem.showRating}
-                                    onCheckedChange={(val) => updateActiveItem({ showRating: val })}
-                                />
-                            </div>
-
-                            {/* Rating Stars Selector */}
-                            {activeItem.showRating && (
-                                <div className="space-y-1">
-                                    <div className="flex items-center justify-between">
-                                        <label className="text-[10px] font-black uppercase tracking-wide text-slate-600">
-                                            Rating
-                                        </label>
-                                        <span className="text-xs font-bold text-amber-500">{activeItem.rating}/5</span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5 pt-0.5">
-                                        {[1, 2, 3, 4, 5].map((star) => (
-                                            <button
-                                                key={star}
-                                                type="button"
-                                                onClick={() => updateActiveItem({ rating: star })}
-                                                className="p-1 hover:scale-110 transition-transform focus:outline-none"
-                                            >
-                                                <Star
-                                                    className={cn(
-                                                        'h-5 w-5',
-                                                        star <= activeItem.rating
-                                                            ? 'fill-amber-400 text-amber-400'
-                                                            : 'text-slate-300'
-                                                    )}
-                                                />
-                                            </button>
-                                        ))}
+                            {/* Rating Stars */}
+                            <div className="space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-[10px] font-black uppercase tracking-wide text-slate-600">
+                                        Rating ({activeItem.rating} Stars)
+                                    </label>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[11px] text-slate-500 font-medium">Display Rating</span>
+                                        <Switch
+                                            checked={activeItem.showRating}
+                                            onCheckedChange={(val) => updateActiveItem({ showRating: val })}
+                                        />
                                     </div>
                                 </div>
-                            )}
-
-                            {/* Show/Hide Testimonial Status */}
-                            <div className="rounded-lg border border-slate-200 p-2.5 flex items-center justify-between bg-card">
-                                <div className="space-y-0.5">
-                                    <label className="text-xs font-bold text-slate-800">Show/Hide Testimonial</label>
-                                    <p className="text-[10px] text-slate-500">
-                                        Choose whether to show this testimonial on the website.
-                                    </p>
+                                <div className="flex items-center gap-1 p-2 border border-slate-200 rounded-lg bg-white">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                        <button
+                                            key={star}
+                                            type="button"
+                                            onClick={() => updateActiveItem({ rating: star })}
+                                            className="p-1 hover:scale-110 transition-transform"
+                                        >
+                                            <Star
+                                                className={cn(
+                                                    'h-5 w-5',
+                                                    star <= activeItem.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-200'
+                                                )}
+                                            />
+                                        </button>
+                                    ))}
                                 </div>
-                                <Switch
-                                    checked={activeItem.status}
-                                    onCheckedChange={(val) => updateActiveItem({ status: val })}
-                                />
-                            </div>
-
-                            {/* Form Action Buttons */}
-                            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setEditingId(initialTestimonials[0].id)}
-                                    className="h-9 w-full text-xs font-bold border-slate-200 text-slate-700 bg-white hover:bg-slate-50 rounded-lg shadow-xs"
-                                >
-                                    Cancel
-                                </Button>
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    onClick={handleSave}
-                                    className="h-9 w-full text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-xs"
-                                >
-                                    Update Testimonial
-                                </Button>
                             </div>
                         </CardContent>
                     </Card>
                 </div>
 
-                {/* Right Column: Preview & Table (8/12 width) */}
-                <div className="space-y-6 xl:col-span-8">
-                    {/* Live Preview Card */}
+                {/* Right Column: Added Testimonials Table (7/12 width) */}
+                <div className="space-y-4 md:col-span-7">
                     <Card className="shadow-xs border-slate-200">
-                        <CardHeader className="py-3 px-4 border-b bg-slate-50/50">
-                            <div className="flex items-center gap-2">
-                                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                                <div>
-                                    <CardTitle className="text-xs font-bold text-slate-900">Live Preview</CardTitle>
-                                    <CardDescription className="text-[11px] text-slate-500">
-                                        This is how testimonials will appear on the website.
-                                    </CardDescription>
-                                </div>
-                            </div>
-                        </CardHeader>
-
-                        <CardContent className="p-6 bg-gradient-to-br from-slate-50 via-blue-50/20 to-purple-50/20 flex flex-col items-center justify-center relative min-h-[300px]">
-                            {/* Top Badge */}
-                            <span className="px-3 py-1 rounded-md bg-blue-600 text-white font-bold text-[11px] mb-3 shadow-xs">
-                                Testimonials
-                            </span>
-                            <h2 className="text-lg font-black text-slate-900 mb-6">What Our Clients Say</h2>
-
-                            {/* Carousel Card */}
-                            {previewItem ? (
-                                <div className="w-full max-w-lg bg-white rounded-2xl p-6 shadow-md border border-slate-100 relative flex flex-col items-center text-center">
-                                    <Quote className="h-8 w-8 text-blue-600 fill-blue-600 mb-3 opacity-90" />
-
-                                    <div className="h-14 w-14 rounded-full overflow-hidden border-2 border-blue-100 shadow-xs mb-2">
-                                        <img
-                                            src={previewItem.photoUrl}
-                                            alt={previewItem.customerName}
-                                            className="h-full w-full object-cover"
-                                        />
-                                    </div>
-
-                                    <h3 className="font-bold text-sm text-slate-900">{previewItem.customerName}</h3>
-                                    <p className="text-xs font-semibold text-blue-600 mb-2">{previewItem.eventName}</p>
-
-                                    {previewItem.showRating && (
-                                        <div className="flex items-center gap-1 mb-3">
-                                            {[1, 2, 3, 4, 5].map((s) => (
-                                                <Star
-                                                    key={s}
-                                                    className={cn(
-                                                        'h-4 w-4',
-                                                        s <= previewItem.rating
-                                                            ? 'fill-amber-400 text-amber-400'
-                                                            : 'text-slate-200'
-                                                    )}
-                                                />
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    <p className="text-xs text-slate-600 leading-relaxed max-w-md italic">
-                                        "{previewItem.feedback}"
-                                    </p>
-                                </div>
-                            ) : (
-                                <p className="text-xs text-slate-400 font-medium">No active testimonials to preview.</p>
-                            )}
-
-                            {/* Navigation Arrows */}
-                            {visibleTestimonials.length > 1 && (
-                                <>
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            setActivePreviewIndex(
-                                                (activePreviewIndex - 1 + visibleTestimonials.length) %
-                                                    visibleTestimonials.length
-                                            )
-                                        }
-                                        className="absolute left-3 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-colors"
-                                    >
-                                        <ChevronLeft className="h-4 w-4" />
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            setActivePreviewIndex(
-                                                (activePreviewIndex + 1) % visibleTestimonials.length
-                                            )
-                                        }
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-colors"
-                                    >
-                                        <ChevronRight className="h-4 w-4" />
-                                    </button>
-                                </>
-                            )}
-                        </CardContent>
-                    </Card>
-
-                    {/* Testimonial Management Table Card */}
-                    <Card className="shadow-xs border-slate-200">
-                        <CardHeader className="py-3 px-4 border-b flex flex-row items-center justify-between space-y-0 bg-slate-50/50">
+                        <CardHeader className="py-3 px-4 border-b bg-slate-50/50 flex flex-row items-center justify-between">
                             <div>
-                                <CardTitle className="text-xs font-bold text-slate-900 uppercase tracking-wide">
-                                    Testimonial Management
+                                <CardTitle className="text-xs font-bold text-slate-800 uppercase tracking-wide">
+                                    Testimonials List ({testimonials.length})
                                 </CardTitle>
-                                <CardDescription className="text-[11px] text-slate-500">
-                                    Add, edit, or remove testimonials.
-                                </CardDescription>
                             </div>
                             <Button
+                                type="button"
                                 size="sm"
                                 onClick={handleAddTestimonial}
-                                className="h-8 text-xs gap-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+                                className="h-7 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-xs gap-1"
                             >
-                                <Plus className="h-3.5 w-3.5" /> Add New Testimonial
+                                <Plus className="h-3.5 w-3.5" /> Add New
                             </Button>
                         </CardHeader>
 
                         <CardContent className="p-0">
                             <div className="overflow-x-auto">
-                                <table className="w-full text-xs text-left">
-                                    <thead className="bg-slate-50 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b">
+                                <table className="w-full text-left text-xs">
+                                    <thead className="bg-slate-50 border-b text-[10px] font-black uppercase text-slate-500">
                                         <tr>
-                                            <th className="py-2.5 px-3 w-10 text-center">#</th>
-                                            <th className="py-2.5 px-3 w-14">Photo</th>
-                                            <th className="py-2.5 px-3">Name</th>
-                                            <th className="py-2.5 px-3">Event Name</th>
+                                            <th className="py-2.5 px-3">Customer</th>
+                                            <th className="py-2.5 px-3">Event</th>
                                             <th className="py-2.5 px-3 text-center">Rating</th>
                                             <th className="py-2.5 px-3 text-center">Status</th>
                                             <th className="py-2.5 px-3 text-right">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
-                                        {testimonials.map((t, idx) => (
+                                        {testimonials.map((t) => (
                                             <tr
                                                 key={t.id}
                                                 className={cn(
-                                                    'hover:bg-slate-50/60 transition-colors',
-                                                    editingId === t.id && 'bg-blue-50/30'
+                                                    'hover:bg-slate-50/80 transition-colors',
+                                                    editingId === t.id && 'bg-blue-50/40 font-medium'
                                                 )}
                                             >
-                                                <td className="py-3 px-3 text-center text-slate-400 font-mono">
-                                                    <div className="flex items-center justify-center gap-1">
-                                                        <GripVertical className="h-3.5 w-3.5 text-slate-300 cursor-grab" />
-                                                        <span>{idx + 1}</span>
-                                                    </div>
-                                                </td>
                                                 <td className="py-3 px-3">
-                                                    <div className="h-8 w-8 rounded-full overflow-hidden border border-slate-200">
-                                                        <img src={t.photoUrl} alt={t.customerName} className="h-full w-full object-cover" />
+                                                    <div className="flex items-center gap-2.5">
+                                                        <div className="h-7 w-7 rounded-full overflow-hidden border shrink-0">
+                                                            <img src={t.photoUrl} alt={t.customerName} className="h-full w-full object-cover" />
+                                                        </div>
+                                                        <span className="font-bold text-slate-800 truncate max-w-[120px]">{t.customerName}</span>
                                                     </div>
                                                 </td>
-                                                <td className="py-3 px-3 font-semibold text-slate-900">
-                                                    {t.customerName}
-                                                </td>
-                                                <td className="py-3 px-3 text-slate-600">
-                                                    {t.eventName}
-                                                </td>
+                                                <td className="py-3 px-3 text-slate-600 truncate max-w-[110px]">{t.eventName}</td>
                                                 <td className="py-3 px-3 text-center">
                                                     {t.showRating ? (
-                                                        <div className="flex items-center justify-center gap-0.5 text-amber-400">
+                                                        <div className="flex items-center justify-center gap-0.5">
                                                             {[1, 2, 3, 4, 5].map((s) => (
                                                                 <Star
                                                                     key={s}
                                                                     className={cn(
                                                                         'h-3 w-3',
-                                                                        s <= t.rating ? 'fill-amber-400' : 'text-slate-200'
+                                                                        s <= t.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-200'
                                                                     )}
                                                                 />
                                                             ))}
@@ -526,41 +387,34 @@ export function TestimonialsContent() {
                                                     )}
                                                 </td>
                                                 <td className="py-3 px-3 text-center">
-                                                    <div className="flex items-center justify-center">
-                                                        <Switch
-                                                            checked={t.status}
-                                                            onCheckedChange={(val) => {
-                                                                setTestimonials(
-                                                                    testimonials.map((item) =>
-                                                                        item.id === t.id ? { ...item, status: val } : item
-                                                                    )
-                                                                );
-                                                            }}
-                                                        />
-                                                    </div>
+                                                    <Switch
+                                                        checked={t.status}
+                                                        onCheckedChange={(val) => {
+                                                            setTestimonials(
+                                                                testimonials.map((item) =>
+                                                                    item.id === t.id ? { ...item, status: val } : item
+                                                                )
+                                                            );
+                                                        }}
+                                                    />
                                                 </td>
                                                 <td className="py-3 px-3 text-right">
-                                                    <div className="flex items-center justify-end gap-1.5">
+                                                    <div className="flex items-center justify-end gap-1">
                                                         <Button
                                                             type="button"
-                                                            variant="outline"
+                                                            variant="ghost"
                                                             size="icon"
                                                             onClick={() => setEditingId(t.id)}
-                                                            className={cn(
-                                                                'h-8 w-8 rounded-lg p-0 transition-colors',
-                                                                editingId === t.id
-                                                                    ? 'border-blue-600 bg-blue-50 text-blue-600 shadow-xs'
-                                                                    : 'border-slate-200 text-slate-500 hover:border-blue-600 hover:text-blue-600 hover:bg-blue-50/50'
-                                                            )}
+                                                            className="h-7 w-7 text-slate-500 hover:text-blue-600 hover:bg-blue-50"
                                                         >
                                                             <Pencil className="h-3.5 w-3.5" />
                                                         </Button>
                                                         <Button
                                                             type="button"
-                                                            variant="outline"
+                                                            variant="ghost"
                                                             size="icon"
                                                             onClick={() => handleDeleteTestimonial(t)}
-                                                            className="h-8 w-8 rounded-lg p-0 text-red-500 border-red-200 hover:bg-red-50 hover:border-red-300"
+                                                            className="h-7 w-7 text-slate-500 hover:text-rose-600 hover:bg-rose-50"
                                                         >
                                                             <Trash2 className="h-3.5 w-3.5" />
                                                         </Button>
@@ -575,6 +429,98 @@ export function TestimonialsContent() {
                     </Card>
                 </div>
             </div>
+
+            {/* Live Preview Modal Dialog */}
+            <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+                <DialogContent className="max-w-3xl border-slate-200">
+                    <DialogHeader>
+                        <div className="flex items-center gap-2">
+                            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                            <DialogTitle className="text-sm font-bold text-slate-900">Testimonials — Live Preview</DialogTitle>
+                        </div>
+                        <DialogDescription className="text-xs text-slate-500">
+                            This is how testimonials will appear on the live website.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="p-6 bg-gradient-to-br from-slate-50 via-blue-50/20 to-purple-50/20 flex flex-col items-center justify-center relative min-h-[300px] rounded-xl border border-slate-100">
+                        {/* Top Badge */}
+                        <span className="px-3 py-1 rounded-md bg-blue-600 text-white font-bold text-[11px] mb-3 shadow-xs">
+                            Testimonials
+                        </span>
+                        <h2 className="text-lg font-black text-slate-900 mb-6">What Our Clients Say</h2>
+
+                        {/* Carousel Card */}
+                        {previewItem ? (
+                            <div className="w-full max-w-lg bg-white rounded-2xl p-6 shadow-md border border-slate-100 relative flex flex-col items-center text-center">
+                                <Quote className="h-8 w-8 text-blue-600 fill-blue-600 mb-3 opacity-90" />
+
+                                <div className="h-14 w-14 rounded-full overflow-hidden border-2 border-blue-100 shadow-xs mb-2">
+                                    <img
+                                        src={previewItem.photoUrl}
+                                        alt={previewItem.customerName}
+                                        className="h-full w-full object-cover"
+                                    />
+                                </div>
+
+                                <h3 className="font-bold text-sm text-slate-900">{previewItem.customerName}</h3>
+                                <p className="text-xs font-semibold text-blue-600 mb-2">{previewItem.eventName}</p>
+
+                                {previewItem.showRating && (
+                                    <div className="flex items-center gap-1 mb-3">
+                                        {[1, 2, 3, 4, 5].map((s) => (
+                                            <Star
+                                                key={s}
+                                                className={cn(
+                                                    'h-4 w-4',
+                                                    s <= previewItem.rating
+                                                        ? 'fill-amber-400 text-amber-400'
+                                                        : 'text-slate-200'
+                                                )}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+
+                                <p className="text-xs text-slate-600 leading-relaxed max-w-md italic">
+                                    "{previewItem.feedback}"
+                                </p>
+                            </div>
+                        ) : (
+                            <p className="text-xs text-slate-400 font-medium">No active testimonials to preview.</p>
+                        )}
+
+                        {/* Navigation Arrows */}
+                        {visibleTestimonials.length > 1 && (
+                            <>
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setActivePreviewIndex(
+                                            (activePreviewIndex - 1 + visibleTestimonials.length) %
+                                                visibleTestimonials.length
+                                        )
+                                    }
+                                    className="absolute left-3 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-colors"
+                                >
+                                    <ChevronLeft className="h-4 w-4" />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setActivePreviewIndex(
+                                            (activePreviewIndex + 1) % visibleTestimonials.length
+                                        )
+                                    }
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-colors"
+                                >
+                                    <ChevronRight className="h-4 w-4" />
+                                </button>
+                            </>
+                        )}
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

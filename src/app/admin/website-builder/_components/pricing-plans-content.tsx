@@ -32,11 +32,13 @@ import {
     Pencil,
     ExternalLink,
     Info,
+    Eye,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -44,7 +46,6 @@ import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePricingPlansData, useSavePricingPlans, type PricingPlan } from '@/hooks/usePricingPlans';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { BuilderCountedInput, BuilderCountedTextarea } from './builder-field';
 import { cn } from '@/lib/utils';
 
@@ -276,6 +277,7 @@ export function PricingPlansBuilderContent() {
     const [previewDevice, setPreviewDevice] = useState<PreviewDevice>('desktop');
     const savePlansMutation = useSavePricingPlans();
     const isSaving = savePlansMutation.isPending;
+    const [previewOpen, setPreviewOpen] = useState(false);
 
     useEffect(() => {
         if (dbPlans && dbPlans.length > 0) {
@@ -651,6 +653,14 @@ export function PricingPlansBuilderContent() {
                 </div>
 
                 <div className="flex items-center gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPreviewOpen(true)}
+                        className="h-9 px-3 text-xs font-semibold text-emerald-700 border-emerald-300 hover:bg-emerald-50 gap-1.5"
+                    >
+                        <Eye className="h-3.5 w-3.5 text-emerald-600" /> Live Preview
+                    </Button>
                     <Button
                         variant="outline"
                         size="sm"
@@ -1762,6 +1772,57 @@ export function PricingPlansBuilderContent() {
                             Cancel
                         </Button>
                     </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Live Pricing Preview Modal Dialog */}
+            <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+                <DialogContent className="max-w-4xl border-border bg-card">
+                    <DialogHeader>
+                        <div className="flex items-center gap-2">
+                            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                            <DialogTitle className="text-sm font-bold text-foreground">Pricing Plans — Live Preview</DialogTitle>
+                        </div>
+                        <DialogDescription className="text-xs text-muted-foreground">
+                            This is how your plans and pricing comparison matrix appear to visitors.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="py-2 max-h-[70vh] overflow-y-auto space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {plans.slice(0, 3).map((plan) => (
+                                <Card key={plan.id} className={cn('relative border-2', plan.badgeText ? 'border-primary shadow-lg' : 'border-border')}>
+                                    {plan.badgeText ? (
+                                        <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                                            {renderBadgePreview(plan.badgeText, plan.badgeStyle || 'Filled', plan.badgeColor || '#7C3AED')}
+                                        </div>
+                                    ) : null}
+                                    <CardHeader className="text-center pb-2 pt-6">
+                                        <div className="mx-auto mb-2">{renderPlanIcon(plan.icon)}</div>
+                                        <CardTitle className="text-base font-extrabold">{plan.name}</CardTitle>
+                                        <CardDescription className="text-xs">{plan.description}</CardDescription>
+                                        <div className="pt-2">
+                                            <span className="text-2xl font-black">{plan.currency}{plan.price}</span>
+                                            <span className="text-xs text-muted-foreground">/{plan.billingCycle}</span>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="space-y-3 pt-2 text-xs">
+                                        <Button className="w-full h-8 text-xs font-bold bg-primary text-primary-foreground">
+                                            {plan.ctaText || 'Get Started'}
+                                        </Button>
+                                        <div className="space-y-1.5 pt-2">
+                                            {plan.features.slice(0, 5).map((f) => (
+                                                <div key={f.id} className="flex items-center gap-2 text-[11px]">
+                                                    <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                                                    <span>{f.text} ({f.value})</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    </div>
                 </DialogContent>
             </Dialog>
         </div>
