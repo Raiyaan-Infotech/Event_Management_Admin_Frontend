@@ -63,7 +63,7 @@ export function HighlightsSection({ pageSlug = 'home', instance = 1, data, theme
         <section className="w-full bg-white py-12 border-b">
             <div className="mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-8">
                 <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-${Math.min(config.items_per_row || 6, 6)} gap-6 text-center`}>
-                    {items.map((item, idx) => {
+                    {items.map((item: any, idx: number) => {
                         const IconComp = ICON_MAP[item.icon] || Sparkles;
                         return (
                             <div key={item.id || idx} className="flex flex-col items-center space-y-2 p-2">

@@ -57,6 +57,7 @@ import { LogoWallSection } from './sections/logo-wall-section';
 import { ContactSection } from './sections/contact-section';
 import { FooterSection } from './sections/footer-section';
 import { FeaturesSection } from './sections/features-section';
+import { TemplatesSection } from './sections/templates-section';
 import { HowItWorksSection } from './sections/how-it-works-section';
 import { PricingSection } from './sections/pricing-section';
 import { FaqsSection } from './sections/faqs-section';
@@ -67,6 +68,7 @@ import {
   ContactSignupDemoSection,
   SignupDemoSection,
   ChatSignupDemoSection,
+  DynamicLoginDemoSection,
 } from './sections/login-demo-section';
 
 export function CompanyWebsitePreview() {
@@ -187,32 +189,31 @@ export function CompanyWebsitePreview() {
   }));
 
   // Pricing mapping
-  // Replace the existing "Pricing mapping" block in company-website-preview.tsx with this.
-const pricingPlans = (pricingPlansRaw as AnyRecord[]).map((p) => {
-  let bulletPoints: string[] = [];
-  if (p.features_json) {
-    try {
-      bulletPoints = typeof p.features_json === 'string' ? JSON.parse(p.features_json) : p.features_json;
-    } catch {
-      bulletPoints = [];
+  const pricingPlans = (pricingPlansRaw as AnyRecord[]).map((p) => {
+    let bulletPoints: string[] = [];
+    if (p.features_json) {
+      try {
+        bulletPoints = typeof p.features_json === 'string' ? JSON.parse(p.features_json) : p.features_json;
+      } catch {
+        bulletPoints = [];
+      }
     }
-  }
 
-  return {
-    id: Number(p.id),
-    planName: String(p.plan_name || ''),
-    subtitle: String(p.subtitle || ''),
-    targetType: p.target_type ? String(p.target_type) : undefined,
-    currencySymbol: String(p.currency || '₹'),
-    priceMonthly: Number(p.price_monthly || 0),
-    priceYearly: Number(p.price_yearly || 0),
-    periodLabel: String(p.period_label || 'per event'),
-    badgeText: p.badge_text ? String(p.badge_text) : undefined,
-    badgeStyle: p.badge_style ? String(p.badge_style) : undefined,
-    isPopular: Boolean(p.is_popular),
-    bulletPoints: Array.isArray(bulletPoints) ? bulletPoints : [],
-  };
-});
+    return {
+      id: Number(p.id),
+      planName: String(p.plan_name || ''),
+      subtitle: String(p.subtitle || ''),
+      targetType: p.target_type ? String(p.target_type) : undefined,
+      currencySymbol: String(p.currency || '₹'),
+      priceMonthly: Number(p.price_monthly || 0),
+      priceYearly: Number(p.price_yearly || 0),
+      periodLabel: String(p.period_label || 'per event'),
+      badgeText: p.badge_text ? String(p.badge_text) : undefined,
+      badgeStyle: p.badge_style ? String(p.badge_style) : undefined,
+      isPopular: Boolean(p.is_popular),
+      bulletPoints: Array.isArray(bulletPoints) ? bulletPoints : [],
+    };
+  });
 
   // FAQs mapping
   const faqs = (faqsRaw as AnyRecord[]).map((fq) => ({
@@ -236,14 +237,14 @@ const pricingPlans = (pricingPlansRaw as AnyRecord[]).map((p) => {
 
   // Templates mapping
   const templates = (templatesRaw as AnyRecord[]).map((t) => ({
-  id: Number(t.id),
-  title: String(t.template_name || t.name || t.title || ''),
-  categoryName: String(t.category_name || t.category || ''),
-  templateType: String(t.template_type || 'Invitation'),
-  primaryColor: String(t.primary_color || '#4F46E5'),
-  thumbnailUrl: String(t.thumbnail_url || ''),
-  isPopular: Boolean(t.is_popular),
-}));
+    id: Number(t.id),
+    title: String(t.template_name || t.name || t.title || ''),
+    categoryName: String(t.category_name || t.category || ''),
+    templateType: String(t.template_type || 'Invitation'),
+    primaryColor: String(t.primary_color || '#4F46E5'),
+    thumbnailUrl: String(t.thumbnail_url || ''),
+    isPopular: Boolean(t.is_popular),
+  }));
 
   // ── Render Page Sections ──────────────────────────────────────────────────
   const heroNode = <HeroSection hero={hero} theme={theme} />;
@@ -256,23 +257,23 @@ const pricingPlans = (pricingPlansRaw as AnyRecord[]).map((p) => {
         <TemplatesSection templates={templates} theme={theme} />
         <HighlightsSection pageSlug="home" instance={2} theme={theme} variant="filled" />
         <TestimonialsSection testimonials={testimonials} theme={theme} />
-        <LoginDemoSection theme={theme} companyName={companyName} />
+        <DynamicLoginDemoSection pageSlug="home" theme={theme} companyName={companyName} />
       </>
     ),
     features: (
       <>
         {heroNode}
         <FeaturesSection features={features} theme={theme} />
-        <SignInDemoSection theme={theme} />
+        <DynamicLoginDemoSection pageSlug="features" theme={theme} companyName={companyName} />
         <HighlightsSection pageSlug="features" instance={1} theme={theme} variant="filled" />
-        <SignInDemoSection theme={theme} />
+        <SignInDemoSection theme={theme} companyName={companyName} />
       </>
     ),
     template: (
       <>
         {heroNode}
         <TemplatesSection templates={templates} theme={theme} />
-        <SignInDemoSection theme={theme} />
+        <DynamicLoginDemoSection pageSlug="template" theme={theme} companyName={companyName} />
         <HighlightsSection pageSlug="template" instance={1} theme={theme} variant="filled" />
       </>
     ),
@@ -280,7 +281,7 @@ const pricingPlans = (pricingPlansRaw as AnyRecord[]).map((p) => {
       <>
         {heroNode}
         <TemplatesSection templates={templates} theme={theme} />
-        <SignInDemoSection theme={theme} />
+        <DynamicLoginDemoSection pageSlug="template" theme={theme} companyName={companyName} />
         <HighlightsSection pageSlug="template" instance={1} theme={theme} variant="filled" />
       </>
     ),
@@ -289,7 +290,7 @@ const pricingPlans = (pricingPlansRaw as AnyRecord[]).map((p) => {
         {heroNode}
         <PricingSection plans={pricingPlans} theme={theme} />
         <HighlightsSection pageSlug="pricing" instance={1} theme={theme} variant="filled" />
-        <ContactSignupDemoSection theme={theme} />
+        <DynamicLoginDemoSection pageSlug="pricing" theme={theme} companyName={companyName} />
       </>
     ),
     'pricing-plans': (
@@ -297,7 +298,7 @@ const pricingPlans = (pricingPlansRaw as AnyRecord[]).map((p) => {
         {heroNode}
         <PricingSection plans={pricingPlans} theme={theme} />
         <HighlightsSection pageSlug="pricing" instance={1} theme={theme} variant="filled" />
-        <ContactSignupDemoSection theme={theme} />
+        <DynamicLoginDemoSection pageSlug="pricing" theme={theme} companyName={companyName} />
       </>
     ),
     'how-it-works': (
@@ -305,7 +306,7 @@ const pricingPlans = (pricingPlansRaw as AnyRecord[]).map((p) => {
         {heroNode}
         <HowItWorksSection steps={howItWorksSteps} theme={theme} />
         <HighlightsSection pageSlug="how-it-works" instance={1} theme={theme} variant="filled" />
-        <SignupDemoSection theme={theme} />
+        <DynamicLoginDemoSection pageSlug="how-it-works" theme={theme} companyName={companyName} />
       </>
     ),
     contact: (

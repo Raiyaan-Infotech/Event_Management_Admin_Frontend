@@ -185,21 +185,29 @@ export const ADMIN_THEME_COLORS = {
   paragraph: '#475569',
 };
 
-export function parseThemeColors(themeSettings: AnyRecord) {
-  const useCustom = boolValue(themeSettings.use_custom_colors, false);
+export function parseThemeColors(themeSettings?: AnyRecord | null) {
+  if (!themeSettings || typeof themeSettings !== 'object') {
+    return {
+      primaryText: ADMIN_THEME_COLORS.primaryText,
+      primaryButton: ADMIN_THEME_COLORS.primaryBg,
+      secondaryText: ADMIN_THEME_COLORS.secondaryText,
+      paragraph: ADMIN_THEME_COLORS.paragraph,
+    };
+  }
+  const useCustom = boolValue(themeSettings.use_custom_colors || themeSettings.is_custom, false);
   if (useCustom) {
     return {
       primaryText: stringValue(themeSettings.primary_text_color, ADMIN_THEME_COLORS.primaryText),
-      primaryButton: stringValue(themeSettings.primary_bg_color, ADMIN_THEME_COLORS.primaryBg),
+      primaryButton: stringValue(themeSettings.primary_bg_color || themeSettings.primary_color, ADMIN_THEME_COLORS.primaryBg),
       secondaryText: stringValue(themeSettings.secondary_text_color, ADMIN_THEME_COLORS.secondaryText),
       paragraph: stringValue(themeSettings.paragraph_color, ADMIN_THEME_COLORS.paragraph),
     };
   }
   return {
-    primaryText: ADMIN_THEME_COLORS.primaryText,
-    primaryButton: ADMIN_THEME_COLORS.primaryBg,
-    secondaryText: ADMIN_THEME_COLORS.secondaryText,
-    paragraph: ADMIN_THEME_COLORS.paragraph,
+    primaryText: stringValue(themeSettings.primary_text_color, ADMIN_THEME_COLORS.primaryText),
+    primaryButton: stringValue(themeSettings.primary_color || themeSettings.primary_bg_color, ADMIN_THEME_COLORS.primaryBg),
+    secondaryText: stringValue(themeSettings.secondary_text_color, ADMIN_THEME_COLORS.secondaryText),
+    paragraph: stringValue(themeSettings.paragraph_color, ADMIN_THEME_COLORS.paragraph),
   };
 }
 

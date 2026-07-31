@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useNavigationLoader } from "@/components/common/navigation-loader-provider";
 import {
   ChevronDown,
@@ -177,7 +177,7 @@ const menuItems: MenuItem[] = [
           { labelKey: "Template", href: "/admin/website-builder/templates", icon: LayoutGrid },
           { labelKey: "Highlights (BG Filled)", href: "/admin/website-builder/highlights/home/2", icon: Sparkles },
           { labelKey: "Testimonials", href: "/admin/website-builder/testimonials", icon: Star },
-          { labelKey: "Login & Demo", href: "/admin/website-builder/ui-block/home", icon: LogIn },
+          { labelKey: "Login & Demo", href: "/admin/website-builder/login-demo/home", icon: LogIn },
           { labelKey: "Footer", href: "/admin/website-builder/footer", icon: Settings },
         ],
       },
@@ -186,14 +186,10 @@ const menuItems: MenuItem[] = [
         labelKey: "Features",
         icon: Layers,
         children: [
-          { labelKey: "Header", href: "/admin/website-builder/header", icon: FileText },
-          { labelKey: "Navbar", href: "/admin/website-builder/nav-menu", icon: Menu },
-          { labelKey: "Hero Section", href: "/admin/website-builder/hero-section", icon: Monitor },
           { labelKey: "Features", href: "/admin/website-builder/features", icon: Layers },
-          { labelKey: "Sign In with Price Plan", href: "/admin/website-builder/ui-block/features", icon: DollarSign },
+          { labelKey: "Sign In & Demo", href: "/admin/website-builder/login-demo/features?variant=variant_2", icon: LogIn },
           { labelKey: "Highlights", href: "/admin/website-builder/highlights/features/1", icon: Sparkles },
-          { labelKey: "Sign In & Demo", href: "/admin/website-builder/ui-block/features", icon: LogIn },
-          { labelKey: "Footer", href: "/admin/website-builder/footer", icon: Settings },
+          { labelKey: "Sign In with Price Plan", href: "/admin/website-builder/login-demo/features?variant=variant_6", icon: DollarSign },
         ],
       },
       // ── TEMPLATE PAGE ─────────────────────────────────────────────────
@@ -201,13 +197,9 @@ const menuItems: MenuItem[] = [
         labelKey: "Template",
         icon: LayoutGrid,
         children: [
-          { labelKey: "Header", href: "/admin/website-builder/header", icon: FileText },
-          { labelKey: "Navbar", href: "/admin/website-builder/nav-menu", icon: Menu },
-          { labelKey: "Hero Section", href: "/admin/website-builder/hero-section", icon: Monitor },
           { labelKey: "Template", href: "/admin/website-builder/templates", icon: LayoutGrid },
-          { labelKey: "Sign In with Price Plan", href: "/admin/website-builder/ui-block/template", icon: DollarSign },
+          { labelKey: "Sign In with Price Plan", href: "/admin/website-builder/login-demo/template", icon: DollarSign },
           { labelKey: "Highlights", href: "/admin/website-builder/highlights/template/1", icon: Sparkles },
-          { labelKey: "Footer", href: "/admin/website-builder/footer", icon: Settings },
         ],
       },
       // ── PRICING PAGE ──────────────────────────────────────────────────
@@ -215,14 +207,10 @@ const menuItems: MenuItem[] = [
         labelKey: "Pricing",
         icon: DollarSign,
         children: [
-          { labelKey: "Header", href: "/admin/website-builder/header", icon: FileText },
-          { labelKey: "Navbar", href: "/admin/website-builder/nav-menu", icon: Menu },
-          { labelKey: "Hero Section", href: "/admin/website-builder/hero-section", icon: Monitor },
           { labelKey: "Plans & Pricing", href: "/admin/website-builder/pricing-plans", icon: DollarSign },
           { labelKey: "Plan Features", href: "/admin/website-builder/features", icon: Layers },
           { labelKey: "Highlights", href: "/admin/website-builder/highlights/pricing/1", icon: Sparkles },
-          { labelKey: "Contact & Signup Demo", href: "/admin/website-builder/ui-block/pricing", icon: LogIn },
-          { labelKey: "Footer", href: "/admin/website-builder/footer", icon: Settings },
+          { labelKey: "Contact & Signup Demo", href: "/admin/website-builder/login-demo/pricing", icon: LogIn },
         ],
       },
       // ── HOW IT WORKS PAGE ─────────────────────────────────────────────
@@ -230,13 +218,9 @@ const menuItems: MenuItem[] = [
         labelKey: "How It's Work",
         icon: HelpCircle,
         children: [
-          { labelKey: "Header", href: "/admin/website-builder/header", icon: FileText },
-          { labelKey: "Navbar", href: "/admin/website-builder/nav-menu", icon: Menu },
-          { labelKey: "Hero Section", href: "/admin/website-builder/hero-section", icon: Monitor },
           { labelKey: "Videos", href: "/admin/website-builder/video-tutorials", icon: Video },
           { labelKey: "Highlights", href: "/admin/website-builder/highlights/how-it-works/1", icon: Sparkles },
-          { labelKey: "Signup Demo", href: "/admin/website-builder/ui-block/how-it-works", icon: LogIn },
-          { labelKey: "Footer", href: "/admin/website-builder/footer", icon: Settings },
+          { labelKey: "Signup Demo", href: "/admin/website-builder/login-demo/how-it-works", icon: LogIn },
         ],
       },
       // ── CONTACT PAGE ──────────────────────────────────────────────────
@@ -244,14 +228,10 @@ const menuItems: MenuItem[] = [
         labelKey: "Contact",
         icon: Mail,
         children: [
-          { labelKey: "Header", href: "/admin/website-builder/header", icon: FileText },
-          { labelKey: "Navbar", href: "/admin/website-builder/nav-menu", icon: Menu },
-          { labelKey: "Hero Section", href: "/admin/website-builder/hero-section", icon: Monitor },
           { labelKey: "Highlights", href: "/admin/website-builder/highlights/contact/1", icon: Sparkles },
           { labelKey: "Contact form with Map", href: "/admin/website-builder/contact-us", icon: Mail },
           { labelKey: "FAQ's", href: "/admin/website-builder/faqs", icon: HelpCircle },
-          { labelKey: "Chat & Signup Demo", href: "/admin/website-builder/ui-block/contact", icon: LogIn },
-          { labelKey: "Footer", href: "/admin/website-builder/footer", icon: Settings },
+          { labelKey: "Chat & Signup Demo", href: "/admin/website-builder/login-demo/contact", icon: LogIn },
         ],
       },
       // ── OTHER SETTINGS & CONTENT MODULES ──────────────────────────────
@@ -330,6 +310,7 @@ const menuItems: MenuItem[] = [
         ],
       },
       // ── GENERAL SETTINGS (flat, no parent group) ──────────────────────
+      { labelKey: "Web UI Block", href: "/admin/website-builder/ui-block", icon: LayoutGrid },
       { labelKey: "Theme Color", href: "/admin/website-builder/theme-color", icon: Palette, uiBlockKey: "theme-color" },
       { labelKey: "SEO Settings", href: "/admin/website-builder/seo", icon: Search, uiBlockKey: "seo" },
       { labelKey: "Login Page", href: "/admin/website-builder/login-page", icon: LogIn, uiBlockKey: "login-page" },
@@ -366,12 +347,27 @@ export function AppSidebar() {
   const logoHeight =
     settings?.find((s) => s.key === "logo_height")?.value || "40";
 
-  const isActive = (href?: string) =>
-    !!(href && (href === "/admin" ? pathname === href : pathname.startsWith(href)));
+  const searchParams = useSearchParams();
+
+  const isActive = (href?: string) => {
+    if (!href) return false;
+    const [targetPath, targetQuery] = href.split("?");
+    if (targetPath === "/admin") return pathname === href;
+    if (pathname !== targetPath) return false;
+
+    if (targetQuery) {
+      const currentQuery = searchParams?.toString() || "";
+      return currentQuery.includes(targetQuery);
+    }
+    if (pathname.includes("/login-demo/")) {
+      return !searchParams || !searchParams.has("variant");
+    }
+    return true;
+  };
   const isChildActive = (children?: MenuItem[]): boolean =>
     !!children?.some(
       (child) =>
-        (child.href && pathname.startsWith(child.href)) ||
+        (child.href && isActive(child.href)) ||
         isChildActive(child.children),
     );
 
