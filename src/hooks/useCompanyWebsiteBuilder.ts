@@ -90,7 +90,9 @@ const useSingleton = <T>(key: string, endpoint: string, pageSlug?: string) => {
       const data: any = await api.get(url);
       return (data && typeof data === 'object' ? data : {}) as T;
     },
-    staleTime: 0,
+    staleTime: 5 * 60 * 1000, // 5 minutes cache
+    gcTime: 15 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   const mutation = useMutation({
@@ -117,7 +119,9 @@ const useList = <T extends { id?: number }>(key: string, endpoint: string) => {
       const data: any = await api.get(`/website-builder/${endpoint}`);
       return Array.isArray(data) ? data : [];
     },
-    staleTime: 0,
+    staleTime: 5 * 60 * 1000, // 5 minutes cache
+    gcTime: 15 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   const createMutation = useMutation({
@@ -221,7 +225,9 @@ export const useCompanyHeroSection = (pageSlug: string = 'home') => {
         description: pageSlug === 'features' ? 'Explore powerful management tools for guest lists, tickets, vendor coordination, and live analytics.' : pageSlug === 'pricing' ? 'Choose the perfect plan tailored to your event size and management requirements.' : pageSlug === 'contact' ? 'Have questions or need a custom quote? Reach out to our expert event planning team.' : pageSlug === 'how-it-works' ? 'Watch tutorials and learn how to configure your event website in minutes.' : pageSlug === 'template' ? 'Pick a template, customize design elements, and publish your website instantly.' : 'From elegant weddings to corporate events, we handle every detail with creativity and perfection.',
       };
     },
-    staleTime: 0,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   const mutation = useMutation({
