@@ -47,7 +47,7 @@ export function HeaderContent() {
                         label: String(link.label || ''),
                         url: String(link.url || ''),
                         color: String(link.color || link.icon_color || '#1877F2'),
-                        iconName: String(link.iconName || link.icon || 'simple-icons:linktree'),
+                        iconName: String(link.iconName || link.icon_name || link.icon || 'simple-icons:linktree'), // added link.icon_name
                     }))
                 );
             } else {
