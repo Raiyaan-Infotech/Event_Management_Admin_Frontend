@@ -61,7 +61,7 @@ function HeaderSectionBase({ theme, header, navItems, socialLinks, companyName, 
                     rel="noopener noreferrer"
                     className="flex h-5 w-5 items-center justify-center text-white/85 transition hover:text-white"
                   >
-                    <Icon icon={iconKey} className="h-3.5 w-3.5" />
+                    <Icon icon={iconKey} width="14" height="14" className="h-3.5 w-3.5 fill-current" />
                   </a>
                 );
               })}

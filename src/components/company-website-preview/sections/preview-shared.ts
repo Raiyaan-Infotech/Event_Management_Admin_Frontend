@@ -242,14 +242,14 @@ export function buildSocialLinks(socialLinks: AnyRecord[]) {
       if (!rawIcon.includes(':')) {
         rawIcon = `simple-icons:${rawIcon.toLowerCase()}`;
       }
+      const rawHref = stringValue(item.url, item.link, item.href);
       return {
         label,
-        href: normalizeHref(item.url ?? item.link ?? item.href),
+        href: rawHref ? normalizeHref(rawHref) : '#',
         iconName: rawIcon,
         color: stringValue(item.color, item.icon_color, '#1877F2'),
       };
     })
-    .filter((item) => item.href !== '#')
     .slice(0, 10);
 }
 
