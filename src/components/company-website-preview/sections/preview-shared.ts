@@ -327,7 +327,10 @@ function parseHeroButton(value: unknown, theme: ReturnType<typeof parseThemeColo
   };
 }
 
-export function buildHero(heroSection: AnyRecord, theme: ReturnType<typeof parseThemeColors>) {
+export function buildHero(rawHeroSection: AnyRecord, theme: ReturnType<typeof parseThemeColors>) {
+  const heroSection = (rawHeroSection?.data && typeof rawHeroSection.data === 'object' && !Array.isArray(rawHeroSection.data)
+    ? rawHeroSection.data
+    : rawHeroSection) as AnyRecord || {};
   const button1 = parseHeroButton(heroSection.button_1_json, theme, {
     enabled: true,
     label: 'Book Consultation',

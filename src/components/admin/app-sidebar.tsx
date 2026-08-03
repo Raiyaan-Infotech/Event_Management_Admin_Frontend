@@ -213,7 +213,7 @@ const menuItems: MenuItem[] = [
         children: [
           { labelKey: "Hero Section", href: "/admin/website-builder/hero-section?page=pricing", icon: Monitor },
           { labelKey: "Plans & Pricing", href: "/admin/website-builder/pricing-plans", icon: DollarSign },
-          { labelKey: "Plan Features", href: "/admin/website-builder/features", icon: Layers },
+          { labelKey: "Plan Features", href: "/admin/website-builder/pricing-plans", icon: Layers },
           { labelKey: "Highlights", href: "/admin/website-builder/highlights/pricing/1", icon: Sparkles },
           { labelKey: "Contact & Signup Demo", href: "/admin/website-builder/login-demo/pricing", icon: LogIn },
         ],

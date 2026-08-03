@@ -87,8 +87,14 @@ const useSingleton = <T>(key: string, endpoint: string, pageSlug?: string) => {
   const query = useQuery<T>({
     queryKey,
     queryFn: async () => {
-      const data: any = await api.get(url);
-      return (data && typeof data === 'object' ? data : {}) as T;
+      const res: any = await api.get(url);
+      if (res && typeof res === 'object') {
+        if ('data' in res && res.data && typeof res.data === 'object' && !Array.isArray(res.data)) {
+          return res.data as T;
+        }
+        return res as T;
+      }
+      return {} as T;
     },
     staleTime: 5 * 60 * 1000, // 5 minutes cache
     gcTime: 15 * 60 * 1000,
