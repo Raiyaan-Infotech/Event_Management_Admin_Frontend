@@ -177,16 +177,28 @@ export function CompanyWebsitePreview({ initialPage = 'home' }: { initialPage?: 
   );
   const email = String(basicInfo.email || '').toLowerCase();
 
+function extractList(raw: unknown): AnyRecord[] {
+  if (Array.isArray(raw)) return raw as AnyRecord[];
+  if (raw && typeof raw === 'object' && Array.isArray((raw as any).data)) {
+    return (raw as any).data as AnyRecord[];
+  }
+  return [];
+}
+
   // Features mapping
-  const features = (featuresRaw as AnyRecord[]).map((f) => {
-    let bulletPoints: string[] = [];
+  const features = extractList(featuresRaw).map((f) => {
+    let bulletPoints: unknown[] = [];
     if (f.bullet_points_json) {
       try {
-        bulletPoints = typeof f.bullet_points_json === 'string' ? JSON.parse(f.bullet_points_json) : f.bullet_points_json;
+        bulletPoints = typeof f.bullet_points_json === 'string' ? JSON.parse(f.bullet_points_json) : (f.bullet_points_json as unknown[]);
       } catch {
         bulletPoints = [];
       }
     }
+
+    const safeBullets = (Array.isArray(bulletPoints) ? bulletPoints : [])
+      .map((b) => (typeof b === 'object' && b !== null ? String((b as any).label || (b as any).title || (b as any).name || '') : String(b ?? '')))
+      .filter(Boolean);
 
     return {
       id: Number(f.id),
@@ -194,13 +206,13 @@ export function CompanyWebsitePreview({ initialPage = 'home' }: { initialPage?: 
       description: String(f.short_description || f.description || ''),
       iconKey: String(f.icon || f.icon_key || ''),
       customIconUrl: f.custom_icon_url ? String(f.custom_icon_url) : undefined,
-      bulletPoints,
+      bulletPoints: safeBullets,
       isActive: f.is_active !== undefined && f.is_active !== null ? (Number(f.is_active) === 1 || Boolean(f.is_active)) : (f.status ? f.status === 'Active' : true),
     };
   });
 
   // How it works mapping
-  const howItWorksSteps = (howItWorksRaw as AnyRecord[]).map((s) => ({
+  const howItWorksSteps = extractList(howItWorksRaw).map((s) => ({
     id: Number(s.id),
     stepNumber: Number(s.step_number || s.sort_order || 1),
     title: String(s.title || ''),
@@ -212,15 +224,28 @@ export function CompanyWebsitePreview({ initialPage = 'home' }: { initialPage?: 
   }));
 
   // Pricing mapping
-  const pricingPlans = (pricingPlansRaw as AnyRecord[]).map((p) => {
-    let bulletPoints: string[] = [];
+  const pricingPlans = extractList(pricingPlansRaw).map((p) => {
+    let rawFeatures: unknown[] = [];
     if (p.features_json) {
       try {
-        bulletPoints = typeof p.features_json === 'string' ? JSON.parse(p.features_json) : p.features_json;
+        rawFeatures = typeof p.features_json === 'string' ? JSON.parse(p.features_json) : (p.features_json as unknown[]);
       } catch {
-        bulletPoints = [];
+        rawFeatures = [];
       }
     }
+
+    const bulletPoints = (Array.isArray(rawFeatures) ? rawFeatures : [])
+      .map((item) => {
+        if (typeof item === 'string') return { label: item, included: true };
+        if (item && typeof item === 'object') {
+          return {
+            label: String((item as any).label || (item as any).name || (item as any).title || ''),
+            included: (item as any).included !== undefined ? Boolean((item as any).included) : true,
+          };
+        }
+        return null;
+      })
+      .filter((item): item is { label: string; included: boolean } => item !== null && item.label.length > 0);
 
     return {
       id: Number(p.id),
@@ -234,19 +259,19 @@ export function CompanyWebsitePreview({ initialPage = 'home' }: { initialPage?: 
       badgeText: p.badge_text ? String(p.badge_text) : undefined,
       badgeStyle: p.badge_style ? String(p.badge_style) : undefined,
       isPopular: Boolean(p.is_popular),
-      bulletPoints: Array.isArray(bulletPoints) ? bulletPoints : [],
+      bulletPoints,
     };
   });
 
   // FAQs mapping
-  const faqs = (faqsRaw as AnyRecord[]).map((fq) => ({
+  const faqs = extractList(faqsRaw).map((fq) => ({
     id: Number(fq.id),
     question: String(fq.question || ''),
     answer: String(fq.answer || ''),
   }));
 
   // Video Tutorials mapping
-  const videoTutorials = (videoTutorialsRaw as AnyRecord[]).map((v) => {
+  const videoTutorials = extractList(videoTutorialsRaw).map((v) => {
     const durSec = Number(v.duration_seconds || 0);
     return {
       id: Number(v.id),
@@ -259,7 +284,7 @@ export function CompanyWebsitePreview({ initialPage = 'home' }: { initialPage?: 
   });
 
   // Templates mapping
-  const templates = (templatesRaw as AnyRecord[]).map((t) => ({
+  const templates = extractList(templatesRaw).map((t) => ({
     id: Number(t.id),
     title: String(t.template_name || t.name || t.title || ''),
     categoryName: String(t.category_name || t.category || ''),

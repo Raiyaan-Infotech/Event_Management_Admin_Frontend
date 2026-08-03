@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Check, Sparkles, Target, Crown, Gem, Rocket, Star, Building2 } from 'lucide-react';
+import { Check, X, Sparkles, Target, Crown, Gem, Rocket, Star, Building2 } from 'lucide-react';
 import type { ThemeColors } from './preview-shared';
 
 export type PricingPlan = {
@@ -19,7 +19,7 @@ export type PricingPlan = {
   badgeText?: string;
   badgeStyle?: string; // 'filled' | 'outline'
   isPopular: boolean;
-  bulletPoints: string[];
+  bulletPoints: (string | { label: string; included: boolean })[];
 };
 
 type IconComponentProps = { className?: string; style?: React.CSSProperties };
@@ -214,17 +214,37 @@ function PricingSectionBase({ plans, theme }: { plans: PricingPlan[]; theme: The
                         <hr className="my-5 border-slate-100" />
 
                         <ul className="space-y-2.5">
-                          {plan.bulletPoints.map((point, idx) => (
-                            <li key={idx} className="flex items-center gap-2.5 text-[13px] font-medium text-slate-700">
-                              <span
-                                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-white"
-                                style={{ backgroundColor: isFeatured ? theme.primaryButton : accent.fg }}
+                          {plan.bulletPoints.map((item, idx) => {
+                            const label = typeof item === 'string' ? item : (item as any)?.label || '';
+                            const isIncluded = typeof item === 'string' ? true : (item as any)?.included !== false;
+
+                            return (
+                              <li
+                                key={idx}
+                                className={`flex items-center gap-2.5 text-[13px] font-medium ${
+                                  isIncluded ? 'text-slate-700' : 'text-slate-400 line-through opacity-70'
+                                }`}
                               >
-                                <Check className="h-3 w-3 stroke-[3]" />
-                              </span>
-                              {point}
-                            </li>
-                          ))}
+                                <span
+                                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md ${
+                                    isIncluded ? 'text-white' : 'bg-slate-200 text-slate-400'
+                                  }`}
+                                  style={
+                                    isIncluded
+                                      ? { backgroundColor: isFeatured ? theme.primaryButton : accent.fg }
+                                      : undefined
+                                  }
+                                >
+                                  {isIncluded ? (
+                                    <Check className="h-3 w-3 stroke-[3]" />
+                                  ) : (
+                                    <X className="h-3 w-3 stroke-[2]" />
+                                  )}
+                                </span>
+                                <span>{label}</span>
+                              </li>
+                            );
+                          })}
                         </ul>
                       </div>
 
