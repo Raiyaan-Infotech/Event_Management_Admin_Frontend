@@ -38,9 +38,10 @@ import {
     useTemplates,
     useTemplateCategories,
     useTemplateById,
-    useSaveTemplate,
-    type Template,
+    useCreateTemplate,
+    useUpdateTemplate,
 } from '@/hooks/useTemplates';
+import { mediaApi } from '@/hooks/use-media';
 
 const TEMPLATE_TYPES = [
     { id: 'wedding', label: 'Wedding', desc: 'Wedding & Engagement', icon: Heart },
@@ -112,24 +113,40 @@ function CreateTemplatePage() {
         }
     }, [templateId, dbTemplates]);
 
-    const handleThumbnailUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleThumbnailUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            setThumbnailUrl(ev.target?.result as string);
-            setErrors((prev) => ({ ...prev, thumbnail: false }));
-            toast.success('Thumbnail uploaded!');
-        };
-        reader.readAsDataURL(file);
+        const tid = toast.loading('Uploading thumbnail...');
+        try {
+            const res = await mediaApi.upload(file, 'templates');
+            if (res?.url) {
+                setThumbnailUrl(res.url);
+                setErrors((prev) => ({ ...prev, thumbnail: false }));
+                toast.success('Thumbnail uploaded successfully', { id: tid });
+            } else {
+                toast.error('Failed to retrieve uploaded thumbnail URL', { id: tid });
+            }
+        } catch (err: any) {
+            toast.error(err?.message || 'Failed to upload thumbnail', { id: tid });
+        }
     };
 
-    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        setTemplateFileUrl(file.name);
-        setErrors((prev) => ({ ...prev, file: false }));
-        toast.success(`File "${file.name}" uploaded!`);
+        const tid = toast.loading('Uploading template package...');
+        try {
+            const res = await mediaApi.upload(file, 'templates');
+            if (res?.url) {
+                setTemplateFileUrl(res.url);
+                setErrors((prev) => ({ ...prev, file: false }));
+                toast.success('Template package uploaded successfully', { id: tid });
+            } else {
+                toast.error('Failed to retrieve uploaded template file URL', { id: tid });
+            }
+        } catch (err: any) {
+            toast.error(err?.message || 'Failed to upload template package', { id: tid });
+        }
     };
 
     const handleSave = (isDraft = false) => {

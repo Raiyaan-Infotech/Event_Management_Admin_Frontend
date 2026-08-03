@@ -73,15 +73,25 @@ function HeaderSectionBase({ theme, header, navItems, socialLinks, companyName, 
           {/* Logo */}
           <a href="/" onClick={(e) => handleNavClick(e, { href: '/' })} className="flex shrink-0 items-center gap-3">
             {companyLogo ? (
-              <img src={companyLogo} alt={`${companyName} logo`} className="h-12 max-w-[170px] shrink-0 object-contain" />
-            ) : (
-              <span
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[14px] font-black text-white"
-                style={{ backgroundColor: theme.primaryButton }}
-              >
-                {companyName.split(/\s+/).slice(0, 2).map((p) => p[0]).join('').toUpperCase()}
-              </span>
-            )}
+              <img
+                src={companyLogo}
+                alt={`${companyName} logo`}
+                className="h-11 max-h-12 w-auto max-w-[170px] shrink-0 object-contain"
+                onError={(e) => {
+                  const imgEl = e.currentTarget;
+                  imgEl.style.display = 'none';
+                  const fallbackEl = imgEl.parentElement?.querySelector('[data-logo-fallback="true"]') as HTMLElement;
+                  if (fallbackEl) fallbackEl.style.display = 'flex';
+                }}
+              />
+            ) : null}
+            <span
+              data-logo-fallback="true"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[14px] font-black text-white"
+              style={{ backgroundColor: theme.primaryButton, display: companyLogo ? 'none' : 'flex' }}
+            >
+              {companyName.split(/\s+/).slice(0, 2).map((p) => p[0]).join('').toUpperCase()}
+            </span>
             <span className="shrink-0">
               <span className="block text-[14px] font-black uppercase leading-4 tracking-[0.12em]" style={{ color: theme.primaryButton }}>
                 {companyName}

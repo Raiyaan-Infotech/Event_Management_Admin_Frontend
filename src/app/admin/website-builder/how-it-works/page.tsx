@@ -43,6 +43,7 @@ import {
     type HowItWorksStep,
 } from '@/hooks/useHowItWorks';
 import { BuilderCountedInput, BuilderCountedTextarea } from '../_components/builder-field';
+import { mediaApi } from '@/hooks/use-media';
 import { DeleteDialog } from '@/components/common/delete-dialog';
 
 const ICON_PRESETS = [
@@ -320,21 +321,24 @@ export default function HowItWorksPage() {
     };
 
     // Handle File Upload for Single Image
-    const handleSingleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, isCardRowIdx?: number) => {
+    const handleSingleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, isCardRowIdx?: number) => {
         const file = e.target.files?.[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                const imgDataUrl = ev.target?.result as string;
-                if (imgDataUrl) {
-                    if (isCardRowIdx !== undefined) {
-                        handleUpdateStepField(isCardRowIdx, 'illustration_url', imgDataUrl);
-                    } else {
-                        setModalIllustration(imgDataUrl);
-                    }
+        if (!file) return;
+        const tid = toast.loading('Uploading illustration...');
+        try {
+            const res = await mediaApi.upload(file, 'how-it-works');
+            if (res?.url) {
+                if (isCardRowIdx !== undefined) {
+                    handleUpdateStepField(isCardRowIdx, 'illustration_url', res.url);
+                } else {
+                    setModalIllustration(res.url);
                 }
-            };
-            reader.readAsDataURL(file);
+                toast.success('Illustration uploaded successfully', { id: tid });
+            } else {
+                toast.error('Failed to retrieve uploaded image URL', { id: tid });
+            }
+        } catch (err: any) {
+            toast.error(err?.message || 'Failed to upload illustration', { id: tid });
         }
     };
 

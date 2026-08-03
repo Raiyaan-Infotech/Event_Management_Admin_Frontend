@@ -151,7 +151,15 @@ export function CompanyWebsitePreview() {
   const contact = buildContact(contactRaw as AnyRecord, contactCatsRaw as AnyRecord[], socialLinks);
   const legalPages = buildLegalPages(pagesRaw as AnyRecord[]);
   const companyName = String(basicInfo.company_name || 'Company');
-  const companyLogo = String(basicInfo.logo_url || '');
+  const companyLogo = String(
+    basicInfo.logo_url || 
+    basicInfo.company_logo || 
+    basicInfo.logo || 
+    (footerRaw as AnyRecord)?.logo_url || 
+    (footerRaw as AnyRecord)?.company_logo || 
+    (footerRaw as AnyRecord)?.logo || 
+    ''
+  );
   const email = String(basicInfo.email || '').toLowerCase();
 
   // Features mapping

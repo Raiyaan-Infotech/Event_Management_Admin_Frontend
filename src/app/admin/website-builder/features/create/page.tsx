@@ -38,11 +38,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { Icon } from '@iconify/react';
 import { IconPickerDialog } from '@/components/common/icon-picker-dialog';
-import {
-    useFeaturesData,
-    useSaveFeaturesList,
-    type FeatureItem,
-} from '@/hooks/useFeatures';
+import { useFeatures, useFeatureById, useCreateFeature, useUpdateFeature, type Feature } from '@/hooks/useFeatures';
+import { mediaApi } from '@/hooks/use-media';
 import {
     BuilderCountedInput,
     BuilderCountedTextarea,
@@ -117,29 +114,39 @@ function FeatureFormContent() {
         }
     }, [featureId, dbFeatures]);
 
-    const handleCustomIconUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleCustomIconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            const result = ev.target?.result as string;
-            setCustomIconUrl(result);
-            setSelectedIcon(result);
-            toast.success('Custom icon uploaded!');
-        };
-        reader.readAsDataURL(file);
+        const tid = toast.loading('Uploading custom icon...');
+        try {
+            const res = await mediaApi.upload(file, 'features');
+            if (res?.url) {
+                setCustomIconUrl(res.url);
+                setSelectedIcon(res.url);
+                toast.success('Custom icon uploaded successfully', { id: tid });
+            } else {
+                toast.error('Failed to retrieve uploaded icon URL', { id: tid });
+            }
+        } catch (err: any) {
+            toast.error(err?.message || 'Failed to upload custom icon', { id: tid });
+        }
     };
 
-    const handleFeatureImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFeatureImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            const result = ev.target?.result as string;
-            setFeatureImageUrl(result);
-            toast.success('Feature image uploaded!');
-        };
-        reader.readAsDataURL(file);
+        const tid = toast.loading('Uploading feature image...');
+        try {
+            const res = await mediaApi.upload(file, 'features');
+            if (res?.url) {
+                setFeatureImageUrl(res.url);
+                toast.success('Feature image uploaded successfully', { id: tid });
+            } else {
+                toast.error('Failed to retrieve uploaded image URL', { id: tid });
+            }
+        } catch (err: any) {
+            toast.error(err?.message || 'Failed to upload feature image', { id: tid });
+        }
     };
 
     const handleAddBullet = () => {
