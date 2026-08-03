@@ -137,7 +137,15 @@ export function CompanyWebsitePreview() {
   const theme = parseThemeColors(themeRaw as AnyRecord);
   const header = parseHeaderSettings(basicInfo);
   const phone = buildPhone(header);
-  const socialLinks = buildSocialLinks(socialLinksRaw as AnyRecord[]);
+  // Prefer the dedicated social-links table; fall back to the JSON blob saved in basicInfo
+  const socialLinksSource: AnyRecord[] =
+    (socialLinksRaw as AnyRecord[]).length > 0
+      ? (socialLinksRaw as AnyRecord[])
+      : Array.isArray(basicInfo.social_links_json)
+      ? (basicInfo.social_links_json as AnyRecord[])
+      : [];
+  const socialLinks = buildSocialLinks(socialLinksSource);
+
   const navItems = buildNavItems(menuItemsRaw as AnyRecord[], pagesRaw as AnyRecord[]);
   const hero = buildHero(heroRaw as AnyRecord, theme);
   const sliderMeta = buildSliderMeta(slidersRaw as AnyRecord[]);
