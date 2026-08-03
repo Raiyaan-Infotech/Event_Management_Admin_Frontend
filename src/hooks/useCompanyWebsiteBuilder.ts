@@ -35,6 +35,7 @@ export interface CompanyHeroSection {
   button_layout?: string;
   content_alignment?: string;
   is_active?: boolean | number;
+  design_json?: any;
 }
 
 export interface CompanyFooterSettings {
@@ -192,8 +193,10 @@ export const useCompanyHeroSection = (pageSlug: string = 'home') => {
   const query = useQuery<CompanyHeroSection>({
     queryKey,
     queryFn: async () => {
-      const data: any = await api.get(url);
-      const backendObject = data && typeof data === 'object' ? data : {};
+      const res: any = await api.get(url);
+      const backendObject = (res && typeof res === 'object' && res.data && typeof res.data === 'object' && !Array.isArray(res.data)
+        ? res.data
+        : (res || {})) as CompanyHeroSection;
 
       let storedMap: Record<string, CompanyHeroSection> = {};
       try {
