@@ -27,7 +27,7 @@ import { Switch } from '@/components/ui/switch';
 import { BuilderCountedInput } from './builder-field';
 import { MultiSelectPages } from './multi-select-pages';
 import { DraggableItemList, AddCustomLinkRow, type DraggableItemListItem, type ChildMenuItem } from './draggable-item-list';
-import { useCompanyBasicInformation, useCompanyMenuItems } from '@/hooks/useCompanyWebsiteBuilder';
+import { useCompanyBasicInformation, useCompanyMenuItems, useCompanyFooterSettings } from '@/hooks/useCompanyWebsiteBuilder';
 import { mediaApi } from '@/hooks/use-media';
 import { PageLoader } from '@/components/common/page-loader';
 import { MediaCropDialog } from '@/components/common/media-crop-dialog';
@@ -59,6 +59,7 @@ const initialSelectedPages = [
 
 export function NavMenuContent() {
     const { data: basicInfo, save: saveBasic, isSaving: isSavingBasic } = useCompanyBasicInformation();
+    const { data: footerData, save: saveFooter } = useCompanyFooterSettings();
     const { data: savedMenuItems = [], replace: replaceMenuItems, isSaving: isSavingItems } = useCompanyMenuItems();
 
     const [logoUrl, setLogoUrl] = useState<string>('');
@@ -87,14 +88,16 @@ export function NavMenuContent() {
     ]);
 
     useEffect(() => {
-        if (basicInfo && Object.keys(basicInfo).length > 0) {
-            if (basicInfo.logo_url) setLogoUrl(basicInfo.logo_url);
-            if (basicInfo.company_name) setCompanyName(basicInfo.company_name);
-            if (basicInfo.city) setCity(basicInfo.city);
-            if (basicInfo.show_login !== undefined) setShowLogin(Boolean(basicInfo.show_login));
-            if (basicInfo.show_signin !== undefined) setShowSignIn(Boolean(basicInfo.show_signin));
+        if ((basicInfo && Object.keys(basicInfo).length > 0) || (footerData && Object.keys(footerData).length > 0)) {
+            const logo = basicInfo?.logo_url || footerData?.logo_url || '';
+            const name = basicInfo?.company_name || footerData?.company_name || 'RA EVENTS';
+            setLogoUrl(logo);
+            setCompanyName(name);
+            if (basicInfo?.city) setCity(basicInfo.city);
+            if (basicInfo?.show_login !== undefined) setShowLogin(Boolean(basicInfo.show_login));
+            if (basicInfo?.show_signin !== undefined) setShowSignIn(Boolean(basicInfo.show_signin));
         }
-    }, [basicInfo]);
+    }, [basicInfo, footerData]);
 
     useEffect(() => {
         if (savedMenuItems && savedMenuItems.length > 0) {
@@ -276,6 +279,12 @@ export function NavMenuContent() {
                 city,
                 show_login: showLogin ? 1 : 0,
                 show_signin: showSignIn ? 1 : 0,
+            });
+
+            await saveFooter({
+                ...(footerData || {}),
+                logo_url: logoUrl,
+                company_name: companyName,
             });
 
             await replaceMenuItems(

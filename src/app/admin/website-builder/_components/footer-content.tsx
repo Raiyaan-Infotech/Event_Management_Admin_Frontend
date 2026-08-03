@@ -40,7 +40,7 @@ const initialSelectedPages = [
 
 export function FooterContent() {
     const { data: footerData, isLoading, save, isSaving: isSavingFooter } = useCompanyFooterSettings();
-    const { data: basicInfo } = useCompanyBasicInformation();
+    const { data: basicInfo, save: saveBasic } = useCompanyBasicInformation();
     const [previewOpen, setPreviewOpen] = useState(false);
 
     const [companyLogo, setCompanyLogo] = useState('');
@@ -199,6 +199,13 @@ export function FooterContent() {
                 show_newsletter: newsletterEnabled ? 1 : 0,
                 show_social_links: showSocialLinks ? 1 : 0,
             });
+
+            await saveBasic({
+                ...(basicInfo || {}),
+                logo_url: companyLogo,
+                company_name: companyName,
+            });
+
             toast.success('Footer settings saved successfully');
         } catch (err: any) {
             toast.error(err?.message || 'Failed to save footer settings');
