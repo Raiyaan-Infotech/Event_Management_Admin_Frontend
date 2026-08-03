@@ -104,7 +104,7 @@ function FooterSectionBase({ footer, socialLinks, theme, onNavigate }: { footer:
 
       <div className="border-t border-white/10">
         <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-2 px-4 py-5 text-[12px] font-medium text-white/60 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
-          <p>© {footer.copyright}</p>
+          <p>{footer.copyright}</p>
           {footer.poweredBy ? <p>Powered by {footer.poweredBy}</p> : null}
         </div>
       </div>

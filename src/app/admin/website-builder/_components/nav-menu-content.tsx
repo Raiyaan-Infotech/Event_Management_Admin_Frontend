@@ -18,6 +18,7 @@ import {
     DollarSign,
     Layers,
     PhoneCall,
+    Crop,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -29,6 +30,7 @@ import { DraggableItemList, AddCustomLinkRow, type DraggableItemListItem, type C
 import { useCompanyBasicInformation, useCompanyMenuItems } from '@/hooks/useCompanyWebsiteBuilder';
 import { mediaApi } from '@/hooks/use-media';
 import { PageLoader } from '@/components/common/page-loader';
+import { MediaCropDialog } from '@/components/common/media-crop-dialog';
 
 const pageOptions = [
     { label: 'Home', value: 'home', icon: Home },
@@ -66,6 +68,13 @@ export function NavMenuContent() {
     const [showSignIn, setShowSignIn] = useState(true);
     const [menuHeading, setMenuHeading] = useState('Nav Menu');
     const [selectedPages, setSelectedPages] = useState<string[]>(initialSelectedPages);
+
+    // Cropper state for Company Logo
+    const [cropModalOpen, setCropModalOpen] = useState(false);
+    const [selectedImageSrc, setSelectedImageSrc] = useState('');
+    const [selectedFileName, setSelectedFileName] = useState('logo.png');
+    const [selectedMimeType, setSelectedMimeType] = useState('image/png');
+    const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
     const [menuItems, setMenuItems] = useState<DraggableItemListItem[]>([
         { id: 'home', label: 'Home', icon: Home, children: [] },
@@ -105,20 +114,66 @@ export function NavMenuContent() {
         }
     }, [savedMenuItems]);
 
-    const isSaving = isSavingBasic || isSavingItems;
+    const isSaving = isSavingBasic || isSavingItems || isUploadingLogo;
 
-    const handleLogoSelect = async (file: File) => {
-        const tid = toast.loading('Uploading logo...');
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > 10 * 1024 * 1024) {
+            toast.error('File size exceeds 10MB limit. Please choose a smaller image.');
+            e.target.value = '';
+            return;
+        }
+
+        setSelectedFileName(file.name);
+        setSelectedMimeType(file.type || 'image/png');
+
+        const reader = new FileReader();
+        reader.onload = () => {
+            setSelectedImageSrc(reader.result as string);
+            setCropModalOpen(true);
+        };
+        reader.readAsDataURL(file);
+        e.target.value = '';
+    };
+
+    const handleCroppedImage = async (croppedFile: File) => {
+        setIsUploadingLogo(true);
+        const tid = toast.loading('Uploading cropped company logo...');
         try {
-            const res = await mediaApi.upload(file, 'website-builder');
+            const res = await mediaApi.upload(croppedFile, 'website-builder');
             if (res?.url) {
                 setLogoUrl(res.url);
-                toast.success('Company logo uploaded successfully', { id: tid });
+                toast.success('Company logo cropped & uploaded successfully', { id: tid });
+                setCropModalOpen(false);
             } else {
                 toast.error('Failed to retrieve uploaded logo URL', { id: tid });
             }
         } catch (err: any) {
             toast.error(err?.message || 'Failed to upload logo', { id: tid });
+        } finally {
+            setIsUploadingLogo(false);
+        }
+    };
+
+    const handleRecropExisting = async (url: string) => {
+        try {
+            const res = await fetch(`/api/proxy-image?url=${encodeURIComponent(url)}`);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const blob = await res.blob();
+            const dataUrl = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+            setSelectedImageSrc(dataUrl);
+            setSelectedFileName('logo.png');
+            setSelectedMimeType(blob.type || 'image/png');
+            setCropModalOpen(true);
+        } catch {
+            toast.error('Failed to load image for cropping');
         }
     };
 
@@ -288,29 +343,37 @@ export function NavMenuContent() {
                         <div className="space-y-1.5">
                             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">COMPANY LOGO</label>
                             {logoUrl ? (
-                                <div className="relative flex h-24 w-full items-center justify-center rounded-lg border bg-card overflow-hidden p-2">
+                                <div className="relative flex h-24 w-full items-center justify-center rounded-lg border bg-card overflow-hidden p-2 group">
                                     <img src={logoUrl} alt="Company Logo" className="h-full w-full object-contain" />
-                                    <button
-                                        type="button"
-                                        onClick={() => setLogoUrl('')}
-                                        className="absolute top-1.5 right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-slate-800 text-white hover:bg-slate-900 transition-colors"
-                                    >
-                                        <X className="h-3 w-3" />
-                                    </button>
+                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-1.5 transition-opacity">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRecropExisting(logoUrl)}
+                                            className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 bg-white text-slate-800 rounded shadow-xs hover:bg-slate-100 cursor-pointer"
+                                            title="Crop image"
+                                        >
+                                            <Crop className="h-3 w-3" /> Crop
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setLogoUrl('')}
+                                            className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 bg-rose-600 text-white rounded shadow-xs hover:bg-rose-700 cursor-pointer"
+                                            title="Remove logo"
+                                        >
+                                            <X className="h-3 w-3" /> Remove
+                                        </button>
+                                    </div>
                                 </div>
                             ) : (
                                 <div className="relative flex flex-col items-center justify-center h-24 w-full rounded-lg border border-dashed bg-muted/20 hover:bg-muted/30 cursor-pointer p-2 text-center">
                                     <input
                                         type="file"
                                         accept="image/*"
-                                        onChange={(e) => {
-                                            const file = e.target.files?.[0];
-                                            if (file) handleLogoSelect(file);
-                                        }}
+                                        onChange={handleFileChange}
                                         className="absolute inset-0 opacity-0 cursor-pointer"
                                     />
                                     <span className="text-[11px] font-bold text-primary tracking-wide">Upload Logo</span>
-                                    <span className="text-[9px] text-muted-foreground">Click or drag image</span>
+                                    <span className="text-[9px] text-muted-foreground">Click or drag image to crop</span>
                                 </div>
                             )}
                         </div>
@@ -405,6 +468,16 @@ export function NavMenuContent() {
                     <AddCustomLinkRow onAdd={handleAddCustomLink} />
                 </CardContent>
             </Card>
+
+            <MediaCropDialog
+                open={cropModalOpen}
+                imageUrl={selectedImageSrc}
+                fileName={selectedFileName}
+                mimeType={selectedMimeType}
+                onClose={() => setCropModalOpen(false)}
+                onCropped={handleCroppedImage}
+                isSaving={isUploadingLogo}
+            />
         </div>
     );
 }

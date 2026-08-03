@@ -443,43 +443,82 @@ export function buildLogos(list: AnyRecord[]): Logo[] {
 
 // ── Footer ───────────────────────────────────────────────────────────────────
 
-export function buildFooter(footerSettings: AnyRecord, pages: AnyRecord[]) {
-  const rawLinks = Array.isArray(footerSettings.add_pages_json)
+export function buildFooter(footerSettings: AnyRecord = {}, pages: AnyRecord[] = [], basicInfo: AnyRecord = {}) {
+  const rawLinks = Array.isArray(footerSettings?.add_pages_json)
     ? footerSettings.add_pages_json
-    : Array.isArray(footerSettings.quick_links_json)
+    : Array.isArray(footerSettings?.quick_links_json)
       ? footerSettings.quick_links_json
-      : [];
+      : ['home', 'features', 'templates', 'gallery', 'contact'];
+
   const norm = (v: unknown) => String(v ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
   const quickLinks = (rawLinks as unknown[])
     .map((value) => {
       const raw = String(value ?? '').trim();
       if (!raw) return null;
       const target = norm(raw);
-      const page = pages.find((item) => String(item.slug ?? '').replace(/^\/+/, '') === raw.replace(/^\/+/, '') || String(item.id ?? '') === raw) ||
-        pages.find((item) => {
+      const page = (pages || []).find((item) => String(item.slug ?? '').replace(/^\/+/, '') === raw.replace(/^\/+/, '') || String(item.id ?? '') === raw) ||
+        (pages || []).find((item) => {
           const slug = norm(item.slug);
           const title = norm(item.title);
           return !!target && ((!!slug && (slug.includes(target) || target.includes(slug))) || (!!title && title.includes(target)));
         });
-      if (!page) return null;
-      return { label: stringValue(page.title, raw), href: normalizeHref(page.slug) };
+      if (page) {
+        return { label: stringValue(page.title, raw), href: normalizeHref(page.slug) };
+      }
+      const formattedLabel = raw.split(/[-_]/).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      return { label: formattedLabel, href: raw.startsWith('/') ? raw : `/${raw}` };
     })
     .filter(Boolean) as Array<{ label: string; href: string }>;
 
+  const logoUrl = stringValue(
+    footerSettings?.logo_url,
+    footerSettings?.company_logo,
+    footerSettings?.logo,
+    basicInfo?.logo_url,
+    basicInfo?.company_logo,
+    basicInfo?.logo
+  );
+
+  const companyName = stringValue(
+    footerSettings?.company_name,
+    basicInfo?.company_name,
+    'RA EVENTS'
+  );
+
+  const description = stringValue(
+    footerSettings?.description,
+    'Full-service event management, wedding planning, corporate galas, and customized decor packages tailored to your special occasions.'
+  );
+
+  const mobile = stringValue(
+    footerSettings?.mobile,
+    basicInfo?.mobile
+  );
+
+  const email = stringValue(
+    footerSettings?.email,
+    basicInfo?.email
+  );
+
+  const address = stringValue(
+    footerSettings?.address,
+    basicInfo?.address
+  );
+
   return {
-    present: Object.keys(footerSettings).length > 0,
-    logoUrl: stringValue(footerSettings.logo_url),
-    companyName: stringValue(footerSettings.company_name, 'Company'),
-    description: stringValue(footerSettings.description),
-    topListHeading: stringValue(footerSettings.top_list_heading, 'Quick Links'),
+    present: true,
+    logoUrl,
+    companyName,
+    description,
+    topListHeading: stringValue(footerSettings?.top_list_heading, 'Quick Links'),
     quickLinks,
-    showNewsletter: boolValue(footerSettings.show_newsletter, true),
-    showSocialLinks: boolValue(footerSettings.show_social_links, true),
-    mobile: stringValue(footerSettings.mobile),
-    email: stringValue(footerSettings.email).toLowerCase(),
-    address: stringValue(footerSettings.address),
-    copyright: stringValue(footerSettings.copyright_text, `${new Date().getFullYear()} All rights reserved.`),
-    poweredBy: stringValue(footerSettings.powered_by_text),
+    showNewsletter: boolValue(footerSettings?.show_newsletter, true),
+    showSocialLinks: boolValue(footerSettings?.show_social_links, true),
+    mobile,
+    email: email.toLowerCase(),
+    address,
+    copyright: stringValue(footerSettings?.copyright_text, `© ${new Date().getFullYear()} ${companyName}. All rights reserved.`),
+    poweredBy: stringValue(footerSettings?.powered_by_text, 'Powered by EventCraft Website Builder'),
   };
 }
 

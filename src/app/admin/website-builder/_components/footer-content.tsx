@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Save, Sparkles, Trash2, Phone, Mail, MapPin, Monitor, Smartphone, Lock, HelpCircle, RotateCcw, Loader2, Eye } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
+import { Save, Sparkles, Trash2, Phone, Mail, MapPin, Monitor, Smartphone, Lock, HelpCircle, RotateCcw, Loader2, Eye, Crop } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,9 +10,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Switch } from '@/components/ui/switch';
 import { BuilderCountedInput, BuilderCountedTextarea } from './builder-field';
 import { MultiSelectPages } from './multi-select-pages';
-import { useCompanyFooterSettings } from '@/hooks/useCompanyWebsiteBuilder';
+import { useCompanyFooterSettings, useCompanyBasicInformation } from '@/hooks/useCompanyWebsiteBuilder';
 import { mediaApi } from '@/hooks/use-media';
 import { PageLoader } from '@/components/common/page-loader';
+import { MediaCropDialog } from '@/components/common/media-crop-dialog';
 
 type ContactType = 'default' | 'alternative';
 type PreviewDevice = 'desktop' | 'mobile';
@@ -38,7 +39,8 @@ const initialSelectedPages = [
 ];
 
 export function FooterContent() {
-    const { data: footerData, isLoading, save, isSaving } = useCompanyFooterSettings();
+    const { data: footerData, isLoading, save, isSaving: isSavingFooter } = useCompanyFooterSettings();
+    const { data: basicInfo } = useCompanyBasicInformation();
     const [previewOpen, setPreviewOpen] = useState(false);
 
     const [companyLogo, setCompanyLogo] = useState('');
@@ -60,23 +62,40 @@ export function FooterContent() {
     const [showSocialLinks, setShowSocialLinks] = useState(true);
     const [previewDevice, setPreviewDevice] = useState<PreviewDevice>('desktop');
 
+    // Cropper state for Footer Logo
+    const [cropModalOpen, setCropModalOpen] = useState(false);
+    const [selectedImageSrc, setSelectedImageSrc] = useState('');
+    const [selectedFileName, setSelectedFileName] = useState('footer-logo.png');
+    const [selectedMimeType, setSelectedMimeType] = useState('image/png');
+    const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+
+    const isSaving = isSavingFooter || isUploadingLogo;
+
+    const loadedRef = useRef(false);
+
     useEffect(() => {
-        if (footerData && Object.keys(footerData).length > 0) {
-            if (footerData.logo_url) setCompanyLogo(footerData.logo_url);
-            if (footerData.company_name) setCompanyName(footerData.company_name);
-            if (footerData.description) setShortDescription(footerData.description);
-            if (footerData.contact_type) setContactType(footerData.contact_type as ContactType);
-            if (footerData.mobile) setDefaultContact((prev) => ({ ...prev, mobile: footerData.mobile || '' }));
-            if (footerData.email) setDefaultContact((prev) => ({ ...prev, email: footerData.email || '' }));
-            if (footerData.address) setDefaultContact((prev) => ({ ...prev, address: footerData.address || '' }));
-            if (footerData.top_list_heading) setTopListHeading(footerData.top_list_heading);
-            if (footerData.show_newsletter !== undefined) setNewsletterEnabled(Boolean(footerData.show_newsletter));
-            if (footerData.show_social_links !== undefined) setShowSocialLinks(Boolean(footerData.show_social_links));
-            if (footerData.quick_links_json && Array.isArray(footerData.quick_links_json)) {
+        if (loadedRef.current) return;
+        if ((footerData && Object.keys(footerData).length > 0) || (basicInfo && Object.keys(basicInfo).length > 0)) {
+            const logo = footerData?.logo_url || basicInfo?.logo_url || '';
+            const name = footerData?.company_name || basicInfo?.company_name || 'RA EVENTS';
+            setCompanyLogo(logo);
+            setCompanyName(name);
+            if (footerData?.description) setShortDescription(footerData.description);
+            if (footerData?.contact_type) setContactType(footerData.contact_type as ContactType);
+            if (footerData?.mobile || basicInfo?.mobile) setDefaultContact((prev) => ({ ...prev, mobile: footerData?.mobile || basicInfo?.mobile || '' }));
+            if (footerData?.email || basicInfo?.email) setDefaultContact((prev) => ({ ...prev, email: footerData?.email || basicInfo?.email || '' }));
+            if (footerData?.address) setDefaultContact((prev) => ({ ...prev, address: footerData.address || '' }));
+            if (footerData?.top_list_heading) setTopListHeading(footerData.top_list_heading);
+            if (footerData?.show_newsletter !== undefined) setNewsletterEnabled(Boolean(footerData.show_newsletter));
+            if (footerData?.show_social_links !== undefined) setShowSocialLinks(Boolean(footerData.show_social_links));
+            if (footerData?.quick_links_json && Array.isArray(footerData.quick_links_json)) {
                 setSelectedPages(footerData.quick_links_json);
             }
+            if (footerData || basicInfo) {
+                loadedRef.current = true;
+            }
         }
-    }, [footerData]);
+    }, [footerData, basicInfo]);
 
     const activeContact = contactType === 'alternative' ? alternativeContact : defaultContact;
 
@@ -92,18 +111,64 @@ export function FooterContent() {
     const copyright = '© 2026 RA Events. All rights reserved.';
     const poweredBy = 'Powered by EventCraft Website Builder';
 
-    const handleLogoSelect = async (file: File) => {
-        const tid = toast.loading('Uploading logo...');
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > 10 * 1024 * 1024) {
+            toast.error('File size exceeds 10MB limit. Please choose a smaller image.');
+            e.target.value = '';
+            return;
+        }
+
+        setSelectedFileName(file.name);
+        setSelectedMimeType(file.type || 'image/png');
+
+        const reader = new FileReader();
+        reader.onload = () => {
+            setSelectedImageSrc(reader.result as string);
+            setCropModalOpen(true);
+        };
+        reader.readAsDataURL(file);
+        e.target.value = '';
+    };
+
+    const handleCroppedImage = async (croppedFile: File) => {
+        setIsUploadingLogo(true);
+        const tid = toast.loading('Uploading cropped footer logo...');
         try {
-            const res = await mediaApi.upload(file, 'website-builder');
+            const res = await mediaApi.upload(croppedFile, 'website-builder');
             if (res?.url) {
                 setCompanyLogo(res.url);
-                toast.success('Company logo uploaded successfully', { id: tid });
+                toast.success('Footer logo cropped & uploaded successfully', { id: tid });
+                setCropModalOpen(false);
             } else {
                 toast.error('Failed to retrieve uploaded image URL', { id: tid });
             }
         } catch (err: any) {
             toast.error(err?.message || 'Failed to upload logo', { id: tid });
+        } finally {
+            setIsUploadingLogo(false);
+        }
+    };
+
+    const handleRecropExisting = async (url: string) => {
+        try {
+            const res = await fetch(`/api/proxy-image?url=${encodeURIComponent(url)}`);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const blob = await res.blob();
+            const dataUrl = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+            setSelectedImageSrc(dataUrl);
+            setSelectedFileName('footer-logo.png');
+            setSelectedMimeType(blob.type || 'image/png');
+            setCropModalOpen(true);
+        } catch {
+            toast.error('Failed to load image for cropping');
         }
     };
 
@@ -178,17 +243,28 @@ export function FooterContent() {
                             <CardContent className="space-y-3">
                                 {/* Logo Upload */}
                                 <div className="space-y-1.5 w-full">
-                                    <label className="text-xs font-semibold text-muted-foreground">Company Logo</label>
+                                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Company Logo</label>
                                     {companyLogo ? (
-                                        <div className="relative flex h-16 w-full items-center justify-center rounded-lg border bg-card p-2 overflow-hidden">
+                                        <div className="relative flex h-16 w-full items-center justify-center rounded-lg border bg-card p-2 overflow-hidden group">
                                             <img src={companyLogo} alt="Footer Logo" className="h-full w-full object-contain" />
-                                            <button
-                                                type="button"
-                                                onClick={() => setCompanyLogo('')}
-                                                className="absolute top-1.5 right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-slate-800 text-white hover:bg-slate-900"
-                                            >
-                                                <Trash2 className="h-3 w-3" />
-                                            </button>
+                                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-1.5 transition-opacity">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRecropExisting(companyLogo)}
+                                                    className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 bg-white text-slate-800 rounded shadow-xs hover:bg-slate-100 cursor-pointer"
+                                                    title="Crop logo"
+                                                >
+                                                    <Crop className="h-3 w-3" /> Crop
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setCompanyLogo('')}
+                                                    className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 bg-rose-600 text-white rounded shadow-xs hover:bg-rose-700 cursor-pointer"
+                                                    title="Remove logo"
+                                                >
+                                                    <Trash2 className="h-3 w-3" /> Remove
+                                                </button>
+                                            </div>
                                         </div>
                                     ) : (
                                         <div className="relative flex flex-col items-center justify-center h-16 w-full rounded-lg border border-dashed bg-muted/20 hover:bg-muted/30 cursor-pointer p-2 text-center">
@@ -196,13 +272,10 @@ export function FooterContent() {
                                                 type="file"
                                                 accept="image/*"
                                                 className="absolute inset-0 opacity-0 cursor-pointer"
-                                                onChange={(e) => {
-                                                    const file = e.target.files?.[0];
-                                                    if (file) handleLogoSelect(file);
-                                                }}
+                                                onChange={handleFileChange}
                                             />
-                                            <p className="text-xs font-semibold text-foreground">Click to upload logo</p>
-                                            <p className="text-[10px] text-muted-foreground">PNG, SVG or WEBP (Max 2MB)</p>
+                                            <p className="text-xs font-semibold text-foreground">Click or drag image to crop</p>
+                                            <p className="text-[10px] text-muted-foreground">PNG, SVG or WEBP (Max 10MB)</p>
                                         </div>
                                     )}
                                 </div>
@@ -454,6 +527,16 @@ export function FooterContent() {
                     </div>
                 </DialogContent>
             </Dialog>
+
+            <MediaCropDialog
+                open={cropModalOpen}
+                imageUrl={selectedImageSrc}
+                fileName={selectedFileName}
+                mimeType={selectedMimeType}
+                onClose={() => setCropModalOpen(false)}
+                onCropped={handleCroppedImage}
+                isSaving={isUploadingLogo}
+            />
         </div>
     );
 }

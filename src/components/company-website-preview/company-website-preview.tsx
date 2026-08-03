@@ -162,7 +162,7 @@ export function CompanyWebsitePreview() {
   const testimonials = buildTestimonials(testimonialsRaw as AnyRecord[]);
   const clients = buildLogos(clientsRaw as AnyRecord[]);
   const sponsors = buildLogos(sponsorsRaw as AnyRecord[]);
-  const footer = buildFooter(footerRaw as AnyRecord, pagesRaw as AnyRecord[]);
+  const footer = buildFooter(footerRaw as AnyRecord, pagesRaw as AnyRecord[], basicInfo as AnyRecord);
   const contact = buildContact(contactRaw as AnyRecord, contactCatsRaw as AnyRecord[], socialLinks);
   const legalPages = buildLegalPages(pagesRaw as AnyRecord[]);
   const companyName = String(basicInfo.company_name || 'Company');
