@@ -37,7 +37,7 @@ export function TemplatesSection({ templates, theme, categories, onPreview }: Te
   // Only ever work with active templates from here on — inactive ones must
   // never reach category derivation, filtering, or rendering.
   const activeTemplates = useMemo(
-    () => (templates || []).filter((t) => t.isActive === true),
+    () => (templates || []).filter((t) => t.isActive !== false),
     [templates],
   );
 

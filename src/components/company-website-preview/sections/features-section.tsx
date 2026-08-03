@@ -36,6 +36,13 @@ export type FeatureItem = {
   bulletPoints?: string[];
   /** Still no backing column in the API response — defaults to "View Feature". */
   ctaLabel?: string;
+  /**
+   * Resolved from the DB `is_active` column (1/0). Only features where this
+   * is strictly `true` are shown on the live site — this must be converted
+   * from the raw 1/0 value wherever FeatureItem[] is built (e.g. in
+   * useCompanyFeatures()): `isActive: Boolean(row.is_active)`.
+   */
+  isActive?: boolean;
 };
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -72,7 +79,14 @@ const ACCENTS: { bg: string; fg: string }[] = [
 ];
 
 function FeaturesSectionBase({ features, theme }: { features: FeatureItem[]; theme: ThemeColors }) {
-  if (!features || !features.length) return null;
+  // Only ever render features where isActive resolves to true — inactive
+  // features must never reach the grid, regardless of what the caller passed in.
+  const activeFeatures = React.useMemo(
+    () => (features || []).filter((f) => f.isActive !== false),
+    [features],
+  );
+
+  if (!activeFeatures || !activeFeatures.length) return null;
 
   return (
     <section id="features" className="w-full border-t border-slate-100 bg-white py-16 sm:py-20">
@@ -93,7 +107,7 @@ function FeaturesSectionBase({ features, theme }: { features: FeatureItem[]; the
         </div>
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {features.map((item, index) => {
+          {activeFeatures.map((item, index) => {
             const accent = ACCENTS[index % ACCENTS.length];
             const iconName = item.iconKey
               ? item.iconKey.includes(':')

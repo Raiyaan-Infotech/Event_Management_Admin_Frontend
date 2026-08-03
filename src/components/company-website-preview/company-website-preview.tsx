@@ -179,25 +179,25 @@ export function CompanyWebsitePreview() {
 
   // Features mapping
   const features = (featuresRaw as AnyRecord[]).map((f) => {
-  let bulletPoints: string[] = [];
-  if (f.bullet_points_json) {
-    try {
-      bulletPoints = typeof f.bullet_points_json === 'string' ? JSON.parse(f.bullet_points_json) : f.bullet_points_json;
-    } catch {
-      bulletPoints = [];
+    let bulletPoints: string[] = [];
+    if (f.bullet_points_json) {
+      try {
+        bulletPoints = typeof f.bullet_points_json === 'string' ? JSON.parse(f.bullet_points_json) : f.bullet_points_json;
+      } catch {
+        bulletPoints = [];
+      }
     }
-  }
- 
-  return {
-    id: Number(f.id),
-    title: String(f.title || ''),
-    description: String(f.short_description || f.description || ''),
-    iconKey: String(f.icon || f.icon_key || ''),
-    customIconUrl: f.custom_icon_url ? String(f.custom_icon_url) : undefined,
-    bulletPoints,
-    // no cta_label column yet — leave undefined so the component's "View Feature" default applies
-  };
-});
+
+    return {
+      id: Number(f.id),
+      title: String(f.title || ''),
+      description: String(f.short_description || f.description || ''),
+      iconKey: String(f.icon || f.icon_key || ''),
+      customIconUrl: f.custom_icon_url ? String(f.custom_icon_url) : undefined,
+      bulletPoints,
+      isActive: f.is_active !== undefined && f.is_active !== null ? (Number(f.is_active) === 1 || Boolean(f.is_active)) : (f.status ? f.status === 'Active' : true),
+    };
+  });
 
   // How it works mapping
   const howItWorksSteps = (howItWorksRaw as AnyRecord[]).map((s) => ({
@@ -267,6 +267,7 @@ export function CompanyWebsitePreview() {
     primaryColor: String(t.primary_color || '#4F46E5'),
     thumbnailUrl: String(t.thumbnail_url || ''),
     isPopular: Boolean(t.is_popular),
+    isActive: t.is_active !== undefined && t.is_active !== null ? (Number(t.is_active) === 1 || Boolean(t.is_active)) : (t.status ? t.status === 'Active' : true),
   }));
 
   // ── Render Page Sections ──────────────────────────────────────────────────
