@@ -137,13 +137,20 @@ export function CompanyWebsitePreview() {
   const theme = parseThemeColors(themeRaw as AnyRecord);
   const header = parseHeaderSettings(basicInfo);
   const phone = buildPhone(header);
-  // Prefer the dedicated social-links table; fall back to the JSON blob saved in basicInfo
-  const socialLinksSource: AnyRecord[] =
-    (socialLinksRaw as AnyRecord[]).length > 0
-      ? (socialLinksRaw as AnyRecord[])
-      : Array.isArray(basicInfo.social_links_json)
-      ? (basicInfo.social_links_json as AnyRecord[])
-      : [];
+  // Parse social_links_json safely (whether array or JSON string)
+  let jsonLinks: AnyRecord[] = [];
+  if (basicInfo.social_links_json) {
+    try {
+      jsonLinks = typeof basicInfo.social_links_json === 'string'
+        ? JSON.parse(basicInfo.social_links_json)
+        : (basicInfo.social_links_json as AnyRecord[]);
+    } catch {
+      jsonLinks = [];
+    }
+  }
+
+  const tableLinks = (socialLinksRaw as AnyRecord[]) || [];
+  const socialLinksSource: AnyRecord[] = jsonLinks.length > 0 ? jsonLinks : tableLinks;
   const socialLinks = buildSocialLinks(socialLinksSource);
 
   const navItems = buildNavItems(menuItemsRaw as AnyRecord[], pagesRaw as AnyRecord[]);

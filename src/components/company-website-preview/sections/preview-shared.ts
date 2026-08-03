@@ -238,7 +238,7 @@ export function buildSocialLinks(socialLinks: AnyRecord[]) {
     .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0))
     .map((item) => {
       const label = stringValue(item.label, item.social_network, item.name, 'Social');
-      let rawIcon = stringValue(item.iconName, item.icon_key, item.icon, item.icon_name, item.social_network, 'linktree');
+      let rawIcon = stringValue(item.icon_name, item.iconName, item.icon_key, item.icon, item.social_network, 'linktree');
       if (!rawIcon.includes(':')) {
         rawIcon = `simple-icons:${rawIcon.toLowerCase()}`;
       }
