@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
-import { Search, Filter as FilterIcon, Flame, Palette, ChevronDown, Heart, ArrowDown, Layout } from 'lucide-react';
+import React, { useMemo, useRef, useState } from 'react';
+import { ChevronDown, ChevronRight, Heart, Layout, Eye } from 'lucide-react';
 import type { ThemeColors } from './preview-shared';
 
 export interface TemplateItem {
@@ -18,71 +18,19 @@ export interface TemplateItem {
 interface TemplatesSectionProps {
   templates: TemplateItem[];
   theme: ThemeColors;
-  /** Optional — if you add a real categories endpoint later, pass names here. Falls back to deriving from templates. */
   categories?: string[];
   onPreview?: (template: TemplateItem) => void;
   onUseTemplate?: (template: TemplateItem) => void;
 }
 
-type SortOption = 'popular' | 'newest' | 'az';
-interface SelectOption {
-  value: string;
-  label: string;
-}
-
 const ALL_CATEGORY = '__all_categories__';
-const ALL_COLOR = '__all_colors__';
-const PAGE_SIZE = 10;
-const MAX_VISIBLE_PILLS = 7;
+const MAX_VISIBLE_PILLS = 6;
 
-// Heuristic bucket: your data only has a hex `primaryColor`, so we map it to
-// the nearest of a small reference palette rather than a real color-family field.
-const COLOR_FAMILIES: { name: string; rgb: [number, number, number] }[] = [
-  { name: 'Gold', rgb: [201, 164, 76] },
-  { name: 'Pink', rgb: [236, 72, 153] },
-  { name: 'Red', rgb: [185, 28, 28] },
-  { name: 'Green', rgb: [22, 101, 52] },
-  { name: 'Purple', rgb: [107, 33, 168] },
-  { name: 'Blue', rgb: [29, 78, 216] },
-  { name: 'Black', rgb: [23, 23, 23] },
-];
-
-function hexToRgb(hex: string): [number, number, number] | null {
-  const clean = hex.replace('#', '');
-  if (clean.length !== 6) return null;
-  const r = parseInt(clean.slice(0, 2), 16);
-  const g = parseInt(clean.slice(2, 4), 16);
-  const b = parseInt(clean.slice(4, 6), 16);
-  if ([r, g, b].some((n) => Number.isNaN(n))) return null;
-  return [r, g, b];
-}
-
-function nearestColorFamily(hex?: string): string | null {
-  if (!hex) return null;
-  const rgb = hexToRgb(hex);
-  if (!rgb) return null;
-  let best = COLOR_FAMILIES[0];
-  let bestDist = Infinity;
-  for (const family of COLOR_FAMILIES) {
-    const dist = Math.sqrt(
-      (rgb[0] - family.rgb[0]) ** 2 + (rgb[1] - family.rgb[1]) ** 2 + (rgb[2] - family.rgb[2]) ** 2,
-    );
-    if (dist < bestDist) {
-      bestDist = dist;
-      best = family;
-    }
-  }
-  return best.name;
-}
-
-export function TemplatesSection({ templates, theme, categories, onPreview, onUseTemplate }: TemplatesSectionProps) {
-  const [search, setSearch] = useState('');
+export function TemplatesSection({ templates, theme, categories, onPreview }: TemplatesSectionProps) {
   const [activeCategory, setActiveCategory] = useState<string>(ALL_CATEGORY);
-  const [activeColor, setActiveColor] = useState<string>(ALL_COLOR);
-  const [sortBy, setSortBy] = useState<SortOption>('popular');
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const [favorites, setFavorites] = useState<Set<number>>(new Set());
   const [showMoreCategories, setShowMoreCategories] = useState(false);
+  const [favorites, setFavorites] = useState<Set<number>>(new Set());
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const derivedCategories = useMemo(() => {
     if (categories && categories.length > 0) return categories;
@@ -101,28 +49,6 @@ export function TemplatesSection({ templates, theme, categories, onPreview, onUs
   const visiblePills = derivedCategories.slice(0, MAX_VISIBLE_PILLS);
   const overflowPills = derivedCategories.slice(MAX_VISIBLE_PILLS);
 
-  const categoryOptions: SelectOption[] = [
-    { value: ALL_CATEGORY, label: 'All Categories' },
-    ...derivedCategories.map((c) => ({ value: c, label: c })),
-  ];
-
-  const colorOptions: SelectOption[] = useMemo(() => {
-    const seen = new Set<string>();
-    for (const t of templates) {
-      const family = nearestColorFamily(t.primaryColor);
-      if (family) seen.add(family);
-    }
-    return [{ value: ALL_COLOR, label: 'All Colors' }, ...Array.from(seen).map((c) => ({ value: c, label: c }))];
-  }, [templates]);
-
-  const sortOptions: SelectOption[] = [
-    { value: 'popular', label: 'Popular' },
-    { value: 'newest', label: 'Newest' },
-    { value: 'az', label: 'A–Z' },
-  ];
-
-  const resetPaging = () => setVisibleCount(PAGE_SIZE);
-
   const toggleFavorite = (id: number) => {
     setFavorites((prev) => {
       const next = new Set(prev);
@@ -133,103 +59,41 @@ export function TemplatesSection({ templates, theme, categories, onPreview, onUs
   };
 
   const filtered = useMemo(() => {
-    let result = templates;
+    if (activeCategory === ALL_CATEGORY) return templates;
+    return templates.filter((t) => t.categoryName === activeCategory);
+  }, [templates, activeCategory]);
 
-    if (activeCategory !== ALL_CATEGORY) {
-      result = result.filter((t) => t.categoryName === activeCategory);
-    }
-    if (activeColor !== ALL_COLOR) {
-      result = result.filter((t) => nearestColorFamily(t.primaryColor) === activeColor);
-    }
-    if (search.trim()) {
-      const q = search.trim().toLowerCase();
-      result = result.filter(
-        (t) =>
-          t.title.toLowerCase().includes(q) ||
-          t.description?.toLowerCase().includes(q) ||
-          t.categoryName?.toLowerCase().includes(q),
-      );
-    }
-
-    const sorted = [...result];
-    if (sortBy === 'popular') sorted.sort((a, b) => Number(b.isPopular) - Number(a.isPopular));
-    else if (sortBy === 'newest') sorted.sort((a, b) => b.id - a.id);
-    else sorted.sort((a, b) => a.title.localeCompare(b.title));
-    return sorted;
-  }, [templates, activeCategory, activeColor, search, sortBy]);
-
-  const visible = filtered.slice(0, visibleCount);
-  const hasMore = visibleCount < filtered.length;
+  const scrollNext = () => {
+    scrollRef.current?.scrollBy({ left: 240, behavior: 'smooth' });
+  };
 
   if (!templates || templates.length === 0) return null;
 
   return (
-    <section className="w-full border-t border-slate-100 bg-white py-12 sm:py-16">
+    <section className="w-full border-t border-slate-100 bg-white py-14 sm:py-20">
       <div className="mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-8">
-        {/* Toolbar */}
-        <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center">
-          <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                resetPaging();
-              }}
-              placeholder="Search templates for weddings, events..."
-              className="w-full rounded-md border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
-            />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <SelectField
-              value={activeCategory}
-              onChange={(v) => {
-                setActiveCategory(v);
-                resetPaging();
-              }}
-              options={categoryOptions}
-            />
-            <SelectField
-              value={activeColor}
-              onChange={(v) => {
-                setActiveColor(v);
-                resetPaging();
-              }}
-              options={colorOptions}
-              icon={<Palette className="h-3.5 w-3.5 text-slate-400" />}
-            />
-            <SelectField
-              value={sortBy}
-              onChange={(v) => setSortBy(v as SortOption)}
-              options={sortOptions}
-              icon={<Flame className="h-3.5 w-3.5 text-slate-400" />}
-            />
-
-            <button
-              type="button"
-              onClick={() =>
-                document.getElementById('templates-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-              }
-              className="inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-sm font-bold text-white shadow-sm"
-              style={{ backgroundColor: theme.primaryButton }}
-            >
-              <FilterIcon className="h-3.5 w-3.5" />
-              Filter
-            </button>
+        {/* Heading */}
+        <div className="mb-8 text-center">
+          <p className="text-[11px] font-bold uppercase tracking-[0.15em]" style={{ color: theme.primaryButton }}>
+            Choose From Beautiful Templates
+          </p>
+          <h2 className="mt-2 text-2xl font-extrabold sm:text-3xl" style={{ color: theme.primaryText }}>
+            Stunning Templates for Every Occasion
+          </h2>
+          <div className="mt-3 flex items-center justify-center gap-2">
+            <span className="h-px w-8" style={{ backgroundColor: theme.primaryButton }} />
+            <Heart className="h-3 w-3" style={{ color: theme.primaryButton, fill: theme.primaryButton }} />
+            <span className="h-px w-8" style={{ backgroundColor: theme.primaryButton }} />
           </div>
         </div>
 
         {/* Category pills */}
-        <div className="mb-8 flex flex-wrap items-center gap-2">
+        <div className="mb-8 flex flex-wrap items-center justify-center gap-2">
           <CategoryPill
             label="All Templates"
             isActive={activeCategory === ALL_CATEGORY}
             theme={theme}
-            onClick={() => {
-              setActiveCategory(ALL_CATEGORY);
-              resetPaging();
-            }}
+            onClick={() => setActiveCategory(ALL_CATEGORY)}
           />
           {visiblePills.map((label) => (
             <CategoryPill
@@ -237,13 +101,9 @@ export function TemplatesSection({ templates, theme, categories, onPreview, onUs
               label={label}
               isActive={activeCategory === label}
               theme={theme}
-              onClick={() => {
-                setActiveCategory(label);
-                resetPaging();
-              }}
+              onClick={() => setActiveCategory(label)}
             />
           ))}
-
           {overflowPills.length > 0 && (
             <div className="relative">
               <button
@@ -261,7 +121,6 @@ export function TemplatesSection({ templates, theme, categories, onPreview, onUs
                       type="button"
                       onClick={() => {
                         setActiveCategory(label);
-                        resetPaging();
                         setShowMoreCategories(false);
                       }}
                       className="block w-full rounded-md px-3 py-1.5 text-left text-[13px] font-medium text-slate-700 hover:bg-slate-50"
@@ -275,72 +134,42 @@ export function TemplatesSection({ templates, theme, categories, onPreview, onUs
           )}
         </div>
 
-        {/* Grid */}
-        <div id="templates-grid" className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5">
-          {visible.map((template) => (
-            <TemplateCard
-              key={template.id}
-              template={template}
-              theme={theme}
-              isFavorite={favorites.has(template.id)}
-              onToggleFavorite={() => toggleFavorite(template.id)}
-              onPreview={onPreview}
-              onUseTemplate={onUseTemplate}
-            />
-          ))}
-        </div>
+        {/* Horizontally scrolling template row */}
+        <div className="relative">
+          <div
+            ref={scrollRef}
+            className="flex gap-5 overflow-x-auto scroll-smooth pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {filtered.map((template) => (
+              <div key={template.id} className="w-[190px] shrink-0 sm:w-[210px]">
+                <TemplateCard
+                  template={template}
+                  theme={theme}
+                  isFavorite={favorites.has(template.id)}
+                  onToggleFavorite={() => toggleFavorite(template.id)}
+                  onPreview={onPreview}
+                />
+              </div>
+            ))}
+          </div>
 
-        {visible.length === 0 && (
-          <p className="py-12 text-center text-sm text-slate-500">No templates match your filters.</p>
-        )}
-
-        {hasMore && (
-          <div className="mt-10 flex justify-center">
+          {filtered.length > 4 && (
             <button
               type="button"
-              onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
-              className="inline-flex items-center gap-2 rounded-md border px-6 py-2.5 text-sm font-bold transition-colors hover:text-white"
-              style={{ borderColor: theme.primaryButton, color: theme.primaryButton }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = theme.primaryButton)}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+              onClick={scrollNext}
+              aria-label="Show more templates"
+              className="absolute right-0 top-1/2 hidden -translate-y-1/2 translate-x-4 items-center justify-center rounded-full border border-slate-200 bg-white p-2 shadow-md sm:flex"
             >
-              <ArrowDown className="h-4 w-4" />
-              Load More Templates
+              <ChevronRight className="h-4 w-4" style={{ color: theme.primaryButton }} />
             </button>
-          </div>
+          )}
+        </div>
+
+        {filtered.length === 0 && (
+          <p className="py-12 text-center text-sm text-slate-500">No templates in this category yet.</p>
         )}
       </div>
     </section>
-  );
-}
-
-function SelectField({
-  value,
-  onChange,
-  options,
-  icon,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  options: SelectOption[];
-  icon?: React.ReactNode;
-}) {
-  return (
-    <div className="relative inline-flex items-center rounded-md border border-slate-200 bg-white py-2 pl-3 pr-7">
-      {icon && <span className="mr-1.5">{icon}</span>}
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="appearance-none bg-transparent text-sm font-medium text-slate-700 focus:outline-none"
-      >
-        {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
-      </select>
-      <ChevronDown className="pointer-events-none absolute right-2.5 h-3.5 w-3.5 text-slate-400" />
-    </div>
   );
 }
 
@@ -377,31 +206,42 @@ function TemplateCard({
   isFavorite,
   onToggleFavorite,
   onPreview,
-  onUseTemplate,
 }: {
   template: TemplateItem;
   theme: ThemeColors;
   isFavorite: boolean;
   onToggleFavorite: () => void;
   onPreview?: (template: TemplateItem) => void;
-  onUseTemplate?: (template: TemplateItem) => void;
 }) {
   return (
-    <div className="flex flex-col overflow-hidden rounded-md border border-slate-200 bg-white shadow-xs transition hover:shadow-md">
+    <div className="flex h-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs transition hover:shadow-md">
       <div className="relative aspect-[3/4] w-full overflow-hidden bg-slate-100">
         {template.thumbnailUrl ? (
-          <img src={template.thumbnailUrl} alt={template.title} className="h-full w-full object-cover" />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center text-slate-400">
-            <Layout className="h-10 w-10" />
-          </div>
-        )}
+          <img
+            src={template.thumbnailUrl}
+            alt={template.title}
+            className="h-full w-full object-cover"
+            onError={(e) => {
+              const imgEl = e.currentTarget;
+              imgEl.style.display = 'none';
+              const fallbackEl = imgEl.parentElement?.querySelector('[data-thumb-fallback="true"]') as HTMLElement;
+              if (fallbackEl) fallbackEl.style.display = 'flex';
+            }}
+          />
+        ) : null}
+        <div
+          data-thumb-fallback="true"
+          className="flex h-full w-full items-center justify-center text-slate-400"
+          style={{ display: template.thumbnailUrl ? 'none' : 'flex' }}
+        >
+          <Layout className="h-10 w-10" />
+        </div>
 
         <button
           type="button"
           onClick={onToggleFavorite}
           aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-          className="absolute right-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-md bg-white/90 shadow-sm"
+          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 shadow-sm"
         >
           <Heart
             className="h-3.5 w-3.5"
@@ -411,7 +251,7 @@ function TemplateCard({
 
         {template.isPopular && (
           <span
-            className="absolute left-2.5 top-2.5 rounded px-2 py-0.5 text-[10px] font-bold tracking-wide text-white shadow-sm"
+            className="absolute left-2 top-2 rounded px-2 py-0.5 text-[10px] font-bold tracking-wide text-white shadow-sm"
             style={{ backgroundColor: theme.primaryButton }}
           >
             ★ Popular
@@ -419,33 +259,27 @@ function TemplateCard({
         )}
       </div>
 
-      <div className="flex flex-1 flex-col gap-2.5 p-3">
+      <div className="flex flex-1 flex-col justify-between gap-2 p-3">
         <div>
-          <h3 className="line-clamp-1 text-[14px] font-bold leading-snug" style={{ color: theme.primaryText }}>
+          <h3 className="line-clamp-1 text-[13px] font-bold leading-snug" style={{ color: theme.primaryText }}>
             {template.title}
           </h3>
-          <p className="text-[12px] font-medium" style={{ color: theme.secondaryText }}>
+          <p className="text-[11px] font-medium" style={{ color: theme.secondaryText }}>
             {template.categoryName || template.templateType || 'Invitation'}
           </p>
         </div>
 
-        <div className="mt-auto flex gap-2">
-          <button
-            type="button"
-            onClick={() => onPreview?.(template)}
-            className="flex-1 rounded-md border border-slate-200 py-1.5 text-[12px] font-semibold text-slate-600 hover:bg-slate-50"
-          >
-            Preview
-          </button>
-          <button
-            type="button"
-            onClick={() => onUseTemplate?.(template)}
-            className="flex-1 rounded-md py-1.5 text-[12px] font-bold text-white shadow-sm"
-            style={{ backgroundColor: theme.primaryButton }}
-          >
-            Use Template
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => onPreview?.(template)}
+          className="flex items-center justify-center gap-1.5 rounded-md border py-1.5 text-[12px] font-bold transition-colors hover:text-white"
+          style={{ borderColor: theme.primaryButton, color: theme.primaryButton }}
+          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = theme.primaryButton)}
+          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+        >
+          <Eye className="h-3.5 w-3.5" />
+          Preview
+        </button>
       </div>
     </div>
   );
