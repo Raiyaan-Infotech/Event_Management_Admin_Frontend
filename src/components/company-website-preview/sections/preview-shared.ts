@@ -142,8 +142,26 @@ export function parseRecord(value: unknown): AnyRecord {
 export function isExternalHref(href: unknown) {
   const raw = String(href ?? '').trim();
   if (!raw || raw === '#') return true;
-  if (raw.startsWith('//') || /^https?:/i.test(raw)) return true;
   if (/^(mailto:|tel:)/i.test(raw)) return true;
+  if (raw.startsWith('//')) return true;
+
+  if (/^https?:/i.test(raw)) {
+    if (typeof window !== 'undefined') {
+      try {
+        const urlObj = new URL(raw);
+        if (urlObj.origin === window.location.origin) {
+          return false;
+        }
+      } catch {
+        return true;
+      }
+    }
+    const internalKeys = ['pricing', 'plan', 'template', 'feature', 'how-it-works', 'contact', 'gallery', 'faq'];
+    if (internalKeys.some((k) => raw.toLowerCase().includes(k))) {
+      return false;
+    }
+    return true;
+  }
   return false;
 }
 

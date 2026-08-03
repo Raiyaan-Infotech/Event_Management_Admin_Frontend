@@ -71,11 +71,11 @@ import {
   DynamicLoginDemoSection,
 } from './sections/login-demo-section';
 
-export function CompanyWebsitePreview() {
+export function CompanyWebsitePreview({ initialPage = 'home' }: { initialPage?: string }) {
   const queryClient = useQueryClient();
 
   // ── SPA Navigation ──────────────────────────────────────────────────────────
-  const [activeKey, setActiveKey] = React.useState('home');
+  const [activeKey, setActiveKey] = React.useState(() => viewKeyFromHref(initialPage));
   const handleNavigate = React.useCallback((href: string) => {
     setActiveKey(viewKeyFromHref(href));
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
