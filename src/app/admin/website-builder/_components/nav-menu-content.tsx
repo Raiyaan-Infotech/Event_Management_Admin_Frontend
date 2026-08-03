@@ -27,6 +27,7 @@ import { BuilderCountedInput } from './builder-field';
 import { MultiSelectPages } from './multi-select-pages';
 import { DraggableItemList, AddCustomLinkRow, type DraggableItemListItem, type ChildMenuItem } from './draggable-item-list';
 import { useCompanyBasicInformation, useCompanyMenuItems } from '@/hooks/useCompanyWebsiteBuilder';
+import { mediaApi } from '@/hooks/use-media';
 import { PageLoader } from '@/components/common/page-loader';
 
 const pageOptions = [
@@ -106,13 +107,19 @@ export function NavMenuContent() {
 
     const isSaving = isSavingBasic || isSavingItems;
 
-    const handleLogoSelect = (file: File) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            setLogoUrl(e.target?.result as string);
-            toast.success('Company logo updated.');
-        };
-        reader.readAsDataURL(file);
+    const handleLogoSelect = async (file: File) => {
+        const tid = toast.loading('Uploading logo...');
+        try {
+            const res = await mediaApi.upload(file, 'website-builder');
+            if (res?.url) {
+                setLogoUrl(res.url);
+                toast.success('Company logo uploaded successfully', { id: tid });
+            } else {
+                toast.error('Failed to retrieve uploaded logo URL', { id: tid });
+            }
+        } catch (err: any) {
+            toast.error(err?.message || 'Failed to upload logo', { id: tid });
+        }
     };
 
     const handleReset = () => {

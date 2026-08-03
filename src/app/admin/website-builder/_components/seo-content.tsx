@@ -13,6 +13,7 @@ import { Switch } from '@/components/ui/switch';
 import { BuilderCountedInput, BuilderCountedTextarea } from './builder-field';
 import { MediaCropDialog } from '@/components/common/media-crop-dialog';
 import { useCompanySeoSettings } from '@/hooks/useCompanyWebsiteBuilder';
+import { mediaApi } from '@/hooks/use-media';
 import { PageLoader } from '@/components/common/page-loader';
 
 export function SeoContent() {
@@ -82,10 +83,22 @@ export function SeoContent() {
         reader.readAsDataURL(file);
     };
 
-    const handleCropped = (_file: File, dataUrl: string) => {
-        setOgImageUrl(dataUrl);
+    const handleCropped = async (file: File, dataUrl: string) => {
         setCropOpen(false);
-        toast.success('OG Image cropped and updated successfully.');
+        const tid = toast.loading('Uploading OG image...');
+        try {
+            const res = await mediaApi.upload(file, 'website-builder');
+            if (res?.url) {
+                setOgImageUrl(res.url);
+                toast.success('OG image uploaded successfully', { id: tid });
+            } else {
+                setOgImageUrl(dataUrl);
+                toast.success('OG image cropped successfully', { id: tid });
+            }
+        } catch {
+            setOgImageUrl(dataUrl);
+            toast.success('OG image cropped.', { id: tid });
+        }
     };
 
     const handleSave = async () => {

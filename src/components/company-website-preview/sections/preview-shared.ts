@@ -238,10 +238,14 @@ export function buildSocialLinks(socialLinks: AnyRecord[]) {
     .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0))
     .map((item) => {
       const label = stringValue(item.label, item.social_network, item.name, 'Social');
+      let rawIcon = stringValue(item.iconName, item.icon_key, item.icon, item.icon_name, item.social_network, 'linktree');
+      if (!rawIcon.includes(':')) {
+        rawIcon = `simple-icons:${rawIcon.toLowerCase()}`;
+      }
       return {
         label,
         href: normalizeHref(item.url ?? item.link ?? item.href),
-        iconName: stringValue(item.iconName, item.icon_key, item.icon, 'simple-icons:linktree'),
+        iconName: rawIcon,
         color: stringValue(item.color, item.icon_color, '#1877F2'),
       };
     })

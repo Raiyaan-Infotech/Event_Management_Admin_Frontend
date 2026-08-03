@@ -32,6 +32,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent } from '@/components/ui/card';
 import { BuilderCountedInput, BuilderCountedTextarea } from './builder-field';
+import { mediaApi } from '@/hooks/use-media';
 import {
     Select,
     SelectContent,
@@ -129,28 +130,38 @@ export function VideoTutorialFormContent({ id }: VideoTutorialFormContentProps) 
 
     const isSaving = createMutation.isPending || updateMutation.isPending;
 
-    // Handle File Uploads (Image / Video Mock Reader)
-    const handleThumbnailUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Handle File Uploads
+    const handleThumbnailUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                const url = ev.target?.result as string;
-                if (url) setThumbnailUrl(url);
-            };
-            reader.readAsDataURL(file);
+        if (!file) return;
+        const tid = toast.loading('Uploading thumbnail...');
+        try {
+            const res = await mediaApi.upload(file, 'video-tutorials');
+            if (res?.url) {
+                setThumbnailUrl(res.url);
+                toast.success('Thumbnail uploaded successfully', { id: tid });
+            } else {
+                toast.error('Failed to retrieve uploaded image URL', { id: tid });
+            }
+        } catch (err: any) {
+            toast.error(err?.message || 'Failed to upload thumbnail', { id: tid });
         }
     };
 
-    const handleVideoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleVideoFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                const url = ev.target?.result as string;
-                if (url) setVideoFileUrl(url);
-            };
-            reader.readAsDataURL(file);
+        if (!file) return;
+        const tid = toast.loading('Uploading video file...');
+        try {
+            const res = await mediaApi.upload(file, 'video-tutorials');
+            if (res?.url) {
+                setVideoFileUrl(res.url);
+                toast.success('Video file uploaded successfully', { id: tid });
+            } else {
+                toast.error('Failed to retrieve uploaded video URL', { id: tid });
+            }
+        } catch (err: any) {
+            toast.error(err?.message || 'Failed to upload video file', { id: tid });
         }
     };
 

@@ -50,18 +50,21 @@ function HeaderSectionBase({ theme, header, navItems, socialLinks, companyName, 
           </div>
           {header.showSocialIcons && socialLinks.length ? (
             <div className="flex shrink-0 items-center gap-3">
-              {socialLinks.map((link) => (
-                <a
-                  key={`${link.label}-${link.href}`}
-                  href={link.href}
-                  aria-label={link.label}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex h-5 w-5 items-center justify-center text-white/85 transition hover:text-white"
-                >
-                  <Icon icon={link.iconName} className="h-3.5 w-3.5" />
-                </a>
-              ))}
+              {socialLinks.map((link) => {
+                const iconKey = link.iconName.includes(':') ? link.iconName : `simple-icons:${link.iconName.toLowerCase()}`;
+                return (
+                  <a
+                    key={`${link.label}-${link.href}`}
+                    href={link.href}
+                    aria-label={link.label}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex h-5 w-5 items-center justify-center text-white/85 transition hover:text-white"
+                  >
+                    <Icon icon={iconKey} className="h-3.5 w-3.5" />
+                  </a>
+                );
+              })}
             </div>
           ) : null}
         </div>
