@@ -34,6 +34,8 @@ import {
     BuilderStatusSwitch,
     BuilderEffectSlider,
 } from './builder-field';
+import { PageLoader } from '@/components/common/page-loader';
+import { mediaApi } from '@/hooks/use-media';
 import { MediaCropDialog } from '@/components/common/media-crop-dialog';
 import { cn } from '@/lib/utils';
 
@@ -173,10 +175,22 @@ export function AdvanceSliderContent() {
         reader.readAsDataURL(file);
     };
 
-    const handleCropped = (_file: File, dataUrl: string) => {
-        updateActiveSlide('imageUrl', dataUrl);
+    const handleCropped = async (file: File, dataUrl: string) => {
         setCropOpen(false);
-        toast.success('Advance slide image uploaded.');
+        const tid = toast.loading('Uploading slide image...');
+        try {
+            const res = await mediaApi.upload(file, 'website-builder');
+            if (res?.url) {
+                updateActiveSlide('imageUrl', res.url);
+                toast.success('Advance slide image uploaded successfully', { id: tid });
+            } else {
+                updateActiveSlide('imageUrl', dataUrl);
+                toast.success('Advance slide image cropped successfully', { id: tid });
+            }
+        } catch {
+            updateActiveSlide('imageUrl', dataUrl);
+            toast.success('Advance slide image cropped.', { id: tid });
+        }
     };
 
     const handleSave = () => {

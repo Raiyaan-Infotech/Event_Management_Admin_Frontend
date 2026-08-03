@@ -14,7 +14,7 @@ export interface MediaUploadResult {
 }
 
 // API functions
-const mediaApi = {
+export const mediaApi = {
   upload: async (file: File, folder?: string): Promise<MediaUploadResult> => {
     if (file.size > MAX_FILE_SIZE) {
       throw new Error('File size exceeds the 10MB limit.');

@@ -11,6 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { BuilderCountedInput, BuilderCountedTextarea } from './builder-field';
 import { MultiSelectPages } from './multi-select-pages';
 import { useCompanyFooterSettings } from '@/hooks/useCompanyWebsiteBuilder';
+import { mediaApi } from '@/hooks/use-media';
 import { PageLoader } from '@/components/common/page-loader';
 
 type ContactType = 'default' | 'alternative';
@@ -91,13 +92,19 @@ export function FooterContent() {
     const copyright = '© 2026 RA Events. All rights reserved.';
     const poweredBy = 'Powered by EventCraft Website Builder';
 
-    const handleLogoSelect = (file: File) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            setCompanyLogo(e.target?.result as string);
-            toast.success('Company logo updated.');
-        };
-        reader.readAsDataURL(file);
+    const handleLogoSelect = async (file: File) => {
+        const tid = toast.loading('Uploading logo...');
+        try {
+            const res = await mediaApi.upload(file, 'website-builder');
+            if (res?.url) {
+                setCompanyLogo(res.url);
+                toast.success('Company logo uploaded successfully', { id: tid });
+            } else {
+                toast.error('Failed to retrieve uploaded image URL', { id: tid });
+            }
+        } catch (err: any) {
+            toast.error(err?.message || 'Failed to upload logo', { id: tid });
+        }
     };
 
     const quickLinkLabels = selectedPages

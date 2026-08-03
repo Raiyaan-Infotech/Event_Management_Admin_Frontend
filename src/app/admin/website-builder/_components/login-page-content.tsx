@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { BuilderCountedInput, BuilderCountedTextarea } from './builder-field';
 import { useCompanyLoginSettings } from '@/hooks/useCompanyWebsiteBuilder';
+import { mediaApi } from '@/hooks/use-media';
 import { PageLoader } from '@/components/common/page-loader';
 import { cn } from '@/lib/utils';
 
@@ -79,14 +80,19 @@ export function LoginPageContent() {
         toast.info('Login page settings reset to defaults.');
     };
 
-    const handleBackgroundSelect = (file: File) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const url = e.target?.result as string;
-            setBackgroundImage(url);
-            toast.success('Background image updated.');
-        };
-        reader.readAsDataURL(file);
+    const handleBackgroundSelect = async (file: File) => {
+        const tid = toast.loading('Uploading background image...');
+        try {
+            const res = await mediaApi.upload(file, 'website-builder');
+            if (res?.url) {
+                setBackgroundImage(res.url);
+                toast.success('Background image uploaded successfully', { id: tid });
+            } else {
+                toast.error('Failed to retrieve uploaded image URL', { id: tid });
+            }
+        } catch (err: any) {
+            toast.error(err?.message || 'Failed to upload image', { id: tid });
+        }
     };
 
     const handleAddBullet = () => {

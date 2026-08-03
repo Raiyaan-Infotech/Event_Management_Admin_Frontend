@@ -30,6 +30,7 @@ import { Slider } from '@/components/ui/slider';
 import { BuilderCountedInput, BuilderCountedTextarea } from './builder-field';
 import { MediaCropDialog } from '@/components/common/media-crop-dialog';
 import { useCompanyHeroSection } from '@/hooks/useCompanyWebsiteBuilder';
+import { mediaApi } from '@/hooks/use-media';
 import { PageLoader } from '@/components/common/page-loader';
 import { cn } from '@/lib/utils';
 
@@ -196,10 +197,22 @@ export function HeroSectionContent({ pageSlug = 'home' }: HeroSectionContentProp
         reader.readAsDataURL(file);
     };
 
-    const handleCropped = (_file: File, dataUrl: string) => {
-        setHeroImage(dataUrl);
+    const handleCropped = async (file: File, dataUrl: string) => {
         setCropOpen(false);
-        toast.success('Hero image cropped successfully.');
+        const tid = toast.loading('Uploading hero image...');
+        try {
+            const res = await mediaApi.upload(file, 'website-builder');
+            if (res?.url) {
+                setHeroImage(res.url);
+                toast.success('Hero image uploaded successfully', { id: tid });
+            } else {
+                setHeroImage(dataUrl);
+                toast.success('Hero image cropped successfully', { id: tid });
+            }
+        } catch {
+            setHeroImage(dataUrl);
+            toast.success('Hero image cropped.', { id: tid });
+        }
     };
 
     const handleReset = () => {
