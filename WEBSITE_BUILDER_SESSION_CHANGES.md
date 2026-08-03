@@ -1201,4 +1201,29 @@ File: [company-website-preview.tsx](file:///d:/Jamal/Event_Management_Admin_Fron
 
 - Updated live preview renderer (`pageContents`) to support full multi-page section sequences for `home`, `features`, `template`, `pricing`, `how-it-works`, and `contact` pages with fixed Header, Navbar, Hero Section, and Footer across all page views.
 
+---
+
+### 6. Latest Session Enhancements & Database Optimizations
+
+Files: [header-section.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/company-website-preview/sections/header-section.tsx), [nav-menu-content.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/nav-menu-content.tsx), [footer-content.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/footer-content.tsx), [testimonials-content.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/testimonials-content.tsx), [useCompanyWebsiteBuilder.ts](file:///d:/Jamal/Event_Management_Admin_Frontend/src/hooks/useCompanyWebsiteBuilder.ts), [website_builder_db_optimizations.sql](file:///d:/Jamal/Event_Management_Admin_Frontend/docs/website_builder_db_optimizations.sql)
+
+#### 🌐 Icon Preloading & Network Iconify API Integration
+- Added `@iconify/react`'s `loadIcons` preloader inside `useEffect` across `header-section.tsx`, `footer-section.tsx`, and `contact-section.tsx` to explicitly fetch icon data over the network from `https://api.iconify.design`. Cleaned and lowercased icon keys (e.g. `simple-icons:facebook`).
+
+#### ✂️ Logo Cropper Integration (`MediaCropDialog`)
+- Integrated `MediaCropDialog` image cropper into both `NavMenuContent` (`nav-menu-content.tsx`) and `FooterContent` (`footer-content.tsx`).
+- Selecting a logo opens the crop modal so users can crop, zoom, scale, and drag before saving. Added hover **Crop** actions on existing logo boxes to allow re-cropping via `/api/proxy-image`.
+
+#### 🔄 Dual-Way Brand Synchronization (Nav Menu & Footer)
+- Synchronized `company_name` and `logo_url` across both `basic_information` AND `footer_settings` endpoints. Updating logo/name in Nav Menu or Footer Settings automatically updates both modules and the Website Preview.
+
+#### 🚀 React Query Caching & Database Indexing Optimizations
+- **In-Memory Caching**: Configured `staleTime: 5 * 60 * 1000` (5 minutes) and `gcTime: 15 * 60 * 1000` in `useCompanyWebsiteBuilder.ts` to eliminate duplicate HTTP GET calls to `/website-builder/basic-information`.
+- **Database Composite Indexes**: Applied composite B-Tree indexes across 16 `company_website_*` database tables on both Local MySQL (`localhost:3306`) and Live Production Aiven Cloud MySQL (`mysql-cbe9f33-jamaludheen779-4e61.k.aivencloud.com:15373`). Saved SQL script at [website_builder_db_optimizations.sql](file:///d:/Jamal/Event_Management_Admin_Frontend/docs/website_builder_db_optimizations.sql).
+
+#### 💬 Testimonials Backend Persistence & Hardcoded Content Removal
+- Connected `testimonials-content.tsx` to `useCompanyTestimonials()`, replacing dummy `setTimeout` saving with real `replaceTestimonials` backend API persistence.
+- Connected customer photo inputs to `mediaApi.upload(file, 'website-builder')`.
+- Completely removed hardcoded mock arrays (`initialTestimonials` / `DEFAULT_TESTIMONIALS`) so Testimonials render 100% real database records with a clean empty state UI when no testimonials exist in the database.
+
 

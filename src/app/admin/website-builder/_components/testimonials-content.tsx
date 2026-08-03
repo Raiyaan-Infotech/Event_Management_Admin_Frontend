@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
     Save,
     Plus,
@@ -22,6 +22,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
+import { useCompanyTestimonials } from '@/hooks/useCompanyWebsiteBuilder';
+import { mediaApi } from '@/hooks/use-media';
+import { PageLoader } from '@/components/common/page-loader';
 import { BuilderCountedInput, BuilderCountedTextarea } from './builder-field';
 import { cn } from '@/lib/utils';
 
@@ -60,52 +63,49 @@ function avatarDataUrl(name: string, background: string) {
   `)}`;
 }
 
-const initialTestimonials: Testimonial[] = [
-    {
-        id: '1',
-        customerName: 'Sarah & Michael Johnson',
-        eventName: 'Wedding Clients',
-        feedback:
-            'The wedding decor and reception lighting blew our guests away! Truly an effortless and magical planning experience.',
-        photoUrl: avatarDataUrl('Sarah & Michael Johnson', '#8b5cf6'),
-        rating: 5,
-        showRating: true,
-        status: true,
-    },
-    {
-        id: '2',
-        customerName: 'David Sterling',
-        eventName: 'VP Marketing, Nexus Global',
-        feedback:
-            'Handled our annual tech summit with 1,200 attendees seamlessly. AV production and check-ins ran perfectly on schedule.',
-        photoUrl: avatarDataUrl('David Sterling', '#3b82f6'),
-        rating: 5,
-        showRating: true,
-        status: true,
-    },
-    {
-        id: '3',
-        customerName: 'Elena Rostova',
-        eventName: 'Birthday Celebration',
-        feedback:
-            'From the floral arrangements to the customized catering setup, everything exceeded our expectations!',
-        photoUrl: avatarDataUrl('Elena Rostova', '#ec4899'),
-        rating: 5,
-        showRating: true,
-        status: true,
-    },
-];
+const emptyTestimonial: Testimonial = {
+    id: '',
+    customerName: '',
+    eventName: '',
+    feedback: '',
+    photoUrl: '',
+    rating: 5,
+    showRating: true,
+    status: true,
+};
 
 export function TestimonialsContent() {
-    const [testimonials, setTestimonials] = useState<Testimonial[]>(initialTestimonials);
-    const [editingId, setEditingId] = useState<string>(initialTestimonials[0].id);
+    const { data: savedTestimonials = [], replace: replaceTestimonials, isLoading, isSaving: isSavingTestimonials } = useCompanyTestimonials();
+    const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+    const [editingId, setEditingId] = useState<string>('');
     const [activePreviewIndex, setActivePreviewIndex] = useState(0);
-    const [isSaving, setIsSaving] = useState(false);
+    const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
     const [previewOpen, setPreviewOpen] = useState(false);
 
+    const isSaving = isSavingTestimonials || isUploadingPhoto;
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const loadedRef = useRef(false);
 
-    const activeItem = testimonials.find((t) => t.id === editingId) || testimonials[0];
+    useEffect(() => {
+        if (loadedRef.current) return;
+        if (savedTestimonials && savedTestimonials.length > 0) {
+            const mapped: Testimonial[] = savedTestimonials.map((t: any) => ({
+                id: String(t.id),
+                customerName: t.customer_name || t.name || '',
+                eventName: t.event_name || t.event || '',
+                feedback: t.feedback || '',
+                photoUrl: t.photo_url || t.photoUrl || avatarDataUrl(t.customer_name || 'Customer', '#6366f1'),
+                rating: Number(t.rating ?? 5),
+                showRating: t.show_rating !== undefined ? Boolean(t.show_rating) : true,
+                status: t.is_active !== undefined ? Boolean(t.is_active) : true,
+            }));
+            setTestimonials(mapped);
+            setEditingId(mapped[0].id);
+            loadedRef.current = true;
+        }
+    }, [savedTestimonials]);
+
+    const activeItem = testimonials.find((t) => t.id === editingId) || testimonials[0] || emptyTestimonial;
 
     const updateActiveItem = (patch: Partial<Testimonial>) => {
         setTestimonials((prev) =>
@@ -113,17 +113,31 @@ export function TestimonialsContent() {
         );
     };
 
-    const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        const imageUrl = URL.createObjectURL(file);
-        updateActiveItem({ photoUrl: imageUrl });
-        toast.success('Customer photo uploaded.');
+
+        setIsUploadingPhoto(true);
+        const tid = toast.loading('Uploading customer photo...');
+        try {
+            const res = await mediaApi.upload(file, 'website-builder');
+            if (res?.url) {
+                updateActiveItem({ photoUrl: res.url });
+                toast.success('Customer photo uploaded successfully.', { id: tid });
+            } else {
+                toast.error('Failed to retrieve uploaded image URL.', { id: tid });
+            }
+        } catch (err: any) {
+            toast.error(err?.message || 'Failed to upload photo.', { id: tid });
+        } finally {
+            setIsUploadingPhoto(false);
+            e.target.value = '';
+        }
     };
 
     const handleAddTestimonial = () => {
         const next: Testimonial = {
-            id: String(Date.now()),
+            id: `new-${Date.now()}`,
             customerName: 'New Customer',
             eventName: 'Event Name',
             feedback: 'Add customer feedback here.',
@@ -148,12 +162,24 @@ export function TestimonialsContent() {
         toast.success('Testimonial removed.');
     };
 
-    const handleSave = () => {
-        setIsSaving(true);
-        setTimeout(() => {
-            setIsSaving(false);
-            toast.success('Testimonials updated successfully!');
-        }, 500);
+    const handleSave = async () => {
+        try {
+            const payload = testimonials.map((t, idx) => ({
+                id: t.id.startsWith('new-') ? undefined : Number(t.id),
+                customer_name: t.customerName,
+                event_name: t.eventName,
+                feedback: t.feedback,
+                photo_url: t.photoUrl,
+                rating: t.rating,
+                show_rating: t.showRating ? 1 : 0,
+                is_active: t.status ? 1 : 0,
+                sort_order: idx + 1,
+            }));
+            await replaceTestimonials(payload);
+            toast.success('Testimonials saved successfully');
+        } catch (err: any) {
+            toast.error(err?.message || 'Failed to save testimonials');
+        }
     };
 
     const visibleTestimonials = testimonials.filter((t) => t.status);
@@ -161,6 +187,7 @@ export function TestimonialsContent() {
 
     return (
         <div className="space-y-5">
+            <PageLoader open={isSaving} text="Saving Testimonials..." />
             {/* Header Bar */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b pb-4">
                 <div>
@@ -352,7 +379,14 @@ export function TestimonialsContent() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
-                                        {testimonials.map((t) => (
+                                         {testimonials.length === 0 ? (
+                                             <tr>
+                                                 <td colSpan={5} className="py-8 text-center text-xs text-slate-400">
+                                                     No testimonials found. Click &quot;Add New&quot; to create your first customer review.
+                                                 </td>
+                                             </tr>
+                                         ) : (
+                                             testimonials.map((t) => (
                                             <tr
                                                 key={t.id}
                                                 className={cn(
@@ -421,7 +455,8 @@ export function TestimonialsContent() {
                                                     </div>
                                                 </td>
                                             </tr>
-                                        ))}
+                                        ))
+                                         )}
                                     </tbody>
                                 </table>
                             </div>

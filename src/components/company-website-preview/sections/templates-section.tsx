@@ -13,6 +13,8 @@ export interface TemplateItem {
   primaryColor?: string;
   thumbnailUrl?: string;
   isPopular?: boolean;
+  /** Only templates where this resolves to true should ever render on the live site. */
+  isActive?: boolean;
 }
 
 interface TemplatesSectionProps {
@@ -32,11 +34,18 @@ export function TemplatesSection({ templates, theme, categories, onPreview }: Te
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Only ever work with active templates from here on — inactive ones must
+  // never reach category derivation, filtering, or rendering.
+  const activeTemplates = useMemo(
+    () => (templates || []).filter((t) => t.isActive === true),
+    [templates],
+  );
+
   const derivedCategories = useMemo(() => {
     if (categories && categories.length > 0) return categories;
     const seen = new Set<string>();
     const out: string[] = [];
-    for (const t of templates) {
+    for (const t of activeTemplates) {
       const name = t.categoryName?.trim();
       if (name && !seen.has(name)) {
         seen.add(name);
@@ -44,7 +53,7 @@ export function TemplatesSection({ templates, theme, categories, onPreview }: Te
       }
     }
     return out;
-  }, [categories, templates]);
+  }, [categories, activeTemplates]);
 
   const visiblePills = derivedCategories.slice(0, MAX_VISIBLE_PILLS);
   const overflowPills = derivedCategories.slice(MAX_VISIBLE_PILLS);
@@ -59,15 +68,15 @@ export function TemplatesSection({ templates, theme, categories, onPreview }: Te
   };
 
   const filtered = useMemo(() => {
-    if (activeCategory === ALL_CATEGORY) return templates;
-    return templates.filter((t) => t.categoryName === activeCategory);
-  }, [templates, activeCategory]);
+    if (activeCategory === ALL_CATEGORY) return activeTemplates;
+    return activeTemplates.filter((t) => t.categoryName === activeCategory);
+  }, [activeTemplates, activeCategory]);
 
   const scrollNext = () => {
     scrollRef.current?.scrollBy({ left: 240, behavior: 'smooth' });
   };
 
-  if (!templates || templates.length === 0) return null;
+  if (!activeTemplates || activeTemplates.length === 0) return null;
 
   return (
     <section className="w-full border-t border-slate-100 bg-white py-14 sm:py-20">
