@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Icon } from '@iconify/react';
+import { Icon, loadIcons } from '@iconify/react';
 import { Mail, MapPin, Phone } from 'lucide-react';
 import { toast } from 'sonner';
 import type { ContactData, SocialLink, ThemeColors } from './preview-shared';
@@ -9,6 +9,16 @@ import type { ContactData, SocialLink, ThemeColors } from './preview-shared';
 function ContactSectionBase({ contact, theme }: { contact: ContactData; theme: ThemeColors }) {
   const [formData, setFormData] = React.useState({ name: '', email: '', phone: '', category: '', message: '' });
   const [submitting, setSubmitting] = React.useState(false);
+  const [, setIconsLoaded] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!contact?.socialLinks || !contact.socialLinks.length) return;
+    const keys = contact.socialLinks.map((link) => {
+      const raw = String(link.iconName || 'simple-icons:linktree').trim().toLowerCase();
+      return raw.includes(':') ? raw : `simple-icons:${raw}`;
+    });
+    loadIcons(keys, () => setIconsLoaded(true));
+  }, [contact?.socialLinks]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,11 +80,15 @@ function ContactSectionBase({ contact, theme }: { contact: ContactData; theme: T
             ) : null}
             {contact.socialLinksEnabled && contact.socialLinks.length ? (
               <div className="flex gap-3 pt-2">
-                {contact.socialLinks.map((link: SocialLink) => (
-                  <a key={link.label} href={link.href} aria-label={link.label} target="_blank" rel="noopener noreferrer" className="flex h-9 w-9 items-center justify-center rounded-full text-white transition hover:opacity-80" style={{ backgroundColor: link.color || theme.primaryButton }}>
-                    <Icon icon={link.iconName} className="h-4 w-4" />
-                  </a>
-                ))}
+                {contact.socialLinks.map((link: SocialLink) => {
+                  const raw = String(link.iconName || 'simple-icons:linktree').trim().toLowerCase();
+                  const iconKey = raw.includes(':') ? raw : `simple-icons:${raw}`;
+                  return (
+                    <a key={link.label} href={link.href} aria-label={link.label} target="_blank" rel="noopener noreferrer" className="flex h-9 w-9 items-center justify-center rounded-full text-white transition hover:opacity-80" style={{ backgroundColor: link.color || theme.primaryButton }}>
+                      <Icon icon={iconKey} className="h-4 w-4" />
+                    </a>
+                  );
+                })}
               </div>
             ) : null}
           </div>

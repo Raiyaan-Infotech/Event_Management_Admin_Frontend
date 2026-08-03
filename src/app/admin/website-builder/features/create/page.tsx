@@ -38,7 +38,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { Icon } from '@iconify/react';
 import { IconPickerDialog } from '@/components/common/icon-picker-dialog';
-import { useFeatures, useFeatureById, useCreateFeature, useUpdateFeature, type Feature } from '@/hooks/useFeatures';
+import { useFeaturesData, useSaveFeaturesList, type FeatureItem } from '@/hooks/useFeatures';
 import { mediaApi } from '@/hooks/use-media';
 import {
     BuilderCountedInput,

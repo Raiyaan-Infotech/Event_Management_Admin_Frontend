@@ -38,8 +38,8 @@ import {
     useTemplates,
     useTemplateCategories,
     useTemplateById,
-    useCreateTemplate,
-    useUpdateTemplate,
+    useSaveTemplate,
+    type Template,
 } from '@/hooks/useTemplates';
 import { mediaApi } from '@/hooks/use-media';
 

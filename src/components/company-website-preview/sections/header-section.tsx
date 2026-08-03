@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Icon } from '@iconify/react';
+import { Icon, loadIcons } from '@iconify/react';
 import { ChevronDown, Mail, Menu, Phone, UserRound, X } from 'lucide-react';
 import type { HeaderSettings, NavItem, SocialLink, ThemeColors } from './preview-shared';
 import { isExternalHref, viewKeyFromHref } from './preview-shared';
@@ -21,6 +21,20 @@ type Props = {
 
 function HeaderSectionBase({ theme, header, navItems, socialLinks, companyName, companyLogo, phone, email, activeKey, onNavigate }: Props) {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const [, setIconsLoaded] = React.useState(false);
+
+  // Explicitly preload social icons from Iconify API (https://api.iconify.design)
+  React.useEffect(() => {
+    if (!socialLinks || !socialLinks.length) return;
+    const keys = socialLinks.map((link: any) => {
+      const rawIcon = String(link?.iconName || link?.icon_name || link?.icon || link?.icon_key || 'simple-icons:linktree').trim().toLowerCase();
+      return rawIcon.includes(':') ? rawIcon : `simple-icons:${rawIcon}`;
+    });
+
+    loadIcons(keys, () => {
+      setIconsLoaded(true);
+    });
+  }, [socialLinks]);
 
   const handleNavClick = (event: React.MouseEvent, item: { href?: string }) => {
     if (isExternalHref(item.href)) return;
@@ -51,10 +65,8 @@ function HeaderSectionBase({ theme, header, navItems, socialLinks, companyName, 
           {header.showSocialIcons && socialLinks.length ? (
             <div className="flex shrink-0 items-center gap-3">
               {socialLinks.map((link: any) => {
-                const rawIcon = String(link?.iconName || link?.icon_name || link?.icon || link?.icon_key || 'simple-icons:linktree');
-                const iconKey = rawIcon.includes(':')
-                  ? rawIcon
-                  : `simple-icons:${rawIcon.toLowerCase()}`;
+                const rawIcon = String(link?.iconName || link?.icon_name || link?.icon || link?.icon_key || 'simple-icons:linktree').trim().toLowerCase();
+                const iconKey = rawIcon.includes(':') ? rawIcon : `simple-icons:${rawIcon}`;
                 const href = String(link?.href || link?.url || '#');
                 const label = String(link?.label || 'Social');
                 const color = String(link?.color || link?.icon_color || '#FFFFFF');

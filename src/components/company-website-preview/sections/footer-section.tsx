@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Icon } from '@iconify/react';
+import { Icon, loadIcons } from '@iconify/react';
 import { toast } from 'sonner';
 import type { FooterData, SocialLink, ThemeColors } from './preview-shared';
 import { isExternalHref } from './preview-shared';
@@ -9,6 +9,16 @@ import { isExternalHref } from './preview-shared';
 function FooterSectionBase({ footer, socialLinks, theme, onNavigate }: { footer: FooterData; socialLinks: SocialLink[]; theme: ThemeColors; onNavigate: (href: string) => void }) {
   const [newsletterEmail, setNewsletterEmail] = React.useState('');
   const [submitting, setSubmitting] = React.useState(false);
+  const [, setIconsLoaded] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!socialLinks || !socialLinks.length) return;
+    const keys = socialLinks.map((link) => {
+      const raw = String(link.iconName || 'simple-icons:linktree').trim().toLowerCase();
+      return raw.includes(':') ? raw : `simple-icons:${raw}`;
+    });
+    loadIcons(keys, () => setIconsLoaded(true));
+  }, [socialLinks]);
 
   const handleLink = (e: React.MouseEvent, href: string) => {
     if (isExternalHref(href)) return;
@@ -50,11 +60,15 @@ function FooterSectionBase({ footer, socialLinks, theme, onNavigate }: { footer:
           </div>
           {footer.showSocialLinks && socialLinks.length ? (
             <div className="mt-6 flex gap-3">
-              {socialLinks.map((link) => (
-                <a key={link.label} href={link.href} aria-label={link.label} target="_blank" rel="noopener noreferrer" className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20">
-                  <Icon icon={link.iconName} className="h-4 w-4" />
-                </a>
-              ))}
+              {socialLinks.map((link) => {
+                const raw = String(link.iconName || 'simple-icons:linktree').trim().toLowerCase();
+                const iconKey = raw.includes(':') ? raw : `simple-icons:${raw}`;
+                return (
+                  <a key={link.label} href={link.href} aria-label={link.label} target="_blank" rel="noopener noreferrer" className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20">
+                    <Icon icon={iconKey} className="h-4 w-4" />
+                  </a>
+                );
+              })}
             </div>
           ) : null}
         </div>
