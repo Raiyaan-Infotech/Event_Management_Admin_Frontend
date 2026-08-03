@@ -215,7 +215,7 @@ function TemplateCard({
 }) {
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs transition hover:shadow-md">
-      <div className="relative aspect-[3/4] w-full overflow-hidden bg-slate-100">
+      <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100">
         {template.thumbnailUrl ? (
           <img
             src={template.thumbnailUrl}
@@ -234,24 +234,24 @@ function TemplateCard({
           className="flex h-full w-full items-center justify-center text-slate-400"
           style={{ display: template.thumbnailUrl ? 'none' : 'flex' }}
         >
-          <Layout className="h-10 w-10" />
+          <Layout className="h-8 w-8" />
         </div>
 
         <button
           type="button"
           onClick={onToggleFavorite}
           aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 shadow-sm"
+          className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-white/90 shadow-sm"
         >
           <Heart
-            className="h-3.5 w-3.5"
+            className="h-3 w-3"
             style={isFavorite ? { color: theme.primaryButton, fill: theme.primaryButton } : { color: '#94a3b8' }}
           />
         </button>
 
         {template.isPopular && (
           <span
-            className="absolute left-2 top-2 rounded px-2 py-0.5 text-[10px] font-bold tracking-wide text-white shadow-sm"
+            className="absolute left-1.5 top-1.5 rounded px-1.5 py-0.5 text-[9px] font-bold tracking-wide text-white shadow-sm"
             style={{ backgroundColor: theme.primaryButton }}
           >
             ★ Popular
@@ -259,12 +259,12 @@ function TemplateCard({
         )}
       </div>
 
-      <div className="flex flex-1 flex-col justify-between gap-2 p-3">
+      <div className="flex flex-1 flex-col justify-between gap-1.5 p-2">
         <div>
-          <h3 className="line-clamp-1 text-[13px] font-bold leading-snug" style={{ color: theme.primaryText }}>
+          <h3 className="line-clamp-1 text-[12px] font-bold leading-tight" style={{ color: theme.primaryText }}>
             {template.title}
           </h3>
-          <p className="text-[11px] font-medium" style={{ color: theme.secondaryText }}>
+          <p className="line-clamp-1 text-[10px] font-medium leading-tight" style={{ color: theme.secondaryText }}>
             {template.categoryName || template.templateType || 'Invitation'}
           </p>
         </div>
@@ -272,12 +272,12 @@ function TemplateCard({
         <button
           type="button"
           onClick={() => onPreview?.(template)}
-          className="flex items-center justify-center gap-1.5 rounded-md border py-1.5 text-[12px] font-bold transition-colors hover:text-white"
+          className="flex items-center justify-center gap-1 rounded-md border py-1 text-[11px] font-bold transition-colors hover:text-white"
           style={{ borderColor: theme.primaryButton, color: theme.primaryButton }}
           onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = theme.primaryButton)}
           onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
         >
-          <Eye className="h-3.5 w-3.5" />
+          <Eye className="h-3 w-3" />
           Preview
         </button>
       </div>
