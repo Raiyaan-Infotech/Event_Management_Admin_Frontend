@@ -50,19 +50,23 @@ function HeaderSectionBase({ theme, header, navItems, socialLinks, companyName, 
           </div>
           {header.showSocialIcons && socialLinks.length ? (
             <div className="flex shrink-0 items-center gap-3">
-              {socialLinks.map((link) => {
-                const iconKey = link.iconName.includes(':')
-                  ? link.iconName
-                  : `simple-icons:${link.iconName.toLowerCase()}`;
+              {socialLinks.map((link: any) => {
+                const rawIcon = String(link?.iconName || link?.icon_name || link?.icon || link?.icon_key || 'simple-icons:linktree');
+                const iconKey = rawIcon.includes(':')
+                  ? rawIcon
+                  : `simple-icons:${rawIcon.toLowerCase()}`;
+                const href = String(link?.href || link?.url || '#');
+                const label = String(link?.label || 'Social');
+                const color = String(link?.color || link?.icon_color || '#FFFFFF');
                 return (
                   <a
-                    key={`${link.label}-${link.href}`}
-                    href={link.href}
-                    aria-label={link.label}
+                    key={`${label}-${href}`}
+                    href={href}
+                    aria-label={label}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex h-5 w-5 items-center justify-center transition opacity-90 hover:opacity-100"
-                    style={{ color: link.color || '#FFFFFF' }}
+                    style={{ color }}
                   >
                     <Icon icon={iconKey} width="14" height="14" />
                   </a>

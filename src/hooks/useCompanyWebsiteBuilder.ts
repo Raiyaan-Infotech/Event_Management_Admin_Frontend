@@ -100,7 +100,7 @@ const useSingleton = <T>(key: string, endpoint: string, pageSlug?: string) => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey });
+      queryClient.invalidateQueries({ queryKey: ['company-website-builder'] });
     },
   });
 
