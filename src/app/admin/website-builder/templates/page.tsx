@@ -424,15 +424,15 @@ export default function TemplatesPage() {
                                 paginatedTemplates.map((t) => (
                                     <div key={t.id} className="rounded-xl border border-border bg-card p-3 space-y-2 text-center shadow-xs hover:shadow-md transition-shadow relative">
                                         <div
-                                            className="h-36 w-full rounded-lg border border-border p-3 flex flex-col items-center justify-center text-white text-xs font-bold"
+                                            className="h-56 w-full rounded-lg border border-border p-3 flex flex-col items-center justify-center text-white text-xs font-bold"
                                             style={{ backgroundColor: t.primary_color || '#6A38F5' }}
                                         >
                                             <p className="text-[10px] uppercase font-mono tracking-widest opacity-80">{t.category_name}</p>
-                                            <h4 className="text-base font-serif italic mt-1">{t.template_name}</h4>
+                                            <h4 className="text-base font-serif italic mt-1 text-center">{t.template_name}</h4>
                                         </div>
-                                        <div>
-                                            <h4 className="text-xs font-bold text-foreground">{t.template_name}</h4>
-                                            <p className="text-[10px] text-muted-foreground capitalize">{t.template_type} • {t.design_style}</p>
+                                        <div className="text-center">
+                                            <h4 className="text-xs font-bold text-foreground text-center">{t.template_name}</h4>
+                                            <p className="text-[10px] text-muted-foreground capitalize text-center">{t.template_type} • {t.design_style}</p>
                                         </div>
                                         <div className="flex items-center justify-between pt-1 border-t border-border mt-2">
                                             <Link href={`/admin/website-builder/templates/create?id=${t.id}`}>

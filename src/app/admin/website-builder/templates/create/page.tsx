@@ -540,7 +540,7 @@ function CreateTemplatePage() {
                                 style={{ borderColor: primaryColor }}
                             >
                                 {thumbnailUrl ? (
-                                    <img src={thumbnailUrl} alt="Thumbnail Preview" className="h-36 w-full object-cover rounded-xl border border-border mb-2" />
+                                    <img src={thumbnailUrl} alt="Thumbnail Preview" className="h-56 w-full object-cover rounded-xl border border-border mb-2" />
                                 ) : (
                                     <div className="h-28 w-full rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-xs" style={{ backgroundColor: primaryColor }}>
                                         {templateName || 'Template Preview'}

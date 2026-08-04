@@ -224,7 +224,7 @@ function TemplateCard({
 }) {
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs transition hover:shadow-md">
-      <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100">
+      <div className="relative aspect-[3/4] w-full overflow-hidden bg-slate-100">
         {template.thumbnailUrl ? (
           <img
             src={template.thumbnailUrl}
@@ -268,12 +268,12 @@ function TemplateCard({
         )}
       </div>
 
-      <div className="flex flex-1 flex-col justify-between gap-1.5 p-2">
-        <div>
-          <h3 className="line-clamp-1 text-[12px] font-bold leading-tight" style={{ color: theme.primaryText }}>
+      <div className="flex flex-1 flex-col justify-between gap-1.5 p-2.5 text-center items-center">
+        <div className="text-center w-full">
+          <h3 className="line-clamp-1 text-[12px] font-bold leading-tight text-center" style={{ color: theme.primaryText }}>
             {template.title}
           </h3>
-          <p className="line-clamp-1 text-[10px] font-medium leading-tight" style={{ color: theme.secondaryText }}>
+          <p className="line-clamp-1 text-[10px] font-medium leading-tight text-center mt-0.5" style={{ color: theme.secondaryText }}>
             {template.categoryName || template.templateType || 'Invitation'}
           </p>
         </div>
@@ -281,7 +281,7 @@ function TemplateCard({
         <button
           type="button"
           onClick={() => onPreview?.(template)}
-          className="flex items-center justify-center gap-1 rounded-md border py-1 text-[11px] font-bold transition-colors hover:text-white"
+          className="flex w-full items-center justify-center gap-1 rounded-md border py-1 text-[11px] font-bold transition-colors hover:text-white"
           style={{ borderColor: theme.primaryButton, color: theme.primaryButton }}
           onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = theme.primaryButton)}
           onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
