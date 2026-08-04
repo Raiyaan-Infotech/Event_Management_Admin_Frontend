@@ -1268,5 +1268,32 @@ Files: [header-section.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src
   - Updated layout containers to fluid `w-full px-4 sm:px-6 lg:px-12` so top bar, navbar, footer columns, and bottom copyright bar extend full width with responsive padding on all screen sizes.
   - Widened live preview modal dialog (`max-w-6xl w-[92vw]`) in [footer-content.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/footer-content.tsx).
 
+- **Template Card Image Height & Centered Text Alignment (Website Preview & Admin Grid)**:
+  - Increased template card image thumbnail height (`aspect-[3/4]` portrait invitation ratio in [templates-section.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/company-website-preview/sections/templates-section.tsx) and `h-56` in [templates/page.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/templates/page.tsx) / [create/page.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/templates/create/page.tsx)).
+  - Ensured all text details below the thumbnail image (title, category/type, style badges, and buttons) are centered (`text-center flex-col items-center justify-center`).
+
+- **Footer Social Link Icons Custom Color Fix (Website Preview)**:
+  - Fixed hardcoded `text-white` on footer social links in [footer-section.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/company-website-preview/sections/footer-section.tsx).
+  - Bound `style={{ color: link.color || link.icon_color || '#FFFFFF' }}` so each social icon renders using its configured brand color (e.g. YouTube Red, Facebook Blue, Instagram Pink, WhatsApp Green) instead of default white.
+
+- **Missing Translation API Flood & Server Latency Fix**:
+  - Identified root cause of severe server latency (`GET /api/v1/plugins 18,132 ms`, `POST /api/v1/auth/login 5,596 ms`) caused by 40+ concurrent `POST /api/v1/translations/report-missing` requests firing simultaneously on page load.
+  - Refactored [translation-provider.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/providers/translation-provider.tsx) to:
+    1. Store and deduplicate missing keys across session navigations using `sessionStorage`.
+    2. Process missing key reports sequentially with a 500ms delay between calls (max 5 items per batch flush) instead of firing 40 parallel HTTP POST requests at once.
+    3. Prevent backend event loop lockup and MySQL connection pool exhaustion.
+
+- **Silent Token Refresh & 7-Day Session Persistence Fix**:
+  - Fixed issue where users were unexpectedly logged out when short-lived `access_token` expired despite having a 7-day `refresh_token`.
+  - Added automatic background token refresh handler in [api-client.ts](file:///d:/Jamal/Event_Management_Admin_Frontend/src/lib/api-client.ts) interceptor:
+    1. On `401 Unauthorized`, automatically calls `POST /auth/refresh` (with automatic fallback to `POST /auth/refresh-token`) using the 7-day `refresh_token` cookie.
+    2. Seamlessly retries the failed API call once new access token is issued.
+    3. Only redirects to `/auth/login` if the 7-day `refresh_token` itself is expired or invalid.
+
+
+
+
+
+
 
 

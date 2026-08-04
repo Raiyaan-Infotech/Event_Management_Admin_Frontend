@@ -37,6 +37,21 @@ export function TranslationProvider({
   // Batch missing key reports to reduce API calls
   const pendingReportsRef = useRef<Array<{ key: string; default_value: string; page_url: string }>>([]);
   const batchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isFlushingRef = useRef(false);
+
+  // Load previously reported keys from sessionStorage to prevent re-reporting on route transitions
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const stored = sessionStorage.getItem('reported_missing_keys');
+      if (stored) {
+        const arr = JSON.parse(stored);
+        if (Array.isArray(arr)) {
+          arr.forEach((k) => reportedKeysRef.current.add(k));
+        }
+      }
+    } catch {}
+  }, []);
 
   // Fetch public settings to get the language preference
   const { data: publicSettings, isLoading: isLoadingSettings } = useQuery({
@@ -113,30 +128,49 @@ export function TranslationProvider({
     updateLanguageMutation.mutate(lang);
   }, [language, queryClient, updateLanguageMutation]);
 
-  // Flush batched missing key reports to backend
-  const flushMissingKeys = useCallback(() => {
-    const batch = pendingReportsRef.current;
+  // Flush batched missing key reports to backend sequentially with delay to prevent network/backend congestion
+  const flushMissingKeys = useCallback(async () => {
+    if (isFlushingRef.current) return;
+    const batch = [...pendingReportsRef.current];
     if (batch.length === 0) return;
 
-    // Clear the batch
+    // Clear pending batch and timer
     pendingReportsRef.current = [];
     batchTimerRef.current = null;
+    isFlushingRef.current = true;
 
-    // Send all at once (fire and forget)
-    Promise.all(
-      batch.map((report) =>
-        apiClient.post('/translations/report-missing', report).catch(() => {})
-      )
-    );
+    // Cap to max 5 reports per batch to keep DB writes low
+    const itemsToReport = batch.slice(0, 5);
+
+    try {
+      // Process sequentially with a 500ms breather between calls
+      for (const report of itemsToReport) {
+        await apiClient.post('/translations/report-missing', report).catch(() => {});
+        await new Promise((r) => setTimeout(r, 500));
+      }
+    } finally {
+      isFlushingRef.current = false;
+      // If remaining items exist, schedule next batch flush after 10 seconds
+      if (pendingReportsRef.current.length > 0) {
+        batchTimerRef.current = setTimeout(flushMissingKeys, 10000);
+      }
+    }
   }, []);
 
-  // Report missing key to backend (batched, non-blocking)
+  // Report missing key to backend (batched, deduplicated, non-blocking)
   const reportMissingKey = useCallback((key: string, defaultValue?: string) => {
-    // Skip if already reported in this session
-    if (reportedKeysRef.current.has(key)) return;
+    if (!key || reportedKeysRef.current.has(key)) return;
 
-    // Mark as reported
+    // Mark as reported in memory and sessionStorage
     reportedKeysRef.current.add(key);
+    if (typeof window !== 'undefined') {
+      try {
+        sessionStorage.setItem(
+          'reported_missing_keys',
+          JSON.stringify(Array.from(reportedKeysRef.current).slice(-500))
+        );
+      } catch {}
+    }
 
     // Get current page URL
     const pageUrl = typeof window !== 'undefined' ? window.location.pathname : '';
@@ -148,11 +182,10 @@ export function TranslationProvider({
       page_url: pageUrl,
     });
 
-    // Debounce: flush after 5 seconds of no new missing keys
-    if (batchTimerRef.current) {
-      clearTimeout(batchTimerRef.current);
+    // Schedule flush if not already running or scheduled
+    if (!batchTimerRef.current && !isFlushingRef.current) {
+      batchTimerRef.current = setTimeout(flushMissingKeys, 5000);
     }
-    batchTimerRef.current = setTimeout(flushMissingKeys, 5000);
   }, [flushMissingKeys]);
 
   // Translation function with variable interpolation and missing key detection

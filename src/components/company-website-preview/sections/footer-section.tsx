@@ -60,11 +60,20 @@ function FooterSectionBase({ footer, socialLinks, theme, onNavigate }: { footer:
           </div>
           {footer.showSocialLinks && socialLinks.length ? (
             <div className="mt-6 flex gap-3">
-              {socialLinks.map((link) => {
-                const raw = String(link.iconName || 'simple-icons:linktree').trim().toLowerCase();
+              {socialLinks.map((link: any) => {
+                const raw = String(link.iconName || link.icon_name || link.icon || link.icon_key || 'simple-icons:linktree').trim().toLowerCase();
                 const iconKey = raw.includes(':') ? raw : `simple-icons:${raw}`;
+                const color = String(link.color || link.icon_color || '#FFFFFF');
                 return (
-                  <a key={link.label} href={link.href} aria-label={link.label} target="_blank" rel="noopener noreferrer" className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20">
+                  <a
+                    key={link.label}
+                    href={link.href}
+                    aria-label={link.label}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 transition hover:bg-white/20 hover:scale-105"
+                    style={{ color }}
+                  >
                     <Icon icon={iconKey} className="h-4 w-4" />
                   </a>
                 );

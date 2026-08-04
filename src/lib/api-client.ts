@@ -55,7 +55,22 @@ apiClient.interceptors.request.use(
   }
 );
 
-// Response interceptor for error handling and approval detection
+// Flag and queue for silent token refresh
+let isRefreshing = false;
+let failedQueue: Array<{ resolve: (value?: unknown) => void; reject: (reason?: any) => void }> = [];
+
+const processQueue = (error: any = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve();
+    }
+  });
+  failedQueue = [];
+};
+
+// Response interceptor for error handling, silent token refresh, and approval detection
 apiClient.interceptors.response.use(
   (response) => {
     const data = response.data;
@@ -71,21 +86,63 @@ apiClient.interceptors.response.use(
     }
     return response;
   },
-  (error: AxiosError) => {
-    if (error.response?.status === 401) {
-      if (typeof window !== 'undefined' &&
+  async (error: AxiosError) => {
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+      const url = originalRequest.url || '';
+      // Don't attempt refresh for auth endpoints themselves
+      if (url.includes('/auth/login') || url.includes('/auth/refresh') || url.includes('/auth/logout')) {
+        return Promise.reject(error);
+      }
+
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then(() => apiClient(originalRequest))
+          .catch((err) => Promise.reject(err));
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        // Attempt silent refresh using 7-day refresh_token cookie
+        try {
+          await apiClient.post('/auth/refresh');
+        } catch (firstErr: any) {
+          if (firstErr?.response?.status === 404) {
+            await apiClient.post('/auth/refresh-token');
+          } else {
+            throw firstErr;
+          }
+        }
+        processQueue(null);
+        return apiClient(originalRequest);
+      } catch (refreshErr) {
+        processQueue(refreshErr);
+        // Only if refresh fails (refresh token expired after 7 days), clear cookies and redirect
+        if (
+          typeof window !== 'undefined' &&
           !window.location.pathname.includes('/auth') &&
           !window.location.pathname.startsWith('/vendor') &&
-          !window.location.pathname.startsWith('/website-preview')) {
-        document.cookie = 'access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
-        document.cookie = 'refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
-        document.cookie = 'auth_pending=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
+          !window.location.pathname.startsWith('/website-preview')
+        ) {
+          document.cookie = 'access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
+          document.cookie = 'refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
+          document.cookie = 'auth_pending=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
 
-        fetch('/api/auth/clear-session', { method: 'POST' }).finally(() => {
-          window.location.href = '/auth/login';
-        });
+          fetch('/api/auth/clear-session', { method: 'POST' }).finally(() => {
+            window.location.href = '/auth/login';
+          });
+        }
+        return Promise.reject(refreshErr);
+      } finally {
+        isRefreshing = false;
       }
     }
+
     return Promise.reject(error);
   }
 );
