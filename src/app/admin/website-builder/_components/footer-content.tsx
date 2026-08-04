@@ -433,7 +433,7 @@ export function FooterContent() {
 
             {/* Live Preview Modal Dialog */}
             <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-                <DialogContent className="max-w-4xl border-slate-200">
+                <DialogContent className="max-w-6xl w-[92vw] border-slate-200">
                     <DialogHeader>
                         <div className="flex items-center justify-between pr-6">
                             <div className="flex items-center gap-2">

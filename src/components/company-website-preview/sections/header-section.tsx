@@ -47,7 +47,7 @@ function HeaderSectionBase({ theme, header, navItems, socialLinks, companyName, 
     <header className="w-full sticky top-0 z-50">
       {/* Top bar */}
       <div className="border-b border-white/10 text-white" style={{ backgroundColor: theme.primaryButton }}>
-        <div className="mx-auto flex min-h-8 w-full max-w-[1280px] items-center justify-between gap-3 px-4 text-[11px] font-medium sm:px-6 lg:px-8">
+        <div className="mx-auto flex min-h-8 w-full items-center justify-between gap-3 px-4 text-[11px] font-medium sm:px-6 lg:px-12">
           <div className="flex min-w-0 items-center gap-3 overflow-hidden text-white/90">
             {phone ? (
               <span className="flex shrink-0 items-center gap-1.5 whitespace-nowrap">
@@ -91,7 +91,7 @@ function HeaderSectionBase({ theme, header, navItems, socialLinks, companyName, 
 
       {/* Main nav */}
       <div className="shadow-sm bg-white">
-        <div className="mx-auto flex min-h-[74px] w-full max-w-[1280px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex min-h-[74px] w-full items-center justify-between gap-4 px-4 sm:px-6 lg:px-12">
           {/* Logo */}
           <a href="/" onClick={(e) => handleNavClick(e, { href: '/' })} className="flex shrink-0 items-center gap-3">
             {companyLogo ? (
@@ -198,7 +198,7 @@ function HeaderSectionBase({ theme, header, navItems, socialLinks, companyName, 
         {/* Mobile dropdown */}
         {mobileMenuOpen ? (
           <nav className="border-t border-slate-200 bg-white px-4 py-3 lg:hidden">
-            <div className="mx-auto flex max-w-[1280px] flex-col gap-1">
+            <div className="mx-auto flex w-full flex-col gap-1">
               {navItems.map((item) => (
                 <React.Fragment key={item.id}>
                   <a href={item.href} onClick={(e) => handleNavClick(e, item)} className="rounded px-3 py-2 text-[13px] font-bold hover:bg-slate-100" style={{ color: theme.primaryButton }}>

@@ -39,7 +39,7 @@ function FooterSectionBase({ footer, socialLinks, theme, onNavigate }: { footer:
 
   return (
     <footer className="w-full text-white" style={{ backgroundColor: theme.primaryButton }}>
-      <div className="mx-auto grid w-full max-w-[1280px] gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[1.4fr_0.8fr_1fr] lg:px-8">
+      <div className="mx-auto grid w-full gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[1.4fr_0.8fr_1fr] lg:px-12">
         {/* Brand */}
         <div>
           <div className="flex items-center gap-3">
@@ -103,7 +103,7 @@ function FooterSectionBase({ footer, socialLinks, theme, onNavigate }: { footer:
       </div>
 
       <div className="border-t border-white/10">
-        <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-2 px-4 py-5 text-[12px] font-medium text-white/60 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+        <div className="mx-auto flex w-full flex-col gap-2 px-4 py-5 text-[12px] font-medium text-white/60 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-12">
           <p>{footer.copyright}</p>
           {footer.poweredBy ? <p>Powered by {footer.poweredBy}</p> : null}
         </div>
