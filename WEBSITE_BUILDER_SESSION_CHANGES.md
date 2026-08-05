@@ -1290,6 +1290,44 @@ Files: [header-section.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src
     2. Seamlessly retries the failed API call once new access token is issued.
     3. Only redirects to `/auth/login` if the 7-day `refresh_token` itself is expired or invalid.
 
+---
+
+## Session 3 — Footer Quick Links Controls, Highlights Inner Box, FAQ Collapse, Plan Features Comparison & Database Migrations
+
+> **Date:** 2026-08-05 | **Backend:** `D:\Jamal\Event_Management_Admin_Backend` | **Frontend:** `D:\Jamal\Event_Management_Admin_Frontend`
+
+### 15. Footer Quick Links 1 & 2 Independent ON/OFF Visibility Toggles
+- Added `show_quick_links_1` and `show_quick_links_2` toggle switches to [footer-content.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/_components/footer-content.tsx).
+- Updated [footer-section.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/company-website-preview/sections/footer-section.tsx) layout to dynamically adjust grid column layout (`2-column`, `3-column`, `4-column`) based on active link columns.
+- Extended backend service [companyWebsiteBuilder.service.js](file:///d:/Jamal/Event_Management_Admin_Backend/src/services/companyWebsiteBuilder.service.js) column registry and safely parsed stringified/array JSON streams using `parseJsonArray`.
+
+### 16. Highlights Banner Inner Container Background Mapping
+- Refactored [highlights-section.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/company-website-preview/sections/highlights-section.tsx) to map dynamic background styling, gradients, and images directly to the inner `rounded-2xl` container box rather than the outer `<section>`.
+
+### 17. Purged Hardcoded Color Fallbacks Across Website Preview
+- Replaced hardcoded CSS hex and Tailwind color overrides (`#EC4899`, `text-pink-500`, `bg-pink-50`) in [faqs-section.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/company-website-preview/sections/faqs-section.tsx), [footer-section.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/company-website-preview/sections/footer-section.tsx), and [contact-section.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/company-website-preview/sections/contact-section.tsx) with dynamic theme color streams (`theme.primaryButton`, `theme.primaryText`).
+
+### 18. FAQ Accordion Initial Collapse & Interactive Toggle
+- Updated [faqs-section.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/company-website-preview/sections/faqs-section.tsx) so FAQ cards start collapsed by default (`isOpen: false`), displaying answer text and toggling `+`/`-` icon on click.
+
+### 19. Persistent Header/Footer SPA Navigation
+- Fixed internal page routing in [preview-shared.ts](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/company-website-preview/sections/preview-shared.ts) and [hero-section.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/company-website-preview/sections/hero-section.tsx) so Header and Footer remain permanently mounted while inner page content switches instantaneously without full browser reloads.
+
+### 20. Embedded Google Map & Contact Form
+- Embedded responsive Google Map iframe (`<iframe src={mapSrc} />`) in [contact-section.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/company-website-preview/sections/contact-section.tsx) with fallback latitude/longitude address parsing.
+
+### 21. Plan Features Matrix Module & Standard IconPickerDialog Integration
+- Created dedicated **Plan Features** admin management page at [/admin/website-builder/pricing-features](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/admin/website-builder/pricing-features/page.tsx).
+- Integrated standard `IconPickerDialog` component for selecting any icon across Lucide, Material, Tabler, Phosphor, Heroicons, etc.
+- Built 3-section "Add New Feature" / "Edit Feature" modal dialog (Feature Info, Tier Limits for `Free`, `Basic`, `Pro`, `Premium`, `Companies`, and Active Status switch).
+- Added live preview comparison matrix table **"Powerful Features in Every Plan"** on public pricing page ([pricing-section.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/company-website-preview/sections/pricing-section.tsx)).
+- Updated sidebar navigation link in [app-sidebar.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/admin/app-sidebar.tsx) to point `Plan Features` to `/admin/website-builder/pricing-features` while preserving existing `Plans & Pricing` management page.
+
+### 22. Direct Database Execution & Controller Cleanup
+- Executed raw DDL migrations directly on **Local MySQL** (`localhost:3306`) and **Live Production MySQL** (`mysql-cbe9f33-jamaludheen779-4e61.k.aivencloud.com:15373`) for `company_website_footer_settings`, `vendor_website_footer_settings`, `company_website_pricing_matrix_features`, and `vendor_website_pricing_matrix_features`.
+- Removed auto-creation runtime helper methods from backend controller [companyWebsiteBuilder.controller.js](file:///d:/Jamal/Event_Management_Admin_Backend/src/controllers/companyWebsiteBuilder.controller.js) for clean production query execution.
+
+
 
 
 
