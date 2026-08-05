@@ -7,29 +7,6 @@ import { toast } from 'sonner';
 import type { FooterData, SocialLink, ThemeColors } from './preview-shared';
 import { isExternalHref } from './preview-shared';
 
-const PRODUCT_LINKS = [
-  { label: 'Features', href: '/features' },
-  { label: 'Templates', href: '/templates' },
-  { label: 'Pricing', href: '/pricing-plans' },
-  { label: 'How It Works', href: '/how-it-works' },
-  { label: 'FAQ', href: '/faqs' },
-];
-
-const COMPANY_LINKS = [
-  { label: 'About Us', href: '/about-us' },
-  { label: 'Blog', href: '/blog' },
-  { label: 'Careers', href: '/careers' },
-  { label: 'Privacy Policy', href: '/privacy-policy' },
-  { label: 'Terms & Conditions', href: '/terms-and-conditions' },
-];
-
-const SUPPORT_LINKS = [
-  { label: 'Contact Us', href: '/contact-us' },
-  { label: 'Help Center', href: '/help-center' },
-  { label: 'Video Tutorials', href: '/video-tutorials' },
-  { label: 'Request a Feature', href: '/request-feature' },
-];
-
 function FooterSectionBase({ footer, socialLinks, theme, onNavigate }: { footer: FooterData; socialLinks: SocialLink[]; theme: ThemeColors; onNavigate: (href: string) => void }) {
   const [newsletterEmail, setNewsletterEmail] = React.useState('');
   const [submitting, setSubmitting] = React.useState(false);
@@ -61,11 +38,11 @@ function FooterSectionBase({ footer, socialLinks, theme, onNavigate }: { footer:
     toast.success('Subscribed successfully!');
   };
 
-  const activeQuickLinks = footer.quickLinks && footer.quickLinks.length > 0 ? footer.quickLinks : PRODUCT_LINKS;
+  const quickLinks = footer.quickLinks || [];
 
   return (
     <footer className="w-full bg-white text-slate-900 border-t border-slate-200/80">
-      <div className="mx-auto grid w-full max-w-[1280px] gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[1.2fr_0.6fr_0.6fr_0.6fr_1fr] lg:px-8">
+      <div className="mx-auto grid w-full max-w-[1280px] gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[1.4fr_1fr_1fr] lg:px-8">
         {/* Brand Column */}
         <div className="space-y-4">
           <div className="flex items-center gap-2.5">
@@ -80,11 +57,7 @@ function FooterSectionBase({ footer, socialLinks, theme, onNavigate }: { footer:
           </div>
           {footer.description ? (
             <p className="max-w-xs text-[12.5px] font-medium leading-relaxed text-slate-500">{footer.description}</p>
-          ) : (
-            <p className="max-w-xs text-[12.5px] font-medium leading-relaxed text-slate-500">
-              The all-in-one solution for creating beautiful wedding and event apps. Make your special moments unforgettable.
-            </p>
-          )}
+          ) : null}
 
           {(footer.address || footer.mobile || footer.email) && (
             <div className="space-y-1 text-[12px] font-medium text-slate-600">
@@ -116,49 +89,23 @@ function FooterSectionBase({ footer, socialLinks, theme, onNavigate }: { footer:
           ) : null}
         </div>
 
-        {/* Column 2: Product / Quick Links */}
-        <div>
-          <h3 className="text-[13px] font-bold uppercase tracking-wider text-slate-900">Product</h3>
-          <ul className="mt-4 space-y-2.5 text-[12.5px] font-medium text-slate-600">
-            {activeQuickLinks.map((link) => (
-              <li key={`${link.label}-${link.href}`}>
-                <a href={link.href} onClick={(e) => handleLink(e, link.href)} className="transition hover:text-pink-600">
-                  {link.label}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
+        {/* Dynamic Quick Links Column (100% from API data) */}
+        {quickLinks.length > 0 ? (
+          <div>
+            <h3 className="text-[13px] font-bold uppercase tracking-wider text-slate-900">{footer.topListHeading || 'Quick Links'}</h3>
+            <ul className="mt-4 space-y-2.5 text-[12.5px] font-medium text-slate-600">
+              {quickLinks.map((link) => (
+                <li key={`${link.label}-${link.href}`}>
+                  <a href={link.href} onClick={(e) => handleLink(e, link.href)} className="transition hover:text-pink-600">
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : <div />}
 
-        {/* Column 3: Company */}
-        <div>
-          <h3 className="text-[13px] font-bold uppercase tracking-wider text-slate-900">Company</h3>
-          <ul className="mt-4 space-y-2.5 text-[12.5px] font-medium text-slate-600">
-            {COMPANY_LINKS.map((link) => (
-              <li key={link.label}>
-                <a href={link.href} onClick={(e) => handleLink(e, link.href)} className="transition hover:text-pink-600">
-                  {link.label}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Column 4: Support */}
-        <div>
-          <h3 className="text-[13px] font-bold uppercase tracking-wider text-slate-900">Support</h3>
-          <ul className="mt-4 space-y-2.5 text-[12.5px] font-medium text-slate-600">
-            {SUPPORT_LINKS.map((link) => (
-              <li key={link.label}>
-                <a href={link.href} onClick={(e) => handleLink(e, link.href)} className="transition hover:text-pink-600">
-                  {link.label}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Column 5: Newsletter */}
+        {/* Newsletter Column */}
         {footer.showNewsletter ? (
           <div>
             <h3 className="text-[13px] font-bold uppercase tracking-wider text-slate-900">Newsletter</h3>

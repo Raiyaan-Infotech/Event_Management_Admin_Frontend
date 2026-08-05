@@ -47,7 +47,7 @@ function HeaderSectionBase({ theme, header, navItems, socialLinks, companyName, 
     <header className="w-full sticky top-0 z-50">
       {/* Top bar */}
       <div className="border-b border-white/10 text-white" style={{ backgroundColor: theme.primaryButton }}>
-        <div className="mx-auto flex min-h-8 w-full items-center justify-between gap-3 px-4 text-[11px] font-medium sm:px-6 lg:px-12">
+        <div className="mx-auto flex min-h-8 w-full max-w-[1280px] items-center justify-between gap-3 px-4 text-[11px] font-medium sm:px-6 lg:px-8">
           <div className="flex min-w-0 items-center gap-3 overflow-hidden text-white/90">
             {phone ? (
               <span className="flex shrink-0 items-center gap-1.5 whitespace-nowrap">
@@ -91,7 +91,7 @@ function HeaderSectionBase({ theme, header, navItems, socialLinks, companyName, 
 
       {/* Main nav */}
       <div className="shadow-sm bg-white">
-        <div className="mx-auto flex min-h-[74px] w-full items-center justify-between gap-4 px-4 sm:px-6 lg:px-12">
+        <div className="mx-auto flex min-h-[74px] w-full max-w-[1280px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
           {/* Logo */}
           <a href="/" onClick={(e) => handleNavClick(e, { href: '/' })} className="flex shrink-0 items-center gap-3">
             {companyLogo ? (
@@ -176,27 +176,30 @@ function HeaderSectionBase({ theme, header, navItems, socialLinks, companyName, 
           })()}
 
           {/* Auth & Language buttons */}
-          <div className="hidden items-center gap-2.5 lg:flex">
+          <div className="hidden sm:flex items-center gap-2 sm:gap-2.5 shrink-0">
+            {/* Globe Language selector */}
+            <div className="hidden md:flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[12px] font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 cursor-pointer">
+              <Globe className="h-3.5 w-3.5 text-slate-500" />
+              <span>English</span>
+              <ChevronDown className="h-3 w-3 text-slate-400" />
+            </div>
+
             {/* Login button */}
-            {header.showLogin !== false && (
-              <button
-                type="button"
-                className="h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 text-[12.5px] font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 active:scale-95"
-              >
-                Login
-              </button>
-            )}
+            <button
+              type="button"
+              className="h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3.5 sm:px-4 text-[12.5px] font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 active:scale-95 whitespace-nowrap"
+            >
+              Login
+            </button>
 
             {/* Get Started button */}
-            {header.showSignIn !== false && (
-              <button
-                type="button"
-                className="h-9 items-center justify-center rounded-lg px-4 text-[12.5px] font-bold text-white shadow-xs transition hover:opacity-90 active:scale-95"
-                style={{ backgroundColor: theme.primaryButton || '#ec4899' }}
-              >
-                Get Started
-              </button>
-            )}
+            <button
+              type="button"
+              className="h-9 items-center justify-center rounded-lg px-3.5 sm:px-4 text-[12.5px] font-bold text-white shadow-xs transition hover:opacity-90 active:scale-95 whitespace-nowrap"
+              style={{ backgroundColor: theme.primaryButton || '#ec4899' }}
+            >
+              Get Started
+            </button>
           </div>
 
           {/* Mobile hamburger */}
