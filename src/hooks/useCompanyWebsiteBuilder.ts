@@ -155,8 +155,28 @@ const useList = <T extends { id?: number }>(key: string, endpoint: string) => {
 
   const replaceMutation = useMutation({
     mutationFn: async (items: Partial<T>[]) => {
-      const data: any = await api.put(`/website-builder/${endpoint}`, { items });
-      return data;
+      try {
+        const data: any = await api.put(`/website-builder/${endpoint}`, { items });
+        return data;
+      } catch (err: any) {
+        // Fallback for legacy backend if PUT /website-builder/:endpoint (batch) is not deployed on production yet
+        if (err?.response?.status === 404 || err?.status === 404) {
+          console.warn(`[replaceMutation] PUT /website-builder/${endpoint} returned 404. Running item-by-item fallback...`);
+          const results = [];
+          for (const item of items) {
+            if (item.id && typeof item.id === 'number') {
+              const res = await api.put(`/website-builder/${endpoint}/${item.id}`, item);
+              results.push(res);
+            } else {
+              const { id, ...createPayload } = item;
+              const res = await api.post(`/website-builder/${endpoint}`, createPayload);
+              results.push(res);
+            }
+          }
+          return results;
+        }
+        throw err;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['company-website-builder', key] });

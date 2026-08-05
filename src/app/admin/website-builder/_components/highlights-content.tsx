@@ -48,6 +48,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useHighlights, useSaveHighlights, DEFAULT_HIGHLIGHTS, type HighlightItem, type HighlightsSettings } from '@/hooks/useHighlights';
 import { PageLoader } from '@/components/common/page-loader';
 import { ConfirmResetDialog } from '@/components/common/confirm-reset-dialog';
+import { IconPickerDialog } from '@/components/common/icon-picker-dialog';
 import { cn } from '@/lib/utils';
 
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -452,57 +453,18 @@ export function HighlightsContent({ pageSlug, instance }: HighlightsContentProps
                 </DialogContent>
             </Dialog>
 
-            {/* Visual Icon Picker Dialog Modal */}
-            <Dialog open={iconPickerItemIndex !== null} onOpenChange={(open) => !open && setIconPickerItemIndex(null)}>
-                <DialogContent className="max-w-md w-[92vw]">
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2 text-base font-bold">
-                            <Sparkles className="h-4 w-4 text-primary" /> Choose Icon for Highlight Item #{iconPickerItemIndex !== null ? iconPickerItemIndex + 1 : 1}
-                        </DialogTitle>
-                        <DialogDescription className="text-xs">
-                            Click any icon below to apply it to this highlight item.
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    <div className="space-y-3 pt-2">
-                        <Input
-                            value={iconSearch}
-                            onChange={(e) => setIconSearch(e.target.value)}
-                            placeholder="Search icons..."
-                            className="h-8 text-xs"
-                        />
-
-                        <div className="grid grid-cols-4 gap-2 max-h-[300px] overflow-y-auto p-1 border rounded-lg bg-slate-50/50">
-                            {Object.keys(ICON_MAP)
-                                .filter((iconKey) => iconKey.toLowerCase().includes(iconSearch.toLowerCase()))
-                                .map((iconKey) => {
-                                    const ItemIcon = ICON_MAP[iconKey];
-                                    const isSelected = iconPickerItemIndex !== null && settings.items[iconPickerItemIndex]?.icon === iconKey;
-                                    return (
-                                        <button
-                                            key={iconKey}
-                                            type="button"
-                                            onClick={() => {
-                                                if (iconPickerItemIndex !== null) {
-                                                    handleItemChange(iconPickerItemIndex, 'icon', iconKey);
-                                                    setIconPickerItemIndex(null);
-                                                    toast.success(`Icon updated to "${iconKey}"`);
-                                                }
-                                            }}
-                                            className={cn(
-                                                'flex flex-col items-center justify-center gap-1.5 p-2.5 rounded-xl border text-center transition-all cursor-pointer hover:scale-105',
-                                                isSelected ? 'border-primary ring-2 ring-primary/30 bg-primary/10 text-primary font-bold shadow-xs' : 'border-slate-200 hover:border-slate-300 text-slate-700 bg-white'
-                                            )}
-                                        >
-                                            <ItemIcon className="h-5 w-5" />
-                                            <span className="text-[10px] truncate max-w-full">{iconKey}</span>
-                                        </button>
-                                    );
-                                })}
-                        </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
+            {/* Visual Icon Picker Dialog Modal (Shared Component) */}
+            <IconPickerDialog
+                open={iconPickerItemIndex !== null}
+                onOpenChange={(open) => !open && setIconPickerItemIndex(null)}
+                onSelect={(selectedIcon) => {
+                    if (iconPickerItemIndex !== null) {
+                        handleItemChange(iconPickerItemIndex, 'icon', selectedIcon);
+                        setIconPickerItemIndex(null);
+                        toast.success(`Icon updated to "${selectedIcon}"`);
+                    }
+                }}
+            />
 
             <ConfirmResetDialog
                 open={resetDialogOpen}
