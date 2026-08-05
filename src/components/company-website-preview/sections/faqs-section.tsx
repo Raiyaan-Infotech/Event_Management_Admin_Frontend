@@ -33,11 +33,16 @@ function FaqsSectionBase({ faqs, theme }: { faqs: FaqItem[]; theme: ThemeColors 
     setOpenIds((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
+  const primaryBtnColor = theme?.primaryButton || '#EC4899';
+
   return (
     <section id="faqs" className="w-full border-t border-slate-100 bg-slate-50/50 py-16 sm:py-20">
       <div className="mx-auto w-full max-w-[1140px] px-4 sm:px-6 lg:px-8">
         <div className="mb-12 text-center">
-          <span className="text-[12px] font-bold uppercase tracking-wider text-pink-500">
+          <span
+            className="text-[12px] font-bold uppercase tracking-wider"
+            style={{ color: primaryBtnColor }}
+          >
             FAQ&apos;S
           </span>
           <h2 className="mt-2 text-[28px] font-black leading-tight tracking-tight sm:text-[36px]" style={{ color: theme.primaryText }}>
@@ -48,10 +53,10 @@ function FaqsSectionBase({ faqs, theme }: { faqs: FaqItem[]; theme: ThemeColors 
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 items-start">
           {faqs.map((faq) => {
             const cleanAns = cleanHtmlText(faq.answer);
-            const isOpen = openIds[faq.id] ?? true;
+            const isOpen = Boolean(openIds[faq.id]);
 
             return (
               <div
@@ -59,19 +64,23 @@ function FaqsSectionBase({ faqs, theme }: { faqs: FaqItem[]; theme: ThemeColors 
                 onClick={() => toggle(faq.id)}
                 className="group flex items-start justify-between gap-4 rounded-2xl border border-slate-100 bg-white p-5 sm:p-6 shadow-2xs transition duration-200 hover:border-slate-200 hover:shadow-md cursor-pointer"
               >
-                <div className="flex-1 space-y-1.5">
+                <div className="flex-1 space-y-2">
                   <h3 className="text-[15px] font-bold leading-snug text-slate-900" style={{ color: theme.primaryText }}>
                     {faq.question}
                   </h3>
-                  {cleanAns && (
-                    <p className={`text-[13px] font-medium leading-relaxed text-slate-500 transition-all duration-200 ${isOpen ? 'line-clamp-none' : 'line-clamp-2'}`}>
+                  {isOpen && cleanAns && (
+                    <p className="text-[13px] font-medium leading-relaxed text-slate-500 transition-all duration-200 pt-1 border-t border-slate-100">
                       {cleanAns}
                     </p>
                   )}
                 </div>
 
                 <div
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-pink-50 text-pink-500 transition-colors group-hover:bg-pink-100"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors"
+                  style={{
+                    backgroundColor: `${primaryBtnColor}18`,
+                    color: primaryBtnColor,
+                  }}
                   aria-label="Toggle answer"
                 >
                   {isOpen ? (

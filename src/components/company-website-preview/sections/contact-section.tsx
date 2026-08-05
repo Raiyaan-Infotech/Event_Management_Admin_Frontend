@@ -33,6 +33,11 @@ function ContactSectionBase({ contact, theme }: { contact: ContactData; theme: T
     toast.success('Message sent successfully!');
   };
 
+  const mapAddress = encodeURIComponent(contact.address || 'New York, USA');
+  const mapSrc = contact.latitude && contact.longitude
+    ? `https://maps.google.com/maps?q=${contact.latitude},${contact.longitude}&z=14&output=embed`
+    : `https://maps.google.com/maps?q=${mapAddress}&z=14&output=embed`;
+
   return (
     <section id="contact" className="w-full border-t border-slate-100 bg-white py-16 sm:py-20">
       <div className="mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-8">
@@ -42,8 +47,8 @@ function ContactSectionBase({ contact, theme }: { contact: ContactData; theme: T
           <div className="mx-auto mt-3 h-[3px] w-12 rounded-full" style={{ backgroundColor: theme.primaryButton }} />
         </div>
 
-        <div className="grid gap-12 lg:grid-cols-2">
-          {/* Info */}
+        <div className="grid gap-10 lg:grid-cols-2 items-start">
+          {/* Info & Map Column */}
           <div className="space-y-6">
             {contact.address ? (
               <div className="flex items-start gap-4">
@@ -78,7 +83,7 @@ function ContactSectionBase({ contact, theme }: { contact: ContactData; theme: T
                 </div>
               </div>
             ) : null}
-            {contact.socialLinksEnabled && contact.socialLinks.length ? (
+            {contact.socialLinksEnabled && contact.socialLinks && contact.socialLinks.length ? (
               <div className="flex gap-3 pt-2">
                 {contact.socialLinks.map((link: SocialLink) => {
                   const raw = String(link.iconName || 'simple-icons:linktree').trim().toLowerCase();
@@ -91,28 +96,41 @@ function ContactSectionBase({ contact, theme }: { contact: ContactData; theme: T
                 })}
               </div>
             ) : null}
+
+            {/* Embedded Google Map */}
+            <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200/80 shadow-xs h-[240px] w-full">
+              <iframe
+                title="Company Location Map"
+                src={mapSrc}
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
           </div>
 
-          {/* Form */}
-          {contact.contactFormEnabled ? (
-            <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-slate-100 bg-slate-50 p-6 shadow-sm">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <input value={formData.name} onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))} placeholder="Your Name *" className="h-11 w-full rounded-lg border border-slate-200 bg-white px-4 text-[13px] focus:outline-none focus:ring-2" style={{ '--tw-ring-color': theme.primaryButton } as any} required />
-                <input type="email" value={formData.email} onChange={(e) => setFormData((p) => ({ ...p, email: e.target.value }))} placeholder="Email Address *" className="h-11 w-full rounded-lg border border-slate-200 bg-white px-4 text-[13px] focus:outline-none focus:ring-2" required />
-              </div>
-              <input value={formData.phone} onChange={(e) => setFormData((p) => ({ ...p, phone: e.target.value }))} placeholder="Phone Number" className="h-11 w-full rounded-lg border border-slate-200 bg-white px-4 text-[13px] focus:outline-none focus:ring-2" />
-              {contact.categories.length ? (
-                <select value={formData.category} onChange={(e) => setFormData((p) => ({ ...p, category: e.target.value }))} className="h-11 w-full rounded-lg border border-slate-200 bg-white px-4 text-[13px] focus:outline-none">
-                  <option value="">Select Category</option>
-                  {contact.categories.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
-                </select>
-              ) : null}
-              <textarea value={formData.message} onChange={(e) => setFormData((p) => ({ ...p, message: e.target.value }))} placeholder="Your Message *" rows={4} className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-[13px] focus:outline-none focus:ring-2 resize-none" required />
-              <button type="submit" disabled={submitting} className="h-11 w-full rounded-lg text-[13px] font-bold text-white transition hover:-translate-y-0.5 disabled:opacity-70" style={{ backgroundColor: theme.primaryButton }}>
-                {submitting ? 'Sending...' : 'Send Message'}
-              </button>
-            </form>
-          ) : null}
+          {/* Form Column */}
+          <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-slate-100 bg-slate-50/50 p-6 sm:p-7 shadow-xs">
+            <h3 className="text-[18px] font-black text-slate-900 mb-2" style={{ color: theme.primaryText }}>Send Us A Message</h3>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <input value={formData.name} onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))} placeholder="Your Name *" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[13px] text-slate-800 outline-none focus:border-slate-400 focus:ring-2 focus:ring-rose-500/20 shadow-2xs" required />
+              <input type="email" value={formData.email} onChange={(e) => setFormData((p) => ({ ...p, email: e.target.value }))} placeholder="Email Address *" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[13px] text-slate-800 outline-none focus:border-slate-400 focus:ring-2 focus:ring-rose-500/20 shadow-2xs" required />
+            </div>
+            <input value={formData.phone} onChange={(e) => setFormData((p) => ({ ...p, phone: e.target.value }))} placeholder="Phone Number" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[13px] text-slate-800 outline-none focus:border-slate-400 focus:ring-2 focus:ring-rose-500/20 shadow-2xs" />
+            {contact.categories && contact.categories.length ? (
+              <select value={formData.category} onChange={(e) => setFormData((p) => ({ ...p, category: e.target.value }))} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[13px] text-slate-800 outline-none focus:border-slate-400 focus:ring-2 focus:ring-rose-500/20 shadow-2xs">
+                <option value="">Select Category</option>
+                {contact.categories.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+              </select>
+            ) : null}
+            <textarea value={formData.message} onChange={(e) => setFormData((p) => ({ ...p, message: e.target.value }))} placeholder="Your Message *" rows={4} className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-[13px] text-slate-800 outline-none focus:border-slate-400 focus:ring-2 focus:ring-rose-500/20 resize-none shadow-2xs" required />
+            <button type="submit" disabled={submitting} className="h-11 w-full rounded-xl text-[13px] font-bold text-white transition hover:opacity-90 active:scale-95 disabled:opacity-70 shadow-xs" style={{ backgroundColor: theme.primaryButton }}>
+              {submitting ? 'Sending...' : 'Send Message'}
+            </button>
+          </form>
         </div>
       </div>
     </section>

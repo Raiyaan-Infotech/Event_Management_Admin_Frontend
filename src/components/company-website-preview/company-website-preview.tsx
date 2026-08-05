@@ -302,7 +302,7 @@ function extractList(raw: unknown): AnyRecord[] {
   const pageContents: Record<string, React.ReactNode> = {
     home: (
       <>
-        <PageHeroSection pageSlug="home" theme={theme} />
+        <PageHeroSection pageSlug="home" theme={theme} onNavigate={handleNavigate} />
         <HighlightsSection pageSlug="home" instance={1} theme={theme} variant="outline" />
         <TemplatesSection templates={templates} theme={theme} />
         <HighlightsSection pageSlug="home" instance={2} theme={theme} variant="filled" />
@@ -312,7 +312,7 @@ function extractList(raw: unknown): AnyRecord[] {
     ),
     features: (
       <>
-        <PageHeroSection pageSlug="features" theme={theme} />
+        <PageHeroSection pageSlug="features" theme={theme} onNavigate={handleNavigate} />
         <FeaturesSection features={features} theme={theme} />
         <DynamicLoginDemoSection pageSlug="features" theme={theme} companyName={companyName} />
         <HighlightsSection pageSlug="features" instance={1} theme={theme} variant="filled" />
@@ -321,7 +321,7 @@ function extractList(raw: unknown): AnyRecord[] {
     ),
     template: (
       <>
-        <PageHeroSection pageSlug="template" theme={theme} />
+        <PageHeroSection pageSlug="template" theme={theme} onNavigate={handleNavigate} />
         <TemplateGridGallerySection templates={templates} theme={theme} />
         <DynamicLoginDemoSection pageSlug="template" theme={theme} companyName={companyName} />
         <HighlightsSection pageSlug="template" instance={1} theme={theme} variant="filled" />
@@ -329,7 +329,7 @@ function extractList(raw: unknown): AnyRecord[] {
     ),
     templates: (
       <>
-        <PageHeroSection pageSlug="template" theme={theme} />
+        <PageHeroSection pageSlug="template" theme={theme} onNavigate={handleNavigate} />
         <TemplateGridGallerySection templates={templates} theme={theme} />
         <DynamicLoginDemoSection pageSlug="template" theme={theme} companyName={companyName} />
         <HighlightsSection pageSlug="template" instance={1} theme={theme} variant="filled" />
@@ -337,7 +337,7 @@ function extractList(raw: unknown): AnyRecord[] {
     ),
     pricing: (
       <>
-        <PageHeroSection pageSlug="pricing" theme={theme} />
+        <PageHeroSection pageSlug="pricing" theme={theme} onNavigate={handleNavigate} />
         <PricingSection plans={pricingPlans} theme={theme} />
         <HighlightsSection pageSlug="pricing" instance={1} theme={theme} variant="filled" />
         <DynamicLoginDemoSection pageSlug="pricing" theme={theme} companyName={companyName} />
@@ -345,7 +345,7 @@ function extractList(raw: unknown): AnyRecord[] {
     ),
     'pricing-plans': (
       <>
-        <PageHeroSection pageSlug="pricing" theme={theme} />
+        <PageHeroSection pageSlug="pricing" theme={theme} onNavigate={handleNavigate} />
         <PricingSection plans={pricingPlans} theme={theme} />
         <HighlightsSection pageSlug="pricing" instance={1} theme={theme} variant="filled" />
         <DynamicLoginDemoSection pageSlug="pricing" theme={theme} companyName={companyName} />
@@ -353,7 +353,7 @@ function extractList(raw: unknown): AnyRecord[] {
     ),
     'how-it-works': (
       <>
-        <PageHeroSection pageSlug="how-it-works" theme={theme} />
+        <PageHeroSection pageSlug="how-it-works" theme={theme} onNavigate={handleNavigate} />
         <HowItWorksSection steps={howItWorksSteps} theme={theme} />
         <HighlightsSection pageSlug="how-it-works" instance={1} theme={theme} variant="filled" />
         <DynamicLoginDemoSection pageSlug="how-it-works" theme={theme} companyName={companyName} />
@@ -361,7 +361,7 @@ function extractList(raw: unknown): AnyRecord[] {
     ),
     contact: (
       <>
-        <PageHeroSection pageSlug="contact" theme={theme} />
+        <PageHeroSection pageSlug="contact" theme={theme} onNavigate={handleNavigate} />
         <HighlightsSection pageSlug="contact" instance={1} theme={theme} variant="filled" />
         {contact ? <ContactSection contact={contact} theme={theme} /> : null}
         <FaqsSection faqs={faqs} theme={theme} />
@@ -370,7 +370,7 @@ function extractList(raw: unknown): AnyRecord[] {
     ),
     'contact-us': (
       <>
-        <PageHeroSection pageSlug="contact" theme={theme} />
+        <PageHeroSection pageSlug="contact" theme={theme} onNavigate={handleNavigate} />
         <HighlightsSection pageSlug="contact" instance={1} theme={theme} variant="filled" />
         {contact ? <ContactSection contact={contact} theme={theme} /> : null}
         <FaqsSection faqs={faqs} theme={theme} />

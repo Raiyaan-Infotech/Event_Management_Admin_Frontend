@@ -2,15 +2,23 @@
 
 import * as React from 'react';
 import type { HeroButton, HeroData, ThemeColors } from './preview-shared';
-import { getHeroMinHeight } from './preview-shared';
+import { getHeroMinHeight, isExternalHref } from './preview-shared';
 
-function HeroButtonLink({ button }: { button: HeroButton }) {
+function HeroButtonLink({ button, onNavigate }: { button: HeroButton; onNavigate?: (href: string) => void }) {
   if (!button.enabled) return null;
   const isOutline = button.style === 'Outline';
   const isGhost = button.style === 'Ghost';
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (isExternalHref(button.link)) return;
+    e.preventDefault();
+    onNavigate?.(button.link);
+  };
+
   return (
     <a
       href={button.link}
+      onClick={handleClick}
       className="inline-flex h-11 items-center justify-center rounded px-5 text-[13px] font-bold shadow-sm transition hover:-translate-y-0.5"
       style={
         isOutline
@@ -25,7 +33,7 @@ function HeroButtonLink({ button }: { button: HeroButton }) {
   );
 }
 
-function HeroSectionBase({ hero, theme }: { hero: HeroData; theme: ThemeColors }) {
+function HeroSectionBase({ hero, theme, onNavigate }: { hero: HeroData; theme: ThemeColors; onNavigate?: (href: string) => void }) {
   const contentAlign = hero.contentAlignment === 'center' ? 'center' : hero.contentAlignment === 'right' ? 'right' : 'left';
   const justifyContent = hero.buttonLayout === 'center' ? 'center' : hero.buttonLayout === 'right' ? 'flex-end' : 'flex-start';
 
@@ -53,8 +61,8 @@ function HeroSectionBase({ hero, theme }: { hero: HeroData; theme: ThemeColors }
             {hero.description}
           </p>
           <div className="mt-7 flex flex-wrap gap-3" style={{ justifyContent, flexDirection: hero.buttonLayout === 'stack' ? 'column' : 'row' }}>
-            <HeroButtonLink button={hero.button1} />
-            <HeroButtonLink button={hero.button2} />
+            <HeroButtonLink button={hero.button1} onNavigate={onNavigate} />
+            <HeroButtonLink button={hero.button2} onNavigate={onNavigate} />
           </div>
         </div>
       </div>
@@ -65,10 +73,10 @@ function HeroSectionBase({ hero, theme }: { hero: HeroData; theme: ThemeColors }
 import { useCompanyHeroSection } from '@/hooks/useCompanyWebsiteBuilder';
 import { buildHero, type AnyRecord } from './preview-shared';
 
-export function PageHeroSection({ pageSlug = 'home', theme }: { pageSlug?: string; theme: ThemeColors }) {
+export function PageHeroSection({ pageSlug = 'home', theme, onNavigate }: { pageSlug?: string; theme: ThemeColors; onNavigate?: (href: string) => void }) {
   const { data: heroRaw } = useCompanyHeroSection(pageSlug);
   const hero = buildHero(heroRaw as AnyRecord, theme);
-  return <HeroSectionBase hero={hero} theme={theme} />;
+  return <HeroSectionBase hero={hero} theme={theme} onNavigate={onNavigate} />;
 }
 
 export const HeroSection = React.memo(HeroSectionBase);

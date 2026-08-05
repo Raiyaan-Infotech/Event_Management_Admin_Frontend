@@ -141,11 +141,10 @@ export function parseRecord(value: unknown): AnyRecord {
 
 export function isExternalHref(href: unknown) {
   const raw = String(href ?? '').trim();
-  if (!raw || raw === '#') return true;
+  if (!raw || raw === '#') return false;
   if (/^(mailto:|tel:)/i.test(raw)) return true;
-  if (raw.startsWith('//')) return true;
 
-  if (/^https?:/i.test(raw)) {
+  if (/^https?:\/\//i.test(raw)) {
     if (typeof window !== 'undefined') {
       try {
         const urlObj = new URL(raw);
@@ -156,7 +155,7 @@ export function isExternalHref(href: unknown) {
         return true;
       }
     }
-    const internalKeys = ['pricing', 'plan', 'template', 'feature', 'how-it-works', 'contact', 'gallery', 'faq'];
+    const internalKeys = ['pricing', 'plan', 'template', 'feature', 'how-it-works', 'contact', 'gallery', 'faq', 'home', 'admin', 'builder', 'about', 'terms', 'privacy'];
     if (internalKeys.some((k) => raw.toLowerCase().includes(k))) {
       return false;
     }
@@ -484,7 +483,10 @@ export function buildFooter(footerSettings: AnyRecord = {}, pages: AnyRecord[] =
       ? rawLinks1Alt
       : ['home', 'features', 'templates', 'gallery', 'contact'];
 
-  const rawLinks2 = parseJsonArray(footerSettings?.quick_links_2_json);
+  const rawLinks2Parsed = parseJsonArray(footerSettings?.quick_links_2_json);
+  const rawLinks2 = rawLinks2Parsed.length > 0
+    ? rawLinks2Parsed
+    : ['about-us', 'services', 'terms-conditions', 'privacy-policy'];
 
   const norm = (v: unknown) => String(v ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
