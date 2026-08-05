@@ -411,7 +411,7 @@ function extractList(raw: unknown): AnyRecord[] {
   // ── Full Website Render ─────────────────────────────────────────────────────
   return (
     <div
-      className="min-h-screen w-full overflow-x-hidden bg-white text-slate-950"
+      className="company-website-preview-root min-h-screen w-full overflow-x-hidden bg-white text-slate-950"
       style={{
         '--preview-primary-text': theme.primaryText,
         '--preview-secondary-text': theme.secondaryText,
@@ -421,6 +421,25 @@ function extractList(raw: unknown): AnyRecord[] {
         fontFamily: `'${fontFamily}', Inter, "Inter Fallback", ui-sans-serif, system-ui, sans-serif`,
       } as React.CSSProperties}
     >
+      <style>{`
+        .company-website-preview-root,
+        .company-website-preview-root *,
+        .company-website-preview-root h1,
+        .company-website-preview-root h2,
+        .company-website-preview-root h3,
+        .company-website-preview-root h4,
+        .company-website-preview-root h5,
+        .company-website-preview-root h6,
+        .company-website-preview-root p,
+        .company-website-preview-root span,
+        .company-website-preview-root a,
+        .company-website-preview-root button,
+        .company-website-preview-root input,
+        .company-website-preview-root textarea,
+        .company-website-preview-root select {
+          font-family: '${fontFamily}', Inter, "Inter Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+        }
+      `}</style>
       {/* Floating refresh button */}
       <button
         type="button"
