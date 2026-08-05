@@ -577,15 +577,23 @@ export function buildFooter(footerSettings: AnyRecord = {}, pages: AnyRecord[] =
 
 // ── Contact ──────────────────────────────────────────────────────────────────
 
-export function buildContact(contactSettings: AnyRecord, contactCategories: AnyRecord[], socialLinks: SocialLink[]) {
-  if (!contactSettings || Object.keys(contactSettings).length === 0) return null;
+export function buildContact(
+  contactSettings: AnyRecord = {},
+  contactCategories: AnyRecord[] = [],
+  socialLinks: SocialLink[] = [],
+  basicInfo: AnyRecord = {}
+) {
+  const email = stringValue(contactSettings.email || basicInfo.email, 'support@company.com').toLowerCase();
+  const mobile = stringValue(contactSettings.mobile || basicInfo.mobile, '+1 (555) 123-4567');
+  const address = stringValue(contactSettings.address || basicInfo.address, '123 Business Street, Suite 100');
+
   return {
-    email: stringValue(contactSettings.email).toLowerCase(),
-    mobile: stringValue(contactSettings.mobile),
-    address: stringValue(contactSettings.address),
-    mapEnabled: boolValue(contactSettings.google_map_enabled, false),
-    latitude: stringValue(contactSettings.latitude),
-    longitude: stringValue(contactSettings.longitude),
+    email,
+    mobile,
+    address,
+    mapEnabled: boolValue(contactSettings.google_map_enabled, true),
+    latitude: stringValue(contactSettings.latitude, '37.7749'),
+    longitude: stringValue(contactSettings.longitude, '-122.4194'),
     socialLinksEnabled: boolValue(contactSettings.social_links_enabled, true),
     contactFormEnabled: boolValue(contactSettings.contact_form_enabled, true),
     categories: (contactCategories || [])

@@ -57,7 +57,7 @@ import { LogoWallSection } from './sections/logo-wall-section';
 import { ContactSection } from './sections/contact-section';
 import { FooterSection } from './sections/footer-section';
 import { FeaturesSection } from './sections/features-section';
-import { TemplatesSection } from './sections/templates-section';
+import { TemplatesSection, TemplateGridGallerySection } from './sections/templates-section';
 import { HowItWorksSection } from './sections/how-it-works-section';
 import { PricingSection } from './sections/pricing-section';
 import { FaqsSection } from './sections/faqs-section';
@@ -164,7 +164,7 @@ export function CompanyWebsitePreview({ initialPage = 'home' }: { initialPage?: 
   const clients = buildLogos(clientsRaw as AnyRecord[]);
   const sponsors = buildLogos(sponsorsRaw as AnyRecord[]);
   const footer = buildFooter(footerRaw as AnyRecord, pagesRaw as AnyRecord[], basicInfo as AnyRecord);
-  const contact = buildContact(contactRaw as AnyRecord, contactCatsRaw as AnyRecord[], socialLinks);
+  const contact = buildContact(contactRaw as AnyRecord, contactCatsRaw as AnyRecord[], socialLinks, basicInfo);
   const legalPages = buildLegalPages(pagesRaw as AnyRecord[]);
   const companyName = String(basicInfo.company_name || 'Company');
   const companyLogo = String(
@@ -322,7 +322,7 @@ function extractList(raw: unknown): AnyRecord[] {
     template: (
       <>
         <PageHeroSection pageSlug="template" theme={theme} />
-        <TemplatesSection templates={templates} theme={theme} />
+        <TemplateGridGallerySection templates={templates} theme={theme} />
         <DynamicLoginDemoSection pageSlug="template" theme={theme} companyName={companyName} />
         <HighlightsSection pageSlug="template" instance={1} theme={theme} variant="filled" />
       </>
@@ -330,7 +330,7 @@ function extractList(raw: unknown): AnyRecord[] {
     templates: (
       <>
         <PageHeroSection pageSlug="template" theme={theme} />
-        <TemplatesSection templates={templates} theme={theme} />
+        <TemplateGridGallerySection templates={templates} theme={theme} />
         <DynamicLoginDemoSection pageSlug="template" theme={theme} companyName={companyName} />
         <HighlightsSection pageSlug="template" instance={1} theme={theme} variant="filled" />
       </>

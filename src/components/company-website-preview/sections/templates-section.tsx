@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useRef, useState } from 'react';
-import { ChevronDown, ChevronLeft, ChevronRight, Heart, Layout, Eye } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, Heart, Layout, Eye, Search, Flame, Palette, Filter, ArrowDown } from 'lucide-react';
 import type { ThemeColors } from './preview-shared';
 
 export interface TemplateItem {
@@ -306,6 +306,294 @@ function TemplateCard({
         </button>
       </div>
     </div>
+  );
+}
+
+export function TemplateGridGallerySection({
+  templates,
+  theme,
+  categories,
+  onPreview,
+  onUseTemplate,
+}: TemplatesSectionProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState(ALL_CATEGORY);
+  const [selectedColor, setSelectedColor] = useState('all');
+  const [selectedPopularity, setSelectedPopularity] = useState('all');
+  const [favorites, setFavorites] = useState<Set<number>>(new Set());
+  const [visibleCount, setVisibleCount] = useState(10);
+
+  const activeTemplates = useMemo(
+    () => (templates || []).filter((t) => t.isActive !== false),
+    [templates],
+  );
+
+  const derivedCategories = useMemo(() => {
+    if (categories && categories.length > 0) return categories;
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const t of activeTemplates) {
+      const name = t.categoryName?.trim();
+      if (name && !seen.has(name)) {
+        seen.add(name);
+        out.push(name);
+      }
+    }
+    return out;
+  }, [categories, activeTemplates]);
+
+  const toggleFavorite = (id: number) => {
+    setFavorites((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const filteredTemplates = useMemo(() => {
+    return activeTemplates.filter((t) => {
+      if (selectedCategory !== ALL_CATEGORY && t.categoryName !== selectedCategory) {
+        return false;
+      }
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const titleMatch = t.title?.toLowerCase().includes(q);
+        const catMatch = t.categoryName?.toLowerCase().includes(q);
+        if (!titleMatch && !catMatch) return false;
+      }
+      if (selectedPopularity === 'popular' && !t.isPopular) {
+        return false;
+      }
+      return true;
+    });
+  }, [activeTemplates, selectedCategory, searchQuery, selectedPopularity]);
+
+  const displayedTemplates = filteredTemplates.slice(0, visibleCount);
+
+  return (
+    <section className="w-full border-t border-slate-100 bg-slate-50/50 py-10 sm:py-14">
+      <div className="mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-8 space-y-6">
+        
+        {/* ── Top Controls & Search Bar ──────────────────────────────────────── */}
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-100 bg-white p-3 shadow-2xs">
+          {/* Search Input */}
+          <div className="relative flex-1 min-w-[240px]">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search templates for weddings, events..."
+              className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-4 pr-10 text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500/20"
+            />
+            <Search className="absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          </div>
+
+          {/* All Categories Dropdown */}
+          <div className="relative min-w-[140px]">
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="h-10 w-full appearance-none rounded-xl border border-slate-200 bg-white px-3.5 pr-8 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-rose-500/20 cursor-pointer"
+            >
+              <option value={ALL_CATEGORY}>All Categories</option>
+              {derivedCategories.map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+          </div>
+
+          {/* All Colors Dropdown */}
+          <div className="relative min-w-[130px]">
+            <select
+              value={selectedColor}
+              onChange={(e) => setSelectedColor(e.target.value)}
+              className="h-10 w-full appearance-none rounded-xl border border-slate-200 bg-white pl-9 pr-8 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-rose-500/20 cursor-pointer"
+            >
+              <option value="all">All Colors</option>
+              <option value="red">Red</option>
+              <option value="gold">Gold</option>
+              <option value="green">Green</option>
+              <option value="purple">Purple</option>
+              <option value="blue">Blue</option>
+            </select>
+            <Palette className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-rose-500" />
+            <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+          </div>
+
+          {/* Popular Dropdown */}
+          <div className="relative min-w-[130px]">
+            <select
+              value={selectedPopularity}
+              onChange={(e) => setSelectedPopularity(e.target.value)}
+              className="h-10 w-full appearance-none rounded-xl border border-slate-200 bg-white pl-9 pr-8 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-rose-500/20 cursor-pointer"
+            >
+              <option value="all">All Items</option>
+              <option value="popular">Popular</option>
+              <option value="trending">Trending</option>
+            </select>
+            <Flame className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-orange-500" />
+            <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+          </div>
+
+          {/* Filter Button */}
+          <button
+            type="button"
+            className="flex h-10 items-center justify-center gap-1.5 rounded-xl px-5 text-xs font-bold text-white shadow-2xs transition hover:opacity-90 cursor-pointer"
+            style={{ backgroundColor: theme.primaryButton }}
+          >
+            <Filter className="h-3.5 w-3.5" />
+            <span>Filter</span>
+          </button>
+        </div>
+
+        {/* ── Category Filter Pills ────────────────────────────────────────────── */}
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setSelectedCategory(ALL_CATEGORY)}
+            className="rounded-xl px-4 py-2 text-xs font-bold transition-colors cursor-pointer"
+            style={
+              selectedCategory === ALL_CATEGORY
+                ? { backgroundColor: theme.primaryButton, color: '#ffffff' }
+                : { backgroundColor: '#ffffff', color: '#475569', border: '1px solid #e2e8f0' }
+            }
+          >
+            All Templates
+          </button>
+
+          {derivedCategories.map((cat) => (
+            <button
+              key={cat}
+              type="button"
+              onClick={() => setSelectedCategory(cat)}
+              className="rounded-xl px-4 py-2 text-xs font-bold transition-colors cursor-pointer"
+              style={
+                selectedCategory === cat
+                  ? { backgroundColor: theme.primaryButton, color: '#ffffff' }
+                  : { backgroundColor: '#ffffff', color: '#475569', border: '1px solid #e2e8f0' }
+              }
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        {/* ── 5-Column Template Cards Grid ───────────────────────────────────── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5">
+          {displayedTemplates.map((template) => {
+            const isFav = favorites.has(template.id);
+            return (
+              <div
+                key={template.id}
+                className="group flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-100 bg-white p-3 shadow-2xs transition duration-300 hover:-translate-y-1 hover:border-slate-200 hover:shadow-lg"
+              >
+                {/* Thumbnail Image Container */}
+                <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-slate-100">
+                  {template.thumbnailUrl ? (
+                    <img
+                      src={template.thumbnailUrl}
+                      alt={template.title}
+                      className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                      onError={(e) => {
+                        const imgEl = e.currentTarget;
+                        imgEl.style.display = 'none';
+                        const fallbackEl = imgEl.parentElement?.querySelector('[data-thumb-fallback="true"]') as HTMLElement;
+                        if (fallbackEl) fallbackEl.style.display = 'flex';
+                      }}
+                    />
+                  ) : null}
+                  <div
+                    data-thumb-fallback="true"
+                    className="flex h-full w-full items-center justify-center text-slate-300"
+                    style={{ display: template.thumbnailUrl ? 'none' : 'flex' }}
+                  >
+                    <Layout className="h-10 w-10" />
+                  </div>
+
+                  {/* Favorite Heart Button */}
+                  <button
+                    type="button"
+                    onClick={() => toggleFavorite(template.id)}
+                    aria-label={isFav ? 'Remove favorite' : 'Add favorite'}
+                    className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 shadow-xs backdrop-blur-xs transition hover:scale-110 cursor-pointer"
+                  >
+                    <Heart
+                      className="h-3.5 w-3.5"
+                      style={isFav ? { color: theme.primaryButton, fill: theme.primaryButton } : { color: '#94a3b8' }}
+                    />
+                  </button>
+
+                  {template.isPopular && (
+                    <span
+                      className="absolute left-2 top-2 rounded-md px-2 py-0.5 text-[9px] font-extrabold tracking-wide text-white shadow-2xs"
+                      style={{ backgroundColor: theme.primaryButton }}
+                    >
+                      ★ Popular
+                    </span>
+                  )}
+                </div>
+
+                {/* Card Meta & Buttons */}
+                <div className="mt-3 flex flex-col justify-between gap-2.5">
+                  <div className="text-center">
+                    <h3 className="line-clamp-1 text-xs font-black text-slate-900" style={{ color: theme.primaryText }}>
+                      {template.title}
+                    </h3>
+                    <p className="line-clamp-1 text-[10px] font-semibold text-slate-400 mt-0.5">
+                      {template.categoryName || template.templateType || 'Invitation'}
+                    </p>
+                  </div>
+
+                  {/* Action Buttons: Preview & Use Template */}
+                  <div className="flex items-center gap-1.5 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => onPreview?.(template)}
+                      className="flex-1 rounded-lg border border-slate-200 bg-white py-1.5 text-[10.5px] font-bold text-slate-700 transition hover:bg-slate-50 cursor-pointer"
+                    >
+                      Preview
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onUseTemplate?.(template)}
+                      className="flex-1 rounded-lg py-1.5 text-[10.5px] font-bold text-white shadow-2xs transition hover:opacity-90 cursor-pointer"
+                      style={{ backgroundColor: theme.primaryButton }}
+                    >
+                      Use Template
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Empty state */}
+        {filteredTemplates.length === 0 && (
+          <div className="py-16 text-center">
+            <p className="text-sm font-semibold text-slate-500">No templates found matching your search or filters.</p>
+          </div>
+        )}
+
+        {/* ── Bottom Load More Button ────────────────────────────────────────── */}
+        {visibleCount < filteredTemplates.length && (
+          <div className="pt-4 text-center">
+            <button
+              type="button"
+              onClick={() => setVisibleCount((prev) => prev + 10)}
+              className="inline-flex items-center gap-2 rounded-xl border bg-white px-6 py-2.5 text-xs font-bold transition hover:bg-rose-50 cursor-pointer"
+              style={{ color: theme.primaryButton, borderColor: `${theme.primaryButton}40` }}
+            >
+              <ArrowDown className="h-3.5 w-3.5" />
+              <span>Load More Templates</span>
+            </button>
+          </div>
+        )}
+
+      </div>
+    </section>
   );
 }
 

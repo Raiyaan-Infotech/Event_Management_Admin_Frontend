@@ -160,10 +160,9 @@ function FeatureFormContent() {
     };
 
     const handleSaveFeature = () => {
-        const newErrors: { title?: boolean; shortDesc?: boolean; detailedDesc?: boolean } = {};
+        const newErrors: { title?: boolean; shortDesc?: boolean } = {};
         if (!title.trim()) newErrors.title = true;
         if (!shortDesc.trim()) newErrors.shortDesc = true;
-        if (!detailedDesc.trim()) newErrors.detailedDesc = true;
 
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
@@ -352,15 +351,13 @@ function FeatureFormContent() {
                         <CardContent className="p-4 space-y-2">
                             <BuilderCountedTextarea
                                 label="Detailed Description"
-                                required
                                 placeholder="Explain how this feature helps guests or event hosts..."
                                 value={detailedDesc}
                                 onChange={(val) => {
                                     setDetailedDesc(val);
-                                    if (errors.detailedDesc) setErrors(prev => ({ ...prev, detailedDesc: false }));
                                 }}
                                 maxLength={500}
-                                textareaClassName={cn('min-h-[100px] text-xs border-border bg-card text-foreground', errors.detailedDesc && 'border-red-500 ring-1 ring-red-500')}
+                                textareaClassName="min-h-[100px] text-xs border-border bg-card text-foreground"
                             />
                         </CardContent>
                     </Card>
