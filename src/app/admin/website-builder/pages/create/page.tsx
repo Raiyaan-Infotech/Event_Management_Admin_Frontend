@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { RichTextEditor } from '@/components/common/rich-text-editor';
+import { ConfirmResetDialog } from '@/components/common/confirm-reset-dialog';
 import { cn } from '@/lib/utils';
 
 export default function CreateCustomPage() {
@@ -18,6 +19,7 @@ export default function CreateCustomPage() {
     const [isPublished, setIsPublished] = useState(true);
     const [content, setContent] = useState('');
     const [isSaving, setIsSaving] = useState(false);
+    const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
     const handleReset = () => {
         setTitle('');
@@ -58,10 +60,10 @@ export default function CreateCustomPage() {
                     <Button variant="outline" size="sm" onClick={() => toast.info('Create custom content pages with title, slug, and rich text editor.')} className="h-8 px-3 text-xs font-semibold text-slate-600 border-slate-200 hover:bg-slate-50">
                         <HelpCircle className="h-3.5 w-3.5 text-slate-400 mr-1" /> How It Works
                     </Button>
-                    <Button variant="outline" size="sm" onClick={handleReset} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
+                    <Button type="button" variant="outline" size="sm" onClick={() => setResetDialogOpen(true)} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
                         <RotateCcw className="h-3.5 w-3.5 text-rose-500 mr-1" /> Reset
                     </Button>
-                    <Button size="sm" onClick={handleSave} disabled={isSaving} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white h-8 text-xs font-bold shadow-xs">
+                    <Button type="button" size="sm" onClick={handleSave} disabled={isSaving} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white h-8 text-xs font-bold shadow-xs">
                         {isSaving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
                         {isSaving ? 'Saving...' : 'Save & Publish Page'}
                     </Button>
@@ -121,6 +123,12 @@ export default function CreateCustomPage() {
                     </div>
                 </CardContent>
             </Card>
+
+            <ConfirmResetDialog
+                open={resetDialogOpen}
+                onOpenChange={setResetDialogOpen}
+                onConfirm={handleReset}
+            />
         </div>
     );
 }

@@ -18,6 +18,14 @@ import {
     Zap,
     Heart,
     Sparkles,
+    Gift,
+    Share2,
+    QrCode,
+    Users,
+    ShieldCheck,
+    Headphones,
+    Layout,
+    Package,
     LucideIcon,
 } from 'lucide-react';
 import { DEFAULT_HIGHLIGHTS, useHighlights, type HighlightsSettings } from '@/hooks/useHighlights';
@@ -36,9 +44,42 @@ const ICON_MAP: Record<string, LucideIcon> = {
     Star,
     Award,
     Shield,
+    ShieldCheck,
     Zap,
     Heart,
+    Gift,
+    Share2,
+    QrCode,
+    Users,
+    Headphones,
+    Layout,
+    Package,
+    Sparkles,
 };
+
+const PASTEL_THEMES = [
+    { bg: '#F3E8FF', color: '#9333EA' },
+    { bg: '#EFF6FF', color: '#2563EB' },
+    { bg: '#F5F3FF', color: '#7C3AED' },
+    { bg: '#FFF7ED', color: '#EA580C' },
+    { bg: '#ECFDF5', color: '#10B981' },
+];
+
+const DEFAULT_INSTANCE_1_ITEMS = [
+    { id: '1', icon: 'Gift', title: 'All in One App', description: 'Everything in your pocket' },
+    { id: '2', icon: 'Sliders', title: 'Customizable', description: '100% customizable to your style' },
+    { id: '3', icon: 'Share2', title: 'Instant Sharing', description: 'Share app via link or QR code' },
+    { id: '4', icon: 'QrCode', title: 'Guest Engagement', description: 'Engage guests with interactive features' },
+    { id: '5', icon: 'ShieldCheck', title: 'Total Control', description: 'Manage your event with ease' },
+];
+
+const DEFAULT_INSTANCE_2_ITEMS = [
+    { id: '1', icon: 'Calendar', title: '25K+', description: 'Events Created' },
+    { id: '2', icon: 'Users', title: '500K+', description: 'Happy Users' },
+    { id: '3', icon: 'Layout', title: '1000+', description: 'Beautiful Templates' },
+    { id: '4', icon: 'Headphones', title: '24/7', description: 'Customer Support' },
+    { id: '5', icon: 'ShieldCheck', title: '99.9%', description: 'Uptime & Security' },
+];
 
 interface HighlightsSectionProps {
     pageSlug?: string;
@@ -48,16 +89,13 @@ interface HighlightsSectionProps {
     variant?: 'outline' | 'filled';
 }
 
-export function HighlightsSection({ pageSlug = 'home', instance = 1, data, theme, variant }: HighlightsSectionProps) {
+export function HighlightsSection({ pageSlug = 'home', instance = 1, data, theme }: HighlightsSectionProps) {
     const { data: fetchedData } = useHighlights(pageSlug, instance);
     const config = { ...DEFAULT_HIGHLIGHTS, ...fetchedData, ...data };
-    const items = config.items && config.items.length > 0 ? config.items : DEFAULT_HIGHLIGHTS.items;
-    const iconStyle = variant || config.icon_style || 'filled';
 
-    // Theme Color Resolvers
-    const themeBrand = theme?.primaryButton || '#4F46E5';
-    const themeText = theme?.primaryText || '#1F2937';
-    const themeSubtext = theme?.secondaryText || '#6B7280';
+    let defaultFallbackItems = instance === 2 ? DEFAULT_INSTANCE_2_ITEMS : DEFAULT_INSTANCE_1_ITEMS;
+    
+    let items = config.items && config.items.length > 0 ? config.items : defaultFallbackItems;
 
     // Background calculation
     let bgStyle: React.CSSProperties = {};
@@ -76,53 +114,49 @@ export function HighlightsSection({ pageSlug = 'home', instance = 1, data, theme
             backgroundPosition: config.image_position || 'center',
         };
     } else {
-        bgStyle = { backgroundColor: config.background_color || theme?.sectionBg || '#FFFFFF' };
+        bgStyle = { backgroundColor: config.background_color || theme?.sectionBg || '#FAFAFA' };
     }
 
-    // Icon & Text Colors
-    const rawBgColor = config.icon_bg_color || `${themeBrand}18`;
-    const rawIconColor = config.icon_color || themeBrand;
-
-    // Ensure icon text color contrasts with icon background
-    const iconBgColor = rawBgColor;
-    const iconColor = (iconStyle === 'filled' && rawIconColor.toLowerCase() === rawBgColor.toLowerCase())
-        ? (rawBgColor.toLowerCase() === '#ffffff' || rawBgColor.toLowerCase() === '#f3f0ff' ? themeBrand : '#FFFFFF')
-        : rawIconColor;
-
-    const titleColor = config.title_color || themeText;
-    const descriptionColor = config.description_color || themeSubtext;
-
-    // Alignment & Shape
-    const alignClass = config.alignment === 'left' ? 'items-start text-left' : config.alignment === 'right' ? 'items-end text-right' : 'items-center text-center';
-    const shapeClass = config.icon_shape === 'square' ? 'rounded-none' : config.icon_shape === 'rounded' ? 'rounded-xl' : 'rounded-full';
-
     return (
-        <section className="w-full py-12 border-b" style={bgStyle}>
+        <section className="w-full py-8 border-b border-slate-100" style={bgStyle}>
             <div className="mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-8">
-                <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-${Math.min(config.items_per_row || 6, 6)} gap-6`}>
-                    {items.map((item: any, idx: number) => {
-                        const IconComp = ICON_MAP[item.icon] || Sparkles;
-                        return (
-                            <div key={item.id || idx} className={`flex flex-col space-y-2 p-2 ${alignClass}`}>
-                                <div
-                                    className={`flex h-12 w-12 items-center justify-center transition-transform hover:scale-105 ${shapeClass}`}
-                                    style={{
-                                        backgroundColor: iconStyle === 'filled' ? iconBgColor : 'transparent',
-                                        border: iconStyle === 'outline' ? `2px solid ${iconColor}` : 'none',
-                                        color: iconColor,
-                                    }}
-                                >
-                                    <IconComp className="h-6 w-6" />
+                {/* Horizontal Card Wrapper */}
+                <div className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-sm">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 items-center justify-center">
+                        {items.slice(0, 5).map((item: any, idx: number) => {
+                            const IconComp = ICON_MAP[item.icon] || Sparkles;
+                            const pastel = PASTEL_THEMES[idx % PASTEL_THEMES.length];
+                            
+                            const iconBg = config.icon_bg_color && config.icon_bg_color !== '#F3F0FF' 
+                                ? config.icon_bg_color 
+                                : pastel.bg;
+                            const iconColor = config.icon_color && config.icon_color !== '#6C5DD3' 
+                                ? config.icon_color 
+                                : pastel.color;
+
+                            return (
+                                <div key={item.id || idx} className="flex items-center gap-3.5 sm:gap-4 text-left">
+                                    <div
+                                        className="flex h-11 w-11 md:h-12 md:w-12 items-center justify-center rounded-full shrink-0 transition-transform hover:scale-105"
+                                        style={{
+                                            backgroundColor: iconBg,
+                                            color: iconColor,
+                                        }}
+                                    >
+                                        <IconComp className="h-5 w-5 md:h-6 md:w-6" />
+                                    </div>
+                                    <div className="flex flex-col text-left min-w-0">
+                                        <h4 className="text-[13px] font-bold tracking-tight text-slate-900 leading-snug truncate">
+                                            {item.title}
+                                        </h4>
+                                        <p className="text-[11px] font-medium text-slate-500 leading-snug mt-0.5 line-clamp-2">
+                                            {item.description}
+                                        </p>
+                                    </div>
                                 </div>
-                                <h4 className="text-sm font-bold tracking-tight" style={{ color: titleColor }}>
-                                    {item.title}
-                                </h4>
-                                <p className="text-xs" style={{ color: descriptionColor }}>
-                                    {item.description}
-                                </p>
-                            </div>
-                        );
-                    })}
+                            );
+                        })}
+                    </div>
                 </div>
             </div>
         </section>

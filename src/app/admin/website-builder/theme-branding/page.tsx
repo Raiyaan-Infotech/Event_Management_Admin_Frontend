@@ -28,6 +28,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { ConfirmResetDialog } from '@/components/common/confirm-reset-dialog';
 
 interface AdminPalette {
     id: string;
@@ -94,6 +95,7 @@ export default function ThemeBrandingSettingsPage() {
     ]);
 
     const [isSaving, setIsSaving] = useState(false);
+    const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
     const activePalette = ADMIN_PALETTES.find((p) => p.id === selectedPaletteId) || ADMIN_PALETTES[0];
 
@@ -166,10 +168,10 @@ export default function ThemeBrandingSettingsPage() {
                     <Button variant="outline" size="sm" onClick={() => toast.info('Configure site color schemes and login panel branding options.')} className="h-8 px-3 text-xs font-semibold text-slate-600 border-slate-200 hover:bg-slate-50">
                         <HelpCircle className="h-3.5 w-3.5 text-slate-400 mr-1" /> How It Works
                     </Button>
-                    <Button variant="outline" size="sm" onClick={handleReset} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
+                    <Button type="button" variant="outline" size="sm" onClick={() => setResetDialogOpen(true)} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
                         <RotateCcw className="h-3.5 w-3.5 text-rose-500 mr-1" /> Reset
                     </Button>
-                    <Button size="sm" onClick={handleSaveTheme} disabled={isSaving} className="h-8 px-4 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs">
+                    <Button type="button" size="sm" onClick={handleSaveTheme} disabled={isSaving} className="h-8 px-4 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs">
                         {isSaving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
                         {isSaving ? 'Saving...' : 'Save Settings'}
                     </Button>
@@ -419,6 +421,12 @@ export default function ThemeBrandingSettingsPage() {
                     </Card>
                 </TabsContent>
             </Tabs>
+
+            <ConfirmResetDialog
+                open={resetDialogOpen}
+                onOpenChange={setResetDialogOpen}
+                onConfirm={handleReset}
+            />
         </div>
     );
 }

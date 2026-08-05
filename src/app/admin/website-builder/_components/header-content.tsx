@@ -12,6 +12,7 @@ import { BuilderCountedInput } from './builder-field';
 import { useCompanyBasicInformation } from '@/hooks/useCompanyWebsiteBuilder';
 import { PageLoader } from '@/components/common/page-loader';
 import { IconPickerDialog } from '@/components/common/icon-picker-dialog';
+import { ConfirmResetDialog } from '@/components/common/confirm-reset-dialog';
 
 interface SocialLinkItem {
     id: string;
@@ -30,6 +31,7 @@ export function HeaderContent() {
     const [email, setEmail] = useState('');
     const [socialLinks, setSocialLinks] = useState<SocialLinkItem[]>([]);
     const [iconPickerLinkId, setIconPickerLinkId] = useState<string | null>(null);
+    const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
     const MAX_LINKS = 10;
     const canAddMore = socialLinks.length < MAX_LINKS;
@@ -194,10 +196,10 @@ export function HeaderContent() {
                     <Button variant="outline" size="sm" onClick={() => toast.info('Configure your website header contact details and social media icon links.')} className="h-8 px-3 text-xs font-semibold text-slate-600 border-slate-200 hover:bg-slate-50">
                         <HelpCircle className="h-3.5 w-3.5 text-slate-400 mr-1" /> How It Works
                     </Button>
-                    <Button variant="outline" size="sm" onClick={handleReset} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
+                    <Button type="button" variant="outline" size="sm" onClick={() => setResetDialogOpen(true)} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
                         <RotateCcw className="h-3.5 w-3.5 text-rose-500 mr-1" /> Reset
                     </Button>
-                    <Button size="sm" onClick={handleSave} disabled={isSaving} className="h-8 px-4 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs">
+                    <Button type="button" size="sm" onClick={handleSave} disabled={isSaving} className="h-8 px-4 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs">
                         <Save className="h-3.5 w-3.5 mr-1" />
                         {isSaving ? 'Saving...' : 'Save Changes'}
                     </Button>
@@ -324,6 +326,12 @@ export function HeaderContent() {
                     if (!open) setIconPickerLinkId(null);
                 }}
                 onSelect={handleIconSelect}
+            />
+
+            <ConfirmResetDialog
+                open={resetDialogOpen}
+                onOpenChange={setResetDialogOpen}
+                onConfirm={handleReset}
             />
         </div>
     );

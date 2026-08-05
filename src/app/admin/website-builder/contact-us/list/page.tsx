@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ConfirmResetDialog } from '@/components/common/confirm-reset-dialog';
 
 interface ContactMessage {
     id: string;
@@ -45,6 +46,7 @@ const initialMessages: ContactMessage[] = [
 export default function ContactListPage() {
     const [messages, setMessages] = useState<ContactMessage[]>(initialMessages);
     const [searchQuery, setSearchQuery] = useState('');
+    const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
     const filteredMessages = useMemo(() => {
         if (!searchQuery.trim()) return messages;
@@ -83,7 +85,7 @@ export default function ContactListPage() {
                     <Button variant="outline" size="sm" onClick={() => toast.info('View client contact form submissions and category inquiries.')} className="h-8 px-3 text-xs font-semibold text-slate-600 border-slate-200 hover:bg-slate-50">
                         <HelpCircle className="h-3.5 w-3.5 text-slate-400 mr-1" /> How It Works
                     </Button>
-                    <Button variant="outline" size="sm" onClick={handleReset} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
+                    <Button type="button" variant="outline" size="sm" onClick={() => setResetDialogOpen(true)} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
                         <RotateCcw className="h-3.5 w-3.5 text-rose-500 mr-1" /> Reset
                     </Button>
                 </div>
@@ -206,6 +208,12 @@ export default function ContactListPage() {
                     </div>
                 </CardContent>
             </Card>
+
+            <ConfirmResetDialog
+                open={resetDialogOpen}
+                onOpenChange={setResetDialogOpen}
+                onConfirm={handleReset}
+            />
         </div>
     );
 }

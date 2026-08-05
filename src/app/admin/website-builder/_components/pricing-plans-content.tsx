@@ -43,6 +43,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { ConfirmResetDialog } from '@/components/common/confirm-reset-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePricingPlansData, useSavePricingPlans, type PricingPlan } from '@/hooks/usePricingPlans';
@@ -545,6 +546,8 @@ export function PricingPlansBuilderContent() {
 
         setMatrixModalOpen(false);
     };
+
+    const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
     const handleReset = () => {
         setPlans(DEFAULT_PLANS);
@@ -1320,7 +1323,7 @@ export function PricingPlansBuilderContent() {
                                 <Button
                                     type="button"
                                     variant="ghost"
-                                    onClick={handleReset}
+                                    onClick={() => setResetDialogOpen(true)}
                                     className="h-10 px-4 text-xs font-semibold text-muted-foreground hover:text-foreground"
                                 >
                                     Cancel
@@ -1825,6 +1828,12 @@ export function PricingPlansBuilderContent() {
                     </div>
                 </DialogContent>
             </Dialog>
+
+            <ConfirmResetDialog
+                open={resetDialogOpen}
+                onOpenChange={setResetDialogOpen}
+                onConfirm={handleReset}
+            />
         </div>
     );
 }

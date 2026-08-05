@@ -23,6 +23,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCompanyThemeSettings } from '@/hooks/useCompanyWebsiteBuilder';
+import { ConfirmResetDialog } from '@/components/common/confirm-reset-dialog';
 import { parseThemeColors } from '@/components/company-website-preview/sections/preview-shared';
 import {
     LoginDemoSection,
@@ -161,6 +162,7 @@ export function LoginDemoContent({ initialPageSlug = 'home' }: LoginDemoContentP
     };
 
     const [previewOpen, setPreviewOpen] = useState(false);
+    const [resetDialogOpen, setResetDialogOpen] = useState(false);
     const activeVariantDetails = LOGIN_DEMO_VARIANTS.find((v) => v.id === selectedVariant) || LOGIN_DEMO_VARIANTS[0];
 
     return (
@@ -185,7 +187,7 @@ export function LoginDemoContent({ initialPageSlug = 'home' }: LoginDemoContentP
                     >
                         <Eye className="h-3.5 w-3.5 text-emerald-600" /> Live Preview
                     </Button>
-                    <Button variant="outline" size="sm" onClick={handleReset} className="gap-2 h-8 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
+                    <Button type="button" variant="outline" size="sm" onClick={() => setResetDialogOpen(true)} className="gap-2 h-8 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
                         <RotateCcw className="h-3.5 w-3.5" /> Reset Default
                     </Button>
                 </div>
@@ -270,6 +272,12 @@ export function LoginDemoContent({ initialPageSlug = 'home' }: LoginDemoContentP
                     </div>
                 </DialogContent>
             </Dialog>
+
+            <ConfirmResetDialog
+                open={resetDialogOpen}
+                onOpenChange={setResetDialogOpen}
+                onConfirm={handleReset}
+            />
         </div>
     );
 }

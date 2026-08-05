@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useRef, useState } from 'react';
-import { ChevronDown, ChevronRight, Heart, Layout, Eye } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, Heart, Layout, Eye } from 'lucide-react';
 import type { ThemeColors } from './preview-shared';
 
 export interface TemplateItem {
@@ -72,8 +72,12 @@ export function TemplatesSection({ templates, theme, categories, onPreview }: Te
     return activeTemplates.filter((t) => t.categoryName === activeCategory);
   }, [activeTemplates, activeCategory]);
 
+  const scrollPrev = () => {
+    scrollRef.current?.scrollBy({ left: -300, behavior: 'smooth' });
+  };
+
   const scrollNext = () => {
-    scrollRef.current?.scrollBy({ left: 240, behavior: 'smooth' });
+    scrollRef.current?.scrollBy({ left: 300, behavior: 'smooth' });
   };
 
   if (!activeTemplates || activeTemplates.length === 0) return null;
@@ -147,10 +151,10 @@ export function TemplatesSection({ templates, theme, categories, onPreview }: Te
         <div className="relative">
           <div
             ref={scrollRef}
-            className="flex gap-5 overflow-x-auto scroll-smooth pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            className="flex gap-4 overflow-x-auto scroll-smooth pb-3 pt-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
             {filtered.map((template) => (
-              <div key={template.id} className="w-[190px] shrink-0 sm:w-[210px]">
+              <div key={template.id} className="w-[170px] sm:w-[185px] lg:w-[calc((100%-5*16px)/6)] shrink-0">
                 <TemplateCard
                   template={template}
                   theme={theme}
@@ -163,14 +167,25 @@ export function TemplatesSection({ templates, theme, categories, onPreview }: Te
           </div>
 
           {filtered.length > 4 && (
-            <button
-              type="button"
-              onClick={scrollNext}
-              aria-label="Show more templates"
-              className="absolute right-0 top-1/2 hidden -translate-y-1/2 translate-x-4 items-center justify-center rounded-full border border-slate-200 bg-white p-2 shadow-md sm:flex"
-            >
-              <ChevronRight className="h-4 w-4" style={{ color: theme.primaryButton }} />
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={scrollPrev}
+                aria-label="Scroll previous templates"
+                className="absolute -left-4 top-1/2 z-10 hidden -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white p-2.5 shadow-md transition hover:bg-slate-50 active:scale-95 sm:flex"
+              >
+                <ChevronLeft className="h-4 w-4" style={{ color: theme.primaryButton }} />
+              </button>
+
+              <button
+                type="button"
+                onClick={scrollNext}
+                aria-label="Scroll next templates"
+                className="absolute -right-4 top-1/2 z-10 hidden -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white p-2.5 shadow-md transition hover:bg-slate-50 active:scale-95 sm:flex"
+              >
+                <ChevronRight className="h-4 w-4" style={{ color: theme.primaryButton }} />
+              </button>
+            </>
           )}
         </div>
 

@@ -23,6 +23,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { BuilderCountedInput } from './builder-field';
+import { ConfirmResetDialog } from '@/components/common/confirm-reset-dialog';
 import { cn } from '@/lib/utils';
 
 interface GalleryImage {
@@ -39,6 +40,7 @@ export function GalleryContent() {
     const [activeFilter, setActiveFilter] = useState('All');
     const [isSaving, setIsSaving] = useState(false);
     const [previewOpen, setPreviewOpen] = useState(false);
+    const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
     const [categories, setCategories] = useState([
         'All',
@@ -132,10 +134,10 @@ export function GalleryContent() {
                     <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5 text-slate-600 border-slate-200">
                         <HelpCircle className="h-3.5 w-3.5 text-slate-400" /> How It Works
                     </Button>
-                    <Button variant="outline" size="sm" onClick={handleReset} className="h-8 text-xs gap-1.5 text-slate-600 border-slate-200">
-                        <RotateCcw className="h-3.5 w-3.5 text-slate-400" /> Reset
+                    <Button type="button" variant="outline" size="sm" onClick={() => setResetDialogOpen(true)} className="h-8 text-xs gap-1.5 text-rose-600 border-rose-200 hover:bg-rose-50 font-semibold">
+                        <RotateCcw className="h-3.5 w-3.5 text-rose-500" /> Reset
                     </Button>
-                    <Button size="sm" onClick={handleSave} disabled={isSaving} className="h-8 text-xs gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold">
+                    <Button type="button" size="sm" onClick={handleSave} disabled={isSaving} className="h-8 text-xs gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold">
                         <Save className="h-3.5 w-3.5" /> {isSaving ? 'Saving...' : 'Save Gallery'}
                     </Button>
                 </div>
@@ -325,6 +327,12 @@ export function GalleryContent() {
                     </div>
                 </DialogContent>
             </Dialog>
+
+            <ConfirmResetDialog
+                open={resetDialogOpen}
+                onOpenChange={setResetDialogOpen}
+                onConfirm={handleReset}
+            />
         </div>
     );
 }

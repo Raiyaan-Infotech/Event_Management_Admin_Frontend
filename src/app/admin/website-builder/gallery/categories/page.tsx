@@ -20,6 +20,7 @@ import {
     BuilderCountedInput,
     BuilderCountedTextarea,
 } from '../../_components/builder-field';
+import { ConfirmResetDialog } from '@/components/common/confirm-reset-dialog';
 import { cn } from '@/lib/utils';
 
 interface CategoryItem {
@@ -74,6 +75,7 @@ const initialCategories: CategoryItem[] = [
 export default function GalleryCategoriesPage() {
     const [categories, setCategories] = useState<CategoryItem[]>(initialCategories);
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
     const [categoryName, setCategoryName] = useState('');
     const [slug, setSlug] = useState('');
@@ -199,10 +201,11 @@ export default function GalleryCategoriesPage() {
                     <Button variant="outline" size="sm" className="h-8 px-3 text-xs font-semibold text-slate-600 border-slate-200 hover:bg-slate-50">
                         <HelpCircle className="h-3.5 w-3.5 text-slate-400 mr-1" /> How It Works
                     </Button>
-                    <Button variant="outline" size="sm" onClick={handleReset} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
+                    <Button type="button" variant="outline" size="sm" onClick={() => setResetDialogOpen(true)} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
                         <RotateCcw className="h-3.5 w-3.5 text-rose-500 mr-1" /> Reset
                     </Button>
                     <Button
+                        type="button"
                         size="sm"
                         onClick={handleSaveCategory}
                         disabled={isSaving}
@@ -420,6 +423,12 @@ export default function GalleryCategoriesPage() {
                     </div>
                 </CardContent>
             </Card>
+
+            <ConfirmResetDialog
+                open={resetDialogOpen}
+                onOpenChange={setResetDialogOpen}
+                onConfirm={handleReset}
+            />
         </div>
     );
 }

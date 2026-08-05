@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { BuilderCountedInput } from '../_components/builder-field';
+import { ConfirmResetDialog } from '@/components/common/confirm-reset-dialog';
 import { cn } from '@/lib/utils';
 
 interface Sponsor {
@@ -58,6 +59,7 @@ export default function PortfolioSponsorsPage() {
     const [draftLogo, setDraftLogo] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [previewOpen, setPreviewOpen] = useState(false);
+    const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -163,10 +165,11 @@ export default function PortfolioSponsorsPage() {
                     <Button variant="outline" size="sm" className="h-8 px-3 text-xs font-semibold text-slate-600 border-slate-200 hover:bg-slate-50">
                         <HelpCircle className="h-3.5 w-3.5 text-slate-400 mr-1" /> How It Works
                     </Button>
-                    <Button variant="outline" size="sm" onClick={handleReset} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
+                    <Button type="button" variant="outline" size="sm" onClick={() => setResetDialogOpen(true)} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
                         <RotateCcw className="h-3.5 w-3.5 text-rose-500 mr-1" /> Reset
                     </Button>
                     <Button
+                        type="button"
                         size="sm"
                         onClick={handleSaveAll}
                         disabled={isSaving}
@@ -335,6 +338,12 @@ export default function PortfolioSponsorsPage() {
                     </div>
                 </DialogContent>
             </Dialog>
+
+            <ConfirmResetDialog
+                open={resetDialogOpen}
+                onOpenChange={setResetDialogOpen}
+                onConfirm={handleReset}
+            />
         </div>
     );
 }

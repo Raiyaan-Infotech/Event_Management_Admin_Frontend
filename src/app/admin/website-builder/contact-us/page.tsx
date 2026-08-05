@@ -30,6 +30,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { BuilderCountedInput, BuilderCountedTextarea } from '../_components/builder-field';
+import { ConfirmResetDialog } from '@/components/common/confirm-reset-dialog';
 import { cn } from '@/lib/utils';
 
 type EditorMode = 'static' | 'dynamic';
@@ -48,6 +49,7 @@ export default function ContactUsPage() {
     const [editorMode, setEditorMode] = useState<EditorMode>('static');
     const [previewDevice, setPreviewDevice] = useState<PreviewDevice>('desktop');
     const [previewOpen, setPreviewOpen] = useState(false);
+    const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
     // Component Toggles
     const [enableContactDetails, setEnableContactDetails] = useState(true);
@@ -126,10 +128,10 @@ export default function ContactUsPage() {
                     <Button variant="outline" size="sm" onClick={() => toast.info('Configure your site contact details, social links, map, and dynamic form.')} className="h-8 px-3 text-xs font-semibold text-slate-600 border-slate-200 hover:bg-slate-50">
                         <HelpCircle className="h-3.5 w-3.5 text-slate-400 mr-1" /> How It Works
                     </Button>
-                    <Button variant="outline" size="sm" onClick={handleReset} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
+                    <Button type="button" variant="outline" size="sm" onClick={() => setResetDialogOpen(true)} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
                         <RotateCcw className="h-3.5 w-3.5 text-rose-500 mr-1" /> Reset
                     </Button>
-                    <Button size="sm" onClick={handleSave} disabled={isSaving} className="h-8 px-4 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs">
+                    <Button type="button" size="sm" onClick={handleSave} disabled={isSaving} className="h-8 px-4 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs">
                         {isSaving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
                         {isSaving ? 'Saving...' : 'Save Changes'}
                     </Button>
@@ -381,6 +383,12 @@ export default function ContactUsPage() {
                     </div>
                 </DialogContent>
             </Dialog>
+
+            <ConfirmResetDialog
+                open={resetDialogOpen}
+                onOpenChange={setResetDialogOpen}
+                onConfirm={handleReset}
+            />
         </div>
     );
 }

@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { Icon, loadIcons } from '@iconify/react';
+import { Send } from 'lucide-react';
 import { toast } from 'sonner';
 import type { FooterData, SocialLink, ThemeColors } from './preview-shared';
 import { isExternalHref } from './preview-shared';
@@ -100,11 +101,24 @@ function FooterSectionBase({ footer, socialLinks, theme, onNavigate }: { footer:
         {footer.showNewsletter ? (
           <div>
             <h3 className="text-[14px] font-black uppercase tracking-wide">Newsletter</h3>
-            <p className="mt-5 text-[13px] font-medium leading-6 text-white/70">Subscribe for the latest updates and exclusive offers.</p>
-            <form className="mt-5 space-y-3" onSubmit={handleNewsletter}>
-              <input type="email" value={newsletterEmail} onChange={(e) => setNewsletterEmail(e.target.value)} placeholder="Enter your email" disabled={submitting} className="h-11 w-full rounded-lg px-4 text-[13px] outline-none disabled:opacity-70" style={{ backgroundColor: '#FFFFFF', color: theme.primaryButton }} />
-              <button type="submit" disabled={submitting} className="h-11 w-full rounded-lg text-[13px] font-black transition disabled:opacity-70" style={{ backgroundColor: '#FFFFFF', color: theme.primaryButton }}>
-                {submitting ? 'Subscribing...' : 'Subscribe'}
+            <p className="mt-3 text-[13px] font-medium leading-6 text-white/70">Subscribe to get updates and offers</p>
+            <form className="mt-4 flex items-center gap-2" onSubmit={handleNewsletter}>
+              <input
+                type="email"
+                value={newsletterEmail}
+                onChange={(e) => setNewsletterEmail(e.target.value)}
+                placeholder="Enter your email"
+                disabled={submitting}
+                className="h-11 w-full rounded-xl px-4 text-[13px] text-slate-800 bg-white border border-slate-200 outline-none placeholder:text-slate-400 disabled:opacity-70 shadow-2xs"
+              />
+              <button
+                type="submit"
+                disabled={submitting}
+                aria-label="Subscribe to newsletter"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white font-bold transition hover:opacity-90 active:scale-95 disabled:opacity-70 shadow-xs"
+                style={{ backgroundColor: '#ec4899' }}
+              >
+                <Send className="h-4 w-4" />
               </button>
             </form>
           </div>

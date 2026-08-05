@@ -28,6 +28,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { ConfirmResetDialog } from '@/components/common/confirm-reset-dialog';
 
 interface WebPageItem {
     id: string;
@@ -58,8 +59,9 @@ export default function PagesSeoSettingsPage() {
     const [metaKeywords, setMetaKeywords] = useState('event planning, wedding decor, corporate galas, venue booking, catering packages');
     const [analyticsId, setAnalyticsId] = useState('G-89X72K109P');
     const [pixelId, setPixelId] = useState('1098234789123049');
-
+    const [searchAnalyticsCode, setSearchAnalyticsCode] = useState('');
     const [isSaving, setIsSaving] = useState(false);
+    const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
     const handleResetAll = () => {
         setPages(initialPagesSeo);
@@ -123,10 +125,10 @@ export default function PagesSeoSettingsPage() {
                     <Button variant="outline" size="sm" onClick={() => toast.info('Configure site page lists, SEO metadata, and Google/FB tracking IDs.')} className="h-8 px-3 text-xs font-semibold text-slate-600 border-slate-200 hover:bg-slate-50">
                         <HelpCircle className="h-3.5 w-3.5 text-slate-400 mr-1" /> How It Works
                     </Button>
-                    <Button variant="outline" size="sm" onClick={handleResetAll} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
+                    <Button type="button" variant="outline" size="sm" onClick={() => setResetDialogOpen(true)} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
                         <RotateCcw className="h-3.5 w-3.5 text-rose-500 mr-1" /> Reset
                     </Button>
-                    <Button size="sm" onClick={handleSaveSeo} disabled={isSaving} className="h-8 px-4 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs">
+                    <Button type="button" size="sm" onClick={handleSaveSeo} disabled={isSaving} className="h-8 px-4 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs">
                         {isSaving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
                         {isSaving ? 'Saving...' : 'Save Settings'}
                     </Button>
@@ -281,6 +283,12 @@ export default function PagesSeoSettingsPage() {
                     </Card>
                 </TabsContent>
             </Tabs>
+
+            <ConfirmResetDialog
+                open={resetDialogOpen}
+                onOpenChange={setResetDialogOpen}
+                onConfirm={handleResetAll}
+            />
         </div>
     );
 }

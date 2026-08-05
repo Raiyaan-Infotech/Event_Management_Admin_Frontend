@@ -14,6 +14,7 @@ import { useCompanyFooterSettings, useCompanyBasicInformation } from '@/hooks/us
 import { mediaApi } from '@/hooks/use-media';
 import { PageLoader } from '@/components/common/page-loader';
 import { MediaCropDialog } from '@/components/common/media-crop-dialog';
+import { ConfirmResetDialog } from '@/components/common/confirm-reset-dialog';
 
 type ContactType = 'default' | 'alternative';
 type PreviewDevice = 'desktop' | 'mobile';
@@ -61,6 +62,7 @@ export function FooterContent() {
     const [newsletterEnabled, setNewsletterEnabled] = useState(true);
     const [showSocialLinks, setShowSocialLinks] = useState(true);
     const [previewDevice, setPreviewDevice] = useState<PreviewDevice>('desktop');
+    const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
     // Cropper state for Footer Logo
     const [cropModalOpen, setCropModalOpen] = useState(false);
@@ -184,6 +186,34 @@ export function FooterContent() {
         }
     };
 
+    const handleReset = () => {
+        const logo = footerData?.logo_url || basicInfo?.logo_url || '';
+        const name = footerData?.company_name || basicInfo?.company_name || 'RA EVENTS';
+        setCompanyLogo(logo);
+        setCompanyName(name);
+        setShortDescription(footerData?.description || 'Full-service event management, wedding planning, corporate galas, and customized decor packages tailored to your special occasions.');
+        setContactType((footerData?.contact_type as ContactType) || 'default');
+        setDefaultContact({
+            mobile: footerData?.mobile || basicInfo?.mobile || initialDefaultContact.mobile,
+            email: footerData?.email || basicInfo?.email || initialDefaultContact.email,
+            address: footerData?.address || initialDefaultContact.address,
+        });
+        setAlternativeContact({
+            mobile: '9876543210',
+            email: 'alt.eventcraft@gmail.com',
+            address: '200 Platinum Tower, Tirunelveli',
+        });
+        setTopListHeading(footerData?.top_list_heading || 'Quick Links');
+        setNewsletterEnabled(footerData?.show_newsletter !== undefined ? Boolean(footerData.show_newsletter) : true);
+        setShowSocialLinks(footerData?.show_social_links !== undefined ? Boolean(footerData.show_social_links) : true);
+        if (footerData?.quick_links_json && Array.isArray(footerData.quick_links_json)) {
+            setSelectedPages(footerData.quick_links_json);
+        } else {
+            setSelectedPages(initialSelectedPages);
+        }
+        toast.info('Footer settings reset to default values.');
+    };
+
     const handleSave = async () => {
         try {
             await save({
@@ -223,6 +253,7 @@ export function FooterContent() {
                 </div>
                 <div className="flex items-center gap-2">
                     <Button
+                        type="button"
                         variant="outline"
                         size="sm"
                         onClick={() => setPreviewOpen(true)}
@@ -230,7 +261,16 @@ export function FooterContent() {
                     >
                         <Eye className="h-3.5 w-3.5 text-emerald-600 mr-1" /> Live Preview
                     </Button>
-                    <Button size="sm" onClick={handleSave} disabled={isSaving} className="gap-2 h-8 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setResetDialogOpen(true)}
+                        className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50"
+                    >
+                        <RotateCcw className="h-3.5 w-3.5 text-rose-500 mr-1" /> Reset
+                    </Button>
+                    <Button type="button" size="sm" onClick={handleSave} disabled={isSaving} className="gap-2 h-8 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs">
                         <Save className="h-3.5 w-3.5" /> {isSaving ? 'Saving...' : 'Save Changes'}
                     </Button>
                 </div>
@@ -543,6 +583,12 @@ export function FooterContent() {
                 onClose={() => setCropModalOpen(false)}
                 onCropped={handleCroppedImage}
                 isSaving={isUploadingLogo}
+            />
+
+            <ConfirmResetDialog
+                open={resetDialogOpen}
+                onOpenChange={setResetDialogOpen}
+                onConfirm={handleReset}
             />
         </div>
     );

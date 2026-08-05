@@ -41,6 +41,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useUiBlocksData, useSaveUiBlocks, type UiBlockPayloadItem } from '@/hooks/useUiBlocks';
 import { cn } from '@/lib/utils';
 import { PageLoader } from '@/components/common/page-loader';
+import { ConfirmResetDialog } from '@/components/common/confirm-reset-dialog';
 
 type UiBlockFilter = 'all' | 'visible' | 'hidden';
 
@@ -218,6 +219,7 @@ export function UiBlockContent({ initialPageSlug = 'home' }: UiBlockContentProps
     };
 
     const [previewOpen, setPreviewOpen] = useState(false);
+    const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
     const handleResetDefaults = () => {
         const defaultList = PAGE_SPECIFIC_BLOCKS_MAP[activePageSlug] || PAGE_SPECIFIC_BLOCKS_MAP.home;
@@ -249,9 +251,10 @@ export function UiBlockContent({ initialPageSlug = 'home' }: UiBlockContentProps
                         <Eye className="h-3.5 w-3.5 text-emerald-600 mr-1" /> Live Preview
                     </Button>
                     <Button
+                        type="button"
                         variant="outline"
                         size="sm"
-                        onClick={handleResetDefaults}
+                        onClick={() => setResetDialogOpen(true)}
                         className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50"
                     >
                         <RotateCcw className="h-3.5 w-3.5 text-rose-500 mr-1" /> Reset Page Blocks
@@ -557,6 +560,12 @@ export function UiBlockContent({ initialPageSlug = 'home' }: UiBlockContentProps
                     </div>
                 </DialogContent>
             </Dialog>
+
+            <ConfirmResetDialog
+                open={resetDialogOpen}
+                onOpenChange={setResetDialogOpen}
+                onConfirm={handleResetDefaults}
+            />
         </div>
     );
 }
