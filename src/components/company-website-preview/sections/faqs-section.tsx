@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { ChevronDown } from 'lucide-react';
+import { Plus, Minus } from 'lucide-react';
 import type { ThemeColors } from './preview-shared';
 
 export type FaqItem = {
@@ -10,53 +10,76 @@ export type FaqItem = {
   answer: string;
 };
 
+function cleanHtmlText(raw: string): string {
+  if (!raw) return '';
+  return raw
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function FaqsSectionBase({ faqs, theme }: { faqs: FaqItem[]; theme: ThemeColors }) {
-  const [openId, setOpenId] = React.useState<number | null>(faqs && faqs[0] ? faqs[0].id : null);
+  const [openIds, setOpenIds] = React.useState<Record<number, boolean>>({});
 
   if (!faqs || !faqs.length) return null;
 
   const toggle = (id: number) => {
-    setOpenId((prev) => (prev === id ? null : id));
+    setOpenIds((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
   return (
-    <section id="faqs" className="w-full border-t border-slate-100 bg-slate-50 py-16 sm:py-20">
-      <div className="mx-auto w-full max-w-[960px] px-4 sm:px-6 lg:px-8">
+    <section id="faqs" className="w-full border-t border-slate-100 bg-slate-50/50 py-16 sm:py-20">
+      <div className="mx-auto w-full max-w-[1140px] px-4 sm:px-6 lg:px-8">
         <div className="mb-12 text-center">
-          <span className="mb-3 inline-flex rounded px-3 py-1 text-[12px] font-bold text-white" style={{ backgroundColor: theme.primaryButton }}>
-            Got Questions?
+          <span className="text-[12px] font-bold uppercase tracking-wider text-pink-500">
+            FAQ&apos;S
           </span>
-          <h2 className="mt-4 text-[28px] font-black leading-tight tracking-tight sm:text-[36px]" style={{ color: theme.primaryText }}>
+          <h2 className="mt-2 text-[28px] font-black leading-tight tracking-tight sm:text-[36px]" style={{ color: theme.primaryText }}>
             Frequently Asked Questions
           </h2>
-          <div className="mx-auto mt-3 h-[3px] w-12 rounded-full" style={{ backgroundColor: theme.primaryButton }} />
+          <p className="mt-2 text-[14px] font-medium text-slate-500">
+            Find quick answers to common questions
+          </p>
         </div>
 
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
           {faqs.map((faq) => {
-            const isOpen = openId === faq.id;
+            const cleanAns = cleanHtmlText(faq.answer);
+            const isOpen = openIds[faq.id] ?? true;
+
             return (
               <div
                 key={faq.id}
-                className="overflow-hidden rounded-xl border border-slate-200 bg-white transition shadow-2xs"
+                onClick={() => toggle(faq.id)}
+                className="group flex items-start justify-between gap-4 rounded-2xl border border-slate-100 bg-white p-5 sm:p-6 shadow-2xs transition duration-200 hover:border-slate-200 hover:shadow-md cursor-pointer"
               >
-                <button
-                  type="button"
-                  onClick={() => toggle(faq.id)}
-                  className="flex w-full items-center justify-between gap-4 p-5 text-left text-[15px] font-bold text-slate-900 transition hover:bg-slate-50/50"
-                  style={{ color: theme.primaryText }}
+                <div className="flex-1 space-y-1.5">
+                  <h3 className="text-[15px] font-bold leading-snug text-slate-900" style={{ color: theme.primaryText }}>
+                    {faq.question}
+                  </h3>
+                  {cleanAns && (
+                    <p className={`text-[13px] font-medium leading-relaxed text-slate-500 transition-all duration-200 ${isOpen ? 'line-clamp-none' : 'line-clamp-2'}`}>
+                      {cleanAns}
+                    </p>
+                  )}
+                </div>
+
+                <div
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-pink-50 text-pink-500 transition-colors group-hover:bg-pink-100"
+                  aria-label="Toggle answer"
                 >
-                  <span>{faq.question}</span>
-                  <ChevronDown
-                    className={`h-5 w-5 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-                    style={{ color: theme.primaryButton }}
-                  />
-                </button>
-                {isOpen && (
-                  <div className="border-t border-slate-100 px-5 pb-5 pt-3 text-[14px] font-medium leading-7 text-slate-600">
-                    {faq.answer}
-                  </div>
-                )}
+                  {isOpen ? (
+                    <Minus className="h-4 w-4 stroke-[2.5]" />
+                  ) : (
+                    <Plus className="h-4 w-4 stroke-[2.5]" />
+                  )}
+                </div>
               </div>
             );
           })}
