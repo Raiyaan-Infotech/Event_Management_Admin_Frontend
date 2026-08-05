@@ -49,7 +49,9 @@ export interface CompanyFooterSettings {
   address?: string;
   top_list_json?: any;
   top_list_heading?: string;
+  top_list_heading_2?: string;
   quick_links_json?: any;
+  quick_links_2_json?: any;
   add_pages_json?: any;
   show_newsletter?: boolean | number;
   show_social_links?: boolean | number;

@@ -59,6 +59,8 @@ export function FooterContent() {
 
     const [topListHeading, setTopListHeading] = useState('Quick Links');
     const [selectedPages, setSelectedPages] = useState<string[]>(initialSelectedPages);
+    const [topListHeading2, setTopListHeading2] = useState('Company');
+    const [selectedPages2, setSelectedPages2] = useState<string[]>(['about-us', 'contact-us', 'terms-conditions', 'privacy-policy']);
     const [newsletterEnabled, setNewsletterEnabled] = useState(true);
     const [showSocialLinks, setShowSocialLinks] = useState(true);
     const [previewDevice, setPreviewDevice] = useState<PreviewDevice>('desktop');
@@ -88,10 +90,14 @@ export function FooterContent() {
             if (footerData?.email || basicInfo?.email) setDefaultContact((prev) => ({ ...prev, email: footerData?.email || basicInfo?.email || '' }));
             if (footerData?.address) setDefaultContact((prev) => ({ ...prev, address: footerData.address || '' }));
             if (footerData?.top_list_heading) setTopListHeading(footerData.top_list_heading);
+            if (footerData?.top_list_heading_2) setTopListHeading2(footerData.top_list_heading_2);
             if (footerData?.show_newsletter !== undefined) setNewsletterEnabled(Boolean(footerData.show_newsletter));
             if (footerData?.show_social_links !== undefined) setShowSocialLinks(Boolean(footerData.show_social_links));
             if (footerData?.quick_links_json && Array.isArray(footerData.quick_links_json)) {
                 setSelectedPages(footerData.quick_links_json);
+            }
+            if (footerData?.quick_links_2_json && Array.isArray(footerData.quick_links_2_json)) {
+                setSelectedPages2(footerData.quick_links_2_json);
             }
             if (footerData || basicInfo) {
                 loadedRef.current = true;
@@ -225,7 +231,9 @@ export function FooterContent() {
                 email: activeContact.email,
                 address: activeContact.address,
                 top_list_heading: topListHeading,
+                top_list_heading_2: topListHeading2,
                 quick_links_json: selectedPages,
+                quick_links_2_json: selectedPages2,
                 show_newsletter: newsletterEnabled ? 1 : 0,
                 show_social_links: showSocialLinks ? 1 : 0,
             });
@@ -406,21 +414,40 @@ export function FooterContent() {
                                 <CardTitle className="text-sm font-bold">Menu Settings</CardTitle>
                                 <CardDescription className="text-xs">Quick links heading, pages, and toggles.</CardDescription>
                             </CardHeader>
-                            <CardContent className="space-y-3">
-                                <BuilderCountedInput
-                                    label="Top List Heading"
-                                    value={topListHeading}
-                                    onChange={setTopListHeading}
-                                    maxLength={80}
-                                />
+                            <CardContent className="space-y-4">
+                                <div className="space-y-3 rounded-lg border p-3 bg-slate-50/50">
+                                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">Link List 1 (Quick Links)</h4>
+                                    <BuilderCountedInput
+                                        label="List 1 Heading"
+                                        value={topListHeading}
+                                        onChange={setTopListHeading}
+                                        maxLength={80}
+                                    />
+                                    <MultiSelectPages
+                                        label="Add Pages to Link List 1"
+                                        value={selectedPages}
+                                        options={pageOptions}
+                                        onChange={setSelectedPages}
+                                        placeholder="Add page"
+                                    />
+                                </div>
 
-                                <MultiSelectPages
-                                    label="Add Pages to Quick Links"
-                                    value={selectedPages}
-                                    options={pageOptions}
-                                    onChange={setSelectedPages}
-                                    placeholder="Add page"
-                                />
+                                <div className="space-y-3 rounded-lg border p-3 bg-slate-50/50">
+                                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">Link List 2 (Dynamic Column)</h4>
+                                    <BuilderCountedInput
+                                        label="List 2 Heading"
+                                        value={topListHeading2}
+                                        onChange={setTopListHeading2}
+                                        maxLength={80}
+                                    />
+                                    <MultiSelectPages
+                                        label="Add Pages to Link List 2"
+                                        value={selectedPages2}
+                                        options={pageOptions}
+                                        onChange={setSelectedPages2}
+                                        placeholder="Add page"
+                                    />
+                                </div>
 
                                 <div className="flex items-center justify-between rounded-lg border p-2.5 bg-card">
                                     <div>

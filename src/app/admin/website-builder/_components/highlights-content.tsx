@@ -29,6 +29,14 @@ import {
     Heart,
     Loader2,
     Eye,
+    Gift,
+    Share2,
+    QrCode,
+    Users,
+    ShieldCheck,
+    Headphones,
+    Layout,
+    Package,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -58,6 +66,15 @@ const ICON_MAP: Record<string, LucideIcon> = {
     Shield,
     Zap,
     Heart,
+    Gift,
+    Share2,
+    QrCode,
+    Users,
+    ShieldCheck,
+    Headphones,
+    Layout,
+    Package,
+    Sparkles,
 };
 
 interface HighlightsContentProps {
@@ -72,6 +89,8 @@ export function HighlightsContent({ pageSlug, instance }: HighlightsContentProps
     const [settings, setSettings] = useState<HighlightsSettings>(DEFAULT_HIGHLIGHTS);
     const [previewOpen, setPreviewOpen] = useState(false);
     const [resetDialogOpen, setResetDialogOpen] = useState(false);
+    const [iconPickerItemIndex, setIconPickerItemIndex] = useState<number | null>(null);
+    const [iconSearch, setIconSearch] = useState('');
 
     useEffect(() => {
         if (fetchedData) {
@@ -195,16 +214,48 @@ export function HighlightsContent({ pageSlug, instance }: HighlightsContentProps
                         {/* Section 1: Highlight Items */}
                         <div className="space-y-3">
                             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">1. Highlight Items</h3>
-                            <div className="space-y-2.5">
+                            <div className="space-y-3">
                                 {settings.items.map((item, index) => {
                                     const IconComp = ICON_MAP[item.icon] || Sparkles;
+                                    const itemColor = item.icon_color || settings.icon_color || '#6C5DD3';
+                                    const itemBg = item.icon_bg_color || settings.icon_bg_color || '#F3F0FF';
+
                                     return (
-                                        <div key={item.id || index} className="flex items-center gap-2 rounded-lg border p-2.5 bg-card hover:border-slate-300">
-                                            <GripVertical className="h-4 w-4 text-slate-400 shrink-0 cursor-grab" />
-                                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-primary/10 text-primary">
-                                                <IconComp className="h-4 w-4" />
+                                        <div key={item.id || index} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 rounded-xl border p-3 bg-card hover:border-slate-300 transition-all shadow-2xs">
+                                            <div className="flex items-center gap-2 w-full sm:w-auto">
+                                                <GripVertical className="h-4 w-4 text-slate-400 shrink-0 cursor-grab" />
+                                                {/* Clickable Icon Button to Open Visual Icon Picker Dialog */}
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setIconPickerItemIndex(index);
+                                                            setIconSearch('');
+                                                        }}
+                                                        title="Click to select icon"
+                                                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg shadow-2xs transition-all hover:scale-105 hover:ring-2 hover:ring-primary/40 cursor-pointer"
+                                                        style={{ backgroundColor: itemBg, color: itemColor }}
+                                                    >
+                                                        <IconComp className="h-4 w-4" />
+                                                    </button>
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => {
+                                                            setIconPickerItemIndex(index);
+                                                            setIconSearch('');
+                                                        }}
+                                                        className="h-8 px-2.5 text-xs font-semibold text-slate-700 gap-1 border-slate-200 hover:bg-slate-50"
+                                                    >
+                                                        <IconComp className="h-3.5 w-3.5 text-slate-500" />
+                                                        <span>{item.icon || 'Select Icon'}</span>
+                                                    </Button>
+                                                </div>
                                             </div>
-                                            <div className="grid grid-cols-2 gap-2 flex-1">
+
+                                            {/* Title & Description Inputs */}
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 flex-1 w-full">
                                                 <Input
                                                     value={item.title}
                                                     onChange={(e) => handleItemChange(index, 'title', e.target.value)}
@@ -218,15 +269,38 @@ export function HighlightsContent({ pageSlug, instance }: HighlightsContentProps
                                                     className="h-8 text-xs"
                                                 />
                                             </div>
-                                            <Button type="button" variant="ghost" size="icon" onClick={() => removeItem(index)} className="h-8 w-8 text-rose-500 hover:bg-rose-50">
-                                                <Trash2 className="h-3.5 w-3.5" />
-                                            </Button>
+
+                                            {/* Individual Icon Color & Background Color Pickers */}
+                                            <div className="flex items-center gap-2 shrink-0">
+                                                <div className="flex items-center gap-1 text-[11px] font-medium text-slate-600 border px-2 py-1 rounded-md bg-slate-50" title="Item Icon Text Color">
+                                                    <span className="text-[10px] text-slate-400">Color:</span>
+                                                    <input
+                                                        type="color"
+                                                        value={itemColor}
+                                                        onChange={(e) => handleItemChange(index, 'icon_color', e.target.value)}
+                                                        className="h-5 w-5 cursor-pointer rounded border border-slate-300 bg-transparent p-0"
+                                                    />
+                                                </div>
+                                                <div className="flex items-center gap-1 text-[11px] font-medium text-slate-600 border px-2 py-1 rounded-md bg-slate-50" title="Item Background Color">
+                                                    <span className="text-[10px] text-slate-400">BG:</span>
+                                                    <input
+                                                        type="color"
+                                                        value={itemBg}
+                                                        onChange={(e) => handleItemChange(index, 'icon_bg_color', e.target.value)}
+                                                        className="h-5 w-5 cursor-pointer rounded border border-slate-300 bg-transparent p-0"
+                                                    />
+                                                </div>
+
+                                                <Button type="button" variant="ghost" size="icon" onClick={() => removeItem(index)} className="h-8 w-8 text-rose-500 hover:bg-rose-50">
+                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                </Button>
+                                            </div>
                                         </div>
                                     );
                                 })}
                             </div>
-                            <Button type="button" variant="outline" size="sm" onClick={addItem} className="w-full text-xs font-bold gap-1">
-                                <Plus className="h-3.5 w-3.5" /> Add New Item
+                            <Button type="button" variant="outline" size="sm" onClick={addItem} className="w-full text-xs font-bold gap-1 mt-2">
+                                <Plus className="h-3.5 w-3.5" /> Add New Highlight Item
                             </Button>
                         </div>
 
@@ -349,14 +423,17 @@ export function HighlightsContent({ pageSlug, instance }: HighlightsContentProps
                         <div className={getGridClass(Number(settings.items_per_row))}>
                             {settings.items.map((item, idx) => {
                                 const IconComp = ICON_MAP[item.icon] || Sparkles;
+                                const itemColor = item.icon_color || settings.icon_color || '#6C5DD3';
+                                const itemBg = item.icon_bg_color || settings.icon_bg_color || '#F3F0FF';
+
                                 return (
                                     <div key={idx} className="flex flex-col items-center text-center space-y-2 p-3 rounded-lg border border-transparent hover:border-slate-200/60 transition-all min-w-0">
                                         <div
                                             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-transform hover:scale-105 shadow-xs"
                                             style={{
-                                                backgroundColor: settings.icon_style === 'filled' ? settings.icon_bg_color : 'transparent',
-                                                border: settings.icon_style === 'outline' ? `2px solid ${settings.icon_color}` : 'none',
-                                                color: settings.icon_color,
+                                                backgroundColor: settings.icon_style === 'filled' ? itemBg : 'transparent',
+                                                border: settings.icon_style === 'outline' ? `2px solid ${itemColor}` : 'none',
+                                                color: itemColor,
                                             }}
                                         >
                                             <IconComp className="h-5 w-5" />
@@ -370,6 +447,58 @@ export function HighlightsContent({ pageSlug, instance }: HighlightsContentProps
                                     </div>
                                 );
                             })}
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Visual Icon Picker Dialog Modal */}
+            <Dialog open={iconPickerItemIndex !== null} onOpenChange={(open) => !open && setIconPickerItemIndex(null)}>
+                <DialogContent className="max-w-md w-[92vw]">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-base font-bold">
+                            <Sparkles className="h-4 w-4 text-primary" /> Choose Icon for Highlight Item #{iconPickerItemIndex !== null ? iconPickerItemIndex + 1 : 1}
+                        </DialogTitle>
+                        <DialogDescription className="text-xs">
+                            Click any icon below to apply it to this highlight item.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-3 pt-2">
+                        <Input
+                            value={iconSearch}
+                            onChange={(e) => setIconSearch(e.target.value)}
+                            placeholder="Search icons..."
+                            className="h-8 text-xs"
+                        />
+
+                        <div className="grid grid-cols-4 gap-2 max-h-[300px] overflow-y-auto p-1 border rounded-lg bg-slate-50/50">
+                            {Object.keys(ICON_MAP)
+                                .filter((iconKey) => iconKey.toLowerCase().includes(iconSearch.toLowerCase()))
+                                .map((iconKey) => {
+                                    const ItemIcon = ICON_MAP[iconKey];
+                                    const isSelected = iconPickerItemIndex !== null && settings.items[iconPickerItemIndex]?.icon === iconKey;
+                                    return (
+                                        <button
+                                            key={iconKey}
+                                            type="button"
+                                            onClick={() => {
+                                                if (iconPickerItemIndex !== null) {
+                                                    handleItemChange(iconPickerItemIndex, 'icon', iconKey);
+                                                    setIconPickerItemIndex(null);
+                                                    toast.success(`Icon updated to "${iconKey}"`);
+                                                }
+                                            }}
+                                            className={cn(
+                                                'flex flex-col items-center justify-center gap-1.5 p-2.5 rounded-xl border text-center transition-all cursor-pointer hover:scale-105',
+                                                isSelected ? 'border-primary ring-2 ring-primary/30 bg-primary/10 text-primary font-bold shadow-xs' : 'border-slate-200 hover:border-slate-300 text-slate-700 bg-white'
+                                            )}
+                                        >
+                                            <ItemIcon className="h-5 w-5" />
+                                            <span className="text-[10px] truncate max-w-full">{iconKey}</span>
+                                        </button>
+                                    );
+                                })}
                         </div>
                     </div>
                 </DialogContent>

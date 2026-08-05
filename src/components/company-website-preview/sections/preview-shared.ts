@@ -491,6 +491,36 @@ export function buildFooter(footerSettings: AnyRecord = {}, pages: AnyRecord[] =
     })
     .filter(Boolean) as Array<{ label: string; href: string }>;
 
+  let rawLinks2: any[] = [];
+  if (Array.isArray(footerSettings?.quick_links_2_json)) {
+    rawLinks2 = footerSettings.quick_links_2_json;
+  } else if (typeof footerSettings?.quick_links_2_json === 'string') {
+    try {
+      rawLinks2 = JSON.parse(footerSettings.quick_links_2_json);
+    } catch {
+      rawLinks2 = [];
+    }
+  }
+
+  const quickLinks2 = (rawLinks2 as unknown[])
+    .map((value) => {
+      const raw = String(value ?? '').trim();
+      if (!raw) return null;
+      const target = norm(raw);
+      const page = (pages || []).find((item) => String(item.slug ?? '').replace(/^\/+/, '') === raw.replace(/^\/+/, '') || String(item.id ?? '') === raw) ||
+        (pages || []).find((item) => {
+          const slug = norm(item.slug);
+          const title = norm(item.title);
+          return !!target && ((!!slug && (slug.includes(target) || target.includes(slug))) || (!!title && title.includes(target)));
+        });
+      if (page) {
+        return { label: stringValue(page.title, raw), href: normalizeHref(page.slug) };
+      }
+      const formattedLabel = raw.split(/[-_]/).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      return { label: formattedLabel, href: raw.startsWith('/') ? raw : `/${raw}` };
+    })
+    .filter(Boolean) as Array<{ label: string; href: string }>;
+
   const logoUrl = stringValue(
     footerSettings?.logo_url,
     footerSettings?.company_logo,
@@ -533,6 +563,8 @@ export function buildFooter(footerSettings: AnyRecord = {}, pages: AnyRecord[] =
     description,
     topListHeading: stringValue(footerSettings?.top_list_heading, 'Quick Links'),
     quickLinks,
+    topListHeading2: stringValue(footerSettings?.top_list_heading_2, 'Company'),
+    quickLinks2,
     showNewsletter: boolValue(footerSettings?.show_newsletter, true),
     showSocialLinks: boolValue(footerSettings?.show_social_links, true),
     mobile,

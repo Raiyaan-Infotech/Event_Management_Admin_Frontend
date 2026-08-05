@@ -7,6 +7,8 @@ export interface HighlightItem {
     icon: string;
     title: string;
     description: string;
+    icon_color?: string;
+    icon_bg_color?: string;
 }
 
 export interface HighlightsSettings {

@@ -39,10 +39,12 @@ function FooterSectionBase({ footer, socialLinks, theme, onNavigate }: { footer:
   };
 
   const quickLinks = footer.quickLinks || [];
+  const quickLinks2 = (footer as any).quickLinks2 || [];
+  const hasLinks2 = quickLinks2.length > 0;
 
   return (
     <footer className="w-full bg-white text-slate-900 border-t border-slate-200/80">
-      <div className="mx-auto grid w-full max-w-[1280px] gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[1.4fr_1fr_1fr] lg:px-8">
+      <div className={`mx-auto grid w-full max-w-[1280px] gap-8 px-4 py-12 sm:px-6 ${hasLinks2 ? 'lg:grid-cols-[1.4fr_1fr_1fr_1.2fr]' : 'lg:grid-cols-[1.4fr_1fr_1.2fr]'} lg:px-8`}>
         {/* Brand Column */}
         <div className="space-y-4">
           <div className="flex items-center gap-2.5">
@@ -89,7 +91,7 @@ function FooterSectionBase({ footer, socialLinks, theme, onNavigate }: { footer:
           ) : null}
         </div>
 
-        {/* Dynamic Quick Links Column (100% from API data) */}
+        {/* Dynamic Quick Links Column 1 */}
         {quickLinks.length > 0 ? (
           <div>
             <h3 className="text-[13px] font-bold uppercase tracking-wider text-slate-900">{footer.topListHeading || 'Quick Links'}</h3>
@@ -104,6 +106,22 @@ function FooterSectionBase({ footer, socialLinks, theme, onNavigate }: { footer:
             </ul>
           </div>
         ) : <div />}
+
+        {/* Dynamic Quick Links Column 2 (Near Column 1) */}
+        {hasLinks2 ? (
+          <div>
+            <h3 className="text-[13px] font-bold uppercase tracking-wider text-slate-900">{(footer as any).topListHeading2 || 'Company'}</h3>
+            <ul className="mt-4 space-y-2.5 text-[12.5px] font-medium text-slate-600">
+              {quickLinks2.map((link: any) => (
+                <li key={`${link.label}-${link.href}`}>
+                  <a href={link.href} onClick={(e) => handleLink(e, link.href)} className="transition hover:text-pink-600">
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
 
         {/* Newsletter Column */}
         {footer.showNewsletter ? (

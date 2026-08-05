@@ -152,12 +152,12 @@ export function HighlightsSection({ pageSlug = 'home', instance = 1, data, theme
                                 const IconComp = ICON_MAP[item.icon] || Sparkles;
                                 const pastel = PASTEL_THEMES[idx % PASTEL_THEMES.length];
                                 
-                                const iconBg = config.icon_bg_color && config.icon_bg_color !== '#F3F0FF' 
+                                const iconBg = item.icon_bg_color || (config.icon_bg_color && config.icon_bg_color !== '#F3F0FF' 
                                     ? config.icon_bg_color 
-                                    : pastel.bg;
-                                const iconColor = config.icon_color && config.icon_color !== '#6C5DD3' 
+                                    : pastel.bg);
+                                const iconColor = item.icon_color || (config.icon_color && config.icon_color !== '#6C5DD3' 
                                     ? config.icon_color 
-                                    : pastel.color;
+                                    : pastel.color);
 
                                 return (
                                     <div key={item.id || idx} className="flex items-center gap-3.5 sm:gap-4 text-left">
