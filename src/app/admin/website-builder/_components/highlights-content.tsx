@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import {
     Calendar,
@@ -92,6 +92,41 @@ export function HighlightsContent({ pageSlug, instance }: HighlightsContentProps
     const [resetDialogOpen, setResetDialogOpen] = useState(false);
     const [iconPickerItemIndex, setIconPickerItemIndex] = useState<number | null>(null);
     const [iconSearch, setIconSearch] = useState('');
+
+    const dragItemIndex = useRef<number | null>(null);
+    const dragOverItemIndex = useRef<number | null>(null);
+    const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
+    const [overIndex, setOverIndex] = useState<number | null>(null);
+
+    const handleDragStart = (index: number) => {
+        dragItemIndex.current = index;
+        setDraggingIndex(index);
+    };
+
+    const handleDragEnter = (index: number) => {
+        dragOverItemIndex.current = index;
+        setOverIndex(index);
+    };
+
+    const handleDragEnd = () => {
+        if (
+            dragItemIndex.current !== null &&
+            dragOverItemIndex.current !== null &&
+            dragItemIndex.current !== dragOverItemIndex.current
+        ) {
+            setSettings((prev) => {
+                const nextItems = [...prev.items];
+                const [moved] = nextItems.splice(dragItemIndex.current!, 1);
+                nextItems.splice(dragOverItemIndex.current!, 0, moved);
+                return { ...prev, items: nextItems };
+            });
+            toast.success('Highlights item order updated');
+        }
+        dragItemIndex.current = null;
+        dragOverItemIndex.current = null;
+        setDraggingIndex(null);
+        setOverIndex(null);
+    };
 
     useEffect(() => {
         if (fetchedData) {
@@ -221,10 +256,25 @@ export function HighlightsContent({ pageSlug, instance }: HighlightsContentProps
                                     const itemColor = item.icon_color || settings.icon_color || '#6C5DD3';
                                     const itemBg = item.icon_bg_color || settings.icon_bg_color || '#F3F0FF';
 
+                                    const isDragging = draggingIndex === index;
+                                    const isOver = overIndex === index && draggingIndex !== index;
+
                                     return (
-                                        <div key={item.id || index} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 rounded-xl border p-3 bg-card hover:border-slate-300 transition-all shadow-2xs">
+                                        <div
+                                            key={item.id || index}
+                                            draggable
+                                            onDragStart={() => handleDragStart(index)}
+                                            onDragEnter={() => handleDragEnter(index)}
+                                            onDragOver={(e) => e.preventDefault()}
+                                            onDragEnd={handleDragEnd}
+                                            className={cn(
+                                                'flex flex-col sm:flex-row items-start sm:items-center gap-3 rounded-xl border p-3 bg-card transition-all shadow-2xs cursor-move',
+                                                isDragging && 'opacity-40 scale-[0.99] border-dashed border-primary bg-primary/5',
+                                                isOver && 'border-primary bg-primary/10 ring-2 ring-primary/30'
+                                            )}
+                                        >
                                             <div className="flex items-center gap-2 w-full sm:w-auto">
-                                                <GripVertical className="h-4 w-4 text-slate-400 shrink-0 cursor-grab" />
+                                                <GripVertical className="h-4 w-4 text-slate-400 shrink-0 cursor-grab active:cursor-grabbing hover:text-slate-600" />
                                                 {/* Clickable Icon Button to Open Visual Icon Picker Dialog */}
                                                 <div className="flex items-center gap-2">
                                                     <button

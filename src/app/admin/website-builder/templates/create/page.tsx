@@ -34,6 +34,7 @@ import {
     BuilderCountedTextarea,
 } from '../../_components/builder-field';
 import { cn } from '@/lib/utils';
+import { ImageCropper } from '@/components/common/image-cropper';
 import {
     useTemplates,
     useTemplateCategories,
@@ -403,37 +404,35 @@ function CreateTemplatePage() {
                                 <h3 className="text-sm font-bold text-foreground">Template Design</h3>
                             </div>
 
-                            {/* Thumbnail Upload */}
+                            {/* Thumbnail Upload using ImageCropper */}
                             <div className="space-y-1.5">
                                 <label className="text-[10px] font-black uppercase tracking-wide text-muted-foreground flex items-center justify-between">
                                     <span>Template Thumbnail <span className="text-rose-500">*</span></span>
                                     {errors.thumbnail && <span className="text-rose-500 font-bold lowercase">Required</span>}
                                 </label>
-                                {thumbnailUrl ? (
-                                    <div className="relative rounded-xl border border-border p-2 bg-card flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <img src={thumbnailUrl} alt="Thumbnail Preview" className="h-16 w-12 object-cover rounded-md border border-border" />
-                                            <div>
-                                                <p className="text-xs font-bold text-foreground">Thumbnail Uploaded</p>
-                                                <p className="text-[10px] text-emerald-600 font-semibold">Ready for display</p>
-                                            </div>
-                                        </div>
-                                        <Button type="button" variant="outline" size="sm" onClick={() => setThumbnailUrl('')} className="h-8 px-2 text-xs text-red-500 border-red-200 hover:bg-red-50 cursor-pointer">
-                                            <X className="h-3.5 w-3.5 mr-1" /> Remove
-                                        </Button>
-                                    </div>
-                                ) : (
-                                    <label className={cn(
-                                        'border-2 border-dashed transition-colors rounded-xl p-6 text-center bg-muted/20 cursor-pointer relative flex flex-col items-center justify-center',
-                                        errors.thumbnail ? 'border-red-500 ring-1 ring-red-500 bg-red-50/20' : 'border-border hover:border-primary/60'
-                                    )}>
-                                        <input type="file" accept="image/*" onClick={(e) => (e.currentTarget.value = '')} onChange={handleThumbnailUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
-                                        <Upload className="h-7 w-7 text-muted-foreground mx-auto mb-2" />
-                                        <p className="text-xs font-bold text-foreground">Click to upload thumbnail</p>
-                                        <p className="text-[11px] text-muted-foreground mt-0.5">PNG, JPG or WEBP (Max. 2MB)</p>
-                                        <p className="text-[10px] text-primary font-semibold mt-1">Recommended size: 800 x 1200px</p>
-                                    </label>
-                                )}
+                                <ImageCropper
+                                    title="Template Thumbnail"
+                                    description="Upload & crop your template thumbnail image"
+                                    targetWidth={800}
+                                    targetHeight={1200}
+                                    currentImage={thumbnailUrl}
+                                    onImageCropped={async (croppedFile: File) => {
+                                        const tid = toast.loading('Uploading cropped thumbnail...');
+                                        try {
+                                            const res = await mediaApi.upload(croppedFile, 'templates');
+                                            if (res?.url) {
+                                                setThumbnailUrl(res.url);
+                                                setErrors((prev) => ({ ...prev, thumbnail: false }));
+                                                toast.success('Thumbnail uploaded successfully', { id: tid });
+                                            } else {
+                                                toast.error('Failed to retrieve uploaded thumbnail URL', { id: tid });
+                                            }
+                                        } catch (err: any) {
+                                            toast.error(err?.message || 'Failed to upload thumbnail', { id: tid });
+                                        }
+                                    }}
+                                    onRemove={() => setThumbnailUrl('')}
+                                />
                             </div>
 
                             {/* Template File Upload */}

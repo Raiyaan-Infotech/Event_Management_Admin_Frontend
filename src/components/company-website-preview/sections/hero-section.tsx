@@ -62,4 +62,13 @@ function HeroSectionBase({ hero, theme }: { hero: HeroData; theme: ThemeColors }
   );
 }
 
+import { useCompanyHeroSection } from '@/hooks/useCompanyWebsiteBuilder';
+import { buildHero, type AnyRecord } from './preview-shared';
+
+export function PageHeroSection({ pageSlug = 'home', theme }: { pageSlug?: string; theme: ThemeColors }) {
+  const { data: heroRaw } = useCompanyHeroSection(pageSlug);
+  const hero = buildHero(heroRaw as AnyRecord, theme);
+  return <HeroSectionBase hero={hero} theme={theme} />;
+}
+
 export const HeroSection = React.memo(HeroSectionBase);

@@ -176,6 +176,7 @@ function FeatureFormContent() {
         const featurePayload: FeatureItem = {
             id: featureId || undefined,
             title,
+            description: shortDesc,
             short_description: shortDesc,
             detailed_description: detailedDesc,
             icon: customIconUrl || selectedIcon,

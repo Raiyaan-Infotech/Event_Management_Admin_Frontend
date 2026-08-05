@@ -536,17 +536,17 @@ export function TemplateDemoSection({ theme, companyName }: SectionProps) {
                         </div>
 
                         {/* Right: CTA Action Buttons (4 cols) */}
-                        <div className="lg:col-span-4 flex flex-col items-center lg:items-end justify-center gap-2.5">
+                        <div className="lg:col-span-4 flex flex-col sm:flex-row lg:flex-col items-center justify-center gap-3">
                             <Button
                                 size="lg"
-                                className="w-full sm:w-auto font-bold text-white shadow-md px-6 py-3 rounded-xl transition-all hover:opacity-95 text-xs sm:text-sm"
+                                className="w-full sm:w-auto font-bold text-white shadow-md px-6 py-3 rounded-xl transition-all hover:opacity-95 text-xs sm:text-sm cursor-pointer"
                                 style={{ backgroundColor: primaryBtn }}
                             >
                                 Create Custom Template
                             </Button>
                             <button
                                 type="button"
-                                className="inline-flex items-center gap-2 text-xs font-bold text-foreground hover:underline transition-colors cursor-pointer"
+                                className="inline-flex items-center justify-center gap-2 text-xs font-bold text-slate-800 hover:text-primary transition-colors cursor-pointer py-1.5 px-3 rounded-lg hover:bg-slate-100/60"
                             >
                                 <PlayCircle className="h-4 w-4 shrink-0" style={{ color: primaryBtn }} />
                                 <span>View How It Works</span>

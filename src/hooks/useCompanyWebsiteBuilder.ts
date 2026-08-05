@@ -229,28 +229,23 @@ export const useCompanyHeroSection = (pageSlug: string = 'home') => {
         }
       } catch (e) {}
 
-      if (!storedMap || Object.keys(storedMap).length === 0) {
-        try {
-          const local = typeof window !== 'undefined' ? localStorage.getItem('company_hero_sections_map') : null;
-          if (local) storedMap = JSON.parse(local);
-        } catch (e) {}
-      }
-
       if (storedMap && storedMap[pageSlug]) {
-        return { ...backendObject, ...storedMap[pageSlug], page_slug: pageSlug };
+        return { ...storedMap[pageSlug], page_slug: pageSlug, design_json: storedMap };
       }
 
       if (backendObject.page_slug === pageSlug) {
-        return backendObject as CompanyHeroSection;
+        return { ...backendObject, design_json: storedMap };
       }
 
       if (pageSlug === 'home') {
-        return backendObject as CompanyHeroSection;
+        return { ...backendObject, design_json: storedMap };
       }
 
       return {
         ...backendObject,
+        image_url: '',
         page_slug: pageSlug,
+        design_json: storedMap,
         badge_text: pageSlug === 'features' ? 'Features Showcase' : pageSlug === 'pricing' ? 'Simple Pricing' : pageSlug === 'contact' ? 'Get In Touch' : pageSlug === 'how-it-works' ? 'How It Works' : pageSlug === 'template' ? 'Event Templates' : 'Premier Event Management',
         title: pageSlug === 'features' ? 'Everything You Need To Plan Flawless Events' : pageSlug === 'pricing' ? 'Flexible Pricing Tiers For Every Event' : pageSlug === 'contact' ? 'Let Us Help You Bring Your Event To Life' : pageSlug === 'how-it-works' ? 'Simple Steps To Create & Manage Events' : pageSlug === 'template' ? 'Discover Beautiful Event Invitation Templates' : 'We Create Unforgettable Moments',
         description: pageSlug === 'features' ? 'Explore powerful management tools for guest lists, tickets, vendor coordination, and live analytics.' : pageSlug === 'pricing' ? 'Choose the perfect plan tailored to your event size and management requirements.' : pageSlug === 'contact' ? 'Have questions or need a custom quote? Reach out to our expert event planning team.' : pageSlug === 'how-it-works' ? 'Watch tutorials and learn how to configure your event website in minutes.' : pageSlug === 'template' ? 'Pick a template, customize design elements, and publish your website instantly.' : 'From elegant weddings to corporate events, we handle every detail with creativity and perfection.',
@@ -263,22 +258,20 @@ export const useCompanyHeroSection = (pageSlug: string = 'home') => {
 
   const mutation = useMutation({
     mutationFn: async (payload: CompanyHeroSection) => {
+      const currentHero = queryClient.getQueryData<CompanyHeroSection>(queryKey);
       let storedMap: Record<string, CompanyHeroSection> = {};
       try {
-        const local = typeof window !== 'undefined' ? localStorage.getItem('company_hero_sections_map') : null;
-        if (local) storedMap = JSON.parse(local);
+        if (currentHero?.design_json) {
+          storedMap = typeof currentHero.design_json === 'string'
+            ? JSON.parse(currentHero.design_json)
+            : currentHero.design_json;
+        }
       } catch (e) {}
 
       const updatedMap = {
         ...storedMap,
         [pageSlug]: { ...payload, page_slug: pageSlug },
       };
-
-      try {
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('company_hero_sections_map', JSON.stringify(updatedMap));
-        }
-      } catch (e) {}
 
       const finalPayload = {
         ...payload,

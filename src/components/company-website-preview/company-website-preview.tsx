@@ -49,7 +49,7 @@ import {
   type AnyRecord,
 } from './sections/preview-shared';
 import { HeaderSection } from './sections/header-section';
-import { HeroSection } from './sections/hero-section';
+import { HeroSection, PageHeroSection } from './sections/hero-section';
 import { SliderSection } from './sections/slider-section';
 import { GallerySection } from './sections/gallery-section';
 import { TestimonialsSection } from './sections/testimonials-section';
@@ -284,25 +284,25 @@ function extractList(raw: unknown): AnyRecord[] {
     };
   });
 
-  // Templates mapping
-  const templates = extractList(templatesRaw).map((t) => ({
-    id: Number(t.id),
-    title: String(t.template_name || t.name || t.title || ''),
-    categoryName: String(t.category_name || t.category || ''),
-    templateType: String(t.template_type || 'Invitation'),
-    primaryColor: String(t.primary_color || '#4F46E5'),
-    thumbnailUrl: String(t.thumbnail_url || ''),
-    isPopular: Boolean(t.is_popular),
-    isActive: t.is_active !== undefined && t.is_active !== null ? (Number(t.is_active) === 1 || Boolean(t.is_active)) : (t.status ? t.status === 'Active' : true),
-  }));
+  // Templates mapping (sorted by sort_order / id ASC)
+  const templates = extractList(templatesRaw)
+    .sort((a, b) => (Number(a.sort_order ?? a.id) - Number(b.sort_order ?? b.id)))
+    .map((t) => ({
+      id: Number(t.id),
+      title: String(t.template_name || t.name || t.title || ''),
+      categoryName: String(t.category_name || t.category || ''),
+      templateType: String(t.template_type || 'Invitation'),
+      primaryColor: String(t.primary_color || '#4F46E5'),
+      thumbnailUrl: String(t.thumbnail_url || ''),
+      isPopular: Boolean(t.is_popular),
+      isActive: t.is_active !== undefined && t.is_active !== null ? (Number(t.is_active) === 1 || Boolean(t.is_active)) : (t.status ? t.status === 'Active' : true),
+    }));
 
   // ── Render Page Sections ──────────────────────────────────────────────────
-  const heroNode = <HeroSection hero={hero} theme={theme} />;
-
   const pageContents: Record<string, React.ReactNode> = {
     home: (
       <>
-        {heroNode}
+        <PageHeroSection pageSlug="home" theme={theme} />
         <HighlightsSection pageSlug="home" instance={1} theme={theme} variant="outline" />
         <TemplatesSection templates={templates} theme={theme} />
         <HighlightsSection pageSlug="home" instance={2} theme={theme} variant="filled" />
@@ -312,7 +312,7 @@ function extractList(raw: unknown): AnyRecord[] {
     ),
     features: (
       <>
-        {heroNode}
+        <PageHeroSection pageSlug="features" theme={theme} />
         <FeaturesSection features={features} theme={theme} />
         <DynamicLoginDemoSection pageSlug="features" theme={theme} companyName={companyName} />
         <HighlightsSection pageSlug="features" instance={1} theme={theme} variant="filled" />
@@ -321,7 +321,7 @@ function extractList(raw: unknown): AnyRecord[] {
     ),
     template: (
       <>
-        {heroNode}
+        <PageHeroSection pageSlug="template" theme={theme} />
         <TemplatesSection templates={templates} theme={theme} />
         <DynamicLoginDemoSection pageSlug="template" theme={theme} companyName={companyName} />
         <HighlightsSection pageSlug="template" instance={1} theme={theme} variant="filled" />
@@ -329,7 +329,7 @@ function extractList(raw: unknown): AnyRecord[] {
     ),
     templates: (
       <>
-        {heroNode}
+        <PageHeroSection pageSlug="template" theme={theme} />
         <TemplatesSection templates={templates} theme={theme} />
         <DynamicLoginDemoSection pageSlug="template" theme={theme} companyName={companyName} />
         <HighlightsSection pageSlug="template" instance={1} theme={theme} variant="filled" />
@@ -337,7 +337,7 @@ function extractList(raw: unknown): AnyRecord[] {
     ),
     pricing: (
       <>
-        {heroNode}
+        <PageHeroSection pageSlug="pricing" theme={theme} />
         <PricingSection plans={pricingPlans} theme={theme} />
         <HighlightsSection pageSlug="pricing" instance={1} theme={theme} variant="filled" />
         <DynamicLoginDemoSection pageSlug="pricing" theme={theme} companyName={companyName} />
@@ -345,7 +345,7 @@ function extractList(raw: unknown): AnyRecord[] {
     ),
     'pricing-plans': (
       <>
-        {heroNode}
+        <PageHeroSection pageSlug="pricing" theme={theme} />
         <PricingSection plans={pricingPlans} theme={theme} />
         <HighlightsSection pageSlug="pricing" instance={1} theme={theme} variant="filled" />
         <DynamicLoginDemoSection pageSlug="pricing" theme={theme} companyName={companyName} />
@@ -353,7 +353,7 @@ function extractList(raw: unknown): AnyRecord[] {
     ),
     'how-it-works': (
       <>
-        {heroNode}
+        <PageHeroSection pageSlug="how-it-works" theme={theme} />
         <HowItWorksSection steps={howItWorksSteps} theme={theme} />
         <HighlightsSection pageSlug="how-it-works" instance={1} theme={theme} variant="filled" />
         <DynamicLoginDemoSection pageSlug="how-it-works" theme={theme} companyName={companyName} />
@@ -361,7 +361,7 @@ function extractList(raw: unknown): AnyRecord[] {
     ),
     contact: (
       <>
-        {heroNode}
+        <PageHeroSection pageSlug="contact" theme={theme} />
         <HighlightsSection pageSlug="contact" instance={1} theme={theme} variant="filled" />
         {contact ? <ContactSection contact={contact} theme={theme} /> : null}
         <FaqsSection faqs={faqs} theme={theme} />
@@ -370,7 +370,7 @@ function extractList(raw: unknown): AnyRecord[] {
     ),
     'contact-us': (
       <>
-        {heroNode}
+        <PageHeroSection pageSlug="contact" theme={theme} />
         <HighlightsSection pageSlug="contact" instance={1} theme={theme} variant="filled" />
         {contact ? <ContactSection contact={contact} theme={theme} /> : null}
         <FaqsSection faqs={faqs} theme={theme} />

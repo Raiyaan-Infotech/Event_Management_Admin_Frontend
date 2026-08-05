@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 export interface FeatureItem {
     id?: number | string;
     title: string;
+    description?: string;
     short_description: string;
     detailed_description?: string;
     icon: string;
