@@ -114,9 +114,8 @@ export function CompanyWebsitePreview({ initialPage = 'home' }: { initialPage?: 
   React.useEffect(() => {
     if (typeof document === 'undefined' || !fontFamily) return;
     const fontName = fontFamily.trim();
-    if (['Inter', 'Arial', 'sans-serif'].includes(fontName)) return;
     const fontSlug = fontName.replace(/\s+/g, '+');
-    const href = `https://fonts.googleapis.com/css2?family=${fontSlug}:wght@300;400;500;600;700;800;900&display=swap`;
+    const href = `https://fonts.googleapis.com/css2?family=${fontSlug}:wght@400;500;600;700&display=swap`;
     let link = document.querySelector(`link[data-preview-font="${fontSlug}"]`) as HTMLLinkElement;
     if (!link) {
       link = document.createElement('link');
@@ -124,6 +123,8 @@ export function CompanyWebsitePreview({ initialPage = 'home' }: { initialPage?: 
       link.setAttribute('data-preview-font', fontSlug);
       link.href = href;
       document.head.appendChild(link);
+    } else {
+      link.href = href;
     }
   }, [fontFamily]);
 
