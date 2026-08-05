@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Icon, loadIcons } from '@iconify/react';
-import { ChevronDown, Mail, Menu, Phone, UserRound, X } from 'lucide-react';
+import { ChevronDown, Globe, Mail, Menu, Phone, UserRound, X } from 'lucide-react';
 import type { HeaderSettings, NavItem, SocialLink, ThemeColors } from './preview-shared';
 import { isExternalHref, viewKeyFromHref } from './preview-shared';
 
@@ -175,18 +175,28 @@ function HeaderSectionBase({ theme, header, navItems, socialLinks, companyName, 
             );
           })()}
 
-          {/* Auth buttons */}
-          <div className="hidden items-center gap-2 lg:flex">
-            {header.showLogin ? (
-              <button type="button" className="inline-flex h-10 items-center gap-2 rounded px-4 text-[12px] font-bold shadow-sm transition hover:-translate-y-0.5 border" style={{ color: theme.primaryButton, borderColor: theme.primaryButton, backgroundColor: '#FFFFFF' }}>
-                <UserRound className="h-3.5 w-3.5" /> Login
+          {/* Auth & Language buttons */}
+          <div className="hidden items-center gap-2.5 lg:flex">
+            {/* Login button */}
+            {header.showLogin !== false && (
+              <button
+                type="button"
+                className="h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 text-[12.5px] font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 active:scale-95"
+              >
+                Login
               </button>
-            ) : null}
-            {header.showSignIn ? (
-              <button type="button" className="inline-flex h-10 items-center gap-2 rounded px-4 text-[12px] font-bold text-white shadow-sm transition hover:-translate-y-0.5" style={{ backgroundColor: theme.primaryButton }}>
+            )}
+
+            {/* Get Started button */}
+            {header.showSignIn !== false && (
+              <button
+                type="button"
+                className="h-9 items-center justify-center rounded-lg px-4 text-[12.5px] font-bold text-white shadow-xs transition hover:opacity-90 active:scale-95"
+                style={{ backgroundColor: theme.primaryButton || '#ec4899' }}
+              >
                 Get Started
               </button>
-            ) : null}
+            )}
           </div>
 
           {/* Mobile hamburger */}
