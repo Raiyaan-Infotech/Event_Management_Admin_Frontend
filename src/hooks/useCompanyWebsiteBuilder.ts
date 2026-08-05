@@ -50,6 +50,8 @@ export interface CompanyFooterSettings {
   top_list_json?: any;
   top_list_heading?: string;
   top_list_heading_2?: string;
+  show_quick_links_1?: boolean | number;
+  show_quick_links_2?: boolean | number;
   quick_links_json?: any;
   quick_links_2_json?: any;
   add_pages_json?: any;

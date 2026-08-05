@@ -59,8 +59,10 @@ export function FooterContent() {
 
     const [topListHeading, setTopListHeading] = useState('Quick Links');
     const [selectedPages, setSelectedPages] = useState<string[]>(initialSelectedPages);
+    const [showQuickLinks1, setShowQuickLinks1] = useState(true);
     const [topListHeading2, setTopListHeading2] = useState('Company');
-    const [selectedPages2, setSelectedPages2] = useState<string[]>(['about-us', 'contact-us', 'terms-conditions', 'privacy-policy']);
+    const [selectedPages2, setSelectedPages2] = useState<string[]>(['about-us', 'services', 'terms-conditions', 'privacy-policy']);
+    const [showQuickLinks2, setShowQuickLinks2] = useState(true);
     const [newsletterEnabled, setNewsletterEnabled] = useState(true);
     const [showSocialLinks, setShowSocialLinks] = useState(true);
     const [previewDevice, setPreviewDevice] = useState<PreviewDevice>('desktop');
@@ -91,6 +93,8 @@ export function FooterContent() {
             if (footerData?.address) setDefaultContact((prev) => ({ ...prev, address: footerData.address || '' }));
             if (footerData?.top_list_heading) setTopListHeading(footerData.top_list_heading);
             if (footerData?.top_list_heading_2) setTopListHeading2(footerData.top_list_heading_2);
+            if (footerData?.show_quick_links_1 !== undefined) setShowQuickLinks1(Boolean(footerData.show_quick_links_1));
+            if (footerData?.show_quick_links_2 !== undefined) setShowQuickLinks2(Boolean(footerData.show_quick_links_2));
             if (footerData?.show_newsletter !== undefined) setNewsletterEnabled(Boolean(footerData.show_newsletter));
             if (footerData?.show_social_links !== undefined) setShowSocialLinks(Boolean(footerData.show_social_links));
             if (footerData?.quick_links_json) {
@@ -240,8 +244,10 @@ export function FooterContent() {
                 address: activeContact.address,
                 top_list_heading: topListHeading,
                 top_list_heading_2: topListHeading2,
-                quick_links_json: selectedPages,
-                quick_links_2_json: selectedPages2,
+                show_quick_links_1: showQuickLinks1 ? 1 : 0,
+                show_quick_links_2: showQuickLinks2 ? 1 : 0,
+                quick_links_json: showQuickLinks1 ? selectedPages : [],
+                quick_links_2_json: showQuickLinks2 ? selectedPages2 : [],
                 show_newsletter: newsletterEnabled ? 1 : 0,
                 show_social_links: showSocialLinks ? 1 : 0,
             });
@@ -424,37 +430,57 @@ export function FooterContent() {
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="space-y-3 rounded-lg border p-3 bg-slate-50/50">
-                                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">Link List 1 (Quick Links)</h4>
-                                    <BuilderCountedInput
-                                        label="List 1 Heading"
-                                        value={topListHeading}
-                                        onChange={setTopListHeading}
-                                        maxLength={80}
-                                    />
-                                    <MultiSelectPages
-                                        label="Add Pages to Link List 1"
-                                        value={selectedPages}
-                                        options={pageOptions}
-                                        onChange={setSelectedPages}
-                                        placeholder="Add page"
-                                    />
+                                    <div className="flex items-center justify-between">
+                                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">Link List 1 (Quick Links)</h4>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[11px] font-semibold text-slate-600">{showQuickLinks1 ? 'Show' : 'Hide'}</span>
+                                            <Switch checked={showQuickLinks1} onCheckedChange={setShowQuickLinks1} />
+                                        </div>
+                                    </div>
+                                    {showQuickLinks1 && (
+                                        <>
+                                            <BuilderCountedInput
+                                                label="List 1 Heading"
+                                                value={topListHeading}
+                                                onChange={setTopListHeading}
+                                                maxLength={80}
+                                            />
+                                            <MultiSelectPages
+                                                label="Add Pages to Link List 1"
+                                                value={selectedPages}
+                                                options={pageOptions}
+                                                onChange={setSelectedPages}
+                                                placeholder="Add page"
+                                            />
+                                        </>
+                                    )}
                                 </div>
 
                                 <div className="space-y-3 rounded-lg border p-3 bg-slate-50/50">
-                                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">Link List 2 (Dynamic Column)</h4>
-                                    <BuilderCountedInput
-                                        label="List 2 Heading"
-                                        value={topListHeading2}
-                                        onChange={setTopListHeading2}
-                                        maxLength={80}
-                                    />
-                                    <MultiSelectPages
-                                        label="Add Pages to Link List 2"
-                                        value={selectedPages2}
-                                        options={pageOptions}
-                                        onChange={setSelectedPages2}
-                                        placeholder="Add page"
-                                    />
+                                    <div className="flex items-center justify-between">
+                                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">Link List 2 (Dynamic Column)</h4>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[11px] font-semibold text-slate-600">{showQuickLinks2 ? 'Show' : 'Hide'}</span>
+                                            <Switch checked={showQuickLinks2} onCheckedChange={setShowQuickLinks2} />
+                                        </div>
+                                    </div>
+                                    {showQuickLinks2 && (
+                                        <>
+                                            <BuilderCountedInput
+                                                label="List 2 Heading"
+                                                value={topListHeading2}
+                                                onChange={setTopListHeading2}
+                                                maxLength={80}
+                                            />
+                                            <MultiSelectPages
+                                                label="Add Pages to Link List 2"
+                                                value={selectedPages2}
+                                                options={pageOptions}
+                                                onChange={setSelectedPages2}
+                                                placeholder="Add page"
+                                            />
+                                        </>
+                                    )}
                                 </div>
 
                                 <div className="flex items-center justify-between rounded-lg border p-2.5 bg-card">

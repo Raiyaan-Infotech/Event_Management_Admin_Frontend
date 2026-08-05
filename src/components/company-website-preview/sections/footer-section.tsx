@@ -40,11 +40,18 @@ function FooterSectionBase({ footer, socialLinks, theme, onNavigate }: { footer:
 
   const quickLinks = footer.quickLinks || [];
   const quickLinks2 = (footer as any).quickLinks2 || [];
+  const hasLinks1 = quickLinks.length > 0;
   const hasLinks2 = quickLinks2.length > 0;
+
+  const gridColsClass = (hasLinks1 && hasLinks2)
+    ? 'lg:grid-cols-[1.4fr_1fr_1fr_1.2fr]'
+    : (hasLinks1 || hasLinks2)
+      ? 'lg:grid-cols-[1.4fr_1fr_1.2fr]'
+      : 'lg:grid-cols-[1.4fr_1.2fr]';
 
   return (
     <footer className="w-full bg-white text-slate-900 border-t border-slate-200/80">
-      <div className={`mx-auto grid w-full max-w-[1280px] gap-8 px-4 py-12 sm:px-6 ${hasLinks2 ? 'lg:grid-cols-[1.4fr_1fr_1fr_1.2fr]' : 'lg:grid-cols-[1.4fr_1fr_1.2fr]'} lg:px-8`}>
+      <div className={`mx-auto grid w-full max-w-[1280px] gap-8 px-4 py-12 sm:px-6 ${gridColsClass} lg:px-8`}>
         {/* Brand Column */}
         <div className="space-y-4">
           <div className="flex items-center gap-2.5">

@@ -475,18 +475,16 @@ export function buildFooter(footerSettings: AnyRecord = {}, pages: AnyRecord[] =
     return [];
   };
 
-  const rawLinks1 = parseJsonArray(footerSettings?.add_pages_json);
-  const rawLinks1Alt = parseJsonArray(footerSettings?.quick_links_json);
-  const rawLinks = rawLinks1.length > 0
-    ? rawLinks1
-    : rawLinks1Alt.length > 0
-      ? rawLinks1Alt
-      : ['home', 'features', 'templates', 'gallery', 'contact'];
+  const showQuickLinks1 = boolValue(footerSettings?.show_quick_links_1, true);
+  const showQuickLinks2 = boolValue(footerSettings?.show_quick_links_2, true);
+
+  const rawLinks1Parsed = parseJsonArray(footerSettings?.quick_links_json || footerSettings?.add_pages_json);
+  const rawLinks1 = showQuickLinks1
+    ? (rawLinks1Parsed.length > 0 ? rawLinks1Parsed : ['home', 'features', 'templates', 'gallery', 'contact'])
+    : [];
 
   const rawLinks2Parsed = parseJsonArray(footerSettings?.quick_links_2_json);
-  const rawLinks2 = rawLinks2Parsed.length > 0
-    ? rawLinks2Parsed
-    : ['about-us', 'services', 'terms-conditions', 'privacy-policy'];
+  const rawLinks2 = showQuickLinks2 ? rawLinks2Parsed : [];
 
   const norm = (v: unknown) => String(v ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
@@ -507,7 +505,7 @@ export function buildFooter(footerSettings: AnyRecord = {}, pages: AnyRecord[] =
     return { label: formattedLabel, href: raw.startsWith('/') ? raw : `/${raw}` };
   };
 
-  const quickLinks = (rawLinks as unknown[]).map(mapLink).filter(Boolean) as Array<{ label: string; href: string }>;
+  const quickLinks = (rawLinks1 as unknown[]).map(mapLink).filter(Boolean) as Array<{ label: string; href: string }>;
   const quickLinks2 = (rawLinks2 as unknown[]).map(mapLink).filter(Boolean) as Array<{ label: string; href: string }>;
 
   const logoUrl = stringValue(
