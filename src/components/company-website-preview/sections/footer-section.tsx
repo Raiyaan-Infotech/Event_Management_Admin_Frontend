@@ -98,7 +98,13 @@ function FooterSectionBase({ footer, socialLinks, theme, onNavigate }: { footer:
             <ul className="mt-4 space-y-2.5 text-[12.5px] font-medium text-slate-600">
               {quickLinks.map((link) => (
                 <li key={`${link.label}-${link.href}`}>
-                  <a href={link.href} onClick={(e) => handleLink(e, link.href)} className="transition hover:text-pink-600">
+                  <a
+                    href={link.href}
+                    onClick={(e) => handleLink(e, link.href)}
+                    className="transition hover:opacity-80"
+                    onMouseEnter={(e) => (e.currentTarget.style.color = theme.primaryButton)}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = '')}
+                  >
                     {link.label}
                   </a>
                 </li>
@@ -114,7 +120,13 @@ function FooterSectionBase({ footer, socialLinks, theme, onNavigate }: { footer:
             <ul className="mt-4 space-y-2.5 text-[12.5px] font-medium text-slate-600">
               {quickLinks2.map((link: any) => (
                 <li key={`${link.label}-${link.href}`}>
-                  <a href={link.href} onClick={(e) => handleLink(e, link.href)} className="transition hover:text-pink-600">
+                  <a
+                    href={link.href}
+                    onClick={(e) => handleLink(e, link.href)}
+                    className="transition hover:opacity-80"
+                    onMouseEnter={(e) => (e.currentTarget.style.color = theme.primaryButton)}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = '')}
+                  >
                     {link.label}
                   </a>
                 </li>
@@ -137,7 +149,7 @@ function FooterSectionBase({ footer, socialLinks, theme, onNavigate }: { footer:
                 onChange={(e) => setNewsletterEmail(e.target.value)}
                 placeholder="Enter your email"
                 disabled={submitting}
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-[12.5px] text-slate-800 outline-none placeholder:text-slate-400 focus:border-pink-500 disabled:opacity-70 shadow-2xs"
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-[12.5px] text-slate-800 outline-none placeholder:text-slate-400 disabled:opacity-70 shadow-2xs"
               />
               <button
                 type="submit"

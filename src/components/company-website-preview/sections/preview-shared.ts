@@ -465,61 +465,48 @@ export function buildLogos(list: AnyRecord[]): Logo[] {
 // ── Footer ───────────────────────────────────────────────────────────────────
 
 export function buildFooter(footerSettings: AnyRecord = {}, pages: AnyRecord[] = [], basicInfo: AnyRecord = {}) {
-  const rawLinks = Array.isArray(footerSettings?.add_pages_json)
-    ? footerSettings.add_pages_json
-    : Array.isArray(footerSettings?.quick_links_json)
-      ? footerSettings.quick_links_json
+  const parseJsonArray = (val: unknown): any[] => {
+    if (Array.isArray(val)) return val;
+    if (typeof val === 'string' && val.trim().length > 0) {
+      try {
+        const parsed = JSON.parse(val);
+        if (Array.isArray(parsed)) return parsed;
+      } catch {}
+    }
+    return [];
+  };
+
+  const rawLinks1 = parseJsonArray(footerSettings?.add_pages_json);
+  const rawLinks1Alt = parseJsonArray(footerSettings?.quick_links_json);
+  const rawLinks = rawLinks1.length > 0
+    ? rawLinks1
+    : rawLinks1Alt.length > 0
+      ? rawLinks1Alt
       : ['home', 'features', 'templates', 'gallery', 'contact'];
 
+  const rawLinks2 = parseJsonArray(footerSettings?.quick_links_2_json);
+
   const norm = (v: unknown) => String(v ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
-  const quickLinks = (rawLinks as unknown[])
-    .map((value) => {
-      const raw = String(value ?? '').trim();
-      if (!raw) return null;
-      const target = norm(raw);
-      const page = (pages || []).find((item) => String(item.slug ?? '').replace(/^\/+/, '') === raw.replace(/^\/+/, '') || String(item.id ?? '') === raw) ||
-        (pages || []).find((item) => {
-          const slug = norm(item.slug);
-          const title = norm(item.title);
-          return !!target && ((!!slug && (slug.includes(target) || target.includes(slug))) || (!!title && title.includes(target)));
-        });
-      if (page) {
-        return { label: stringValue(page.title, raw), href: normalizeHref(page.slug) };
-      }
-      const formattedLabel = raw.split(/[-_]/).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-      return { label: formattedLabel, href: raw.startsWith('/') ? raw : `/${raw}` };
-    })
-    .filter(Boolean) as Array<{ label: string; href: string }>;
 
-  let rawLinks2: any[] = [];
-  if (Array.isArray(footerSettings?.quick_links_2_json)) {
-    rawLinks2 = footerSettings.quick_links_2_json;
-  } else if (typeof footerSettings?.quick_links_2_json === 'string') {
-    try {
-      rawLinks2 = JSON.parse(footerSettings.quick_links_2_json);
-    } catch {
-      rawLinks2 = [];
+  const mapLink = (value: unknown) => {
+    const raw = String(value ?? '').trim();
+    if (!raw) return null;
+    const target = norm(raw);
+    const page = (pages || []).find((item) => String(item.slug ?? '').replace(/^\/+/, '') === raw.replace(/^\/+/, '') || String(item.id ?? '') === raw) ||
+      (pages || []).find((item) => {
+        const slug = norm(item.slug);
+        const title = norm(item.title);
+        return !!target && ((!!slug && (slug.includes(target) || target.includes(slug))) || (!!title && title.includes(target)));
+      });
+    if (page) {
+      return { label: stringValue(page.title, raw), href: normalizeHref(page.slug) };
     }
-  }
+    const formattedLabel = raw.split(/[-_]/).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    return { label: formattedLabel, href: raw.startsWith('/') ? raw : `/${raw}` };
+  };
 
-  const quickLinks2 = (rawLinks2 as unknown[])
-    .map((value) => {
-      const raw = String(value ?? '').trim();
-      if (!raw) return null;
-      const target = norm(raw);
-      const page = (pages || []).find((item) => String(item.slug ?? '').replace(/^\/+/, '') === raw.replace(/^\/+/, '') || String(item.id ?? '') === raw) ||
-        (pages || []).find((item) => {
-          const slug = norm(item.slug);
-          const title = norm(item.title);
-          return !!target && ((!!slug && (slug.includes(target) || target.includes(slug))) || (!!title && title.includes(target)));
-        });
-      if (page) {
-        return { label: stringValue(page.title, raw), href: normalizeHref(page.slug) };
-      }
-      const formattedLabel = raw.split(/[-_]/).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-      return { label: formattedLabel, href: raw.startsWith('/') ? raw : `/${raw}` };
-    })
-    .filter(Boolean) as Array<{ label: string; href: string }>;
+  const quickLinks = (rawLinks as unknown[]).map(mapLink).filter(Boolean) as Array<{ label: string; href: string }>;
+  const quickLinks2 = (rawLinks2 as unknown[]).map(mapLink).filter(Boolean) as Array<{ label: string; href: string }>;
 
   const logoUrl = stringValue(
     footerSettings?.logo_url,

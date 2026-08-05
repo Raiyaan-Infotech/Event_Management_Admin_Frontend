@@ -93,11 +93,19 @@ export function FooterContent() {
             if (footerData?.top_list_heading_2) setTopListHeading2(footerData.top_list_heading_2);
             if (footerData?.show_newsletter !== undefined) setNewsletterEnabled(Boolean(footerData.show_newsletter));
             if (footerData?.show_social_links !== undefined) setShowSocialLinks(Boolean(footerData.show_social_links));
-            if (footerData?.quick_links_json && Array.isArray(footerData.quick_links_json)) {
-                setSelectedPages(footerData.quick_links_json);
+            if (footerData?.quick_links_json) {
+                if (Array.isArray(footerData.quick_links_json)) {
+                    setSelectedPages(footerData.quick_links_json);
+                } else if (typeof footerData.quick_links_json === 'string') {
+                    try { setSelectedPages(JSON.parse(footerData.quick_links_json)); } catch {}
+                }
             }
-            if (footerData?.quick_links_2_json && Array.isArray(footerData.quick_links_2_json)) {
-                setSelectedPages2(footerData.quick_links_2_json);
+            if (footerData?.quick_links_2_json) {
+                if (Array.isArray(footerData.quick_links_2_json)) {
+                    setSelectedPages2(footerData.quick_links_2_json);
+                } else if (typeof footerData.quick_links_2_json === 'string') {
+                    try { setSelectedPages2(JSON.parse(footerData.quick_links_2_json)); } catch {}
+                }
             }
             if (footerData || basicInfo) {
                 loadedRef.current = true;

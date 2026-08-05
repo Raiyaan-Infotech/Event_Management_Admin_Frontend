@@ -97,32 +97,36 @@ export function HighlightsSection({ pageSlug = 'home', instance = 1, data, theme
     
     let items = config.items && config.items.length > 0 ? config.items : defaultFallbackItems;
 
-    // Background calculation
-    let bgStyle: React.CSSProperties = {};
+    // Container background style mapped directly from config settings to inner box
+    let containerStyle: React.CSSProperties = {};
     if (config.preset === 'gradient-1') {
-        bgStyle = { backgroundImage: 'linear-gradient(135deg, #E0F2FE 0%, #F0FDFA 100%)' };
+        containerStyle = { backgroundImage: 'linear-gradient(135deg, #E0F2FE 0%, #F0FDFA 100%)' };
     } else if (config.preset === 'gradient-2') {
-        bgStyle = { backgroundImage: 'linear-gradient(135deg, #FCE7F3 0%, #FFF1F2 100%)' };
+        containerStyle = { backgroundImage: 'linear-gradient(90deg, #EC4899 0%, #A855F7 50%, #4F46E5 100%)' };
     } else if (config.preset === 'gradient-3') {
-        bgStyle = { backgroundImage: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)' };
+        containerStyle = { backgroundImage: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)' };
     } else if (config.background_type === 'gradient') {
-        bgStyle = { backgroundImage: 'linear-gradient(135deg, #F3F0FF 0%, #FFFFFF 100%)' };
+        containerStyle = { backgroundImage: 'linear-gradient(90deg, #EC4899 0%, #A855F7 50%, #4F46E5 100%)' };
     } else if (config.background_type === 'image' && config.background_image_url) {
-        bgStyle = {
+        containerStyle = {
             backgroundImage: `url(${config.background_image_url})`,
             backgroundSize: config.image_size || 'cover',
             backgroundPosition: config.image_position || 'center',
         };
+    } else if (config.background_color && config.background_color !== '#FFFFFF' && config.background_color !== '#FAFAFA') {
+        containerStyle = { backgroundColor: config.background_color };
+    } else if (instance === 2) {
+        containerStyle = { backgroundImage: 'linear-gradient(90deg, #EC4899 0%, #A855F7 50%, #4F46E5 100%)' };
     } else {
-        bgStyle = { backgroundColor: config.background_color || theme?.sectionBg || '#FAFAFA' };
+        containerStyle = { backgroundColor: '#FFFFFF' };
     }
 
     return (
-        <section className="w-full py-8 border-b border-slate-100" style={bgStyle}>
+        <section className="w-full py-8 border-b border-slate-100 bg-white">
             <div className="mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-8">
                 {instance === 2 ? (
-                    /* Instance 2 Gradient Stats Banner (Matching Mockup Image 1) */
-                    <div className="rounded-2xl bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-600 p-6 sm:p-7 text-white shadow-md">
+                    /* Instance 2 Gradient Stats Banner (Mapped to inner container box) */
+                    <div className="rounded-2xl p-6 sm:p-7 text-white shadow-md overflow-hidden" style={containerStyle}>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 items-center justify-center">
                             {items.slice(0, 5).map((item: any, idx: number) => {
                                 const IconComp = ICON_MAP[item.icon] || Sparkles;
@@ -145,8 +149,8 @@ export function HighlightsSection({ pageSlug = 'home', instance = 1, data, theme
                         </div>
                     </div>
                 ) : (
-                    /* Instance 1 White Card Features Bar (Matching Mockup Image 1 & 3) */
-                    <div className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-sm">
+                    /* Instance 1 White Card Features Bar */
+                    <div className="rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-sm overflow-hidden" style={containerStyle}>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 items-center justify-center">
                             {items.slice(0, 5).map((item: any, idx: number) => {
                                 const IconComp = ICON_MAP[item.icon] || Sparkles;
