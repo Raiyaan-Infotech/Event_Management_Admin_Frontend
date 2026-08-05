@@ -30,11 +30,18 @@ export interface PricingSettings {
     yearly_discount_badge: string;
 }
 
+export interface PlanTierLimit {
+    not_included?: boolean;
+    limit?: string;
+}
+
 export interface PricingMatrixFeature {
     id?: number;
     feature_name: string;
-    category: string;
-    plan_values_json: Record<string, string | boolean>;
+    icon?: string;
+    description?: string;
+    category?: string;
+    plan_values_json: Record<string, string | boolean | PlanTierLimit>;
     sort_order?: number;
     is_active?: boolean;
 }
@@ -99,6 +106,34 @@ export function useSavePricingSettings() {
         },
         onError: (error: any) => {
             toast.error(error.response?.data?.message || error.message || 'Error saving pricing settings.');
+        },
+    });
+}
+
+export function usePricingMatrixFeaturesData() {
+    return useQuery({
+        queryKey: ['website-builder-pricing-matrix-features'],
+        queryFn: async () => {
+            const res = await apiClient.get('/website-builder/pricing/matrix-features');
+            return (res.data?.data || []) as PricingMatrixFeature[];
+        },
+    });
+}
+
+export function useSavePricingMatrixFeatures() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (items: PricingMatrixFeature[]) => {
+            const res = await apiClient.put('/website-builder/pricing/matrix-features', { items });
+            return res.data;
+        },
+        onSuccess: () => {
+            toast.success('Plan features saved successfully!');
+            queryClient.invalidateQueries({ queryKey: ['website-builder-pricing-matrix-features'] });
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || error.message || 'Error saving plan features.');
         },
     });
 }

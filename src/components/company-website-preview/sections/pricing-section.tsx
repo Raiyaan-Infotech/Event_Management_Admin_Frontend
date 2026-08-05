@@ -276,8 +276,123 @@ function PricingSectionBase({ plans, theme }: { plans: PricingPlan[]; theme: The
             </div>
           );
         })}
+
+        {/* All Plans Include Features Matrix Section (Matching Image 4) */}
+        <PlanFeaturesComparisonSection theme={theme} />
       </div>
     </section>
+  );
+}
+
+import { usePricingMatrixFeaturesData } from '@/hooks/usePricingPlans';
+
+export function PlanFeaturesComparisonSection({ theme }: { theme: ThemeColors }) {
+  const { data: matrixFeatures = [] } = usePricingMatrixFeaturesData();
+
+  const displayItems = matrixFeatures && matrixFeatures.length > 0 ? matrixFeatures : [
+    { feature_name: 'Beautiful Templates', plan_values_json: { free: { not_included: false, limit: '' }, basic: { not_included: false, limit: '' }, pro: { not_included: false, limit: '' }, premium: { not_included: false, limit: '' }, companies: { not_included: false, limit: '' } } },
+    { feature_name: 'Custom Domain', plan_values_json: { free: { not_included: true, limit: '' }, basic: { not_included: false, limit: '' }, pro: { not_included: false, limit: '' }, premium: { not_included: false, limit: '' }, companies: { not_included: false, limit: '' } } },
+    { feature_name: 'Live Streaming', plan_values_json: { free: { not_included: true, limit: '' }, basic: { not_included: false, limit: 'Limited' }, pro: { not_included: false, limit: '' }, premium: { not_included: false, limit: '' }, companies: { not_included: false, limit: '' } } },
+    { feature_name: 'QR Code Access', plan_values_json: { free: { not_included: true, limit: '' }, basic: { not_included: false, limit: '' }, pro: { not_included: false, limit: '' }, premium: { not_included: false, limit: '' }, companies: { not_included: false, limit: '' } } },
+    { feature_name: 'Guest Management', plan_values_json: { free: { not_included: false, limit: 'Up to 50' }, basic: { not_included: false, limit: 'Up to 500' }, pro: { not_included: false, limit: 'Up to 2000' }, premium: { not_included: false, limit: 'Unlimited' }, companies: { not_included: false, limit: 'Unlimited' } } },
+    { feature_name: 'Priority Support', plan_values_json: { free: { not_included: true, limit: '' }, basic: { not_included: true, limit: '' }, pro: { not_included: false, limit: '' }, premium: { not_included: false, limit: '' }, companies: { not_included: false, limit: '' } } },
+    { feature_name: 'Remove Branding', plan_values_json: { free: { not_included: true, limit: '' }, basic: { not_included: true, limit: '' }, pro: { not_included: false, limit: '' }, premium: { not_included: false, limit: '' }, companies: { not_included: false, limit: '' } } },
+  ];
+
+  const TIERS = [
+    { key: 'free', label: 'Free' },
+    { key: 'basic', label: 'Basic' },
+    { key: 'pro', label: 'Pro' },
+    { key: 'premium', label: 'Premium' },
+    { key: 'companies', label: 'Companies' },
+  ];
+
+  return (
+    <div className="mt-16 w-full rounded-3xl border border-slate-200/80 bg-slate-50/50 p-6 sm:p-8 shadow-2xs">
+      <div className="grid gap-8 lg:grid-cols-[1fr_2.2fr] items-start">
+        {/* Left Column (Matching Image 4) */}
+        <div className="space-y-3.5">
+          <span className="inline-flex rounded-full bg-rose-100/80 px-3 py-1 text-[11px] font-extrabold text-rose-600">
+            All Plans Include
+          </span>
+          <h3 className="text-[24px] font-black leading-tight tracking-tight text-slate-900" style={{ color: theme.primaryText }}>
+            Powerful Features in <span className="text-rose-500">Every Plan</span>
+          </h3>
+          <p className="text-[13px] font-medium leading-relaxed text-slate-600">
+            Everything you need to create, manage and share amazing events.
+          </p>
+          <a
+            href="#contact"
+            className="inline-flex h-9 items-center justify-center rounded-xl px-4 text-[12px] font-bold text-white shadow-xs transition hover:opacity-90 active:scale-95"
+            style={{ backgroundColor: theme.primaryButton }}
+          >
+            View All Features
+          </a>
+        </div>
+
+        {/* Right Column: Comparison Table (Matching Image 4) */}
+        <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-xs">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="border-b border-slate-100 bg-slate-50/80 text-slate-700">
+                <th className="py-3 px-4 font-bold text-[12px]">Features</th>
+                {TIERS.map((t) => (
+                  <th key={t.key} className="py-3 px-3 font-extrabold text-center text-[12px]">
+                    {t.label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {displayItems.map((item: any, idx: number) => {
+                const planMap = (item.plan_values_json || {}) as Record<string, any>;
+
+                return (
+                  <tr key={idx} className="hover:bg-slate-50/60 transition-colors">
+                    <td className="py-3 px-4 font-bold text-slate-900 text-[12.5px]">
+                      {item.feature_name || item.title}
+                    </td>
+
+                    {TIERS.map((t) => {
+                      const val = planMap[t.key];
+                      let isNotIncluded = false;
+                      let limitText = '';
+
+                      if (typeof val === 'object' && val !== null) {
+                        isNotIncluded = Boolean(val.not_included);
+                        limitText = String(val.limit || '').trim();
+                      } else if (typeof val === 'boolean') {
+                        isNotIncluded = !val;
+                      } else if (typeof val === 'string') {
+                        limitText = val.trim();
+                      }
+
+                      return (
+                        <td key={t.key} className="py-3 px-3 text-center align-middle font-semibold text-[11.5px]">
+                          {isNotIncluded ? (
+                            <span className="inline-flex h-5 w-5 items-center justify-center text-rose-500 mx-auto">
+                              <X className="h-4 w-4 stroke-[2.5]" />
+                            </span>
+                          ) : limitText && limitText.toLowerCase() !== 'unlimited' ? (
+                            <span className="text-slate-700 font-extrabold text-[11px]">
+                              {limitText}
+                            </span>
+                          ) : (
+                            <span className="inline-flex h-5 w-5 items-center justify-center text-emerald-600 mx-auto">
+                              <Check className="h-4 w-4 stroke-[3]" />
+                            </span>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   );
 }
 
