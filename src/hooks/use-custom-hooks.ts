@@ -13,7 +13,7 @@ export const useAuth = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const token = Cookies.get('accessToken');
+    const token = Cookies.get('access_token') || Cookies.get('accessToken') || Cookies.get('refresh_token') || Cookies.get('refreshToken');
     setIsAuthenticated(!!token);
     setIsLoading(false);
 
@@ -77,7 +77,7 @@ export const useRequireAuth = (redirectTo = '/auth/signin') => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const token = Cookies.get('accessToken');
+    const token = Cookies.get('access_token') || Cookies.get('accessToken') || Cookies.get('refresh_token') || Cookies.get('refreshToken');
 
     if (!token) {
       router.push(redirectTo);
@@ -97,7 +97,7 @@ export const usePreventAuthenticatedAccess = (redirectTo = '/admin') => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const token = Cookies.get('accessToken');
+    const token = Cookies.get('access_token') || Cookies.get('accessToken') || Cookies.get('refresh_token') || Cookies.get('refreshToken');
 
     if (token) {
       router.push(redirectTo);

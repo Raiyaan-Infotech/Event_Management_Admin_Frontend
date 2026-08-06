@@ -63,22 +63,23 @@ export default function SignUpPage() {
         return;
       }
 
-      // Store tokens
-      if (result.data?.accessToken) {
-        Cookies.set('accessToken', result.data.accessToken, {
-          expires: 7,
-          secure: true,
-          sameSite: 'strict',
-        });
+      // Store tokens in cookies
+      if (result.data?.accessToken || result.data?.access_token) {
+        const token = result.data.accessToken || result.data.access_token;
+        Cookies.set('access_token', token, { expires: 1 / 96, sameSite: 'lax' });
+        Cookies.set('accessToken', token, { expires: 1 / 96, sameSite: 'lax' });
       }
 
-      if (result.data?.refreshToken) {
-        Cookies.set('refreshToken', result.data.refreshToken, {
-          expires: 30,
-          secure: true,
-          sameSite: 'strict',
-        });
+      if (result.data?.refreshToken || result.data?.refresh_token) {
+        const refreshToken = result.data.refreshToken || result.data.refresh_token;
+        Cookies.set('refresh_token', refreshToken, { expires: 7, sameSite: 'lax' });
+        Cookies.set('refreshToken', refreshToken, { expires: 7, sameSite: 'lax' });
       }
+
+      // Set temporary auth_pending cookie for middleware
+      const exp = new Date();
+      exp.setSeconds(exp.getSeconds() + 15);
+      document.cookie = `auth_pending=true; path=/; expires=${exp.toUTCString()}; SameSite=Lax`;
 
       router.push('/admin');
     } catch (err) {
