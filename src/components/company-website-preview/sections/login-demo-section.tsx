@@ -32,8 +32,11 @@ interface SectionProps {
     companyName?: string;
 }
 
+import { useWebsiteBuilderTranslation } from '@/hooks/use-website-builder-translation';
+
 // 1. Home Page / Main: Login & Demo Section
 export function LoginDemoSection({ theme, companyName }: SectionProps) {
+    const { t } = useWebsiteBuilderTranslation();
     const primaryBtn = theme?.primaryButton || '#E11D48';
 
     return (
@@ -49,10 +52,10 @@ export function LoginDemoSection({ theme, companyName }: SectionProps) {
                         </div>
                         <div className="space-y-1">
                             <h3 className="text-lg sm:text-xl font-bold tracking-tight text-foreground">
-                                Ready to Create Your Event App?
+                                {t('login_demo.ready_title', 'Ready to Create Your Event App?')}
                             </h3>
                             <p className="text-xs sm:text-sm text-muted-foreground">
-                                Join thousands of happy customers who trust {companyName || 'Event Invit'} for their special moments.
+                                {t('login_demo.ready_subtitle', 'Join thousands of happy customers who trust {companyName} for their special moments.', { companyName: companyName || 'Event Invit' })}
                             </p>
                         </div>
                     </div>
@@ -63,7 +66,7 @@ export function LoginDemoSection({ theme, companyName }: SectionProps) {
                             className="font-bold text-white shadow-md px-6 py-2.5 rounded-xl transition-all hover:opacity-95"
                             style={{ backgroundColor: primaryBtn }}
                         >
-                            Get Started Free
+                            {t('login_demo.get_started_free', 'Get Started Free')}
                         </Button>
                         <Button
                             size="lg"
@@ -71,7 +74,7 @@ export function LoginDemoSection({ theme, companyName }: SectionProps) {
                             className="font-bold px-6 py-2.5 rounded-xl bg-background/80 shadow-xs transition-all hover:bg-primary/10 border-2"
                             style={{ borderColor: primaryBtn, color: primaryBtn }}
                         >
-                            View Demo App
+                            {t('login_demo.view_demo_app', 'View Demo App')}
                         </Button>
                     </div>
                 </div>

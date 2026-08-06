@@ -89,7 +89,10 @@ interface HighlightsSectionProps {
     variant?: 'outline' | 'filled';
 }
 
+import { useWebsiteBuilderTranslation } from '@/hooks/use-website-builder-translation';
+
 export function HighlightsSection({ pageSlug = 'home', instance = 1, data, theme }: HighlightsSectionProps) {
+    const { t } = useWebsiteBuilderTranslation();
     const { data: fetchedData } = useHighlights(pageSlug, instance);
     const config = { ...DEFAULT_HIGHLIGHTS, ...fetchedData, ...data };
 

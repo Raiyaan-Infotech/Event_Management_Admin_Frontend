@@ -1,0 +1,132 @@
+{
+  "header": {
+    "home": "Home",
+    "features": "Features",
+    "templates": "Templates",
+    "pricing": "Pricing",
+    "how_it_works": "How It Works",
+    "contact": "Contact Us",
+    "login": "Login",
+    "sign_up": "Get Started",
+    "dashboard": "Dashboard",
+    "search_placeholder": "Search...",
+    "more": "More"
+  },
+  "hero": {
+    "badge": "Event Management Platform",
+    "title": "Create Your Dream Event Website with Ease",
+    "subtitle": "Design, customize, and manage beautiful event pages with our simple drag-and-drop builder.",
+    "get_started": "Get Started Free",
+    "explore_templates": "Explore Templates",
+    "learn_more": "Learn More"
+  },
+  "features": {
+    "title": "Powerful Features",
+    "subtitle": "All the Features You Need",
+    "all_features": "All Features",
+    "view_details": "View Feature",
+    "templates_desc": "1000+ customizable event invitation templates.",
+    "domain_desc": "Connect your custom brand domain instantly.",
+    "qr_desc": "Generate quick QR code access for guests.",
+    "analytics_desc": "Real-time guest tracking and event analytics."
+  },
+  "templates": {
+    "title": "Stunning Templates for Every Occasion",
+    "subtitle": "Choose From Beautiful Templates",
+    "popular": "Popular",
+    "preview": "Preview",
+    "use_template": "Use Template",
+    "all_categories": "All Templates",
+    "wedding": "Wedding",
+    "engagement": "Engagement",
+    "birthday": "Birthday",
+    "anniversary": "Anniversary",
+    "corporate": "Corporate",
+    "festival": "Festival"
+  },
+  "pricing": {
+    "title": "Plans & Pricing",
+    "subtitle": "Simple, transparent pricing tailored to your needs.",
+    "monthly": "Monthly Billing",
+    "yearly": "Yearly Billing",
+    "save_discount": "Save up to 20%",
+    "most_popular": "Most Popular",
+    "get_started": "Get Started Free",
+    "choose_plan": "Choose {planName}",
+    "choose_starter": "Choose Starter",
+    "choose_pro": "Choose Professional",
+    "view_all_features": "View All Features",
+    "all_plans_include": "All Plans Include",
+    "matrix_title": "Powerful Features in Every Plan",
+    "matrix_subtitle": "Everything you need to create, manage and share amazing events."
+  },
+  "how_it_works": {
+    "badge": "WORKING PROCESS",
+    "title": "How It Works",
+    "subtitle": "Get your event website ready in 4 simple steps",
+    "step_1_title": "Choose Template",
+    "step_1_desc": "Select from hundreds of professionally designed event templates.",
+    "step_2_title": "Customize Details",
+    "step_2_desc": "Add event date, venue, schedule, and custom media.",
+    "step_3_title": "Invite Guests",
+    "step_3_desc": "Share invitation links and QR codes with your attendees.",
+    "step_4_title": "Manage RSVPs",
+    "step_4_desc": "Track guest responses and attendance in real time."
+  },
+  "testimonials": {
+    "title": "Testimonials",
+    "subtitle": "What Our Clients Say",
+    "verified_client": "Verified Client"
+  },
+  "faqs": {
+    "title": "Frequently Asked Questions",
+    "subtitle": "Got questions? We have got answers.",
+    "search_placeholder": "Search questions..."
+  },
+  "contact": {
+    "title": "Get In Touch",
+    "subtitle": "Send Us A Message",
+    "full_name": "Full Name",
+    "email_address": "Email Address",
+    "phone_number": "Phone Number",
+    "subject": "Subject",
+    "message": "Your Message",
+    "send_message": "Send Message"
+  },
+  "footer": {
+    "quick_links": "Quick Links",
+    "company": "Company",
+    "newsletter": "Newsletter",
+    "newsletter_subtitle": "Subscribe to get updates and offers",
+    "email_placeholder": "Enter your email",
+    "contact_info": "Contact Info",
+    "all_rights_reserved": "All Rights Reserved.",
+    "powered_by": "Powered by Event Management Platform",
+    "made_with": "Made with",
+    "for_moments": "for your special moments"
+  },
+  "gallery": {
+    "title": "Our Gallery",
+    "subtitle": "Moments We've Created",
+    "all": "All",
+    "no_images": "No images in this category yet."
+  },
+  "highlights": {
+    "all_in_one": "All in One App",
+    "customizable": "Customizable",
+    "instant_sharing": "Instant Sharing",
+    "guest_engagement": "Guest Engagement",
+    "total_control": "Total Control",
+    "events_created": "25K+ Events Created",
+    "happy_users": "500K+ Happy Users",
+    "templates_count": "1000+ Beautiful Templates",
+    "customer_support": "24/7 Customer Support",
+    "uptime_security": "99.9% Uptime & Security"
+  },
+  "login_demo": {
+    "ready_title": "Ready to Create Your Event App?",
+    "ready_subtitle": "Join thousands of happy customers who trust {companyName} for their special moments.",
+    "get_started_free": "Get Started Free",
+    "view_demo_app": "View Demo App"
+  }
+}

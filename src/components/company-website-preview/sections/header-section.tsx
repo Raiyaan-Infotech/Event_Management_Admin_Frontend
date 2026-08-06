@@ -19,7 +19,10 @@ type Props = {
   onNavigate: (href: string) => void;
 };
 
+import { useWebsiteBuilderTranslation } from '@/hooks/use-website-builder-translation';
+
 function HeaderSectionBase({ theme, header, navItems, socialLinks, companyName, companyLogo, phone, email, activeKey, onNavigate }: Props) {
+  const { t, language, setLanguage } = useWebsiteBuilderTranslation();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [, setIconsLoaded] = React.useState(false);
 
@@ -160,7 +163,7 @@ function HeaderSectionBase({ theme, header, navItems, socialLinks, companyName, 
                 {overflowItems.length > 0 && (
                   <div className="group relative shrink-0">
                     <button type="button" className="flex items-center gap-1 py-7 whitespace-nowrap transition hover:opacity-70" style={{ color: theme.primaryButton }}>
-                      More <ChevronDown className="h-3.5 w-3.5 transition group-hover:rotate-180" />
+                      {t('header.more', 'More')} <ChevronDown className="h-3.5 w-3.5 transition group-hover:rotate-180" />
                     </button>
                     <div className="invisible absolute right-0 top-full z-30 min-w-[180px] -translate-y-1 rounded-xl border border-slate-100 bg-white py-2 opacity-0 shadow-xl transition-all group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
                       {overflowItems.map((item) => (
@@ -178,18 +181,22 @@ function HeaderSectionBase({ theme, header, navItems, socialLinks, companyName, 
           {/* Auth & Language buttons */}
           <div className="hidden sm:flex items-center gap-2 sm:gap-2.5 shrink-0">
             {/* Globe Language selector */}
-            <div className="hidden md:flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[12px] font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 cursor-pointer">
+            <button
+              type="button"
+              onClick={() => setLanguage(language === 'en' ? 'hi' : 'en')}
+              className="hidden md:flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[12px] font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 cursor-pointer transition active:scale-95"
+            >
               <Globe className="h-3.5 w-3.5 text-slate-500" />
-              <span>English</span>
+              <span>{language === 'en' ? 'English' : 'हिन्दी'}</span>
               <ChevronDown className="h-3 w-3 text-slate-400" />
-            </div>
+            </button>
 
             {/* Login button */}
             <button
               type="button"
               className="h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3.5 sm:px-4 text-[12.5px] font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 active:scale-95 whitespace-nowrap"
             >
-              Login
+              {t('header.login', 'Login')}
             </button>
 
             {/* Get Started button */}
@@ -198,7 +205,7 @@ function HeaderSectionBase({ theme, header, navItems, socialLinks, companyName, 
               className="h-9 items-center justify-center rounded-lg px-3.5 sm:px-4 text-[12.5px] font-bold text-white shadow-xs transition hover:opacity-90 active:scale-95 whitespace-nowrap"
               style={{ backgroundColor: theme.primaryButton || '#ec4899' }}
             >
-              Get Started
+              {t('hero.get_started', 'Get Started')}
             </button>
           </div>
 

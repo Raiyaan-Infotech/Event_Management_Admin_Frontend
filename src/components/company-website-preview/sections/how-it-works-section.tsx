@@ -61,7 +61,10 @@ function DynamicStepGraphic({ step, theme }: { step: StepItem; theme: ThemeColor
   );
 }
 
+import { useWebsiteBuilderTranslation } from '@/hooks/use-website-builder-translation';
+
 function HowItWorksSectionBase({ steps, theme }: { steps: StepItem[]; theme: ThemeColors }) {
+  const { t } = useWebsiteBuilderTranslation();
   if (!steps || !steps.length) return null;
 
   return (
@@ -73,10 +76,10 @@ function HowItWorksSectionBase({ steps, theme }: { steps: StepItem[]; theme: The
             className="mb-2 inline-flex items-center rounded-md px-3.5 py-1 text-[11px] font-extrabold uppercase tracking-widest text-white shadow-xs"
             style={{ backgroundColor: theme.primaryButton }}
           >
-            WORKING PROCESS
+            {t('how_it_works.badge', 'WORKING PROCESS')}
           </span>
           <h2 className="mt-2 text-[30px] font-black leading-tight tracking-tight sm:text-[38px]" style={{ color: theme.primaryText }}>
-            How It Works
+            {t('how_it_works.title', 'How It Works')}
           </h2>
           <div className="mt-2 flex items-center justify-center gap-2" style={{ color: theme.primaryButton }}>
             <span className="h-px w-8 opacity-30" style={{ backgroundColor: theme.primaryButton }} />
@@ -84,7 +87,7 @@ function HowItWorksSectionBase({ steps, theme }: { steps: StepItem[]; theme: The
             <span className="h-px w-8 opacity-30" style={{ backgroundColor: theme.primaryButton }} />
           </div>
           <p className="mt-2 text-[14px] font-medium text-slate-500">
-            Create your event in {steps.length} simple steps
+            {t('how_it_works.subtitle', 'Get your event website ready in 4 simple steps')}
           </p>
         </div>
 

@@ -3,6 +3,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { ChevronDown, ChevronLeft, ChevronRight, Heart, Layout, Eye, Search, Flame, Palette, Filter, ArrowDown } from 'lucide-react';
 import type { ThemeColors } from './preview-shared';
+import { useWebsiteBuilderTranslation } from '@/hooks/use-website-builder-translation';
 
 export interface TemplateItem {
   id: number;
@@ -23,12 +24,15 @@ interface TemplatesSectionProps {
   categories?: string[];
   onPreview?: (template: TemplateItem) => void;
   onUseTemplate?: (template: TemplateItem) => void;
+  title?: string;
+  subtitle?: string;
 }
 
 const ALL_CATEGORY = '__all_categories__';
 const MAX_VISIBLE_PILLS = 6;
 
-export function TemplatesSection({ templates, theme, categories, onPreview }: TemplatesSectionProps) {
+export function TemplatesSection({ templates = [], theme, categories = [], onPreview, title, subtitle }: TemplatesSectionProps) {
+  const { t } = useWebsiteBuilderTranslation();
   const [activeCategory, setActiveCategory] = useState<string>(ALL_CATEGORY);
   const [showMoreCategories, setShowMoreCategories] = useState(false);
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
@@ -88,10 +92,10 @@ export function TemplatesSection({ templates, theme, categories, onPreview }: Te
         {/* Heading */}
         <div className="mb-8 text-center">
           <p className="text-[11px] font-bold uppercase tracking-[0.15em]" style={{ color: theme.primaryButton }}>
-            Choose From Beautiful Templates
+            {t('templates.subtitle', 'Choose From Beautiful Templates')}
           </p>
           <h2 className="mt-2 text-2xl font-extrabold sm:text-3xl" style={{ color: theme.primaryText }}>
-            Stunning Templates for Every Occasion
+            {t('templates.title', 'Stunning Templates for Every Occasion')}
           </h2>
           <div className="mt-3 flex items-center justify-center gap-2">
             <span className="h-px w-8" style={{ backgroundColor: theme.primaryButton }} />
@@ -103,7 +107,7 @@ export function TemplatesSection({ templates, theme, categories, onPreview }: Te
         {/* Category pills */}
         <div className="mb-8 flex flex-wrap items-center justify-center gap-2">
           <CategoryPill
-            label="All Templates"
+            label={t('templates.all_categories', 'All Templates')}
             isActive={activeCategory === ALL_CATEGORY}
             theme={theme}
             onClick={() => setActiveCategory(ALL_CATEGORY)}
@@ -237,6 +241,7 @@ function TemplateCard({
   onToggleFavorite: () => void;
   onPreview?: (template: TemplateItem) => void;
 }) {
+  const { t } = useWebsiteBuilderTranslation();
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs transition hover:shadow-md">
       <div className="relative aspect-[3/4] w-full overflow-hidden bg-slate-100">
@@ -278,7 +283,7 @@ function TemplateCard({
             className="absolute left-1.5 top-1.5 rounded px-1.5 py-0.5 text-[9px] font-bold tracking-wide text-white shadow-sm"
             style={{ backgroundColor: theme.primaryButton }}
           >
-            ★ Popular
+            ★ {t('templates.popular', 'Popular')}
           </span>
         )}
       </div>
@@ -296,13 +301,19 @@ function TemplateCard({
         <button
           type="button"
           onClick={() => onPreview?.(template)}
-          className="flex w-full items-center justify-center gap-1 rounded-md border py-1 text-[11px] font-bold transition-colors hover:text-white"
+          className="flex w-full items-center justify-center gap-1 rounded-md border py-1 text-[11px] font-bold transition-colors"
           style={{ borderColor: theme.primaryButton, color: theme.primaryButton }}
-          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = theme.primaryButton)}
-          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = theme.primaryButton;
+            e.currentTarget.style.color = '#ffffff';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent';
+            e.currentTarget.style.color = theme.primaryButton;
+          }}
         >
           <Eye className="h-3 w-3" />
-          Preview
+          {t('templates.preview', 'Preview')}
         </button>
       </div>
     </div>

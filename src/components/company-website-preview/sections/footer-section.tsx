@@ -7,7 +7,10 @@ import { toast } from 'sonner';
 import type { FooterData, SocialLink, ThemeColors } from './preview-shared';
 import { isExternalHref } from './preview-shared';
 
+import { useWebsiteBuilderTranslation } from '@/hooks/use-website-builder-translation';
+
 function FooterSectionBase({ footer, socialLinks, theme, onNavigate }: { footer: FooterData; socialLinks: SocialLink[]; theme: ThemeColors; onNavigate: (href: string) => void }) {
+  const { t } = useWebsiteBuilderTranslation();
   const [newsletterEmail, setNewsletterEmail] = React.useState('');
   const [submitting, setSubmitting] = React.useState(false);
   const [, setIconsLoaded] = React.useState(false);
@@ -101,7 +104,7 @@ function FooterSectionBase({ footer, socialLinks, theme, onNavigate }: { footer:
         {/* Dynamic Quick Links Column 1 */}
         {quickLinks.length > 0 ? (
           <div>
-            <h3 className="text-[13px] font-bold uppercase tracking-wider text-slate-900">{footer.topListHeading || 'Quick Links'}</h3>
+            <h3 className="text-[13px] font-bold uppercase tracking-wider text-slate-900">{footer.topListHeading || t('footer.quick_links', 'Quick Links')}</h3>
             <ul className="mt-4 space-y-2.5 text-[12.5px] font-medium text-slate-600">
               {quickLinks.map((link) => (
                 <li key={`${link.label}-${link.href}`}>
@@ -123,7 +126,7 @@ function FooterSectionBase({ footer, socialLinks, theme, onNavigate }: { footer:
         {/* Dynamic Quick Links Column 2 (Near Column 1) */}
         {hasLinks2 ? (
           <div>
-            <h3 className="text-[13px] font-bold uppercase tracking-wider text-slate-900">{(footer as any).topListHeading2 || 'Company'}</h3>
+            <h3 className="text-[13px] font-bold uppercase tracking-wider text-slate-900">{(footer as any).topListHeading2 || t('footer.company', 'Company')}</h3>
             <ul className="mt-4 space-y-2.5 text-[12.5px] font-medium text-slate-600">
               {quickLinks2.map((link: any) => (
                 <li key={`${link.label}-${link.href}`}>
@@ -145,16 +148,16 @@ function FooterSectionBase({ footer, socialLinks, theme, onNavigate }: { footer:
         {/* Newsletter Column */}
         {footer.showNewsletter ? (
           <div>
-            <h3 className="text-[13px] font-bold uppercase tracking-wider text-slate-900">Newsletter</h3>
+            <h3 className="text-[13px] font-bold uppercase tracking-wider text-slate-900">{t('footer.newsletter', 'Newsletter')}</h3>
             <p className="mt-3 text-[12.5px] font-medium leading-relaxed text-slate-500">
-              Subscribe to get updates and offers
+              {t('footer.newsletter_subtitle', 'Subscribe to get updates and offers')}
             </p>
             <form className="mt-4 flex items-center gap-2" onSubmit={handleNewsletter}>
               <input
                 type="email"
                 value={newsletterEmail}
                 onChange={(e) => setNewsletterEmail(e.target.value)}
-                placeholder="Enter your email"
+                placeholder={t('footer.email_placeholder', 'Enter your email')}
                 disabled={submitting}
                 className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-[12.5px] text-slate-800 outline-none placeholder:text-slate-400 disabled:opacity-70 shadow-2xs"
               />
@@ -175,9 +178,9 @@ function FooterSectionBase({ footer, socialLinks, theme, onNavigate }: { footer:
       {/* Bottom bar */}
       <div className="border-t border-slate-100 bg-white">
         <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-2 px-4 py-4 text-[12px] font-medium text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
-          <p>{footer.copyright || `© ${new Date().getFullYear()} ${footer.companyName}. All Rights Reserved.`}</p>
+          <p>{footer.copyright || `© ${new Date().getFullYear()} ${footer.companyName}. ${t('footer.all_rights_reserved', 'All Rights Reserved.')}`}</p>
           <p className="flex items-center gap-1">
-            Made with <span className="text-rose-500">❤️</span> for your special moments
+            {t('footer.made_with', 'Made with')} <span className="text-rose-500">❤️</span> {t('footer.for_moments', 'for your special moments')}
           </p>
         </div>
       </div>

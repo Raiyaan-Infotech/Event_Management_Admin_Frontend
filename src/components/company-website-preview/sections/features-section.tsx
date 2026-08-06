@@ -78,7 +78,10 @@ const ACCENTS: { bg: string; fg: string }[] = [
   { bg: '#FEF3C7', fg: '#D97706' }, // amber
 ];
 
+import { useWebsiteBuilderTranslation } from '@/hooks/use-website-builder-translation';
+
 function FeaturesSectionBase({ features, theme }: { features: FeatureItem[]; theme: ThemeColors }) {
+  const { t } = useWebsiteBuilderTranslation();
   // Only ever render features where isActive resolves to true — inactive
   // features must never reach the grid, regardless of what the caller passed in.
   const activeFeatures = React.useMemo(
@@ -93,16 +96,16 @@ function FeaturesSectionBase({ features, theme }: { features: FeatureItem[]; the
       <div className="mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-8">
         <div className="mb-12 text-center">
           <span className="text-[12px] font-bold uppercase tracking-wider" style={{ color: theme.primaryButton }}>
-            Features
+            {t('features.title', 'Features')}
           </span>
           <h2
             className="mt-3 text-[28px] font-black leading-tight tracking-tight sm:text-[36px]"
             style={{ color: theme.primaryText }}
           >
-            All the Features You Need
+            {t('features.subtitle', 'All the Features You Need')}
           </h2>
           <p className="mx-auto mt-3 max-w-2xl text-[14px] font-medium" style={{ color: theme.paragraph }}>
-            Powerful tools to inspire, manage and enhance your event experience.
+            Everything you need to inspire, manage and enhance your event experience.
           </p>
         </div>
 
@@ -155,7 +158,7 @@ function FeaturesSectionBase({ features, theme }: { features: FeatureItem[]; the
                   className="mt-4 inline-flex items-center gap-1 text-[13px] font-bold transition-colors"
                   style={{ color: accent.fg }}
                 >
-                  {item.ctaLabel || 'View Feature'}
+                  {item.ctaLabel || t('features.view_details', 'View Feature')}
                   <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
                 </a>
               </div>

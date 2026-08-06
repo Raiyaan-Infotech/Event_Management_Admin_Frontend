@@ -11,7 +11,10 @@ function initials(name: string) {
   return name.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]).join('').toUpperCase();
 }
 
+import { useWebsiteBuilderTranslation } from '@/hooks/use-website-builder-translation';
+
 function TestimonialsSectionBase({ testimonials, theme }: { testimonials: Testimonial[]; theme: ThemeColors }) {
+  const { t } = useWebsiteBuilderTranslation();
   const [activeIndex, setActiveIndex] = React.useState(() => (testimonials.length > 1 ? 1 : 0));
   const canSlide = testimonials.length > 3;
 
@@ -41,8 +44,8 @@ function TestimonialsSectionBase({ testimonials, theme }: { testimonials: Testim
     <section id="testimonials" className="w-full border-t border-slate-100 bg-slate-50 py-16 sm:py-20">
       <div className="mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-8">
         <div className="mb-10 text-center">
-          <span className="mb-3 inline-flex rounded px-3 py-1 text-[12px] font-bold text-white" style={{ backgroundColor: theme.primaryButton }}>Testimonials</span>
-          <h2 className="mt-4 text-[28px] font-black leading-tight tracking-tight sm:text-[36px]" style={{ color: theme.primaryText }}>What Our Clients Say</h2>
+          <span className="mb-3 inline-flex rounded px-3 py-1 text-[12px] font-bold text-white" style={{ backgroundColor: theme.primaryButton }}>{t('testimonials.title', 'Testimonials')}</span>
+          <h2 className="mt-4 text-[28px] font-black leading-tight tracking-tight sm:text-[36px]" style={{ color: theme.primaryText }}>{t('testimonials.subtitle', 'What Our Clients Say')}</h2>
           <div className="mx-auto mt-3 h-[3px] w-12 rounded-full" style={{ backgroundColor: theme.primaryButton }} />
         </div>
 

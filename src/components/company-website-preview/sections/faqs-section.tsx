@@ -24,7 +24,10 @@ function cleanHtmlText(raw: string): string {
     .trim();
 }
 
+import { useWebsiteBuilderTranslation } from '@/hooks/use-website-builder-translation';
+
 function FaqsSectionBase({ faqs, theme }: { faqs: FaqItem[]; theme: ThemeColors }) {
+  const { t } = useWebsiteBuilderTranslation();
   const [openIds, setOpenIds] = React.useState<Record<number, boolean>>({});
 
   if (!faqs || !faqs.length) return null;
@@ -43,13 +46,13 @@ function FaqsSectionBase({ faqs, theme }: { faqs: FaqItem[]; theme: ThemeColors 
             className="text-[12px] font-bold uppercase tracking-wider"
             style={{ color: primaryBtnColor }}
           >
-            FAQ&apos;S
+            {t('faqs.title', "FAQ'S")}
           </span>
           <h2 className="mt-2 text-[28px] font-black leading-tight tracking-tight sm:text-[36px]" style={{ color: theme.primaryText }}>
-            Frequently Asked Questions
+            {t('faqs.title', 'Frequently Asked Questions')}
           </h2>
           <p className="mt-2 text-[14px] font-medium text-slate-500">
-            Find quick answers to common questions
+            {t('faqs.subtitle', 'Got questions? We have got answers.')}
           </p>
         </div>
 

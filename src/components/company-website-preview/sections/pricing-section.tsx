@@ -64,7 +64,10 @@ function formatPrice(currency: string, amount: number) {
   return `${currency}${Math.round(amount).toLocaleString('en-IN')}`;
 }
 
+import { useWebsiteBuilderTranslation } from '@/hooks/use-website-builder-translation';
+
 function PricingSectionBase({ plans, theme }: { plans: PricingPlan[]; theme: ThemeColors }) {
+  const { t } = useWebsiteBuilderTranslation();
   const [billing, setBilling] = React.useState<'monthly' | 'yearly'>('monthly');
 
   const groups = React.useMemo(() => {
@@ -110,8 +113,8 @@ function PricingSectionBase({ plans, theme }: { plans: PricingPlan[]; theme: The
                 className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[13px] font-bold text-white transition-colors"
                 style={billing === 'yearly' ? { backgroundColor: theme.primaryButton } : { color: theme.secondaryText, backgroundColor: 'transparent' }}
               >
-                Yearly Billing
-                <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-[10px]">Save up to 20%</span>
+                {t('pricing.yearly', 'Yearly Billing')}
+                <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-[10px]">{t('pricing.save_discount', 'Save up to 20%')}</span>
               </button>
             </div>
           </div>
@@ -152,7 +155,7 @@ function PricingSectionBase({ plans, theme }: { plans: PricingPlan[]; theme: The
                       ? Math.round(100 - (plan.priceYearly! / (plan.priceMonthly * 12)) * 100)
                       : 0;
 
-                  const ctaLabel = plan.priceMonthly === 0 ? 'Get Started Free' : `Choose ${plan.planName}`;
+                  const ctaLabel = plan.priceMonthly === 0 ? t('pricing.get_started', 'Get Started Free') : t('pricing.choose_plan', 'Choose {planName}', { planName: plan.planName });
 
                   return (
                     <div
@@ -169,7 +172,7 @@ function PricingSectionBase({ plans, theme }: { plans: PricingPlan[]; theme: The
                           className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-md px-4 py-1 text-[11px] font-black uppercase tracking-wider text-white shadow-sm"
                           style={{ backgroundColor: theme.primaryButton }}
                         >
-                          Most Popular
+                          {t('pricing.most_popular', 'Most Popular')}
                         </span>
                       )}
 
@@ -260,10 +263,16 @@ function PricingSectionBase({ plans, theme }: { plans: PricingPlan[]; theme: The
                         ) : (
                           <a
                             href="#contact"
-                            className="inline-flex h-11 w-full items-center justify-center rounded-md border text-[13px] font-bold transition-colors hover:text-white"
+                            className="inline-flex h-11 w-full items-center justify-center rounded-md border text-[13px] font-bold transition-colors"
                             style={{ borderColor: accent.fg, color: accent.fg }}
-                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = accent.fg)}
-                            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = accent.fg;
+                              e.currentTarget.style.color = '#ffffff';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'transparent';
+                              e.currentTarget.style.color = accent.fg;
+                            }}
                           >
                             {ctaLabel}
                           </a>
@@ -287,6 +296,7 @@ function PricingSectionBase({ plans, theme }: { plans: PricingPlan[]; theme: The
 import { usePricingMatrixFeaturesData } from '@/hooks/usePricingPlans';
 
 export function PlanFeaturesComparisonSection({ theme }: { theme: ThemeColors }) {
+  const { t } = useWebsiteBuilderTranslation();
   const { data: matrixFeatures = [] } = usePricingMatrixFeaturesData();
 
   const displayItems = matrixFeatures && matrixFeatures.length > 0 ? matrixFeatures : [
@@ -313,20 +323,20 @@ export function PlanFeaturesComparisonSection({ theme }: { theme: ThemeColors })
         {/* Left Column (Matching Image 4) */}
         <div className="space-y-3.5">
           <span className="inline-flex rounded-full bg-rose-100/80 px-3 py-1 text-[11px] font-extrabold text-rose-600">
-            All Plans Include
+            {t('pricing.all_plans_include', 'All Plans Include')}
           </span>
           <h3 className="text-[24px] font-black leading-tight tracking-tight text-slate-900" style={{ color: theme.primaryText }}>
-            Powerful Features in <span className="text-rose-500">Every Plan</span>
+            {t('pricing.matrix_title', 'Powerful Features in Every Plan')}
           </h3>
           <p className="text-[13px] font-medium leading-relaxed text-slate-600">
-            Everything you need to create, manage and share amazing events.
+            {t('pricing.matrix_subtitle', 'Everything you need to create, manage and share amazing events.')}
           </p>
           <a
             href="#contact"
             className="inline-flex h-9 items-center justify-center rounded-xl px-4 text-[12px] font-bold text-white shadow-xs transition hover:opacity-90 active:scale-95"
             style={{ backgroundColor: theme.primaryButton }}
           >
-            View All Features
+            {t('pricing.view_all_features', 'View All Features')}
           </a>
         </div>
 

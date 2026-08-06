@@ -6,7 +6,10 @@ import { Mail, MapPin, Phone } from 'lucide-react';
 import { toast } from 'sonner';
 import type { ContactData, SocialLink, ThemeColors } from './preview-shared';
 
+import { useWebsiteBuilderTranslation } from '@/hooks/use-website-builder-translation';
+
 function ContactSectionBase({ contact, theme }: { contact: ContactData; theme: ThemeColors }) {
+  const { t } = useWebsiteBuilderTranslation();
   const [formData, setFormData] = React.useState({ name: '', email: '', phone: '', category: '', message: '' });
   const [submitting, setSubmitting] = React.useState(false);
   const [, setIconsLoaded] = React.useState(false);
@@ -42,8 +45,8 @@ function ContactSectionBase({ contact, theme }: { contact: ContactData; theme: T
     <section id="contact" className="w-full border-t border-slate-100 bg-white py-16 sm:py-20">
       <div className="mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-8">
         <div className="mb-10 text-center">
-          <span className="mb-3 inline-flex rounded px-3 py-1 text-[12px] font-bold text-white" style={{ backgroundColor: theme.primaryButton }}>Contact Us</span>
-          <h2 className="mt-4 text-[28px] font-black leading-tight tracking-tight sm:text-[36px]" style={{ color: theme.primaryText }}>Get In Touch</h2>
+          <span className="mb-3 inline-flex rounded px-3 py-1 text-[12px] font-bold text-white" style={{ backgroundColor: theme.primaryButton }}>{t('header.contact', 'Contact Us')}</span>
+          <h2 className="mt-4 text-[28px] font-black leading-tight tracking-tight sm:text-[36px]" style={{ color: theme.primaryText }}>{t('contact.title', 'Get In Touch')}</h2>
           <div className="mx-auto mt-3 h-[3px] w-12 rounded-full" style={{ backgroundColor: theme.primaryButton }} />
         </div>
 
@@ -114,21 +117,21 @@ function ContactSectionBase({ contact, theme }: { contact: ContactData; theme: T
 
           {/* Form Column */}
           <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-slate-100 bg-slate-50/50 p-6 sm:p-7 shadow-xs">
-            <h3 className="text-[18px] font-black text-slate-900 mb-2" style={{ color: theme.primaryText }}>Send Us A Message</h3>
+            <h3 className="text-[18px] font-black text-slate-900 mb-2" style={{ color: theme.primaryText }}>{t('contact.subtitle', 'Send Us A Message')}</h3>
             <div className="grid gap-4 sm:grid-cols-2">
-              <input value={formData.name} onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))} placeholder="Your Name *" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[13px] text-slate-800 outline-none focus:border-slate-400 focus:ring-2 focus:ring-rose-500/20 shadow-2xs" required />
-              <input type="email" value={formData.email} onChange={(e) => setFormData((p) => ({ ...p, email: e.target.value }))} placeholder="Email Address *" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[13px] text-slate-800 outline-none focus:border-slate-400 focus:ring-2 focus:ring-rose-500/20 shadow-2xs" required />
+              <input value={formData.name} onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))} placeholder={`${t('contact.full_name', 'Full Name')} *`} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[13px] text-slate-800 outline-none focus:border-slate-400 focus:ring-2 focus:ring-rose-500/20 shadow-2xs" required />
+              <input type="email" value={formData.email} onChange={(e) => setFormData((p) => ({ ...p, email: e.target.value }))} placeholder={`${t('contact.email_address', 'Email Address')} *`} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[13px] text-slate-800 outline-none focus:border-slate-400 focus:ring-2 focus:ring-rose-500/20 shadow-2xs" required />
             </div>
-            <input value={formData.phone} onChange={(e) => setFormData((p) => ({ ...p, phone: e.target.value }))} placeholder="Phone Number" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[13px] text-slate-800 outline-none focus:border-slate-400 focus:ring-2 focus:ring-rose-500/20 shadow-2xs" />
+            <input value={formData.phone} onChange={(e) => setFormData((p) => ({ ...p, phone: e.target.value }))} placeholder={t('contact.phone_number', 'Phone Number')} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[13px] text-slate-800 outline-none focus:border-slate-400 focus:ring-2 focus:ring-rose-500/20 shadow-2xs" />
             {contact.categories && contact.categories.length ? (
               <select value={formData.category} onChange={(e) => setFormData((p) => ({ ...p, category: e.target.value }))} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[13px] text-slate-800 outline-none focus:border-slate-400 focus:ring-2 focus:ring-rose-500/20 shadow-2xs">
                 <option value="">Select Category</option>
                 {contact.categories.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
               </select>
             ) : null}
-            <textarea value={formData.message} onChange={(e) => setFormData((p) => ({ ...p, message: e.target.value }))} placeholder="Your Message *" rows={4} className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-[13px] text-slate-800 outline-none focus:border-slate-400 focus:ring-2 focus:ring-rose-500/20 resize-none shadow-2xs" required />
+            <textarea value={formData.message} onChange={(e) => setFormData((p) => ({ ...p, message: e.target.value }))} placeholder={`${t('contact.message', 'Your Message')} *`} rows={4} className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-[13px] text-slate-800 outline-none focus:border-slate-400 focus:ring-2 focus:ring-rose-500/20 resize-none shadow-2xs" required />
             <button type="submit" disabled={submitting} className="h-11 w-full rounded-xl text-[13px] font-bold text-white transition hover:opacity-90 active:scale-95 disabled:opacity-70 shadow-xs" style={{ backgroundColor: theme.primaryButton }}>
-              {submitting ? 'Sending...' : 'Send Message'}
+              {submitting ? 'Sending...' : t('contact.send_message', 'Send Message')}
             </button>
           </form>
         </div>
