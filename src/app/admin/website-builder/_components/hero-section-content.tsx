@@ -16,6 +16,7 @@ import {
     HelpCircle,
     Loader2,
     Eye,
+    ArrowLeft,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -31,6 +32,12 @@ import { BuilderCountedInput, BuilderCountedTextarea } from './builder-field';
 import { MediaCropDialog } from '@/components/common/media-crop-dialog';
 import { ConfirmResetDialog } from '@/components/common/confirm-reset-dialog';
 import { useCompanyHeroSection } from '@/hooks/useCompanyWebsiteBuilder';
+import { TranslationSideCard, type TranslatableField } from './translation-side-card';
+import { TranslationModeBanner } from './translation-mode-banner';
+import { useSectionTranslation, handleTranslationSave } from '@/hooks/useSectionTranslation';
+import {
+    useRegisterTranslationKeys,
+} from '@/hooks/useWebsiteBuilderTranslations';
 import { mediaApi } from '@/hooks/use-media';
 import { PageLoader } from '@/components/common/page-loader';
 import { cn } from '@/lib/utils';
@@ -62,7 +69,16 @@ export function HeroSectionContent({ pageSlug = 'home' }: HeroSectionContentProp
     const activePageSlug = urlPage || pageSlug || 'home';
     const activePageTitle = PAGES_CONFIG.find((p) => p.slug === activePageSlug)?.title || 'Home Page';
 
+    const langParam = searchParams.get('lang');
+    const activeLanguageId = langParam ? Number(langParam) : null;
+
     const { data: heroData, isLoading, save, isSaving } = useCompanyHeroSection(activePageSlug);
+    const registerTranslationKeys = useRegisterTranslationKeys();
+
+    // Translations are keyed by the hero row's id — must match what the backend
+    // content scan registers, otherwise saved translations won't be found.
+    const heroRecordId = heroData?.id;
+
 
     const [previewOpen, setPreviewOpen] = useState(false);
     const [resetDialogOpen, setResetDialogOpen] = useState(false);
@@ -162,6 +178,10 @@ export function HeroSectionContent({ pageSlug = 'home' }: HeroSectionContentProp
     }, [heroData, activePageSlug]);
 
     const handleSave = async () => {
+        // Translation mode: only the text fields exist per-language — everything
+        // else (image, colors, layout) is shared and edited from the English version.
+        if (await handleTranslationSave(translation, activePageTitle)) return;
+
         try {
             await save({
                 page_slug: activePageSlug,
@@ -178,11 +198,47 @@ export function HeroSectionContent({ pageSlug = 'home' }: HeroSectionContentProp
                 button_1_json: { enabled: btn1Enabled, label: btn1Label, style: btn1Style, url: btn1CustomUrl },
                 button_2_json: { enabled: btn2Enabled, label: btn2Label, style: btn2Style, url: btn2CustomUrl },
             });
+
+            // Register/refresh the translation key catalog so the language
+            // side card and auto-translate always see this section's current fields.
+            registerTranslationKeys.mutate({
+                section: 'hero-section',
+                page_slug: activePageSlug,
+                record_id: heroRecordId,
+                fields: [
+                    { key: 'badge_text', label: 'Badge Text', type: 'input', value: badgeText },
+                    { key: 'title', label: 'Title', type: 'input', value: title },
+                    { key: 'description', label: 'Description', type: 'textarea', value: description },
+                    { key: 'button_1_label', label: 'Button 1 Label', type: 'input', value: btn1Label },
+                    { key: 'button_2_label', label: 'Button 2 Label', type: 'input', value: btn2Label },
+                ],
+            });
+
             toast.success(`Hero section settings for ${activePageTitle} saved successfully`);
         } catch (err: any) {
             toast.error(err?.message || 'Failed to save hero section');
         }
     };
+
+    const translatableFields: TranslatableField[] = [
+        { key: 'badge_text', label: 'Badge Text', value: badgeText, type: 'input', maxLength: 60 },
+        { key: 'title', label: 'Title', value: title, type: 'input', maxLength: 120 },
+        { key: 'description', label: 'Description', value: description, type: 'textarea', maxLength: 300 },
+        { key: 'button_1_label', label: 'Button 1 Label', value: btn1Label, type: 'input', maxLength: 40 },
+        { key: 'button_2_label', label: 'Button 2 Label', value: btn2Label, type: 'input', maxLength: 40 },
+    ];
+
+    // Shared per-form translation mode — same hook every other section uses, so
+    // Hero gets the full-screen progress loader and identical behaviour.
+    const translation = useSectionTranslation({
+        section: 'hero-section',
+        pageSlug: activePageSlug,
+        recordId: heroRecordId,
+        fields: translatableFields,
+    });
+    const activeLanguage = translation.activeLanguage;
+    const isTranslationMode = translation.isTranslationMode;
+
     // Mobile Settings
     const [hideBtn2Mobile, setHideBtn2Mobile] = useState(false);
     const [centerMobile, setCenterMobile] = useState(true);
@@ -228,15 +284,27 @@ export function HeroSectionContent({ pageSlug = 'home' }: HeroSectionContentProp
         setContentAlign('left');
         toast.info('Hero Section settings reset.');
     };
+
+    const isSavingAny = isSaving || translation.isSaving;
+
     return (
         <div className="space-y-4">
-            <PageLoader open={isSaving || isLoading} text={`Loading ${activePageTitle} Hero Section...`} />
+            <PageLoader open={isSavingAny || isLoading} text={`Loading ${activePageTitle} Hero Section...`} />
 
             {/* Header */}
             <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-3.5">
                 <div>
-                    <h1 className="mt-1 text-xl font-bold tracking-tight">Hero Section — {activePageTitle}</h1>
-                    <p className="text-xs text-muted-foreground">Manage your website hero section and Hero Section settings for {activePageTitle}.</p>
+                    <h1 className="mt-1 text-xl font-bold tracking-tight">
+                        Hero Section — {activePageTitle}
+                        {isTranslationMode && activeLanguage && (
+                            <span className="ml-2 text-primary">({activeLanguage.name})</span>
+                        )}
+                    </h1>
+                    <p className="text-xs text-muted-foreground">
+                        {isTranslationMode
+                            ? `Translating this section's text into ${activeLanguage?.name}.`
+                            : `Manage your website hero section and Hero Section settings for ${activePageTitle}.`}
+                    </p>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -251,16 +319,21 @@ export function HeroSectionContent({ pageSlug = 'home' }: HeroSectionContentProp
                     <Button variant="outline" size="sm" onClick={() => toast.info('Configure homepage hero title, subtitle, CTA buttons, and background banner.')} className="h-8 px-3 text-xs font-semibold text-slate-600 border-slate-200 hover:bg-slate-50">
                         <HelpCircle className="h-3.5 w-3.5 text-slate-400 mr-1" /> How It Works
                     </Button>
-                    <Button type="button" variant="outline" size="sm" onClick={() => setResetDialogOpen(true)} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
-                        <RotateCcw className="h-3.5 w-3.5 text-rose-500 mr-1" /> Reset
-                    </Button>
-                    <Button type="button" size="sm" onClick={handleSave} disabled={isSaving} className="h-8 px-4 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs">
-                        {isSaving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
-                        {isSaving ? 'Saving...' : 'Save Changes'}
+                    {!isTranslationMode && (
+                        <Button type="button" variant="outline" size="sm" onClick={() => setResetDialogOpen(true)} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
+                            <RotateCcw className="h-3.5 w-3.5 text-rose-500 mr-1" /> Reset
+                        </Button>
+                    )}
+                    <Button type="button" size="sm" onClick={handleSave} disabled={isSavingAny} className="h-8 px-4 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs">
+                        {isSavingAny ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+                        {isSavingAny ? 'Saving...' : 'Save Changes'}
                     </Button>
                 </div>
             </div>
 
+            {/* Translation Mode Banner (shared component: carries the
+                full-screen progress loader for auto-translate) */}
+            <TranslationModeBanner translation={translation} label={activePageTitle} />
             {/* Page Navigation Tabs */}
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b">
                 {PAGES_CONFIG.map((p) => {
@@ -294,8 +367,8 @@ export function HeroSectionContent({ pageSlug = 'home' }: HeroSectionContentProp
                             <CardTitle className="text-xs font-bold text-slate-800">Hero Content</CardTitle>
                         </CardHeader>
                         <CardContent className="p-3 space-y-2.5">
-                            {/* Hero Image Upload Box */}
-                            <div className="space-y-1">
+                            {/* Hero Image Upload Box — shared across all languages, edit from English */}
+                            <div className={cn('space-y-1', isTranslationMode && 'opacity-50 pointer-events-none')}>
                                 <Label className="text-[9px] font-black uppercase tracking-wider text-slate-500">HERO IMAGE</Label>
                                 {heroImage ? (
                                     <div className="relative rounded-lg overflow-hidden border bg-card p-1.5 flex items-center gap-2.5">
@@ -347,24 +420,21 @@ export function HeroSectionContent({ pageSlug = 'home' }: HeroSectionContentProp
 
                             <BuilderCountedInput
                                 label="Badge Text (Optional)"
-                                value={badgeText}
-                                onChange={setBadgeText}
+                                {...translation.bind('badge_text', badgeText, setBadgeText)}
                                 maxLength={50}
                                 inputClassName="!h-7.5 text-xs"
                             />
 
                             <BuilderCountedInput
                                 label="Title *"
-                                value={title}
-                                onChange={setTitle}
+                                {...translation.bind('title', title, setTitle)}
                                 maxLength={70}
                                 inputClassName="!h-7.5 text-xs"
                             />
 
                             <BuilderCountedTextarea
                                 label="Description"
-                                value={description}
-                                onChange={setDescription}
+                                {...translation.bind('description', description, setDescription)}
                                 maxLength={300}
                                 textareaClassName="!min-h-[52px] !max-h-[52px] text-xs resize-none"
                             />
@@ -375,19 +445,18 @@ export function HeroSectionContent({ pageSlug = 'home' }: HeroSectionContentProp
                     <Card className="shadow-xs border-slate-200">
                         <CardHeader className="py-2 px-3 border-b flex flex-row items-center justify-between space-y-0">
                             <CardTitle className="text-xs font-bold text-slate-800">Button 1 (Primary CTA)</CardTitle>
-                            <Switch checked={btn1Enabled} onCheckedChange={setBtn1Enabled} />
+                            <Switch checked={btn1Enabled} onCheckedChange={setBtn1Enabled} disabled={isTranslationMode} />
                         </CardHeader>
                         {btn1Enabled && (
                             <CardContent className="p-3 space-y-2">
                                 <BuilderCountedInput
                                     label="Label"
-                                    value={btn1Label}
-                                    onChange={setBtn1Label}
+                                    {...translation.bind('button_1_label', btn1Label, setBtn1Label)}
                                     maxLength={30}
                                     inputClassName="!h-7.5 text-xs"
                                 />
 
-                                <div className="space-y-1">
+                                <div className={cn('space-y-1', isTranslationMode && 'opacity-50 pointer-events-none')}>
                                     <Label className="text-[10px] font-semibold text-slate-600">Style</Label>
                                     <Select value={btn1Style} onValueChange={(val: ButtonStyle) => setBtn1Style(val)}>
                                         <SelectTrigger className="h-7.5 text-xs border-slate-200"><SelectValue /></SelectTrigger>
@@ -399,32 +468,34 @@ export function HeroSectionContent({ pageSlug = 'home' }: HeroSectionContentProp
                                     </Select>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-2 p-1 rounded-lg bg-slate-100/70 border border-slate-200 text-xs">
-                                    <button
-                                        type="button"
-                                        onClick={() => setBtn1TargetMode('page')}
-                                        className={cn('flex items-center justify-center gap-1 py-0.5 rounded-md font-semibold text-[11px] transition-all', btn1TargetMode === 'page' ? 'bg-white text-blue-600 shadow-xs border border-blue-600/30' : 'text-slate-500')}
-                                    >
-                                        <span className={cn('h-2 w-2 rounded-full border', btn1TargetMode === 'page' ? 'bg-blue-600 border-blue-600' : 'border-slate-400')} /> Page
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setBtn1TargetMode('custom')}
-                                        className={cn('flex items-center justify-center gap-1 py-0.5 rounded-md font-semibold text-[11px] transition-all', btn1TargetMode === 'custom' ? 'bg-white text-blue-600 shadow-xs border border-blue-600/30' : 'text-slate-500')}
-                                    >
-                                        <span className={cn('h-2 w-2 rounded-full border', btn1TargetMode === 'custom' ? 'bg-blue-600 border-blue-600' : 'border-slate-400')} /> Custom
-                                    </button>
-                                </div>
+                                <div className={cn('space-y-2', isTranslationMode && 'opacity-50 pointer-events-none')}>
+                                    <div className="grid grid-cols-2 gap-2 p-1 rounded-lg bg-slate-100/70 border border-slate-200 text-xs">
+                                        <button
+                                            type="button"
+                                            onClick={() => setBtn1TargetMode('page')}
+                                            className={cn('flex items-center justify-center gap-1 py-0.5 rounded-md font-semibold text-[11px] transition-all', btn1TargetMode === 'page' ? 'bg-white text-blue-600 shadow-xs border border-blue-600/30' : 'text-slate-500')}
+                                        >
+                                            <span className={cn('h-2 w-2 rounded-full border', btn1TargetMode === 'page' ? 'bg-blue-600 border-blue-600' : 'border-slate-400')} /> Page
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setBtn1TargetMode('custom')}
+                                            className={cn('flex items-center justify-center gap-1 py-0.5 rounded-md font-semibold text-[11px] transition-all', btn1TargetMode === 'custom' ? 'bg-white text-blue-600 shadow-xs border border-blue-600/30' : 'text-slate-500')}
+                                        >
+                                            <span className={cn('h-2 w-2 rounded-full border', btn1TargetMode === 'custom' ? 'bg-blue-600 border-blue-600' : 'border-slate-400')} /> Custom
+                                        </button>
+                                    </div>
 
-                                {btn1TargetMode === 'custom' && (
-                                    <BuilderCountedInput
-                                        label="Custom URL"
-                                        value={btn1CustomUrl}
-                                        onChange={setBtn1CustomUrl}
-                                        maxLength={200}
-                                        inputClassName="!h-7.5 text-xs"
-                                    />
-                                )}
+                                    {btn1TargetMode === 'custom' && (
+                                        <BuilderCountedInput
+                                            label="Custom URL"
+                                            value={btn1CustomUrl}
+                                            onChange={setBtn1CustomUrl}
+                                            maxLength={200}
+                                            inputClassName="!h-7.5 text-xs"
+                                        />
+                                    )}
+                                </div>
                             </CardContent>
                         )}
                     </Card>
@@ -433,18 +504,18 @@ export function HeroSectionContent({ pageSlug = 'home' }: HeroSectionContentProp
                     <Card className="shadow-xs border-slate-200">
                         <CardHeader className="py-2 px-3 border-b flex flex-row items-center justify-between space-y-0">
                             <CardTitle className="text-xs font-bold text-slate-800">Button 2 (Optional CTA)</CardTitle>
-                            <Switch checked={btn2Enabled} onCheckedChange={setBtn2Enabled} />
+                            <Switch checked={btn2Enabled} onCheckedChange={setBtn2Enabled} disabled={isTranslationMode} />
                         </CardHeader>
                         {btn2Enabled && (
                             <CardContent className="p-3 space-y-2">
                                 <BuilderCountedInput
                                     label="Label"
-                                    value={btn2Label}
-                                    onChange={setBtn2Label}
+                                    {...translation.bind('button_2_label', btn2Label, setBtn2Label)}
                                     maxLength={30}
                                     inputClassName="!h-7.5 text-xs"
                                 />
 
+                                <div className={cn('space-y-2', isTranslationMode && 'opacity-50 pointer-events-none')}>
                                 <div className="space-y-1">
                                     <Label className="text-[10px] font-semibold text-slate-600">Style</Label>
                                     <Select value={btn2Style} onValueChange={(val: ButtonStyle) => setBtn2Style(val)}>
@@ -500,6 +571,7 @@ export function HeroSectionContent({ pageSlug = 'home' }: HeroSectionContentProp
                                         inputClassName="!h-7.5 text-xs"
                                     />
                                 )}
+                                </div>
                             </CardContent>
                         )}
                     </Card>
@@ -507,6 +579,24 @@ export function HeroSectionContent({ pageSlug = 'home' }: HeroSectionContentProp
 
                 {/* Column 2: Height, Overlay, Mobile, Layout & Alignment (6 Cols) */}
                 <div className="xl:col-span-6 space-y-4">
+                    {/* Translations Side Card */}
+                    <TranslationSideCard
+                        section="hero-section"
+                        pageSlug={activePageSlug}
+                        recordId={heroRecordId}
+                        fields={translatableFields}
+                        activeLanguageId={activeLanguageId}
+                        buildHref={(languageId) => {
+                            const params = new URLSearchParams();
+                            params.set('page', activePageSlug);
+                            if (languageId) params.set('lang', String(languageId));
+                            return `/admin/website-builder/hero-section?${params.toString()}`;
+                        }}
+                    />
+
+                    {/* The cards below are shared across all languages — disabled while translating */}
+                    <div className={cn('space-y-4', isTranslationMode && 'opacity-50 pointer-events-none')}>
+
                     {/* Hero Height Card */}
                     <Card className="shadow-xs border-slate-200">
                         <CardHeader className="py-2 px-3 border-b">
@@ -669,6 +759,7 @@ export function HeroSectionContent({ pageSlug = 'home' }: HeroSectionContentProp
                             </div>
                         </CardContent>
                     </Card>
+                    </div>
                 </div>
             </div>
 

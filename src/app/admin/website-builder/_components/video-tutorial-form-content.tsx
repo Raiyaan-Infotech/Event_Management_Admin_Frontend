@@ -42,6 +42,9 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { useSectionTranslation, handleTranslationSave } from '@/hooks/useSectionTranslation';
+import { TranslationSideCard } from './translation-side-card';
+import { TranslationModeBanner } from './translation-mode-banner';
 
 interface VideoTutorialFormContentProps {
     id?: number;
@@ -131,6 +134,24 @@ export function VideoTutorialFormContent({ id }: VideoTutorialFormContentProps) 
 
     const isSaving = createMutation.isPending || updateMutation.isPending;
 
+    // Per-form translation mode (?lang=<id>), same as Hero Section.
+    // Field keys match the `video-tutorials` entry in the backend
+    // FIELD_CATALOG, registered at page_slug='' with the row id as record_id.
+    const translationFields = [
+        { key: 'title', label: 'Title', type: 'input' as const, value: title },
+        { key: 'short_description', label: 'Short Description', type: 'textarea' as const, value: shortDescription },
+        { key: 'key_takeaways', label: 'Key Takeaways', type: 'textarea' as const, value: keyTakeaways },
+    ];
+    const translation = useSectionTranslation({
+        section: 'video-tutorials',
+        recordId: id,
+        fields: translationFields,
+    });
+    const { isTranslationMode, bind } = translation;
+    // Video URL, thumbnail, category, difficulty and status are shared across
+    // languages - they are edited from the English version only.
+    const sharedOnly = cn(isTranslationMode && 'opacity-50 pointer-events-none');
+
     // Handle File Uploads
     const handleThumbnailUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -167,7 +188,10 @@ export function VideoTutorialFormContent({ id }: VideoTutorialFormContentProps) 
     };
 
     // Save Handler
-    const handleSave = (asDraft: boolean = false) => {
+    const handleSave = async (asDraft: boolean = false) => {
+        // In translation mode only the translated text is written; the tutorial
+        // row is untouched, so the English validation below does not apply.
+        if (await handleTranslationSave(translation, 'Video Tutorial')) return;
         const newErr: Record<string, string> = {};
         if (!title.trim()) newErr.title = 'Tutorial title is required';
         if (!shortDescription.trim()) newErr.short_description = 'Short description is required';
@@ -262,6 +286,9 @@ export function VideoTutorialFormContent({ id }: VideoTutorialFormContentProps) 
                     </div>
                     <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
                         {isEdit ? 'Edit Video Tutorial' : 'Add Video Tutorial'}
+                        {isTranslationMode && translation.activeLanguage && (
+                            <span className="ml-2 text-primary">({translation.activeLanguage.name})</span>
+                        )}
                     </h1>
                     <p className="text-xs text-muted-foreground mt-0.5">
                         Upload and manage step-by-step video tutorials to help your users learn.
@@ -277,6 +304,26 @@ export function VideoTutorialFormContent({ id }: VideoTutorialFormContentProps) 
                     Back to Tutorials
                 </Button>
             </div>
+
+            {/* Languages + translation mode - only once the tutorial exists,
+                since a translation slot is addressed by the saved row's id. */}
+            {isEdit && id ? (
+                <div className="flex flex-col gap-3">
+                    <div className="w-full self-end lg:w-72">
+                        <TranslationSideCard
+                            section="video-tutorials"
+                            recordId={id}
+                            activeLanguageId={translation.activeLanguage?.id ?? null}
+                            buildHref={translation.buildHref}
+                        canTranslate={translation.canTranslate}
+                            fields={translationFields}
+                        />
+                    </div>
+                    <div className="order-first min-w-0">
+                        <TranslationModeBanner translation={translation} label="this tutorial" />
+                    </div>
+                </div>
+            ) : null}
 
             {/* Main Form 2-Column Workspace Layout */}
             <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
@@ -298,13 +345,12 @@ export function VideoTutorialFormContent({ id }: VideoTutorialFormContentProps) 
                                     Title <span className="text-rose-500">*</span>
                                 </Label>
                                 <BuilderCountedInput
-                                    value={title}
-                                    onChange={(val) => {
+                                    {...bind('title', title, (val) => {
                                         setTitle(val);
                                         if (errors.title) setErrors((e) => ({ ...e, title: '' }));
-                                    }}
+                                    })}
                                     maxLength={100}
-                                    placeholder="Enter tutorial title..."
+                                    placeholder={isTranslationMode ? title : 'Enter tutorial title...'}
                                     className="bg-background text-xs border-border"
                                     inputClassName={cn(errors.title && 'border-red-500 ring-1 ring-red-500 bg-red-50/10')}
                                 />
@@ -318,14 +364,13 @@ export function VideoTutorialFormContent({ id }: VideoTutorialFormContentProps) 
                                     Short Description <span className="text-rose-500">*</span>
                                 </Label>
                                 <BuilderCountedTextarea
-                                    value={shortDescription}
-                                    onChange={(val) => {
+                                    {...bind('short_description', shortDescription, (val) => {
                                         setShortDescription(val);
                                         if (errors.short_description) setErrors((e) => ({ ...e, short_description: '' }));
-                                    }}
+                                    })}
                                     maxLength={200}
                                     rows={3}
-                                    placeholder="Enter a brief description about this tutorial..."
+                                    placeholder={isTranslationMode ? shortDescription : 'Enter a brief description about this tutorial...'}
                                     className="bg-background text-xs border-border"
                                     textareaClassName={cn(errors.short_description && 'border-red-500 ring-1 ring-red-500 bg-red-50/10')}
                                 />
@@ -593,11 +638,10 @@ export function VideoTutorialFormContent({ id }: VideoTutorialFormContentProps) 
                                     What You'll Learn (Key Takeaways)
                                 </Label>
                                 <BuilderCountedTextarea
-                                    value={keyTakeaways}
-                                    onChange={setKeyTakeaways}
+                                    {...bind('key_takeaways', keyTakeaways, setKeyTakeaways)}
                                     maxLength={300}
                                     rows={3}
-                                    placeholder="Enter key points users will learn from this tutorial..."
+                                    placeholder={isTranslationMode ? keyTakeaways : 'Enter key points users will learn from this tutorial...'}
                                     className="bg-background text-xs border-border"
                                 />
                                 <p className="text-[11px] text-muted-foreground">List the main outcomes or takeaways from this tutorial.</p>
@@ -758,7 +802,7 @@ export function VideoTutorialFormContent({ id }: VideoTutorialFormContentProps) 
                     type="button"
                     variant="outline"
                     onClick={() => handleSave(true)}
-                    disabled={isSaving}
+                    disabled={isSaving || translation.isSaving || isTranslationMode}
                     className="h-10 px-5 text-xs font-bold border-rose-300 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 cursor-pointer gap-2"
                 >
                     Save as Draft
@@ -767,7 +811,7 @@ export function VideoTutorialFormContent({ id }: VideoTutorialFormContentProps) 
                 <Button
                     type="button"
                     onClick={() => handleSave(false)}
-                    disabled={isSaving}
+                    disabled={isSaving || translation.isSaving}
                     className="h-10 px-6 text-xs font-extrabold bg-primary hover:bg-primary/90 text-primary-foreground shadow-md cursor-pointer gap-2"
                 >
                     {isSaving ? (

@@ -19,11 +19,26 @@ type Props = {
   onNavigate: (href: string) => void;
 };
 
-import { useWebsiteBuilderTranslation } from '@/hooks/use-website-builder-translation';
+import { useWebsiteLanguage } from '../website-language-provider';
 
 function HeaderSectionBase({ theme, header, navItems, socialLinks, companyName, companyLogo, phone, email, activeKey, onNavigate }: Props) {
-  const { t, language, setLanguage } = useWebsiteBuilderTranslation();
+  // Site language, not the admin panel's — see website-language-provider.
+  const { t, language, setLanguage, languages } = useWebsiteLanguage();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const [langMenuOpen, setLangMenuOpen] = React.useState(false);
+  const langMenuRef = React.useRef<HTMLDivElement>(null);
+
+  const activeLanguage = languages.find((lang) => lang.code === language) || languages[0] || null;
+
+  React.useEffect(() => {
+    if (!langMenuOpen) return;
+    const close = (event: MouseEvent) => {
+      if (!langMenuRef.current?.contains(event.target as Node)) setLangMenuOpen(false);
+    };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [langMenuOpen]);
+
   const [, setIconsLoaded] = React.useState(false);
 
   // Explicitly preload social icons from Iconify API (https://api.iconify.design)
@@ -180,16 +195,50 @@ function HeaderSectionBase({ theme, header, navItems, socialLinks, companyName, 
 
           {/* Auth & Language buttons */}
           <div className="hidden sm:flex items-center gap-2 sm:gap-2.5 shrink-0">
-            {/* Globe Language selector */}
-            <button
-              type="button"
-              onClick={() => setLanguage(language === 'en' ? 'hi' : 'en')}
-              className="hidden md:flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[12px] font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 cursor-pointer transition active:scale-95"
-            >
-              <Globe className="h-3.5 w-3.5 text-slate-500" />
-              <span>{language === 'en' ? 'English' : 'हिन्दी'}</span>
-              <ChevronDown className="h-3 w-3 text-slate-400" />
-            </button>
+            {/* Globe Language selector — options come from the Website Builder
+                Languages module (active languages only), not a hardcoded list.
+                Hidden entirely when the site has only one language. */}
+            {languages.length > 1 && (
+              <div className="relative hidden md:block" ref={langMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setLangMenuOpen((open) => !open)}
+                  aria-haspopup="listbox"
+                  aria-expanded={langMenuOpen}
+                  className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[12px] font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 cursor-pointer transition active:scale-95"
+                >
+                  <Globe className="h-3.5 w-3.5 text-slate-500" />
+                  <span>{activeLanguage?.native_name || activeLanguage?.name || 'English'}</span>
+                  <ChevronDown className="h-3 w-3 text-slate-400" />
+                </button>
+
+                {langMenuOpen && (
+                  <div
+                    role="listbox"
+                    className="absolute right-0 z-50 mt-1.5 min-w-[10rem] overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg"
+                  >
+                    {languages.map((lang) => (
+                      <button
+                        key={lang.id}
+                        type="button"
+                        role="option"
+                        aria-selected={lang.code === language}
+                        onClick={() => {
+                          setLanguage(lang.code);
+                          setLangMenuOpen(false);
+                        }}
+                        className={`flex w-full items-center justify-between gap-3 px-3 py-1.5 text-left text-[12px] transition hover:bg-slate-50 ${
+                          lang.code === language ? 'font-bold text-slate-900' : 'font-medium text-slate-600'
+                        }`}
+                      >
+                        <span className="truncate">{lang.native_name || lang.name}</span>
+                        {lang.code === language && <span className="text-[10px] text-slate-400">✓</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Login button */}
             <button

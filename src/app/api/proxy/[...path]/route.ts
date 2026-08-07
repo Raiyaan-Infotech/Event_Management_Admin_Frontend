@@ -102,6 +102,25 @@ async function forwardRequest(request: NextRequest, path: string, method: string
       setCookieHeaders.forEach((cookie) => responseHeaders.append('Set-Cookie', cookie));
     }
 
+    // Server-Sent Events must be piped through, not buffered. `.blob()` waits
+    // for the whole body, which would deliver every progress event at once when
+    // the run finishes — defeating the point of streaming.
+    const isEventStream = (backendResponse.headers.get('content-type') || '')
+      .toLowerCase()
+      .includes('text/event-stream');
+
+    if (isEventStream && backendResponse.body) {
+      // Proxies buffer by default; these headers keep the stream flowing.
+      responseHeaders.set('Cache-Control', 'no-cache, no-transform');
+      responseHeaders.set('Connection', 'keep-alive');
+      responseHeaders.set('X-Accel-Buffering', 'no');
+      return new NextResponse(backendResponse.body, {
+        status: backendResponse.status,
+        statusText: backendResponse.statusText,
+        headers: responseHeaders,
+      });
+    }
+
     const responseData = await backendResponse.blob();
     return new NextResponse(responseData, {
       status: backendResponse.status,

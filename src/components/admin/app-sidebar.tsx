@@ -42,6 +42,7 @@ import {
   Plus,
   Sparkles,
   Lock,
+  Languages,
 } from "lucide-react";
 import {
   Sidebar,
@@ -319,6 +320,8 @@ const menuItems: MenuItem[] = [
       },
       // ── GENERAL SETTINGS (flat, no parent group) ──────────────────────
       { labelKey: "Web UI Block", href: "/admin/website-builder/ui-block", icon: LayoutGrid },
+      { labelKey: "Languages", href: "/admin/website-builder/languages", icon: Languages },
+      { labelKey: "Translations", href: "/admin/website-builder/translations", icon: Globe },
       { labelKey: "Theme Color", href: "/admin/website-builder/theme-color", icon: Palette, uiBlockKey: "theme-color" },
       { labelKey: "SEO Settings", href: "/admin/website-builder/seo", icon: Search, uiBlockKey: "seo" },
       { labelKey: "Login Page", href: "/admin/website-builder/login-page", icon: LogIn, uiBlockKey: "login-page" },

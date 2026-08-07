@@ -61,10 +61,10 @@ function DynamicStepGraphic({ step, theme }: { step: StepItem; theme: ThemeColor
   );
 }
 
-import { useWebsiteBuilderTranslation } from '@/hooks/use-website-builder-translation';
+import { useWebsiteLanguage } from '../website-language-provider';
 
 function HowItWorksSectionBase({ steps, theme }: { steps: StepItem[]; theme: ThemeColors }) {
-  const { t } = useWebsiteBuilderTranslation();
+  const { t } = useWebsiteLanguage();
   if (!steps || !steps.length) return null;
 
   return (

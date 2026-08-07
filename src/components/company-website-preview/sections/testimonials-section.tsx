@@ -11,10 +11,10 @@ function initials(name: string) {
   return name.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]).join('').toUpperCase();
 }
 
-import { useWebsiteBuilderTranslation } from '@/hooks/use-website-builder-translation';
+import { useWebsiteLanguage } from '../website-language-provider';
 
 function TestimonialsSectionBase({ testimonials, theme }: { testimonials: Testimonial[]; theme: ThemeColors }) {
-  const { t } = useWebsiteBuilderTranslation();
+  const { t } = useWebsiteLanguage();
   const [activeIndex, setActiveIndex] = React.useState(() => (testimonials.length > 1 ? 1 : 0));
   const canSlide = testimonials.length > 3;
 

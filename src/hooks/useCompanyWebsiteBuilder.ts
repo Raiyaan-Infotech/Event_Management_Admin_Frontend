@@ -232,7 +232,10 @@ export const useCompanyHeroSection = (pageSlug: string = 'home') => {
       } catch (e) {}
 
       if (storedMap && storedMap[pageSlug]) {
-        return { ...storedMap[pageSlug], page_slug: pageSlug, design_json: storedMap };
+        // Layer the per-page override on top of the base row so top-level
+        // columns (notably `id`) survive — the row id is needed to address
+        // this section's translations.
+        return { ...backendObject, ...storedMap[pageSlug], id: backendObject.id, page_slug: pageSlug, design_json: storedMap };
       }
 
       if (backendObject.page_slug === pageSlug) {

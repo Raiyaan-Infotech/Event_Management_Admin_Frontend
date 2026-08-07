@@ -45,6 +45,7 @@ import {
 import { BuilderCountedInput, BuilderCountedTextarea } from '../_components/builder-field';
 import { mediaApi } from '@/hooks/use-media';
 import { DeleteDialog } from '@/components/common/delete-dialog';
+import { RowTranslateButton } from '../_components/row-translate-dialog';
 
 const ICON_PRESETS = [
     { name: 'gift', Icon: Gift, label: 'Gift / Template' },
@@ -500,6 +501,17 @@ export default function HowItWorksPage() {
                                                 >
                                                     <Pencil className="h-3.5 w-3.5" />
                                                 </Button>
+                                                <RowTranslateButton
+                                                    section="how-it-works"
+                                                    recordId={Number(item.id) || undefined}
+                                                    rowLabel={item.title}
+                                                    fields={[
+                                                        { key: 'title', label: 'Title', value: item.title || '' },
+                                                        { key: 'description', label: 'Description', value: item.description || '', type: 'textarea' },
+                                                        { key: 'highlight_title', label: 'Highlight Title', value: item.highlight_title || '' },
+                                                        { key: 'highlight_subtext', label: 'Highlight Subtext', value: item.highlight_subtext || '' },
+                                                    ]}
+                                                />
                                                 <Button
                                                     type="button"
                                                     variant="outline"

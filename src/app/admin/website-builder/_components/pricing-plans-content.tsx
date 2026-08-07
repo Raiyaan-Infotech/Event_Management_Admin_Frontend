@@ -49,6 +49,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePricingPlansData, useSavePricingPlans, type PricingPlan } from '@/hooks/usePricingPlans';
 import { BuilderCountedInput, BuilderCountedTextarea } from './builder-field';
 import { cn } from '@/lib/utils';
+import { useSectionTranslation, handleTranslationSave } from '@/hooks/useSectionTranslation';
+import { TranslationSideCard } from './translation-side-card';
+import { TranslationModeBanner } from './translation-mode-banner';
 
 type PreviewDevice = 'desktop' | 'mobile';
 
@@ -317,7 +320,10 @@ export function PricingPlansBuilderContent() {
         }
     }, [dbPlans]);
 
-    const handleSave = () => {
+    const handleSave = async () => {
+        // In translation mode only the selected plan's translated text is
+        // written; the plan rows themselves are untouched.
+        if (await handleTranslationSave(translation, 'Pricing Plan')) return;
         const payload: PricingPlan[] = plans.map((p, index) => ({
             plan_name: p.name,
             subtitle: p.description,
@@ -368,6 +374,26 @@ export function PricingPlansBuilderContent() {
     const [featureActive, setFeatureActive] = useState(true);
 
     const currentPlan = plans.find((p) => p.id === selectedPlanId) || plans[0];
+
+    // Per-form translation mode (?lang=<id>), same as Hero Section. This form
+    // edits one plan at a time, so the slot follows the SELECTED plan.
+    // Field keys match the `pricing-plans` entry in the backend FIELD_CATALOG,
+    // registered at page_slug='' with the plan row id as record_id.
+    const translationFields = [
+        { key: 'plan_name', label: 'Plan Name', type: 'input' as const, value: currentPlan?.name || '' },
+        { key: 'subtitle', label: 'Subtitle', type: 'textarea' as const, value: currentPlan?.description || '' },
+        { key: 'period_label', label: 'Period Label', type: 'input' as const, value: currentPlan?.customUnitLabel || '' },
+        { key: 'badge_text', label: 'Badge Text', type: 'input' as const, value: currentPlan?.badgeText || '' },
+    ];
+    const translation = useSectionTranslation({
+        section: 'pricing-plans',
+        recordId: Number(currentPlan?.id) || undefined,
+        fields: translationFields,
+    });
+    const { isTranslationMode, bind } = translation;
+    // Pricing, currency, features and badge styling are shared across
+    // languages - they are edited from the English version only.
+    const sharedOnly = cn(isTranslationMode && 'opacity-50 pointer-events-none');
 
     const updateCurrentPlan = (updates: Partial<PricingPlanItem>) => {
         setPlans((prev) => prev.map((p) => (p.id === currentPlan.id ? { ...p, ...updates } : p)));
@@ -861,8 +887,29 @@ export function PricingPlansBuilderContent() {
                                     <Badge variant="outline" className="text-[10px] bg-card font-semibold text-muted-foreground border-border">
                                         {plans.length} Total Plans
                                     </Badge>
+
                                 </CardContent>
                             </Card>
+
+                            {/* Languages + translation mode - scoped to the plan
+                                selected above, since each plan is its own slot. */}
+                            {currentPlan?.id ? (
+                                <div className="flex flex-col gap-3">
+                                    <div className="w-full self-end lg:w-72">
+                                        <TranslationSideCard
+                                            section="pricing-plans"
+                                            recordId={Number(currentPlan.id) || undefined}
+                                            activeLanguageId={translation.activeLanguage?.id ?? null}
+                                            buildHref={translation.buildHref}
+                        canTranslate={translation.canTranslate}
+                                            fields={translationFields}
+                                        />
+                                    </div>
+                                    <div className="order-first min-w-0">
+                                        <TranslationModeBanner translation={translation} label={currentPlan.name} />
+                                    </div>
+                                </div>
+                            ) : null}
 
                             {/* Section 1: Basic Information */}
                             <Card className="shadow-xs border-border bg-card">
@@ -878,9 +925,8 @@ export function PricingPlansBuilderContent() {
                                         label="Plan Name"
                                         required
                                         maxLength={60}
-                                        value={currentPlan.name}
-                                        onChange={(val) => updateCurrentPlan({ name: val })}
-                                        placeholder="e.g., Pro Plan"
+                                        {...bind('plan_name', currentPlan.name, (val) => updateCurrentPlan({ name: val }))}
+                                        placeholder={isTranslationMode ? currentPlan.name : 'e.g., Pro Plan'}
                                         inputClassName={cn(
                                             '!h-9 text-xs border-border bg-card text-foreground',
                                             !currentPlan.name?.trim() && 'border-red-500 ring-1 ring-red-500 bg-red-50/20'
@@ -937,18 +983,21 @@ export function PricingPlansBuilderContent() {
                                         required
                                         maxLength={200}
                                         rows={3}
-                                        value={currentPlan.description}
-                                        onChange={(val) => updateCurrentPlan({ description: val })}
-                                        placeholder="A short description of what this plan offers..."
+                                        {...bind('subtitle', currentPlan.description, (val) => updateCurrentPlan({ description: val }))}
+                                        placeholder={isTranslationMode ? currentPlan.description : 'A short description of what this plan offers...'}
                                     />
 
                                     {/* Plan Badge (Optional) */}
                                     <div>
                                         <Label className="text-xs font-semibold text-foreground">Plan Badge (Optional)</Label>
                                         <Input
-                                            value={currentPlan.badgeText}
-                                            onChange={(e) => updateCurrentPlan({ badgeText: e.target.value })}
-                                            placeholder="e.g., Best Value, Most Popular"
+                                            value={isTranslationMode ? (translation.values.badge_text ?? '') : currentPlan.badgeText}
+                                            onChange={(e) =>
+                                                isTranslationMode
+                                                    ? translation.setValue('badge_text', e.target.value)
+                                                    : updateCurrentPlan({ badgeText: e.target.value })
+                                            }
+                                            placeholder={isTranslationMode ? currentPlan.badgeText : 'e.g., Best Value, Most Popular'}
                                             className="h-9 text-xs mt-1.5 bg-card border-input text-foreground"
                                         />
 

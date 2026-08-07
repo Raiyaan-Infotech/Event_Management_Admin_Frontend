@@ -31,6 +31,7 @@ import {
 } from '@/hooks/useTemplates';
 
 import { DeleteDialog } from '@/components/common/delete-dialog';
+import { RowTranslateButton } from '../_components/row-translate-dialog';
 
 export default function TemplatesPage() {
     const [selectedCategory, setSelectedCategory] = useState('all');
@@ -383,6 +384,15 @@ export default function TemplatesPage() {
                                                     {/* Actions */}
                                                     <td className="py-3 px-3 text-right">
                                                         <div className="flex items-center justify-end gap-1.5">
+                                                            <RowTranslateButton
+                                                                section="templates"
+                                                                recordId={Number(template.id) || undefined}
+                                                                rowLabel={template.template_name}
+                                                                fields={[
+                                                                    { key: 'template_name', label: 'Template Name', value: template.template_name || '' },
+                                                                    { key: 'description', label: 'Description', value: template.description || '', type: 'textarea' },
+                                                                ]}
+                                                            />
                                                             <Link href={`/admin/website-builder/templates/create?id=${template.id}`}>
                                                                 <Button
                                                                     type="button"

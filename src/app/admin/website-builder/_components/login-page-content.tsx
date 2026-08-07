@@ -13,6 +13,9 @@ import { mediaApi } from '@/hooks/use-media';
 import { PageLoader } from '@/components/common/page-loader';
 import { ConfirmResetDialog } from '@/components/common/confirm-reset-dialog';
 import { cn } from '@/lib/utils';
+import { useSectionTranslation, handleTranslationSave } from '@/hooks/useSectionTranslation';
+import { TranslationSideCard } from './translation-side-card';
+import { TranslationModeBanner } from './translation-mode-banner';
 
 interface BulletRow {
     id: string;
@@ -38,6 +41,24 @@ export function LoginPageContent() {
     const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
     const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
+    // Per-form translation mode (?lang=<id>), same as Hero Section.
+    // Field keys match the `login-page` entry in the backend FIELD_CATALOG,
+    // registered at page_slug='' with the settings row id as record_id.
+    // NOTE: `subtitle` is the DB column; the form labels it 'Description'.
+    const translationFields = [
+        { key: 'title', label: 'Title', type: 'input' as const, value: title },
+        { key: 'subtitle', label: 'Subtitle', type: 'textarea' as const, value: description },
+    ];
+    const translation = useSectionTranslation({
+        section: 'login-page',
+        recordId: (loginData as any)?.id,
+        fields: translationFields,
+    });
+    const { isTranslationMode, bind } = translation;
+    // Background image, bullets and the panel toggle are shared across
+    // languages - they are edited from the English version only.
+    const sharedOnly = cn(isTranslationMode && 'opacity-50 pointer-events-none');
+
     useEffect(() => {
         if (loginData && Object.keys(loginData).length > 0) {
             if (loginData.title) setTitle(loginData.title);
@@ -57,6 +78,7 @@ export function LoginPageContent() {
     const BULLET_MAX = 40;
 
     const handleSave = async () => {
+        if (await handleTranslationSave(translation, 'Login Page')) return;
         try {
             await save({
                 title,
@@ -64,6 +86,9 @@ export function LoginPageContent() {
                 bg_image_url: showBackgroundImage ? backgroundImage : '',
                 is_active: enabled ? 1 : 0,
             });
+            // Refresh the key catalog so the side card counts and
+            // auto-translate see the English text just saved.
+            translation.registerKeys();
             toast.success('Login page settings saved successfully');
         } catch (err: any) {
             toast.error(err?.message || 'Failed to save login page settings');
@@ -116,7 +141,12 @@ export function LoginPageContent() {
             {/* Page Header */}
             <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-4">
                 <div>
-                    <h1 className="mt-1 text-xl font-bold tracking-tight">Login Page Settings</h1>
+                    <h1 className="mt-1 text-xl font-bold tracking-tight">
+                        Login Page Settings
+                        {isTranslationMode && translation.activeLanguage && (
+                            <span className="ml-2 text-primary">({translation.activeLanguage.name})</span>
+                        )}
+                    </h1>
                     <p className="text-xs text-muted-foreground">Customize side panel copy, background image, and highlight bullets for client login.</p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -126,10 +156,27 @@ export function LoginPageContent() {
                     <Button type="button" variant="outline" size="sm" onClick={() => setResetDialogOpen(true)} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
                         <RotateCcw className="h-3.5 w-3.5 text-rose-500 mr-1" /> Reset
                     </Button>
-                    <Button type="button" size="sm" onClick={handleSave} disabled={isSaving} className="h-8 px-4 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs">
-                        {isSaving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
-                        {isSaving ? 'Saving...' : 'Save Login Page'}
+                    <Button type="button" size="sm" onClick={handleSave} disabled={isSaving || translation.isSaving} className="h-8 px-4 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs">
+                        {isSaving || translation.isSaving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+                        {isSaving || translation.isSaving ? 'Saving...' : isTranslationMode ? 'Save Translation' : 'Save Login Page'}
                     </Button>
+                </div>
+            </div>
+
+            {/* Languages + translation mode */}
+            <div className="flex flex-col gap-3">
+                <div className="w-full self-end lg:w-72">
+                    <TranslationSideCard
+                        section="login-page"
+                        recordId={(loginData as any)?.id}
+                        activeLanguageId={translation.activeLanguage?.id ?? null}
+                        buildHref={translation.buildHref}
+                        canTranslate={translation.canTranslate}
+                        fields={translationFields}
+                    />
+                </div>
+                <div className="order-first min-w-0">
+                    <TranslationModeBanner translation={translation} label="the Login Page" />
                 </div>
             </div>
 
@@ -145,7 +192,7 @@ export function LoginPageContent() {
                                     <h4 className="font-semibold text-xs text-foreground">Show side panel</h4>
                                     <p className="text-[10px] text-muted-foreground">When off, the login / get started popup shows only the form (no branded side panel).</p>
                                 </div>
-                                <Switch checked={enabled} onCheckedChange={setEnabled} />
+                                <Switch checked={enabled} onCheckedChange={setEnabled} disabled={isTranslationMode} />
                             </div>
                         </CardContent>
                     </Card>
@@ -172,19 +219,17 @@ export function LoginPageContent() {
 
                                     <BuilderCountedInput
                                         label="Title"
-                                        value={title}
-                                        onChange={setTitle}
                                         maxLength={TITLE_MAX}
-                                        placeholder="Everything for your event, in one place."
+                                        {...bind('title', title, setTitle)}
+                                        placeholder={isTranslationMode ? title : 'Everything for your event, in one place.'}
                                     />
 
                                     <BuilderCountedTextarea
                                         label="Description"
-                                        value={description}
-                                        onChange={setDescription}
                                         maxLength={DESCRIPTION_MAX}
-                                        placeholder="Manage enquiries, bookings and event details..."
                                         rows={2}
+                                        {...bind('subtitle', description, setDescription)}
+                                        placeholder={isTranslationMode ? description : 'Manage enquiries, bookings and event details...'}
                                     />
                                 </CardContent>
                             </Card>

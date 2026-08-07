@@ -16,6 +16,10 @@ import { ConfirmResetDialog } from '@/components/common/confirm-reset-dialog';
 import { useCompanySeoSettings } from '@/hooks/useCompanyWebsiteBuilder';
 import { mediaApi } from '@/hooks/use-media';
 import { PageLoader } from '@/components/common/page-loader';
+import { useSectionTranslation, handleTranslationSave } from '@/hooks/useSectionTranslation';
+import { TranslationSideCard } from './translation-side-card';
+import { TranslationModeBanner } from './translation-mode-banner';
+import { cn } from '@/lib/utils';
 
 export function SeoContent() {
     const { data: seoData, isLoading, save, isSaving } = useCompanySeoSettings();
@@ -103,7 +107,25 @@ export function SeoContent() {
         }
     };
 
+    // Translation mode. Field keys match the `seo` entry in the backend's
+    // FIELD_CATALOG; the scan registers this section at page_slug='' with the
+    // settings row's id as record_id.
+    const translation = useSectionTranslation({
+        section: 'seo',
+        recordId: (seoData as any)?.id,
+        fields: [
+            { key: 'site_name', label: 'Site Name', type: 'input', value: siteName },
+            { key: 'default_title', label: 'Default Title', type: 'input', value: metaTitle },
+            { key: 'default_description', label: 'Default Description', type: 'textarea', value: metaDescription },
+        ],
+    });
+    const { isTranslationMode, bind } = translation;
+    // Everything that isn't translatable text is shared across languages and
+    // must be edited from the English version.
+    const sharedOnly = cn(isTranslationMode && 'opacity-50 pointer-events-none');
+
     const handleSave = async () => {
+        if (await handleTranslationSave(translation, 'SEO Settings')) return;
         try {
             await save({
                 default_title: metaTitle,
@@ -117,6 +139,9 @@ export function SeoContent() {
                 sitemap_enabled: sitemapEnabled ? 1 : 0,
                 structured_data_enabled: structuredData ? 1 : 0,
             });
+            // Refresh the key catalog so the side card counts and auto-translate
+            // see the English text that was just saved.
+            translation.registerKeys();
             toast.success('SEO settings saved successfully');
         } catch (err: any) {
             toast.error(err?.message || 'Failed to save SEO settings');
@@ -128,7 +153,12 @@ export function SeoContent() {
             <PageLoader open={isSaving} text="Saving SEO Settings..." />
             <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-5">
                 <div>
-                    <h1 className="mt-1 text-2xl font-bold tracking-tight">SEO Settings</h1>
+                    <h1 className="mt-1 text-2xl font-bold tracking-tight">
+                        SEO Settings
+                        {isTranslationMode && translation.activeLanguage && (
+                            <span className="ml-2 text-primary">({translation.activeLanguage.name})</span>
+                        )}
+                    </h1>
                     <p className="text-sm text-muted-foreground">Manage metadata, OpenGraph images, robots indexing, canonical URLs, and structured data.</p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -138,10 +168,31 @@ export function SeoContent() {
                     <Button type="button" variant="outline" size="sm" onClick={() => setResetDialogOpen(true)} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
                         <RotateCcw className="h-3.5 w-3.5 text-rose-500 mr-1" /> Reset
                     </Button>
-                    <Button type="button" size="sm" onClick={handleSave} disabled={isSaving} className="h-8 px-4 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs">
-                        {isSaving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
-                        {isSaving ? 'Saving...' : 'Save SEO Settings'}
+                    <Button type="button" size="sm" onClick={handleSave} disabled={isSaving || translation.isSaving} className="h-8 px-4 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs">
+                        {isSaving || translation.isSaving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+                        {isSaving || translation.isSaving ? 'Saving...' : isTranslationMode ? 'Save Translation' : 'Save SEO Settings'}
                     </Button>
+                </div>
+            </div>
+
+            {/* Languages + translation mode */}
+            <div className="flex flex-col gap-3">
+                <div className="w-full self-end lg:w-72">
+                    <TranslationSideCard
+                        section="seo"
+                        recordId={(seoData as any)?.id}
+                        activeLanguageId={translation.activeLanguage?.id ?? null}
+                        buildHref={translation.buildHref}
+                        canTranslate={translation.canTranslate}
+                        fields={[
+                            { key: 'site_name', label: 'Site Name', value: siteName },
+                            { key: 'default_title', label: 'Default Title', value: metaTitle },
+                            { key: 'default_description', label: 'Default Description', value: metaDescription, type: 'textarea' },
+                        ]}
+                    />
+                </div>
+                <div className="order-first min-w-0">
+                    <TranslationModeBanner translation={translation} label="SEO Settings" />
                 </div>
             </div>
 
@@ -159,22 +210,20 @@ export function SeoContent() {
                         {/* Meta Title */}
                         <BuilderCountedInput
                             label="Meta Title"
-                            value={metaTitle}
-                            onChange={setMetaTitle}
                             maxLength={TITLE_MAX}
+                            {...bind('default_title', metaTitle, setMetaTitle)}
                         />
 
                         {/* Meta Description */}
                         <BuilderCountedTextarea
                             label="Meta Description"
-                            value={metaDescription}
-                            onChange={setMetaDescription}
                             maxLength={DESC_MAX}
                             rows={3}
+                            {...bind('default_description', metaDescription, setMetaDescription)}
                         />
 
-                        {/* Keywords */}
-                        <div className="space-y-2">
+                        {/* Keywords — shared across languages */}
+                        <div className={cn("space-y-2", sharedOnly)}>
                             <Label htmlFor="keywords" className="text-xs font-semibold text-muted-foreground">Keywords</Label>
                             <Input
                                 id="keywords"
@@ -215,8 +264,8 @@ export function SeoContent() {
                             )}
                         </div>
 
-                        {/* OG Image Upload & Image Cropper */}
-                        <div className="space-y-2 pt-1">
+                        {/* OG Image Upload & Image Cropper — shared across languages */}
+                        <div className={cn("space-y-2 pt-1", sharedOnly)}>
                             <Label className="text-xs font-semibold text-muted-foreground">OG Image (Social Preview)</Label>
                             {ogImageUrl ? (
                                 <div className="relative rounded-lg overflow-hidden border bg-card p-2 flex items-center gap-4">
@@ -285,8 +334,8 @@ export function SeoContent() {
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        {/* Robots Meta Tag Dropdown */}
-                        <div className="space-y-1.5">
+                        {/* Robots Meta Tag Dropdown — shared across languages */}
+                        <div className={cn("space-y-1.5", sharedOnly)}>
                             <Label className="text-xs font-semibold text-muted-foreground">Robots Meta Tag</Label>
                             <Select value={robotsMeta} onValueChange={setRobotsMeta}>
                                 <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Select Robots Meta" /></SelectTrigger>
@@ -299,16 +348,18 @@ export function SeoContent() {
                             </Select>
                         </div>
 
-                        {/* Canonical URL */}
+                        {/* Canonical URL — shared across languages */}
                         <BuilderCountedInput
+                            lockInput={isTranslationMode}
                             label="Canonical URL"
                             value={canonicalUrl}
                             onChange={setCanonicalUrl}
                             maxLength={CANONICAL_MAX}
                         />
 
-                        {/* Author */}
+                        {/* Author — shared across languages */}
                         <BuilderCountedInput
+                            lockInput={isTranslationMode}
                             label="Author"
                             value={author}
                             onChange={setAuthor}
@@ -317,7 +368,7 @@ export function SeoContent() {
 
                         {/* Language & Site Name Dropdowns */}
                         <div className="grid gap-4 sm:grid-cols-2">
-                            <div className="space-y-1.5">
+                            <div className={cn("space-y-1.5", sharedOnly)}>
                                 <Label className="text-xs font-semibold text-muted-foreground">Language</Label>
                                 <Select value={language} onValueChange={setLanguage}>
                                     <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Select Language" /></SelectTrigger>
@@ -334,14 +385,13 @@ export function SeoContent() {
 
                             <BuilderCountedInput
                                 label="Site Name"
-                                value={siteName}
-                                onChange={setSiteName}
                                 maxLength={SITENAME_MAX}
+                                {...bind('site_name', siteName, setSiteName)}
                             />
                         </div>
 
                         {/* Sitemap & Structured Data Toggles */}
-                        <div className="space-y-3 pt-2">
+                        <div className={cn("space-y-3 pt-2", sharedOnly)}>
                             <div className="flex items-center justify-between rounded-lg border p-3 bg-card">
                                 <div>
                                     <h4 className="font-semibold text-xs text-foreground">Enable Sitemap</h4>

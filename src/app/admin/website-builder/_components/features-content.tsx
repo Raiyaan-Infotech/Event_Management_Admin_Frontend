@@ -52,6 +52,7 @@ import {
     BuilderCountedInput,
     BuilderCountedTextarea,
 } from './builder-field';
+import { RowTranslateButton } from './row-translate-dialog';
 
 const ICON_PRESETS = [
     { name: 'calendar', Icon: Calendar, label: 'Calendar' },
@@ -376,6 +377,16 @@ export function FeaturesBuilderContent() {
                                                             >
                                                                 <Pencil className="h-3.5 w-3.5" />
                                                             </Button>
+                                                            <RowTranslateButton
+                                                                section="features"
+                                                                recordId={Number(item.id) || undefined}
+                                                                rowLabel={item.title}
+                                                                fields={[
+                                                                    { key: 'title', label: 'Title', value: item.title },
+                                                                    { key: 'short_description', label: 'Short Description', value: item.short_description, type: 'textarea' },
+                                                                    { key: 'detailed_description', label: 'Detailed Description', value: item.detailed_description || '', type: 'textarea' },
+                                                                ]}
+                                                            />
                                                             <Button
                                                                 type="button"
                                                                 variant="outline"

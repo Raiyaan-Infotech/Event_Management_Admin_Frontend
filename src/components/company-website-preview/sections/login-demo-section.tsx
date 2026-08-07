@@ -32,11 +32,11 @@ interface SectionProps {
     companyName?: string;
 }
 
-import { useWebsiteBuilderTranslation } from '@/hooks/use-website-builder-translation';
+import { useWebsiteLanguage } from '../website-language-provider';
 
 // 1. Home Page / Main: Login & Demo Section
 export function LoginDemoSection({ theme, companyName }: SectionProps) {
-    const { t } = useWebsiteBuilderTranslation();
+    const { t } = useWebsiteLanguage();
     const primaryBtn = theme?.primaryButton || '#E11D48';
 
     return (

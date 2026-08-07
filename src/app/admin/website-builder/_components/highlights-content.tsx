@@ -50,6 +50,9 @@ import { PageLoader } from '@/components/common/page-loader';
 import { ConfirmResetDialog } from '@/components/common/confirm-reset-dialog';
 import { IconPickerDialog } from '@/components/common/icon-picker-dialog';
 import { cn } from '@/lib/utils';
+import { useSectionTranslation, handleTranslationSave } from '@/hooks/useSectionTranslation';
+import { TranslationSideCard } from './translation-side-card';
+import { TranslationModeBanner } from './translation-mode-banner';
 
 const ICON_MAP: Record<string, LucideIcon> = {
     Calendar,
@@ -92,6 +95,39 @@ export function HighlightsContent({ pageSlug, instance }: HighlightsContentProps
     const [resetDialogOpen, setResetDialogOpen] = useState(false);
     const [iconPickerItemIndex, setIconPickerItemIndex] = useState<number | null>(null);
     const [iconSearch, setIconSearch] = useState('');
+
+    // Per-form translation mode (?lang=<id>), same as Hero Section.
+    // Highlights keeps its cards inside settings_json, so the backend
+    // extractor flattens them to item_<n>_title / item_<n>_description.
+    // Positions are 1-based and must match that extractor exactly.
+    const translationFields = settings.items.flatMap((item, index) => {
+        const position = index + 1;
+        return [
+            {
+                key: `item_${position}_title`,
+                label: `Card ${position} Title`,
+                type: 'input' as const,
+                value: item.title || '',
+            },
+            {
+                key: `item_${position}_description`,
+                label: `Card ${position} Description`,
+                type: 'input' as const,
+                value: item.description || '',
+            },
+        ];
+    });
+    const translation = useSectionTranslation({
+        section: 'highlights',
+        // instance 1 and 2 of a page share a page_slug, so the row id is what
+        // keeps their translation slots distinct.
+        pageSlug,
+        recordId: (fetchedData as any)?.id ?? settings.id,
+        fields: translationFields,
+    });
+    const { isTranslationMode, bind } = translation;
+    // Icons, colors, layout and background are shared across languages.
+    const sharedOnly = cn(isTranslationMode && 'opacity-50 pointer-events-none');
 
     const dragItemIndex = useRef<number | null>(null);
     const dragOverItemIndex = useRef<number | null>(null);
@@ -168,7 +204,12 @@ export function HighlightsContent({ pageSlug, instance }: HighlightsContentProps
     };
 
     const handleSave = async () => {
+        // In translation mode only the translated card text is written; the
+        // settings_json row itself is untouched.
+        if (await handleTranslationSave(translation, 'Highlights')) return;
         await saveMutation.mutateAsync(settings);
+        // Refresh the key catalog so newly added cards become translatable.
+        translation.registerKeys();
     };
 
     const handleReset = () => {
@@ -214,7 +255,12 @@ export function HighlightsContent({ pageSlug, instance }: HighlightsContentProps
             {/* Top Bar Header */}
             <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-5">
                 <div>
-                    <h1 className="mt-1 text-2xl font-bold tracking-tight">Highlights Customization — {pageSlug.toUpperCase()}</h1>
+                    <h1 className="mt-1 text-2xl font-bold tracking-tight">
+                        Highlights Customization — {pageSlug.toUpperCase()}
+                        {isTranslationMode && translation.activeLanguage && (
+                            <span className="ml-2 text-primary">({translation.activeLanguage.name})</span>
+                        )}
+                    </h1>
                     <p className="text-sm text-muted-foreground">
                         Design and customize the highlights section for <strong>{pageSlug.toUpperCase()}</strong> (Instance #{instance}).
                     </p>
@@ -232,10 +278,31 @@ export function HighlightsContent({ pageSlug, instance }: HighlightsContentProps
                     <Button type="button" variant="outline" size="sm" onClick={() => setResetDialogOpen(true)} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
                         <RotateCcw className="h-3.5 w-3.5 mr-1" /> Reset to Default
                     </Button>
-                    <Button type="button" size="sm" onClick={handleSave} disabled={saveMutation.isPending} className="h-8 px-4 text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs">
-                        {saveMutation.isPending ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
-                        {saveMutation.isPending ? 'Saving...' : 'Save Changes'}
+                    <Button type="button" size="sm" onClick={handleSave} disabled={saveMutation.isPending || translation.isSaving} className="h-8 px-4 text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs">
+                        {saveMutation.isPending || translation.isSaving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+                        {saveMutation.isPending || translation.isSaving ? 'Saving...' : isTranslationMode ? 'Save Translation' : 'Save Changes'}
                     </Button>
+                </div>
+            </div>
+
+            {/* Languages + translation mode */}
+            <div className="flex flex-col gap-3">
+                <div className="w-full self-end lg:w-72">
+                    <TranslationSideCard
+                        section="highlights"
+                        pageSlug={pageSlug}
+                        recordId={(fetchedData as any)?.id ?? settings.id}
+                        activeLanguageId={translation.activeLanguage?.id ?? null}
+                        buildHref={translation.buildHref}
+                        canTranslate={translation.canTranslate}
+                        fields={translationFields}
+                    />
+                </div>
+                <div className="order-first min-w-0">
+                    <TranslationModeBanner
+                        translation={translation}
+                        label={`Highlights on ${pageSlug} (instance ${instance})`}
+                    />
                 </div>
             </div>
 
@@ -308,15 +375,23 @@ export function HighlightsContent({ pageSlug, instance }: HighlightsContentProps
                                             {/* Title & Description Inputs */}
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 flex-1 w-full">
                                                 <Input
-                                                    value={item.title}
-                                                    onChange={(e) => handleItemChange(index, 'title', e.target.value)}
-                                                    placeholder="Title"
+                                                    value={isTranslationMode ? (translation.values[`item_${index + 1}_title`] ?? '') : item.title}
+                                                    onChange={(e) =>
+                                                        isTranslationMode
+                                                            ? translation.setValue(`item_${index + 1}_title`, e.target.value)
+                                                            : handleItemChange(index, 'title', e.target.value)
+                                                    }
+                                                    placeholder={isTranslationMode ? item.title : 'Title'}
                                                     className="h-8 text-xs font-semibold"
                                                 />
                                                 <Input
-                                                    value={item.description}
-                                                    onChange={(e) => handleItemChange(index, 'description', e.target.value)}
-                                                    placeholder="Description"
+                                                    value={isTranslationMode ? (translation.values[`item_${index + 1}_description`] ?? '') : item.description}
+                                                    onChange={(e) =>
+                                                        isTranslationMode
+                                                            ? translation.setValue(`item_${index + 1}_description`, e.target.value)
+                                                            : handleItemChange(index, 'description', e.target.value)
+                                                    }
+                                                    placeholder={isTranslationMode ? item.description : 'Description'}
                                                     className="h-8 text-xs"
                                                 />
                                             </div>

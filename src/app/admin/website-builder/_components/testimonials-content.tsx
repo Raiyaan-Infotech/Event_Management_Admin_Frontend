@@ -27,6 +27,10 @@ import { mediaApi } from '@/hooks/use-media';
 import { PageLoader } from '@/components/common/page-loader';
 import { BuilderCountedInput, BuilderCountedTextarea } from './builder-field';
 import { cn } from '@/lib/utils';
+import { RowTranslateButton } from './row-translate-dialog';
+import { useSectionTranslation, handleTranslationSave } from '@/hooks/useSectionTranslation';
+import { TranslationSideCard } from './translation-side-card';
+import { TranslationModeBanner } from './translation-mode-banner';
 
 interface Testimonial {
     id: string;
@@ -107,6 +111,23 @@ export function TestimonialsContent() {
 
     const activeItem = testimonials.find((t) => t.id === editingId) || testimonials[0] || emptyTestimonial;
 
+    // Per-form translation mode (?lang=<id>), same as Hero Section. This page
+    // edits one testimonial at a time, so the slot follows activeItem —
+    // selecting a different row in the table switches what you translate.
+    const translationFields = [
+        { key: 'customer_name', label: 'Customer Name', type: 'input' as const, value: activeItem.customerName || '' },
+        { key: 'event_name', label: 'Event Name', type: 'input' as const, value: activeItem.eventName || '' },
+        { key: 'feedback', label: 'Feedback', type: 'textarea' as const, value: activeItem.feedback || '' },
+    ];
+    const translation = useSectionTranslation({
+        section: 'testimonials',
+        recordId: Number(activeItem.id) || undefined,
+        fields: translationFields,
+    });
+    const { isTranslationMode, bind } = translation;
+    // Photo and star rating are shared across languages.
+    const sharedOnly = cn(isTranslationMode && 'opacity-50 pointer-events-none');
+
     const updateActiveItem = (patch: Partial<Testimonial>) => {
         setTestimonials((prev) =>
             prev.map((t) => (t.id === activeItem.id ? { ...t, ...patch } : t))
@@ -163,6 +184,9 @@ export function TestimonialsContent() {
     };
 
     const handleSave = async () => {
+        // In translation mode only the selected testimonial's translated text
+        // is written; the testimonial rows themselves are untouched.
+        if (await handleTranslationSave(translation, 'Testimonial')) return;
         try {
             const payload = testimonials.map((t, idx) => ({
                 id: t.id.startsWith('new-') ? undefined : Number(t.id),
@@ -198,7 +222,12 @@ export function TestimonialsContent() {
                         <span>›</span>
                         <span className="font-semibold text-slate-800">Testimonials</span>
                     </div>
-                    <h1 className="text-xl font-extrabold tracking-tight text-slate-900">Testimonials</h1>
+                    <h1 className="text-xl font-extrabold tracking-tight text-slate-900">
+                        Testimonials
+                        {isTranslationMode && translation.activeLanguage && (
+                            <span className="ml-2 text-primary">({translation.activeLanguage.name})</span>
+                        )}
+                    </h1>
                     <p className="text-xs text-slate-500">
                         Manage your website testimonials and Testimonials settings.
                     </p>
@@ -216,19 +245,40 @@ export function TestimonialsContent() {
                     <Button variant="outline" size="sm" className="h-8 px-3 text-xs font-semibold text-slate-600 border-slate-200 hover:bg-slate-50">
                         <HelpCircle className="h-3.5 w-3.5 text-slate-400 mr-1" /> How It Works
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleDeleteTestimonial(activeItem)} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
+                    <Button variant="outline" size="sm" disabled={isTranslationMode} onClick={() => handleDeleteTestimonial(activeItem)} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
                         Delete
                     </Button>
                     <Button
                         size="sm"
                         onClick={handleSave}
-                        disabled={isSaving}
+                        disabled={isSaving || translation.isSaving}
                         className="h-8 px-4 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
                     >
-                        <Save className="h-3.5 w-3.5 mr-1" /> {isSaving ? 'Saving...' : 'Update Testimonial'}
+                        <Save className="h-3.5 w-3.5 mr-1" />{' '}
+                        {isSaving || translation.isSaving ? 'Saving...' : isTranslationMode ? 'Save Translation' : 'Update Testimonial'}
                     </Button>
                 </div>
             </div>
+
+            {/* Languages + translation mode - scoped to the testimonial being
+                edited, since each row is its own slot. */}
+            {Number(activeItem.id) ? (
+                <div className="flex flex-col gap-3">
+                    <div className="w-full self-end lg:w-72">
+                        <TranslationSideCard
+                            section="testimonials"
+                            recordId={Number(activeItem.id)}
+                            activeLanguageId={translation.activeLanguage?.id ?? null}
+                            buildHref={translation.buildHref}
+                        canTranslate={translation.canTranslate}
+                            fields={translationFields}
+                        />
+                    </div>
+                    <div className="order-first min-w-0">
+                        <TranslationModeBanner translation={translation} label={activeItem.customerName} />
+                    </div>
+                </div>
+            ) : null}
 
             {/* 2-Column Main Workspace */}
             <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
@@ -249,9 +299,8 @@ export function TestimonialsContent() {
                             <BuilderCountedInput
                                 label="Customer Name"
                                 required
-                                value={activeItem.customerName}
-                                onChange={(val) => updateActiveItem({ customerName: val })}
                                 maxLength={100}
+                                {...bind('customer_name', activeItem.customerName, (val) => updateActiveItem({ customerName: val }))}
                                 inputClassName="!h-9 text-xs"
                             />
 
@@ -261,12 +310,18 @@ export function TestimonialsContent() {
                                     Customer Photo
                                 </label>
                                 <div className="flex items-center gap-3">
-                                    <div className="relative h-20 w-20 rounded-2xl overflow-hidden border border-slate-200 bg-slate-900 shrink-0">
-                                        <img
-                                            src={activeItem.photoUrl}
-                                            alt={activeItem.customerName}
-                                            className="h-full w-full object-cover"
-                                        />
+                                    <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-900">
+                                        {/* Render nothing rather than src="" — an empty src makes the
+                                            browser re-request the current page as the image. */}
+                                        {activeItem.photoUrl ? (
+                                            <img
+                                                src={activeItem.photoUrl}
+                                                alt={activeItem.customerName}
+                                                className="h-full w-full object-cover"
+                                            />
+                                        ) : (
+                                            <span className="text-[10px] font-bold text-slate-400">No photo</span>
+                                        )}
                                     </div>
 
                                     <input
@@ -295,9 +350,8 @@ export function TestimonialsContent() {
                             <BuilderCountedInput
                                 label="Event Name"
                                 required
-                                value={activeItem.eventName}
-                                onChange={(val) => updateActiveItem({ eventName: val })}
                                 maxLength={100}
+                                {...bind('event_name', activeItem.eventName, (val) => updateActiveItem({ eventName: val }))}
                                 inputClassName="!h-9 text-xs"
                             />
 
@@ -305,10 +359,9 @@ export function TestimonialsContent() {
                             <BuilderCountedTextarea
                                 label="Customer Feedback"
                                 required
-                                value={activeItem.feedback}
-                                onChange={(val) => updateActiveItem({ feedback: val })}
                                 maxLength={500}
                                 rows={3}
+                                {...bind('feedback', activeItem.feedback, (val) => updateActiveItem({ feedback: val }))}
                             />
 
                             {/* Rating Stars */}
@@ -443,6 +496,18 @@ export function TestimonialsContent() {
                                                         >
                                                             <Pencil className="h-3.5 w-3.5" />
                                                         </Button>
+                                                        {/* Field keys match the `testimonials` entry in the
+                                                            backend FIELD_CATALOG. */}
+                                                        <RowTranslateButton
+                                                            section="testimonials"
+                                                            recordId={Number(t.id) || undefined}
+                                                            rowLabel={t.customerName}
+                                                            fields={[
+                                                                { key: 'customer_name', label: 'Customer Name', value: t.customerName },
+                                                                { key: 'event_name', label: 'Event Name', value: t.eventName },
+                                                                { key: 'feedback', label: 'Feedback', value: t.feedback, type: 'textarea' },
+                                                            ]}
+                                                        />
                                                         <Button
                                                             type="button"
                                                             variant="ghost"
@@ -490,12 +555,18 @@ export function TestimonialsContent() {
                             <div className="w-full max-w-lg bg-white rounded-2xl p-6 shadow-md border border-slate-100 relative flex flex-col items-center text-center">
                                 <Quote className="h-8 w-8 text-blue-600 fill-blue-600 mb-3 opacity-90" />
 
-                                <div className="h-14 w-14 rounded-full overflow-hidden border-2 border-blue-100 shadow-xs mb-2">
-                                    <img
-                                        src={previewItem.photoUrl}
-                                        alt={previewItem.customerName}
-                                        className="h-full w-full object-cover"
-                                    />
+                                <div className="mb-2 flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border-2 border-blue-100 bg-slate-100 shadow-xs">
+                                    {previewItem.photoUrl ? (
+                                        <img
+                                            src={previewItem.photoUrl}
+                                            alt={previewItem.customerName}
+                                            className="h-full w-full object-cover"
+                                        />
+                                    ) : (
+                                        <span className="text-[11px] font-black text-slate-400">
+                                            {(previewItem.customerName || '?').charAt(0).toUpperCase()}
+                                        </span>
+                                    )}
                                 </div>
 
                                 <h3 className="font-bold text-sm text-slate-900">{previewItem.customerName}</h3>

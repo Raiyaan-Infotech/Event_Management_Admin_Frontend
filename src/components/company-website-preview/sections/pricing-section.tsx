@@ -64,10 +64,10 @@ function formatPrice(currency: string, amount: number) {
   return `${currency}${Math.round(amount).toLocaleString('en-IN')}`;
 }
 
-import { useWebsiteBuilderTranslation } from '@/hooks/use-website-builder-translation';
+import { useWebsiteLanguage } from '../website-language-provider';
 
 function PricingSectionBase({ plans, theme }: { plans: PricingPlan[]; theme: ThemeColors }) {
-  const { t } = useWebsiteBuilderTranslation();
+  const { t } = useWebsiteLanguage();
   const [billing, setBilling] = React.useState<'monthly' | 'yearly'>('monthly');
 
   const groups = React.useMemo(() => {
@@ -296,7 +296,7 @@ function PricingSectionBase({ plans, theme }: { plans: PricingPlan[]; theme: The
 import { usePricingMatrixFeaturesData } from '@/hooks/usePricingPlans';
 
 export function PlanFeaturesComparisonSection({ theme }: { theme: ThemeColors }) {
-  const { t } = useWebsiteBuilderTranslation();
+  const { t } = useWebsiteLanguage();
   const { data: matrixFeatures = [] } = usePricingMatrixFeaturesData();
 
   const displayItems = matrixFeatures && matrixFeatures.length > 0 ? matrixFeatures : [

@@ -7,10 +7,10 @@ import { toast } from 'sonner';
 import type { FooterData, SocialLink, ThemeColors } from './preview-shared';
 import { isExternalHref } from './preview-shared';
 
-import { useWebsiteBuilderTranslation } from '@/hooks/use-website-builder-translation';
+import { useWebsiteLanguage } from '../website-language-provider';
 
 function FooterSectionBase({ footer, socialLinks, theme, onNavigate }: { footer: FooterData; socialLinks: SocialLink[]; theme: ThemeColors; onNavigate: (href: string) => void }) {
-  const { t } = useWebsiteBuilderTranslation();
+  const { t } = useWebsiteLanguage();
   const [newsletterEmail, setNewsletterEmail] = React.useState('');
   const [submitting, setSubmitting] = React.useState(false);
   const [, setIconsLoaded] = React.useState(false);

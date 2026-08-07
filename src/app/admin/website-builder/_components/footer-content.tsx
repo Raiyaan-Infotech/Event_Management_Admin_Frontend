@@ -15,6 +15,11 @@ import { mediaApi } from '@/hooks/use-media';
 import { PageLoader } from '@/components/common/page-loader';
 import { MediaCropDialog } from '@/components/common/media-crop-dialog';
 import { ConfirmResetDialog } from '@/components/common/confirm-reset-dialog';
+import { useSectionTranslation } from '@/hooks/useSectionTranslation';
+import { useSaveContentTranslations } from '@/hooks/useWebsiteBuilderTranslations';
+import { TranslationSideCard } from './translation-side-card';
+import { TranslationModeBanner } from './translation-mode-banner';
+import { cn } from '@/lib/utils';
 
 type ContactType = 'default' | 'alternative';
 type PreviewDevice = 'desktop' | 'mobile';
@@ -232,7 +237,44 @@ export function FooterContent() {
         toast.info('Footer settings reset to default values.');
     };
 
+    // Translation mode. Field keys mirror the `footer` entry in the backend's
+    // FIELD_CATALOG, which registers this section at page_slug='' keyed by the
+    // footer settings row id.
+    const translationFields = [
+        { key: 'company_name', label: 'Company Name', type: 'input' as const, value: companyName },
+        { key: 'description', label: 'Description', type: 'textarea' as const, value: shortDescription },
+        { key: 'top_list_heading', label: 'Links Heading 1', type: 'input' as const, value: topListHeading },
+        { key: 'top_list_heading_2', label: 'Links Heading 2', type: 'input' as const, value: topListHeading2 },
+    ];
+    const translation = useSectionTranslation({
+        section: 'footer',
+        recordId: (footerData as any)?.id,
+        fields: translationFields,
+    });
+    const { isTranslationMode, bind } = translation;
+    // Logos, links, toggles and contact details are shared across languages.
+    const sharedOnly = cn(isTranslationMode && 'opacity-50 pointer-events-none');
+
+    // The English save below writes company_name to BOTH the footer row and
+    // basic_information. The translation has to mirror that: the rendered
+    // header and page title read basic-information, so translating only the
+    // footer slot would leave the site header in English.
+    const saveBasicTranslation = useSaveContentTranslations('basic-information', undefined, (basicInfo as any)?.id);
+
     const handleSave = async () => {
+        if (isTranslationMode && translation.activeLanguage) {
+            const saved = await translation.save();
+            if (saved) {
+                if ((basicInfo as any)?.id) {
+                    await saveBasicTranslation.mutateAsync({
+                        language_id: translation.activeLanguage.id,
+                        values: { company_name: translation.values.company_name ?? '' },
+                    });
+                }
+                toast.success(`${translation.activeLanguage.name} translation for Footer saved successfully`);
+            }
+            return;
+        }
         try {
             await save({
                 logo_url: companyLogo,
@@ -258,6 +300,7 @@ export function FooterContent() {
                 company_name: companyName,
             });
 
+            translation.registerKeys();
             toast.success('Footer settings saved successfully');
         } catch (err: any) {
             toast.error(err?.message || 'Failed to save footer settings');
@@ -270,7 +313,12 @@ export function FooterContent() {
             {/* Page Header */}
             <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-5">
                 <div>
-                    <h1 className="mt-1 text-2xl font-bold tracking-tight">Footer Settings</h1>
+                    <h1 className="mt-1 text-2xl font-bold tracking-tight">
+                        Footer Settings
+                        {isTranslationMode && translation.activeLanguage && (
+                            <span className="ml-2 text-primary">({translation.activeLanguage.name})</span>
+                        )}
+                    </h1>
                     <p className="text-sm text-muted-foreground">Manage footer company description, quick links, newsletter block, and contact info.</p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -292,9 +340,26 @@ export function FooterContent() {
                     >
                         <RotateCcw className="h-3.5 w-3.5 text-rose-500 mr-1" /> Reset
                     </Button>
-                    <Button type="button" size="sm" onClick={handleSave} disabled={isSaving} className="gap-2 h-8 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs">
-                        <Save className="h-3.5 w-3.5" /> {isSaving ? 'Saving...' : 'Save Changes'}
+                    <Button type="button" size="sm" onClick={handleSave} disabled={isSaving || translation.isSaving} className="gap-2 h-8 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs">
+                        <Save className="h-3.5 w-3.5" /> {isSaving || translation.isSaving ? 'Saving...' : isTranslationMode ? 'Save Translation' : 'Save Changes'}
                     </Button>
+                </div>
+            </div>
+
+            {/* Languages + translation mode */}
+            <div className="flex flex-col gap-3">
+                <div className="w-full self-end lg:w-72">
+                    <TranslationSideCard
+                        section="footer"
+                        recordId={(footerData as any)?.id}
+                        activeLanguageId={translation.activeLanguage?.id ?? null}
+                        buildHref={translation.buildHref}
+                        canTranslate={translation.canTranslate}
+                        fields={translationFields}
+                    />
+                </div>
+                <div className="order-first min-w-0">
+                    <TranslationModeBanner translation={translation} label="Footer" />
                 </div>
             </div>
 
@@ -310,8 +375,8 @@ export function FooterContent() {
                                 <CardDescription className="text-xs">Footer brand logo, name, and description.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-3">
-                                {/* Logo Upload */}
-                                <div className="space-y-1.5 w-full">
+                                {/* Logo Upload — shared across languages */}
+                                <div className={cn("space-y-1.5 w-full", sharedOnly)}>
                                     <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Company Logo</label>
                                     {companyLogo ? (
                                         <div className="relative flex h-16 w-full items-center justify-center rounded-lg border bg-card p-2 overflow-hidden group">
@@ -351,23 +416,21 @@ export function FooterContent() {
 
                                 <BuilderCountedInput
                                     label="Company Name"
-                                    value={companyName}
-                                    onChange={setCompanyName}
                                     maxLength={60}
+                                    {...bind('company_name', companyName, setCompanyName)}
                                 />
 
                                 <BuilderCountedTextarea
                                     label="Short Description"
-                                    value={shortDescription}
-                                    onChange={setShortDescription}
                                     maxLength={240}
                                     rows={3}
+                                    {...bind('description', shortDescription, setShortDescription)}
                                 />
                             </CardContent>
                         </Card>
 
-                        {/* Card 2: Contact Information */}
-                        <Card>
+                        {/* Card 2: Contact Information — shared across languages */}
+                        <Card className={sharedOnly}>
                             <CardHeader className="pb-3">
                                 <div className="flex items-center justify-between">
                                     <div>
@@ -434,18 +497,18 @@ export function FooterContent() {
                                         <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">Link List 1 (Quick Links)</h4>
                                         <div className="flex items-center gap-2">
                                             <span className="text-[11px] font-semibold text-slate-600">{showQuickLinks1 ? 'Show' : 'Hide'}</span>
-                                            <Switch checked={showQuickLinks1} onCheckedChange={setShowQuickLinks1} />
+                                            <Switch checked={showQuickLinks1} onCheckedChange={setShowQuickLinks1} disabled={isTranslationMode} />
                                         </div>
                                     </div>
                                     {showQuickLinks1 && (
                                         <>
                                             <BuilderCountedInput
                                                 label="List 1 Heading"
-                                                value={topListHeading}
-                                                onChange={setTopListHeading}
                                                 maxLength={80}
+                                                {...bind('top_list_heading', topListHeading, setTopListHeading)}
                                             />
                                             <MultiSelectPages
+                                                disabled={isTranslationMode}
                                                 label="Add Pages to Link List 1"
                                                 value={selectedPages}
                                                 options={pageOptions}
@@ -461,18 +524,18 @@ export function FooterContent() {
                                         <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">Link List 2 (Dynamic Column)</h4>
                                         <div className="flex items-center gap-2">
                                             <span className="text-[11px] font-semibold text-slate-600">{showQuickLinks2 ? 'Show' : 'Hide'}</span>
-                                            <Switch checked={showQuickLinks2} onCheckedChange={setShowQuickLinks2} />
+                                            <Switch checked={showQuickLinks2} onCheckedChange={setShowQuickLinks2} disabled={isTranslationMode} />
                                         </div>
                                     </div>
                                     {showQuickLinks2 && (
                                         <>
                                             <BuilderCountedInput
                                                 label="List 2 Heading"
-                                                value={topListHeading2}
-                                                onChange={setTopListHeading2}
                                                 maxLength={80}
+                                                {...bind('top_list_heading_2', topListHeading2, setTopListHeading2)}
                                             />
                                             <MultiSelectPages
+                                                disabled={isTranslationMode}
                                                 label="Add Pages to Link List 2"
                                                 value={selectedPages2}
                                                 options={pageOptions}
@@ -488,7 +551,7 @@ export function FooterContent() {
                                         <h4 className="font-semibold text-xs text-foreground">Enable Newsletter</h4>
                                         <p className="text-[10px] text-muted-foreground">Display subscribe input.</p>
                                     </div>
-                                    <Switch checked={newsletterEnabled} onCheckedChange={setNewsletterEnabled} />
+                                    <Switch checked={newsletterEnabled} onCheckedChange={setNewsletterEnabled} disabled={isTranslationMode} />
                                 </div>
 
                                 <div className="flex items-center justify-between rounded-lg border p-2.5 bg-card">
@@ -496,7 +559,7 @@ export function FooterContent() {
                                         <h4 className="font-semibold text-xs text-foreground">Show Social Links</h4>
                                         <p className="text-[10px] text-muted-foreground">Display social icon links.</p>
                                     </div>
-                                    <Switch checked={showSocialLinks} onCheckedChange={setShowSocialLinks} />
+                                    <Switch checked={showSocialLinks} onCheckedChange={setShowSocialLinks} disabled={isTranslationMode} />
                                 </div>
                             </CardContent>
                         </Card>

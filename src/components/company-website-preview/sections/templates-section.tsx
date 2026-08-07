@@ -3,7 +3,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { ChevronDown, ChevronLeft, ChevronRight, Heart, Layout, Eye, Search, Flame, Palette, Filter, ArrowDown } from 'lucide-react';
 import type { ThemeColors } from './preview-shared';
-import { useWebsiteBuilderTranslation } from '@/hooks/use-website-builder-translation';
+import { useWebsiteLanguage } from '../website-language-provider';
 
 export interface TemplateItem {
   id: number;
@@ -32,7 +32,7 @@ const ALL_CATEGORY = '__all_categories__';
 const MAX_VISIBLE_PILLS = 6;
 
 export function TemplatesSection({ templates = [], theme, categories = [], onPreview, title, subtitle }: TemplatesSectionProps) {
-  const { t } = useWebsiteBuilderTranslation();
+  const { t } = useWebsiteLanguage();
   const [activeCategory, setActiveCategory] = useState<string>(ALL_CATEGORY);
   const [showMoreCategories, setShowMoreCategories] = useState(false);
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
@@ -241,7 +241,7 @@ function TemplateCard({
   onToggleFavorite: () => void;
   onPreview?: (template: TemplateItem) => void;
 }) {
-  const { t } = useWebsiteBuilderTranslation();
+  const { t } = useWebsiteLanguage();
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs transition hover:shadow-md">
       <div className="relative aspect-[3/4] w-full overflow-hidden bg-slate-100">

@@ -20,6 +20,9 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { useSectionTranslation, handleTranslationSave } from '@/hooks/useSectionTranslation';
+import { TranslationSideCard } from './translation-side-card';
+import { TranslationModeBanner } from './translation-mode-banner';
 
 interface FaqFormContentProps {
     id?: number;
@@ -61,7 +64,27 @@ export function FaqFormContent({ id }: FaqFormContentProps) {
 
     const isSaving = createMutation.isPending || updateMutation.isPending;
 
-    const handleSave = () => {
+    // Per-form translation mode (?lang=<id>), same as Hero Section.
+    // Field keys match the `faqs` entry in the backend FIELD_CATALOG, which
+    // registers at page_slug='' with the FAQ row id as record_id.
+    const translationFields = [
+        { key: 'question', label: 'Question', type: 'textarea' as const, value: question },
+        { key: 'answer', label: 'Answer', type: 'textarea' as const, value: answer },
+    ];
+    const translation = useSectionTranslation({
+        section: 'faqs',
+        recordId: id,
+        fields: translationFields,
+    });
+    const { isTranslationMode, bind } = translation;
+    // Category, tags, status, order and the featured flag are shared across
+    // languages - they are edited from the English version only.
+    const sharedOnly = cn(isTranslationMode && 'opacity-50 pointer-events-none');
+
+    const handleSave = async () => {
+        // In translation mode only the translated text is written; the FAQ row
+        // itself is untouched, so the English validation below does not apply.
+        if (await handleTranslationSave(translation, 'FAQ')) return;
         const newErrors: { question?: string; category?: string; answer?: string; displayOrder?: string } = {};
 
         if (!question.trim()) {
@@ -121,6 +144,9 @@ export function FaqFormContent({ id }: FaqFormContentProps) {
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight text-foreground">
                         {isEdit ? 'Edit FAQ' : 'Add New FAQ'}
+                        {isTranslationMode && translation.activeLanguage && (
+                            <span className="ml-2 text-primary">({translation.activeLanguage.name})</span>
+                        )}
                     </h1>
                     <p className="text-sm text-muted-foreground mt-0.5">
                         Add a frequently asked question and answer to help your users.
@@ -139,18 +165,38 @@ export function FaqFormContent({ id }: FaqFormContentProps) {
                     <Button
                         size="sm"
                         onClick={handleSave}
-                        disabled={isSaving}
+                        disabled={isSaving || translation.isSaving}
                         className="h-9 px-4 gap-2 bg-primary text-primary-foreground hover:bg-primary/90 font-bold shadow-xs cursor-pointer"
                     >
-                        {isSaving ? (
+                        {isSaving || translation.isSaving ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
                             <Save className="h-4 w-4" />
                         )}
-                        {isSaving ? 'Saving...' : 'Save FAQ'}
+                        {isSaving || translation.isSaving ? 'Saving...' : isTranslationMode ? 'Save Translation' : 'Save FAQ'}
                     </Button>
                 </div>
             </div>
+
+            {/* Languages + translation mode - only once the FAQ exists, since a
+                translation slot is addressed by the saved row's id. */}
+            {isEdit && id ? (
+                <div className="flex flex-col gap-3">
+                    <div className="w-full self-end lg:w-72">
+                        <TranslationSideCard
+                            section="faqs"
+                            recordId={id}
+                            activeLanguageId={translation.activeLanguage?.id ?? null}
+                            buildHref={translation.buildHref}
+                        canTranslate={translation.canTranslate}
+                            fields={translationFields}
+                        />
+                    </div>
+                    <div className="order-first min-w-0">
+                        <TranslationModeBanner translation={translation} label="this FAQ" />
+                    </div>
+                </div>
+            ) : null}
 
             {/* Section 1: FAQ Details */}
             <Card className="border-border bg-card shadow-xs overflow-hidden">
@@ -167,13 +213,12 @@ export function FaqFormContent({ id }: FaqFormContentProps) {
                                 <BuilderCountedTextarea
                                     label="Question"
                                     required
-                                    placeholder="Enter the question here..."
-                                    value={question}
-                                    onChange={(val) => {
+                                    maxLength={200}
+                                    {...bind('question', question, (val) => {
                                         setQuestion(val);
                                         if (errors.question) setErrors(prev => ({ ...prev, question: undefined }));
-                                    }}
-                                    maxLength={200}
+                                    })}
+                                    placeholder={isTranslationMode ? question : 'Enter the question here...'}
                                     textareaClassName={cn(
                                         'min-h-[90px] text-xs border-border bg-background text-foreground',
                                         errors.question && 'border-red-500 ring-1 ring-red-500 bg-red-50/10'
@@ -187,8 +232,8 @@ export function FaqFormContent({ id }: FaqFormContentProps) {
                                 )}
                             </div>
 
-                            {/* Category Select */}
-                            <div className="space-y-1.5">
+                            {/* Category Select - shared across languages */}
+                            <div className={cn('space-y-1.5', sharedOnly)}>
                                 <Label className="text-xs font-bold text-foreground flex items-center gap-1">
                                     Category <span className="text-red-500">*</span>
                                 </Label>
@@ -220,8 +265,8 @@ export function FaqFormContent({ id }: FaqFormContentProps) {
                                 )}
                             </div>
 
-                            {/* Tags Input */}
-                            <div>
+                            {/* Tags Input - shared across languages */}
+                            <div className={sharedOnly}>
                                 <BuilderCountedInput
                                     label="Tags (Optional)"
                                     placeholder="Add tags and press Enter..."
@@ -252,11 +297,10 @@ export function FaqFormContent({ id }: FaqFormContentProps) {
                                 errors.answer ? 'border-red-500 ring-1 ring-red-500' : 'border-border'
                             )}>
                                 <RichTextEditor
-                                    value={answer}
-                                    onChange={(val) => {
+                                    {...bind('answer', answer, (val) => {
                                         setAnswer(val);
                                         if (errors.answer) setErrors(prev => ({ ...prev, answer: undefined }));
-                                    }}
+                                    })}
                                     placeholder="Enter the answer here..."
                                 />
                             </div>
@@ -279,8 +323,8 @@ export function FaqFormContent({ id }: FaqFormContentProps) {
                         2. Settings
                     </h2>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-                        {/* Status Toggle */}
+                    <div className={cn('grid grid-cols-1 md:grid-cols-3 gap-6 items-start', sharedOnly)}>
+                        {/* Status Toggle - shared across languages */}
                         <div className="space-y-2">
                             <Label className="text-xs font-bold text-foreground flex items-center gap-1">
                                 Status <span className="text-red-500">*</span>

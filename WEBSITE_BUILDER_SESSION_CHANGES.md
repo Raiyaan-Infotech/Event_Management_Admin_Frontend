@@ -1327,6 +1327,41 @@ Files: [header-section.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src
 - Executed raw DDL migrations directly on **Local MySQL** (`localhost:3306`) and **Live Production MySQL** (`mysql-cbe9f33-jamaludheen779-4e61.k.aivencloud.com:15373`) for `company_website_footer_settings`, `vendor_website_footer_settings`, `company_website_pricing_matrix_features`, and `vendor_website_pricing_matrix_features`.
 - Removed auto-creation runtime helper methods from backend controller [companyWebsiteBuilder.controller.js](file:///d:/Jamal/Event_Management_Admin_Backend/src/controllers/companyWebsiteBuilder.controller.js) for clean production query execution.
 
+---
+
+## Session 4 — Website Builder Preview Color Legibility, Website Builder Static JSON i18n Dictionaries (`en.json` & `hi.json`), and Complete Access Token Refresh & Expiration Fix
+
+> **Date:** 2026-08-06 | **Backend:** `D:\Jamal\Event_Management_Admin_Backend` | **Frontend:** `D:\Jamal\Event_Management_Admin_Frontend`
+
+### 23. Website Preview Button Hover Text Color Legibility Fix
+- **Issue:** Hovering over non-featured pricing card buttons ("Choose Starter", "Choose Professional", etc.) caused button text color to blend into background color due to inline style precedence overriding Tailwind `hover:text-white` classes.
+- **Fix:** Updated `onMouseEnter` and `onMouseLeave` handlers in [pricing-section.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/company-website-preview/sections/pricing-section.tsx) and [templates-section.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/company-website-preview/sections/templates-section.tsx) to set `e.currentTarget.style.color = '#ffffff'` directly on hover, ensuring 100% text legibility.
+
+### 24. Static JSON Multi-Language Translation System (`en.json` & `hi.json`) for Website Builder
+- **Created Static Dictionaries:**
+  - [en.json](file:///d:/Jamal/Event_Management_Admin_Frontend/src/locales/website-builder/en.json) for English translations.
+  - [hi.json](file:///d:/Jamal/Event_Management_Admin_Frontend/src/locales/website-builder/hi.json) for Hindi translations.
+  - [index.ts](file:///d:/Jamal/Event_Management_Admin_Frontend/src/locales/website-builder/index.ts) resolver supporting nested keys (e.g. `pricing.choose_plan`), variable interpolation (e.g. `{planName}`), and English fallbacks.
+- **Created Dedicated Hook:**
+  - [use-website-builder-translation.ts](file:///d:/Jamal/Event_Management_Admin_Frontend/src/hooks/use-website-builder-translation.ts) connecting with `useTranslation()` context to provide instant static dictionary lookups for Website Builder components.
+- **Mapped All Website Builder Preview Components:**
+  - Mapped `t()` keys across [header-section.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/company-website-preview/sections/header-section.tsx), [hero-section.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/company-website-preview/sections/hero-section.tsx), [features-section.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/company-website-preview/sections/features-section.tsx), [templates-section.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/company-website-preview/sections/templates-section.tsx), [pricing-section.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/company-website-preview/sections/pricing-section.tsx), [how-it-works-section.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/company-website-preview/sections/how-it-works-section.tsx), [testimonials-section.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/company-website-preview/sections/testimonials-section.tsx), [faqs-section.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/company-website-preview/sections/faqs-section.tsx), [contact-section.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/company-website-preview/sections/contact-section.tsx), [footer-section.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/company-website-preview/sections/footer-section.tsx), [gallery-section.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/company-website-preview/sections/gallery-section.tsx), [highlights-section.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/company-website-preview/sections/highlights-section.tsx), and [login-demo-section.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/company-website-preview/sections/login-demo-section.tsx).
+  - Built interactive Globe Language Switcher in [header-section.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/components/company-website-preview/sections/header-section.tsx) allowing instant toggling between `English` and `हिन्दी`.
+
+### 25. Complete Access Token Expiration & Silent Refresh Fix (Backend & Frontend)
+- **Root Cause Analysis:**
+  - When short-lived `access_token` (15 minutes) expired, Axios interceptor in frontend called `POST /auth/refresh` (or `/auth/refresh-token`).
+  - Neither `/auth/refresh` nor `/auth/refresh-token` existed in backend `auth.routes.js` or `auth.controller.js`, returning `404 Not Found`.
+  - The frontend treated 404 as an invalid 7-day `refresh_token`, deleted session cookies, and forcibly redirected users to `/auth/login`.
+- **Backend Fixes Implemented:**
+  - Added `refresh` controller action in [auth.controller.js](file:///d:/Jamal/Event_Management_Admin_Backend/src/controllers/auth.controller.js) that reads `refresh_token` cookie, validates JWT signature and `is_active` DB status in `refresh_tokens` table, and sets a fresh 15-minute `access_token` cookie.
+  - Registered `POST /refresh` and `POST /refresh-token` as public routes in [auth.routes.js](file:///d:/Jamal/Event_Management_Admin_Backend/src/routes/auth.routes.js) before `isAuthenticated` middleware.
+  - Updated [auth.js](file:///d:/Jamal/Event_Management_Admin_Backend/src/middleware/auth.js) middleware to check `is_active: [1, true]` for reliable MySQL auto-refresh execution.
+- **Frontend Cookie Alignment:**
+  - Updated [signup/page.tsx](file:///d:/Jamal/Event_Management_Admin_Frontend/src/app/auth/signup/page.tsx) to set `access_token`, `refresh_token`, and `auth_pending` cookies upon registration.
+  - Updated [use-custom-hooks.ts](file:///d:/Jamal/Event_Management_Admin_Frontend/src/hooks/use-custom-hooks.ts) to verify both `access_token` and `refresh_token` cookie formats.
+
+
 
 
 

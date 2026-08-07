@@ -36,6 +36,7 @@ import { DeleteDialog } from '@/components/common/delete-dialog';
 import { useTemplates } from '@/hooks/useTemplates';
 
 import { BuilderDataTable, Column } from '../../_components/builder-data-table';
+import { RowTranslateButton } from '../../_components/row-translate-dialog';
 
 export default function TemplateCategoriesPage() {
     const { data: dbCategories, isLoading } = useTemplateCategories();
@@ -225,6 +226,15 @@ export default function TemplateCategoriesPage() {
                     >
                         <Pencil className="h-3.5 w-3.5" />
                     </Button>
+                        <RowTranslateButton
+                            section="template-categories"
+                            recordId={Number(cat.id) || undefined}
+                            rowLabel={cat.name}
+                            fields={[
+                                { key: 'name', label: 'Category Name', value: cat.name || '' },
+                                { key: 'description', label: 'Description', value: (cat as any).description || '', type: 'textarea' },
+                            ]}
+                        />
                     <Button
                         type="button"
                         variant="outline"

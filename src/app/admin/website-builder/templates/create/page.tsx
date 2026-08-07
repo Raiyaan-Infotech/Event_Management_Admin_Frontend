@@ -34,6 +34,9 @@ import {
     BuilderCountedTextarea,
 } from '../../_components/builder-field';
 import { cn } from '@/lib/utils';
+import { useSectionTranslation, handleTranslationSave } from '@/hooks/useSectionTranslation';
+import { TranslationSideCard } from '../../_components/translation-side-card';
+import { TranslationModeBanner } from '../../_components/translation-mode-banner';
 import { ImageCropper } from '@/components/common/image-cropper';
 import {
     useTemplates,
@@ -95,6 +98,23 @@ function CreateTemplatePage() {
 
     const isSaving = saveTemplateMutation.isPending;
 
+    // Per-form translation mode (?lang=<id>), same as Hero Section.
+    // Field keys match the `templates` entry in the backend FIELD_CATALOG,
+    // registered at page_slug='' with the template row id as record_id.
+    const translationFields = [
+        { key: 'template_name', label: 'Template Name', type: 'input' as const, value: templateName },
+        { key: 'description', label: 'Description', type: 'textarea' as const, value: description },
+    ];
+    const translation = useSectionTranslation({
+        section: 'templates',
+        recordId: templateId ? Number(templateId) : undefined,
+        fields: translationFields,
+    });
+    const { isTranslationMode, bind } = translation;
+    // Category, type, colors, uploads and settings are shared across
+    // languages - they are edited from the English version only.
+    const sharedOnly = cn(isTranslationMode && 'opacity-50 pointer-events-none');
+
     // Load existing template data when editing
     useEffect(() => {
         if (templateId && dbTemplates) {
@@ -150,7 +170,10 @@ function CreateTemplatePage() {
         }
     };
 
-    const handleSave = (isDraft = false) => {
+    const handleSave = async (isDraft = false) => {
+        // In translation mode only the translated text is written; the template
+        // row is untouched, so the English validation below does not apply.
+        if (await handleTranslationSave(translation, 'Template')) return;
         const newErrors: typeof errors = {};
         if (!templateName.trim()) newErrors.name = true;
         if (!categoryId) newErrors.category = true;
@@ -192,7 +215,12 @@ function CreateTemplatePage() {
             {/* Header */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-4">
                 <div>
-                    <h1 className="text-2xl font-black tracking-tight text-foreground">Add Template</h1>
+                    <h1 className="text-2xl font-black tracking-tight text-foreground">
+                        {templateId ? 'Edit Template' : 'Add Template'}
+                        {isTranslationMode && translation.activeLanguage && (
+                            <span className="ml-2 text-primary">({translation.activeLanguage.name})</span>
+                        )}
+                    </h1>
                     <p className="text-xs text-muted-foreground mt-0.5">
                         Create a beautiful event invitation template that your users can customize.
                     </p>
@@ -207,16 +235,36 @@ function CreateTemplatePage() {
                     <Button
                         size="sm"
                         onClick={() => handleSave(false)}
-                        disabled={isSaving}
+                        disabled={isSaving || translation.isSaving}
                         className="h-9 px-5 text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs gap-1.5"
                     >
-                        {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-                        {isSaving ? 'Saving...' : 'Save Template'}
+                        {isSaving || translation.isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                        {isSaving || translation.isSaving ? 'Saving...' : isTranslationMode ? 'Save Translation' : 'Save Template'}
                     </Button>
                 </div>
             </div>
 
             {/* 2-Column Workspace Grid */}
+            {/* Languages + translation mode - only once the template exists,
+                since a translation slot is addressed by the saved row's id. */}
+            {templateId ? (
+                <div className="flex flex-col gap-3">
+                    <div className="w-full self-end lg:w-72">
+                        <TranslationSideCard
+                            section="templates"
+                            recordId={Number(templateId)}
+                            activeLanguageId={translation.activeLanguage?.id ?? null}
+                            buildHref={translation.buildHref}
+                        canTranslate={translation.canTranslate}
+                            fields={translationFields}
+                        />
+                    </div>
+                    <div className="order-first min-w-0">
+                        <TranslationModeBanner translation={translation} label="this template" />
+                    </div>
+                </div>
+            ) : null}
+
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                 {/* Left Column - 4 Form Sections */}
                 <div className="lg:col-span-7 space-y-6">
@@ -233,13 +281,12 @@ function CreateTemplatePage() {
                             <BuilderCountedInput
                                 label="Template Name"
                                 required
-                                placeholder="e.g., Royal Wedding Invitation"
-                                value={templateName}
-                                onChange={(val) => {
+                                maxLength={100}
+                                {...bind('template_name', templateName, (val) => {
                                     setTemplateName(val);
                                     if (errors.name) setErrors(prev => ({ ...prev, name: false }));
-                                }}
-                                maxLength={100}
+                                })}
+                                placeholder={isTranslationMode ? templateName : 'e.g., Royal Wedding Invitation'}
                                 inputClassName={cn('!h-10 text-xs', errors.name && 'border-red-500 ring-1 ring-red-500')}
                             />
 
@@ -272,17 +319,16 @@ function CreateTemplatePage() {
 
                             <BuilderCountedTextarea
                                 label="Description (Optional)"
-                                placeholder="A short description about this template..."
-                                value={description}
-                                onChange={setDescription}
                                 maxLength={200}
+                                {...bind('description', description, setDescription)}
+                                placeholder={isTranslationMode ? description : 'A short description about this template...'}
                                 textareaClassName="min-h-[80px] text-xs py-2"
                             />
                         </CardContent>
                     </Card>
 
-                    {/* Section 2: Template Type & Style */}
-                    <Card className="shadow-xs border-border">
+                    {/* Section 2: Template Type & Style - shared across languages */}
+                    <Card className={cn('shadow-xs border-border', sharedOnly)}>
                         <CardContent className="p-5 space-y-5">
                             <div className="flex items-center gap-2 mb-2">
                                 <span className="h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-black flex items-center justify-center">
@@ -394,8 +440,8 @@ function CreateTemplatePage() {
                         </CardContent>
                     </Card>
 
-                    {/* Section 3: Template Design Uploads */}
-                    <Card className="shadow-xs border-border">
+                    {/* Section 3: Template Design Uploads - shared across languages */}
+                    <Card className={cn('shadow-xs border-border', sharedOnly)}>
                         <CardContent className="p-5 space-y-4">
                             <div className="flex items-center gap-2 mb-2">
                                 <span className="h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-black flex items-center justify-center">
@@ -467,8 +513,8 @@ function CreateTemplatePage() {
                         </CardContent>
                     </Card>
 
-                    {/* Section 4: Settings */}
-                    <Card className="shadow-xs border-border">
+                    {/* Section 4: Settings - shared across languages */}
+                    <Card className={cn('shadow-xs border-border', sharedOnly)}>
                         <CardContent className="p-5 space-y-4">
                             <div className="flex items-center gap-2 mb-2">
                                 <span className="h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-black flex items-center justify-center">

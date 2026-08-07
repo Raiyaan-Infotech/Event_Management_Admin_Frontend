@@ -40,6 +40,9 @@ import { Icon } from '@iconify/react';
 import { IconPickerDialog } from '@/components/common/icon-picker-dialog';
 import { useFeaturesData, useSaveFeaturesList, type FeatureItem } from '@/hooks/useFeatures';
 import { mediaApi } from '@/hooks/use-media';
+import { useSectionTranslation, handleTranslationSave } from '@/hooks/useSectionTranslation';
+import { TranslationSideCard } from '../../_components/translation-side-card';
+import { TranslationModeBanner } from '../../_components/translation-mode-banner';
 import {
     BuilderCountedInput,
     BuilderCountedTextarea,
@@ -90,6 +93,24 @@ function FeatureFormContent() {
     const [errors, setErrors] = useState<{ title?: boolean; shortDesc?: boolean; detailedDesc?: boolean }>({});
 
     const isSaving = saveFeaturesMutation.isPending;
+
+    // Per-form translation mode (?lang=<id>), same as Hero Section.
+    // Field keys match the `features` entry in the backend FIELD_CATALOG,
+    // which registers at page_slug='' with the feature row id as record_id.
+    const translationFields = [
+        { key: 'title', label: 'Title', type: 'input' as const, value: title },
+        { key: 'short_description', label: 'Short Description', type: 'textarea' as const, value: shortDesc },
+        { key: 'detailed_description', label: 'Detailed Description', type: 'textarea' as const, value: detailedDesc },
+    ];
+    const translation = useSectionTranslation({
+        section: 'features',
+        recordId: featureId ? Number(featureId) : undefined,
+        fields: translationFields,
+    });
+    const { isTranslationMode, bind } = translation;
+    // Icons, images, bullet points and display options are shared across
+    // languages - they are edited from the English version only.
+    const sharedOnly = cn(isTranslationMode && 'opacity-50 pointer-events-none');
 
     // Load feature data if editing
     useEffect(() => {
@@ -159,7 +180,10 @@ function FeatureFormContent() {
         setBullets((prev) => prev.filter((_, i) => i !== idx));
     };
 
-    const handleSaveFeature = () => {
+    const handleSaveFeature = async () => {
+        // In translation mode only the translated text is written; the feature
+        // row is untouched, so the English validation below does not apply.
+        if (await handleTranslationSave(translation, 'Feature')) return;
         const newErrors: { title?: boolean; shortDesc?: boolean } = {};
         if (!title.trim()) newErrors.title = true;
         if (!shortDesc.trim()) newErrors.shortDesc = true;
@@ -216,6 +240,9 @@ function FeatureFormContent() {
                     </div>
                     <h1 className="text-xl font-extrabold tracking-tight text-foreground">
                         {featureId ? 'Edit Feature' : 'Add New Feature'}
+                        {isTranslationMode && translation.activeLanguage && (
+                            <span className="ml-2 text-primary">({translation.activeLanguage.name})</span>
+                        )}
                     </h1>
                     <p className="text-xs text-muted-foreground">
                         Configure feature details, display options, and view real-time card preview.
@@ -231,14 +258,34 @@ function FeatureFormContent() {
                     <Button
                         size="sm"
                         onClick={handleSaveFeature}
-                        disabled={isSaving}
+                        disabled={isSaving || translation.isSaving}
                         className="h-9 px-4 text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs gap-1.5 cursor-pointer"
                     >
-                        {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                        Save Feature
+                        {isSaving || translation.isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                        {isTranslationMode ? 'Save Translation' : 'Save Feature'}
                     </Button>
                 </div>
             </div>
+
+            {/* Languages + translation mode - only once the feature exists,
+                since a translation slot is addressed by the saved row's id. */}
+            {featureId ? (
+                <div className="flex flex-col gap-3">
+                    <div className="w-full self-end lg:w-72">
+                        <TranslationSideCard
+                            section="features"
+                            recordId={Number(featureId)}
+                            activeLanguageId={translation.activeLanguage?.id ?? null}
+                            buildHref={translation.buildHref}
+                        canTranslate={translation.canTranslate}
+                            fields={translationFields}
+                        />
+                    </div>
+                    <div className="order-first min-w-0">
+                        <TranslationModeBanner translation={translation} label="this feature" />
+                    </div>
+                </div>
+            ) : null}
 
             {/* Form Layout: 2 Columns */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -312,26 +359,24 @@ function FeatureFormContent() {
                             <BuilderCountedInput
                                 label="Feature Title"
                                 required
-                                placeholder="e.g. Agenda & Schedule"
-                                value={title}
-                                onChange={(val) => {
+                                maxLength={50}
+                                {...bind('title', title, (val) => {
                                     setTitle(val);
                                     if (errors.title) setErrors(prev => ({ ...prev, title: false }));
-                                }}
-                                maxLength={50}
+                                })}
+                                placeholder={isTranslationMode ? title : 'e.g. Agenda & Schedule'}
                                 inputClassName={cn('!h-9 text-xs border-border bg-card text-foreground', errors.title && 'border-red-500 ring-1 ring-red-500')}
                             />
 
                             <BuilderCountedInput
                                 label="Short Description"
                                 required
-                                placeholder="e.g. Manage events and schedules with beautiful timelines."
-                                value={shortDesc}
-                                onChange={(val) => {
+                                maxLength={120}
+                                {...bind('short_description', shortDesc, (val) => {
                                     setShortDesc(val);
                                     if (errors.shortDesc) setErrors(prev => ({ ...prev, shortDesc: false }));
-                                }}
-                                maxLength={120}
+                                })}
+                                placeholder={isTranslationMode ? shortDesc : 'e.g. Manage events and schedules with beautiful timelines.'}
                                 inputClassName={cn('!h-9 text-xs border-border bg-card text-foreground', errors.shortDesc && 'border-red-500 ring-1 ring-red-500')}
                             />
                         </CardContent>
@@ -351,19 +396,16 @@ function FeatureFormContent() {
                         <CardContent className="p-4 space-y-2">
                             <BuilderCountedTextarea
                                 label="Detailed Description"
-                                placeholder="Explain how this feature helps guests or event hosts..."
-                                value={detailedDesc}
-                                onChange={(val) => {
-                                    setDetailedDesc(val);
-                                }}
                                 maxLength={500}
+                                {...bind('detailed_description', detailedDesc, setDetailedDesc)}
+                                placeholder={isTranslationMode ? detailedDesc : 'Explain how this feature helps guests or event hosts...'}
                                 textareaClassName="min-h-[100px] text-xs border-border bg-card text-foreground"
                             />
                         </CardContent>
                     </Card>
 
-                    {/* Section 3: Bullet Points */}
-                    <Card className="border-border bg-card shadow-xs">
+                    {/* Section 3: Bullet Points - shared across languages */}
+                    <Card className={cn('border-border bg-card shadow-xs', sharedOnly)}>
                         <CardHeader className="py-3.5 px-4 border-b border-border flex flex-row items-center gap-3">
                             <div className="h-7 w-7 rounded-full bg-emerald-500/20 text-emerald-600 font-extrabold flex items-center justify-center text-xs shrink-0">
                                 3
@@ -419,8 +461,8 @@ function FeatureFormContent() {
                         </CardContent>
                     </Card>
 
-                    {/* Section 4: Display Settings */}
-                    <Card className="border-border bg-card shadow-xs">
+                    {/* Section 4: Display Settings - shared across languages */}
+                    <Card className={cn('border-border bg-card shadow-xs', sharedOnly)}>
                         <CardHeader className="py-3.5 px-4 border-b border-border flex flex-row items-center gap-3">
                             <div className="h-7 w-7 rounded-full bg-emerald-500/20 text-emerald-600 font-extrabold flex items-center justify-center text-xs shrink-0">
                                 4
@@ -505,8 +547,8 @@ function FeatureFormContent() {
                         </CardContent>
                     </Card>
 
-                    {/* Section 5: Additional Options */}
-                    <Card className="border-border bg-card shadow-xs">
+                    {/* Section 5: Additional Options - shared across languages */}
+                    <Card className={cn('border-border bg-card shadow-xs', sharedOnly)}>
                         <CardHeader className="py-3.5 px-4 border-b border-border flex flex-row items-center gap-3">
                             <div className="h-7 w-7 rounded-full bg-emerald-500/20 text-emerald-600 font-extrabold flex items-center justify-center text-xs shrink-0">
                                 5

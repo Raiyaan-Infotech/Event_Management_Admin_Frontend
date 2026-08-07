@@ -89,16 +89,35 @@ interface HighlightsSectionProps {
     variant?: 'outline' | 'filled';
 }
 
-import { useWebsiteBuilderTranslation } from '@/hooks/use-website-builder-translation';
+import { useWebsiteLanguage } from '../website-language-provider';
 
 export function HighlightsSection({ pageSlug = 'home', instance = 1, data, theme }: HighlightsSectionProps) {
-    const { t } = useWebsiteBuilderTranslation();
+    const { t, translator } = useWebsiteLanguage();
     const { data: fetchedData } = useHighlights(pageSlug, instance);
     const config = { ...DEFAULT_HIGHLIGHTS, ...fetchedData, ...data };
 
     let defaultFallbackItems = instance === 2 ? DEFAULT_INSTANCE_2_ITEMS : DEFAULT_INSTANCE_1_ITEMS;
     
     let items = config.items && config.items.length > 0 ? config.items : defaultFallbackItems;
+
+    // Highlight cards live inside settings_json, so the backend registers them
+    // as flat item_<n>_title / item_<n>_description keys against this row's id.
+    // Positions are 1-based and must match that extractor. Only the saved rows
+    // have an id — the hardcoded fallback items are never translatable.
+    const recordId = (fetchedData as { id?: number } | undefined)?.id;
+    if (recordId && translator.active) {
+        items = items.map((item: { title: string; description: string }, index: number) => ({
+            ...item,
+            title: translator.field('highlights', recordId, `item_${index + 1}_title`, item.title, pageSlug),
+            description: translator.field(
+                'highlights',
+                recordId,
+                `item_${index + 1}_description`,
+                item.description,
+                pageSlug
+            ),
+        }));
+    }
 
     // Container background style mapped directly from config settings to inner box
     let containerStyle: React.CSSProperties = {};

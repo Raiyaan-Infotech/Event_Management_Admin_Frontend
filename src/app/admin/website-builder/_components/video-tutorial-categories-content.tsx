@@ -39,6 +39,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { RowTranslateButton } from './row-translate-dialog';
 
 const PRESET_COLORS = [
     '#FF4D8D',
@@ -314,6 +315,15 @@ export function VideoTutorialCategoriesContent() {
                                                         >
                                                             <Pencil className="h-3.5 w-3.5" />
                                                         </Button>
+                                                        <RowTranslateButton
+                                                            section="video-tutorial-categories"
+                                                            recordId={Number(cat.id) || undefined}
+                                                            rowLabel={cat.name}
+                                                            fields={[
+                                                                { key: 'name', label: 'Category Name', value: cat.name || '' },
+                                                                { key: 'description', label: 'Description', value: (cat as any).description || '', type: 'textarea' },
+                                                            ]}
+                                                        />
                                                         <Button
                                                             type="button"
                                                             variant="outline"

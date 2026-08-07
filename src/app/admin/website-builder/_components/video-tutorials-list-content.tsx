@@ -46,6 +46,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { RowTranslateButton } from './row-translate-dialog';
 
 function formatDuration(seconds: number): string {
     if (!seconds || seconds <= 0) return '00:00';
@@ -453,6 +454,16 @@ export function VideoTutorialsListContent() {
                                                         >
                                                             <Pencil className="h-3.5 w-3.5" />
                                                         </Button>
+                                                        <RowTranslateButton
+                                                            section="video-tutorials"
+                                                            recordId={Number(item.id) || undefined}
+                                                            rowLabel={item.title}
+                                                            fields={[
+                                                                { key: 'title', label: 'Title', value: item.title },
+                                                                { key: 'short_description', label: 'Short Description', value: item.short_description || '', type: 'textarea' },
+                                                                { key: 'key_takeaways', label: 'Key Takeaways', value: (item as any).key_takeaways || '', type: 'textarea' },
+                                                            ]}
+                                                        />
                                                         <Button
                                                             type="button"
                                                             variant="outline"

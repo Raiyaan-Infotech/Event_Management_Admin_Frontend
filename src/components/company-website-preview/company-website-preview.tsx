@@ -70,8 +70,9 @@ import {
   ChatSignupDemoSection,
   DynamicLoginDemoSection,
 } from './sections/login-demo-section';
+import { WebsiteLanguageProvider, useWebsiteLanguage } from './website-language-provider';
 
-export function CompanyWebsitePreview({ initialPage = 'home' }: { initialPage?: string }) {
+function CompanyWebsitePreviewInner({ initialPage = 'home' }: { initialPage?: string }) {
   const queryClient = useQueryClient();
 
   // ── SPA Navigation ──────────────────────────────────────────────────────────
@@ -108,6 +109,14 @@ export function CompanyWebsitePreview({ initialPage = 'home' }: { initialPage?: 
 
   const isLoading = l1 || l2 || l3 || l4 || l5 || l6 || l7 || l8 || l9;
 
+  // ── Content translations ────────────────────────────────────────────────────
+  // Admin-entered text is overlaid onto the raw records BEFORE the build*
+  // helpers run, so every section component below stays language-agnostic.
+  // On the default language `translator` is a pass-through and the records are
+  // returned untouched. Section names must match FIELD_CATALOG in the backend's
+  // websiteBuilderTranslation.service.js.
+  const { translator, direction } = useWebsiteLanguage();
+
   // ── Font Family Hook ───────────────────────────────────────────────────────
   const fontFamily = String((themeRaw as AnyRecord)?.font_family || (themeRaw as AnyRecord)?.font || (basicInfoRaw as AnyRecord)?.font_family || 'Inter');
 
@@ -134,7 +143,7 @@ export function CompanyWebsitePreview({ initialPage = 'home' }: { initialPage?: 
   };
 
   // ── Build derived data ──────────────────────────────────────────────────────
-  const basicInfo = basicInfoRaw as AnyRecord;
+  const basicInfo = translator.one('basic-information', basicInfoRaw as AnyRecord);
   const theme = parseThemeColors(themeRaw as AnyRecord);
   const header = parseHeaderSettings(basicInfo);
   const phone = buildPhone(header);
@@ -152,20 +161,26 @@ export function CompanyWebsitePreview({ initialPage = 'home' }: { initialPage?: 
 
   const tableLinks = (socialLinksRaw as AnyRecord[]) || [];
   const socialLinksSource: AnyRecord[] = jsonLinks.length > 0 ? jsonLinks : tableLinks;
-  const socialLinks = buildSocialLinks(socialLinksSource);
+  // Only the DB-backed table rows carry ids the scan registers; the
+  // social_links_json fallback has none, so translation is a no-op there.
+  const socialLinks = buildSocialLinks(translator.many('social-links', socialLinksSource));
 
-  const navItems = buildNavItems(menuItemsRaw as AnyRecord[], pagesRaw as AnyRecord[]);
-  const hero = buildHero(heroRaw as AnyRecord, theme);
+  // Page titles feed the nav, the footer link lists and the legal pages, so
+  // they're translated once here and reused.
+  const pages = translator.many('pages', pagesRaw as AnyRecord[]);
+
+  const navItems = buildNavItems(translator.many('nav-menu', menuItemsRaw as AnyRecord[]), pages);
+  const hero = buildHero(translator.one('hero-section', heroRaw as AnyRecord, activeKey), theme);
   const sliderMeta = buildSliderMeta(slidersRaw as AnyRecord[]);
-  const slides = buildSlides(sliderItemsRaw as AnyRecord[], sliderMeta);
-  const galleryCategories = buildGalleryCategories(galleryCatsRaw as AnyRecord[]);
-  const galleryItems = buildGalleryItems(galleryItemsRaw as AnyRecord[]);
-  const testimonials = buildTestimonials(testimonialsRaw as AnyRecord[]);
-  const clients = buildLogos(clientsRaw as AnyRecord[]);
-  const sponsors = buildLogos(sponsorsRaw as AnyRecord[]);
-  const footer = buildFooter(footerRaw as AnyRecord, pagesRaw as AnyRecord[], basicInfo as AnyRecord);
-  const contact = buildContact(contactRaw as AnyRecord, contactCatsRaw as AnyRecord[], socialLinks, basicInfo);
-  const legalPages = buildLegalPages(pagesRaw as AnyRecord[]);
+  const slides = buildSlides(translator.many('sliders', sliderItemsRaw as AnyRecord[]), sliderMeta);
+  const galleryCategories = buildGalleryCategories(translator.many('gallery-categories', galleryCatsRaw as AnyRecord[]));
+  const galleryItems = buildGalleryItems(translator.many('gallery', galleryItemsRaw as AnyRecord[]));
+  const testimonials = buildTestimonials(translator.many('testimonials', testimonialsRaw as AnyRecord[]));
+  const clients = buildLogos(translator.many('clients', clientsRaw as AnyRecord[]));
+  const sponsors = buildLogos(translator.many('sponsors', sponsorsRaw as AnyRecord[]));
+  const footer = buildFooter(translator.one('footer', footerRaw as AnyRecord), pages, basicInfo as AnyRecord);
+  const contact = buildContact(contactRaw as AnyRecord, translator.many('contact-categories', contactCatsRaw as AnyRecord[]), socialLinks, basicInfo);
+  const legalPages = buildLegalPages(pages);
   const companyName = String(basicInfo.company_name || 'Company');
   const companyLogo = String(
     basicInfo.logo_url || 
@@ -187,7 +202,7 @@ function extractList(raw: unknown): AnyRecord[] {
 }
 
   // Features mapping
-  const features = extractList(featuresRaw).map((f) => {
+  const features = translator.many('features', extractList(featuresRaw)).map((f) => {
     let bulletPoints: unknown[] = [];
     if (f.bullet_points_json) {
       try {
@@ -213,7 +228,7 @@ function extractList(raw: unknown): AnyRecord[] {
   });
 
   // How it works mapping
-  const howItWorksSteps = extractList(howItWorksRaw).map((s) => ({
+  const howItWorksSteps = translator.many('how-it-works', extractList(howItWorksRaw)).map((s) => ({
     id: Number(s.id),
     stepNumber: Number(s.step_number || s.sort_order || 1),
     title: String(s.title || ''),
@@ -225,7 +240,7 @@ function extractList(raw: unknown): AnyRecord[] {
   }));
 
   // Pricing mapping
-  const pricingPlans = extractList(pricingPlansRaw).map((p) => {
+  const pricingPlans = translator.many('pricing-plans', extractList(pricingPlansRaw)).map((p) => {
     let rawFeatures: unknown[] = [];
     if (p.features_json) {
       try {
@@ -265,14 +280,14 @@ function extractList(raw: unknown): AnyRecord[] {
   });
 
   // FAQs mapping
-  const faqs = extractList(faqsRaw).map((fq) => ({
+  const faqs = translator.many('faqs', extractList(faqsRaw)).map((fq) => ({
     id: Number(fq.id),
     question: String(fq.question || ''),
     answer: String(fq.answer || ''),
   }));
 
   // Video Tutorials mapping
-  const videoTutorials = extractList(videoTutorialsRaw).map((v) => {
+  const videoTutorials = translator.many('video-tutorials', extractList(videoTutorialsRaw)).map((v) => {
     const durSec = Number(v.duration_seconds || 0);
     return {
       id: Number(v.id),
@@ -285,7 +300,7 @@ function extractList(raw: unknown): AnyRecord[] {
   });
 
   // Templates mapping (sorted by sort_order / id ASC)
-  const templates = extractList(templatesRaw)
+  const templates = translator.many('templates', extractList(templatesRaw))
     .sort((a, b) => (Number(a.sort_order ?? a.id) - Number(b.sort_order ?? b.id)))
     .map((t) => ({
       id: Number(t.id),
@@ -412,6 +427,8 @@ function extractList(raw: unknown): AnyRecord[] {
   // ── Full Website Render ─────────────────────────────────────────────────────
   return (
     <div
+      // Languages flagged rtl in the builder flip the whole rendered site.
+      dir={direction}
       className="company-website-preview-root min-h-screen w-full overflow-x-hidden bg-white text-slate-950"
       style={{
         '--preview-primary-text': theme.primaryText,
@@ -476,5 +493,15 @@ function extractList(raw: unknown): AnyRecord[] {
         />
       ) : null}
     </div>
+  );
+}
+
+// The provider must sit ABOVE the component that calls useWebsiteLanguage(),
+// so the preview is wrapped rather than providing for itself.
+export function CompanyWebsitePreview({ initialPage = 'home' }: { initialPage?: string }) {
+  return (
+    <WebsiteLanguageProvider>
+      <CompanyWebsitePreviewInner initialPage={initialPage} />
+    </WebsiteLanguageProvider>
   );
 }

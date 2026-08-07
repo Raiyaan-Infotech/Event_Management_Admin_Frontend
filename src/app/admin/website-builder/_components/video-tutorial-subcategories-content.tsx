@@ -39,6 +39,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { RowTranslateButton } from './row-translate-dialog';
 
 const PRESET_COLORS = [
     '#8B5CF6',
@@ -347,6 +348,15 @@ export function VideoTutorialSubCategoriesContent() {
                                                         >
                                                             <Pencil className="h-3.5 w-3.5" />
                                                         </Button>
+                                                        <RowTranslateButton
+                                                            section="video-tutorial-subcategories"
+                                                            recordId={Number(sub.id) || undefined}
+                                                            rowLabel={sub.name}
+                                                            fields={[
+                                                                { key: 'name', label: 'Sub Category Name', value: sub.name || '' },
+                                                                { key: 'description', label: 'Description', value: (sub as any).description || '', type: 'textarea' },
+                                                            ]}
+                                                        />
                                                         <Button
                                                             type="button"
                                                             variant="outline"

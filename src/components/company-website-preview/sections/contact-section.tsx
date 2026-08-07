@@ -6,10 +6,10 @@ import { Mail, MapPin, Phone } from 'lucide-react';
 import { toast } from 'sonner';
 import type { ContactData, SocialLink, ThemeColors } from './preview-shared';
 
-import { useWebsiteBuilderTranslation } from '@/hooks/use-website-builder-translation';
+import { useWebsiteLanguage } from '../website-language-provider';
 
 function ContactSectionBase({ contact, theme }: { contact: ContactData; theme: ThemeColors }) {
-  const { t } = useWebsiteBuilderTranslation();
+  const { t } = useWebsiteLanguage();
   const [formData, setFormData] = React.useState({ name: '', email: '', phone: '', category: '', message: '' });
   const [submitting, setSubmitting] = React.useState(false);
   const [, setIconsLoaded] = React.useState(false);

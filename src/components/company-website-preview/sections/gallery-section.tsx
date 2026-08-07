@@ -4,10 +4,10 @@ import * as React from 'react';
 import { cn } from '@/lib/utils';
 import type { GalleryCategory, GalleryItem, ThemeColors } from './preview-shared';
 
-import { useWebsiteBuilderTranslation } from '@/hooks/use-website-builder-translation';
+import { useWebsiteLanguage } from '../website-language-provider';
 
 function GallerySectionBase({ categories, items, theme }: { categories: GalleryCategory[]; items: GalleryItem[]; theme: ThemeColors }) {
-  const { t } = useWebsiteBuilderTranslation();
+  const { t } = useWebsiteLanguage();
   const [activeCategory, setActiveCategory] = React.useState<number | 'all'>('all');
 
   if (!items.length) return null;

@@ -42,6 +42,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { RowTranslateButton } from './row-translate-dialog';
 
 const ICON_OPTIONS = [
     { label: 'Rocket (Getting Started)', value: 'Rocket', icon: Rocket },
@@ -275,6 +276,15 @@ export function FaqCategoriesBuilderContent() {
                                                         >
                                                             <Pencil className="h-3.5 w-3.5" />
                                                         </Button>
+                                                        <RowTranslateButton
+                                                            section="faq-categories"
+                                                            recordId={Number(cat.id) || undefined}
+                                                            rowLabel={cat.name}
+                                                            fields={[
+                                                                { key: 'name', label: 'Category Name', value: cat.name || '' },
+                                                                { key: 'description', label: 'Description', value: (cat as any).description || '', type: 'textarea' },
+                                                            ]}
+                                                        />
                                                         <Button
                                                             type="button"
                                                             variant="outline"

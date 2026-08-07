@@ -1,0 +1,325 @@
+'use client';
+
+/**
+ * Per-form translation mode for a Website Builder section (Botble-style).
+ *
+ * A section form enters translation mode when the URL carries `?lang=<id>` for
+ * a non-default language. In that mode the form edits
+ * `company_website_content_translations` instead of the section's own table:
+ * text fields hold the translated values, and everything else (images, colors,
+ * layout, URLs) is shared across languages and must be locked.
+ *
+ * Extracted from hero-section-content.tsx so each section needs only a few
+ * lines rather than its own copy of this logic.
+ *
+ * ── The slot rule (read this before wiring a new section) ───────────────────
+ * A translation is addressed by 5 parts:
+ *   (company_id, section, page_slug, record_id, field_key)
+ * `section`, `pageSlug` and `recordId` passed here MUST produce the same slot
+ * the backend's content scan registers (FIELD_CATALOG in
+ * websiteBuilderTranslation.service.js). If they disagree the lookup returns
+ * `{}` — no error, no warning, just an empty form. Verify with:
+ *   curl ".../content-translations?section=X&page_slug=Y&record_id=Z"
+ * Most sections register at `page_slug=''` and `record_id=<row id>`; hero is
+ * the exception, registering per page.
+ */
+
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { toast } from 'sonner';
+import {
+  useBuilderLanguages,
+  useContentTranslations,
+  useSaveContentTranslations,
+  useRegisterTranslationKeys,
+  type BuilderLanguage,
+  type TranslatableFieldInput,
+} from '@/hooks/useWebsiteBuilderTranslations';
+
+export interface SectionTranslationOptions {
+  /** Must match a FIELD_CATALOG key in the backend service, e.g. 'footer'. */
+  section: string;
+  /** Only hero uses a real page slug; leave undefined for everything else. */
+  pageSlug?: string;
+  /** The content row's id. Undefined until the section's data has loaded. */
+  recordId?: number;
+  /**
+   * The section's translatable fields with their current English text.
+   * Field keys must match the column names the backend scan registers.
+   */
+  fields: TranslatableFieldInput[];
+}
+
+export interface SectionTranslation {
+  /** True when editing a non-default language. Drives the locked/dimmed UI. */
+  isTranslationMode: boolean;
+  /**
+   * False until the section's row exists in the DB. A translation slot is
+   * addressed by the saved row's id, so with no row there is nothing to write
+   * to and nothing for the backend scan to have registered. Gate the whole
+   * translation UI on this — see `blockedReason`.
+   */
+  canTranslate: boolean;
+  /** Human-readable reason translation is unavailable, or null when it is. */
+  blockedReason: string | null;
+  activeLanguage: BuilderLanguage | null;
+  /** Current translated values, keyed by field key. Empty in English mode. */
+  values: Record<string, string>;
+  setValue: (fieldKey: string, value: string) => void;
+  /** Persists the translated values. No-op outside translation mode. */
+  save: () => Promise<boolean>;
+  isSaving: boolean;
+  /** Machine-translates every field from English and fills the form. */
+  autoTranslate: () => Promise<void>;
+  isAutoTranslating: boolean;
+  /**
+   * Live progress of the running auto-translation, or null when idle.
+   * `done`/`total` come from real per-field events streamed by the backend —
+   * this is not a simulated bar.
+   */
+  autoTranslateProgress: { done: number; total: number; field?: string } | null;
+  /** Builds the `?lang=` URL for the side card; null = back to English. */
+  buildHref: (languageId: number | null) => string;
+  /** Registers the English source text — call after a successful English save. */
+  registerKeys: () => void;
+  /**
+   * Convenience for binding a text input:
+   *   <Input {...bind('title', title, setTitle)} />
+   * In English mode it passes the base value/handler through; in translation
+   * mode it swaps in the translated value and shows the English as placeholder.
+   */
+  bind: (
+    fieldKey: string,
+    baseValue: string,
+    setBaseValue: (value: string) => void
+  ) => { value: string; onChange: (value: string) => void; placeholder?: string };
+}
+
+export function useSectionTranslation({
+  section,
+  pageSlug,
+  recordId,
+  fields,
+}: SectionTranslationOptions): SectionTranslation {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
+
+  const langParam = searchParams.get('lang');
+  const activeLanguageId = langParam ? Number(langParam) : null;
+
+  const { data: builderLanguages } = useBuilderLanguages();
+  // The default language is the English source — it is edited through the
+  // normal form, never through translation mode.
+  const activeLanguage = activeLanguageId
+    ? (builderLanguages || []).find(
+        (lang) => lang.id === activeLanguageId && Number(lang.is_default) !== 1
+      ) || null
+    : null;
+  const isTranslationMode = !!activeLanguage;
+
+  const { data: contentTranslations } = useContentTranslations(section, pageSlug, recordId);
+  const saveTranslation = useSaveContentTranslations(section, pageSlug, recordId);
+  const registerTranslationKeys = useRegisterTranslationKeys();
+
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [autoTranslateProgress, setAutoTranslateProgress] =
+    useState<{ done: number; total: number; field?: string } | null>(null);
+
+  // Reload whenever the language changes or fresh translations arrive.
+  useEffect(() => {
+    if (!activeLanguage) {
+      setValues({});
+      return;
+    }
+    setValues({ ...(contentTranslations?.[activeLanguage.id] || {}) });
+  }, [activeLanguage?.id, contentTranslations]);
+
+  const setValue = useCallback((fieldKey: string, value: string) => {
+    // Functional updater: these forms often carry file uploads and rich-text
+    // editors whose async callbacks would otherwise write a stale snapshot back.
+    setValues((prev) => ({ ...prev, [fieldKey]: value }));
+  }, []);
+
+  const fieldKeys = useMemo(() => fields.map((field) => field.key), [fields]);
+
+  // A section that has never been saved has no row id. Writing anyway would
+  // land in slot `record_id = 0` (the backend coerces undefined with `|| 0`),
+  // creating orphan translations that no content will ever resolve to.
+  const canTranslate = !!recordId;
+  const blockedReason = canTranslate
+    ? null
+    : 'Save this section in English first — a translation is stored against the saved record.';
+
+  const save = useCallback(async (): Promise<boolean> => {
+    if (!activeLanguage) return false;
+    if (!recordId) {
+      toast.error(
+        'Save this section in English first, then translate it.'
+      );
+      return false;
+    }
+    // Send every declared field, not just the edited ones, so clearing a
+    // translation back to empty actually persists.
+    const payload: Record<string, string> = {};
+    fieldKeys.forEach((key) => {
+      payload[key] = values[key] ?? '';
+    });
+    try {
+      await saveTranslation.mutateAsync({ language_id: activeLanguage.id, values: payload });
+      return true;
+    } catch {
+      // useSaveContentTranslations already surfaces the error toast.
+      return false;
+    }
+  }, [activeLanguage, recordId, fieldKeys, values, saveTranslation]);
+
+  const autoTranslate = useCallback(async () => {
+    if (!activeLanguage) return;
+    if (!recordId) {
+      toast.error('Save this section in English first, then translate it.');
+      return;
+    }
+
+    const languageId = activeLanguage.id;
+    setAutoTranslateProgress({ done: 0, total: 0 });
+
+    // Streams one event per translated field so the overlay can show a real
+    // percentage. EventSource can't send custom headers, so company scoping
+    // rides on the query string (optionalCompanyAuth accepts company_id there).
+    const params = new URLSearchParams({
+      section,
+      page_slug: pageSlug || '',
+      record_id: String(recordId),
+      language_id: String(languageId),
+    });
+    if (typeof window !== 'undefined') {
+      const companyId = window.localStorage.getItem('currentCompanyId');
+      if (companyId) params.set('company_id', companyId);
+    }
+
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const source = new EventSource(
+          `/api/proxy/v1/website-builder/content-translations/auto-translate/stream?${params.toString()}`,
+          { withCredentials: true }
+        );
+
+        const close = () => source.close();
+
+        source.addEventListener('progress', (event) => {
+          try {
+            const data = JSON.parse((event as MessageEvent).data);
+            setAutoTranslateProgress({ done: data.done, total: data.total, field: data.field });
+          } catch {
+            // a malformed frame shouldn't abort the run
+          }
+        });
+
+        source.addEventListener('complete', (event) => {
+          try {
+            const data = JSON.parse((event as MessageEvent).data);
+            const translated = data?.translations?.[languageId];
+            if (translated) setValues({ ...translated });
+          } catch {
+            // fall through — the refetch below still picks the values up
+          }
+          close();
+          resolve();
+        });
+
+        source.addEventListener('error', (event) => {
+          close();
+          let message = 'Failed to auto-translate';
+          try {
+            const data = JSON.parse((event as MessageEvent).data);
+            if (data?.message) message = data.message;
+          } catch {
+            // A transport-level error carries no data payload.
+          }
+          reject(new Error(message));
+        });
+      });
+
+      // Keep the side card counts and the central Translations page in step.
+      queryClient.invalidateQueries({ queryKey: ['website-builder-content-translations'] });
+      queryClient.invalidateQueries({ queryKey: ['website-builder-translation-keys'] });
+      queryClient.invalidateQueries({ queryKey: ['website-builder-translation-stats'] });
+      toast.success(`Translated to ${activeLanguage.name}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to auto-translate');
+    } finally {
+      setAutoTranslateProgress(null);
+    }
+  }, [activeLanguage, recordId, section, pageSlug, queryClient]);
+
+  const buildHref = useCallback(
+    (languageId: number | null) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (languageId) params.set('lang', String(languageId));
+      else params.delete('lang');
+      const query = params.toString();
+      return query ? `${pathname}?${query}` : pathname;
+    },
+    [pathname, searchParams]
+  );
+
+  const registerKeys = useCallback(() => {
+    if (!recordId) return;
+    registerTranslationKeys.mutate({
+      section,
+      page_slug: pageSlug,
+      record_id: recordId,
+      fields,
+    });
+  }, [section, pageSlug, recordId, fields, registerTranslationKeys]);
+
+  const bind = useCallback(
+    (fieldKey: string, baseValue: string, setBaseValue: (value: string) => void) =>
+      isTranslationMode
+        ? {
+            value: values[fieldKey] ?? '',
+            onChange: (value: string) => setValue(fieldKey, value),
+            // The English text as placeholder shows the translator the source.
+            placeholder: baseValue || undefined,
+          }
+        : { value: baseValue, onChange: setBaseValue },
+    [isTranslationMode, values, setValue]
+  );
+
+  return {
+    // Never enter translation mode for an unsaved record.
+    isTranslationMode: isTranslationMode && canTranslate,
+    canTranslate,
+    blockedReason,
+    activeLanguage,
+    values,
+    setValue,
+    save,
+    isSaving: saveTranslation.isPending,
+    autoTranslate,
+    isAutoTranslating: autoTranslateProgress !== null,
+    autoTranslateProgress,
+    buildHref,
+    registerKeys,
+    bind,
+  };
+}
+
+/**
+ * Guard for a section's save handler. Returns true when the save was handled as
+ * a translation save and the caller should stop.
+ */
+export async function handleTranslationSave(
+  translation: SectionTranslation,
+  sectionLabel: string
+): Promise<boolean> {
+  if (!translation.isTranslationMode || !translation.activeLanguage) return false;
+  const ok = await translation.save();
+  if (ok) {
+    toast.success(`${translation.activeLanguage.name} translation for ${sectionLabel} saved successfully`);
+  }
+  return true;
+}

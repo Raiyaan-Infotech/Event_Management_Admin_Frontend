@@ -72,10 +72,16 @@ function HeroSectionBase({ hero, theme, onNavigate }: { hero: HeroData; theme: T
 
 import { useCompanyHeroSection } from '@/hooks/useCompanyWebsiteBuilder';
 import { buildHero, type AnyRecord } from './preview-shared';
+import { useWebsiteLanguage } from '../website-language-provider';
 
 export function PageHeroSection({ pageSlug = 'home', theme, onNavigate }: { pageSlug?: string; theme: ThemeColors; onNavigate?: (href: string) => void }) {
   const { data: heroRaw } = useCompanyHeroSection(pageSlug);
-  const hero = buildHero(heroRaw as AnyRecord, theme);
+  const { translator } = useWebsiteLanguage();
+  // This section fetches its own data, so the overlay is applied here rather
+  // than at the preview root. Hero registers one translation slot per page,
+  // keyed by (page_slug, hero row id) — passing pageSlug is what makes the
+  // right page's translation resolve.
+  const hero = buildHero(translator.one('hero-section', (heroRaw || {}) as AnyRecord, pageSlug), theme);
   return <HeroSectionBase hero={hero} theme={theme} onNavigate={onNavigate} />;
 }
 

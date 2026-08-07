@@ -38,6 +38,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { RowTranslateButton } from './row-translate-dialog';
 
 // Icon Map for Category Pills
 const ICON_MAP: Record<string, any> = {
@@ -343,6 +344,15 @@ export function FaqsListContent() {
                                                         >
                                                             <Pencil className="h-3.5 w-3.5" />
                                                         </Button>
+                                                        <RowTranslateButton
+                                                            section="faqs"
+                                                            recordId={Number(faq.id) || undefined}
+                                                            rowLabel={faq.question}
+                                                            fields={[
+                                                                { key: 'question', label: 'Question', value: faq.question, type: 'textarea' },
+                                                                { key: 'answer', label: 'Answer', value: faq.answer, type: 'textarea' },
+                                                            ]}
+                                                        />
                                                         <Button
                                                             type="button"
                                                             variant="outline"

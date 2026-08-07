@@ -78,10 +78,10 @@ const ACCENTS: { bg: string; fg: string }[] = [
   { bg: '#FEF3C7', fg: '#D97706' }, // amber
 ];
 
-import { useWebsiteBuilderTranslation } from '@/hooks/use-website-builder-translation';
+import { useWebsiteLanguage } from '../website-language-provider';
 
 function FeaturesSectionBase({ features, theme }: { features: FeatureItem[]; theme: ThemeColors }) {
-  const { t } = useWebsiteBuilderTranslation();
+  const { t } = useWebsiteLanguage();
   // Only ever render features where isActive resolves to true — inactive
   // features must never reach the grid, regardless of what the caller passed in.
   const activeFeatures = React.useMemo(
