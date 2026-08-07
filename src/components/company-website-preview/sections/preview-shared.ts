@@ -499,10 +499,18 @@ export function buildFooter(footerSettings: AnyRecord = {}, pages: AnyRecord[] =
         return !!target && ((!!slug && (slug.includes(target) || target.includes(slug))) || (!!title && title.includes(target)));
       });
     if (page) {
+      // `pages` is passed in already translated, so the page title carries the
+      // active language.
       return { label: stringValue(page.title, raw), href: normalizeHref(page.slug) };
     }
-    const formattedLabel = raw.split(/[-_]/).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-    return { label: formattedLabel, href: raw.startsWith('/') ? raw : `/${raw}` };
+    // No matching page: the label is derived from the slug, which is text that
+    // exists in no content table. The backend registers a `quick_link.<slug>`
+    // translation key for exactly these, and `footerSettings` arrives here
+    // already overlaid with the active language, so pick that up when present.
+    const derived = raw.replace(/^\/+/, '').split(/[-_/]/).filter(Boolean)
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    const translatedLabel = stringValue(footerSettings?.[`quick_link.${raw}`], '');
+    return { label: translatedLabel || derived, href: raw.startsWith('/') ? raw : `/${raw}` };
   };
 
   const quickLinks = (rawLinks1 as unknown[]).map(mapLink).filter(Boolean) as Array<{ label: string; href: string }>;

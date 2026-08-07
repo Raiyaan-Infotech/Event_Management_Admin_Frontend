@@ -109,10 +109,29 @@ export function WebsiteLanguageProvider({ children }: { children: React.ReactNod
 
   const direction = activeLanguage?.direction === 'rtl' ? 'rtl' : 'ltr';
 
+  // Static UI chrome ("Contact Us", "Send Message") is registered under a
+  // fixed slot on the SAME content-translations table as admin-entered
+  // content — see UI_CHROME_KEYS in the backend service — so it can be
+  // edited and auto-translated from the same admin Translations page instead
+  // of hand-editing locale JSON files. `bundleResponse` already contains it:
+  // the backend query has no section filter, so one bundle fetch covers both
+  // content and chrome. A key with no DB override falls back to the bundled
+  // src/locales/website-builder/*.json dictionary, so nothing regresses for
+  // strings that haven't been given a DB translation yet.
+  const uiChromeOverrides = bundleResponse?.translations?.['ui-chrome||0'];
   const t = React.useCallback(
-    (key: string, defaultValue?: string, variables?: Record<string, string | number>) =>
-      getWebsiteBuilderTranslation(language, key, defaultValue, variables),
-    [language]
+    (key: string, defaultValue?: string, variables?: Record<string, string | number>) => {
+      const override = !isDefault ? uiChromeOverrides?.[key]?.trim() : '';
+      const base = override || getWebsiteBuilderTranslation(language, key, defaultValue, variables);
+      if (!override || !variables) return base;
+      // The static lookup already applies {variable} substitution; a DB
+      // override needs the same treatment since it bypasses that path.
+      return Object.entries(variables).reduce(
+        (result, [varKey, varVal]) => result.replace(new RegExp(`\\{${varKey}\\}`, 'g'), String(varVal)),
+        base
+      );
+    },
+    [language, isDefault, uiChromeOverrides]
   );
 
   const value = React.useMemo<WebsiteLanguageValue>(

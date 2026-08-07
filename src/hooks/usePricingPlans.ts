@@ -74,6 +74,43 @@ export function useSavePricingPlans() {
     });
 }
 
+// Single-row create/update. Unlike `useSavePricingPlans` above (which deletes
+// and reinserts every plan on every call, reassigning ids and orphaning every
+// plan's saved translations), these touch only the one row being edited.
+export function useCreatePricingPlan() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (payload: Partial<PricingPlan>) => {
+            const res = await apiClient.post('/website-builder/pricing-plans', payload);
+            return res.data;
+        },
+        onSuccess: () => {
+            toast.success('Pricing plan created successfully!');
+            queryClient.invalidateQueries({ queryKey: ['website-builder-pricing-plans'] });
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || error.message || 'Error creating pricing plan.');
+        },
+    });
+}
+
+export function useUpdatePricingPlan() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ id, payload }: { id: number; payload: Partial<PricingPlan> }) => {
+            const res = await apiClient.put(`/website-builder/pricing-plans/${id}`, payload);
+            return res.data;
+        },
+        onSuccess: () => {
+            toast.success('Pricing plan updated successfully!');
+            queryClient.invalidateQueries({ queryKey: ['website-builder-pricing-plans'] });
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || error.message || 'Error updating pricing plan.');
+        },
+    });
+}
+
 export function useTogglePricingPlanStatus() {
     const queryClient = useQueryClient();
 
@@ -106,6 +143,59 @@ export function useSavePricingSettings() {
         },
         onError: (error: any) => {
             toast.error(error.response?.data?.message || error.message || 'Error saving pricing settings.');
+        },
+    });
+}
+
+// Single-row create/update/delete. Same reasoning as the pricing plan pair
+// above: the bulk save wipes and reinserts every feature row on every save.
+export function useCreatePricingMatrixFeature() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (payload: Partial<PricingMatrixFeature>) => {
+            const res = await apiClient.post('/website-builder/pricing/matrix-features', payload);
+            return res.data;
+        },
+        onSuccess: () => {
+            toast.success('Feature created successfully!');
+            queryClient.invalidateQueries({ queryKey: ['website-builder-pricing-matrix-features'] });
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || error.message || 'Error creating feature.');
+        },
+    });
+}
+
+export function useUpdatePricingMatrixFeature() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ id, payload }: { id: number; payload: Partial<PricingMatrixFeature> }) => {
+            const res = await apiClient.put(`/website-builder/pricing/matrix-features/${id}`, payload);
+            return res.data;
+        },
+        onSuccess: () => {
+            toast.success('Feature updated successfully!');
+            queryClient.invalidateQueries({ queryKey: ['website-builder-pricing-matrix-features'] });
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || error.message || 'Error updating feature.');
+        },
+    });
+}
+
+export function useDeletePricingMatrixFeature() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (id: number) => {
+            const res = await apiClient.delete(`/website-builder/pricing/matrix-features/${id}`);
+            return res.data;
+        },
+        onSuccess: () => {
+            toast.success('Feature removed successfully!');
+            queryClient.invalidateQueries({ queryKey: ['website-builder-pricing-matrix-features'] });
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || error.message || 'Error removing feature.');
         },
     });
 }

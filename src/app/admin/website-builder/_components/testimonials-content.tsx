@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
     Save,
     Plus,
@@ -79,14 +80,40 @@ const emptyTestimonial: Testimonial = {
 };
 
 export function TestimonialsContent() {
-    const { data: savedTestimonials = [], replace: replaceTestimonials, isLoading, isSaving: isSavingTestimonials } = useCompanyTestimonials();
+    // create/update/remove are the per-item CRUD calls the generic list hook
+    // already exposes. `replace` (bulk) is deliberately unused here now: it
+    // deletes every testimonial and reinserts the whole table with fresh
+    // auto-increment ids on every save, which silently orphaned every
+    // testimonial's translations (their record_id no longer matched any row)
+    // the moment ANY one of them was added, edited, or deleted.
+    const {
+        data: savedTestimonials = [],
+        create: createTestimonial,
+        update: updateTestimonial,
+        remove: removeTestimonial,
+        isLoading,
+        isSaving: isSavingTestimonials,
+    } = useCompanyTestimonials();
     const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
-    const [editingId, setEditingId] = useState<string>('');
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    // Which testimonial is being edited lives in the URL, not local state —
+    // local-only selection reset to the first row on any fresh page load
+    // (e.g. after switching language, which navigates to a new ?lang= URL),
+    // so translating testimonial #3 could silently end up editing #1 instead.
+    const editingIdParam = searchParams.get('id');
+    const editingId = editingIdParam || testimonials[0]?.id || '';
+    const setEditingId = (id: string) => {
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('id', id);
+        router.replace(`?${params.toString()}`);
+    };
     const [activePreviewIndex, setActivePreviewIndex] = useState(0);
     const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+    const [isAddingTestimonial, setIsAddingTestimonial] = useState(false);
     const [previewOpen, setPreviewOpen] = useState(false);
 
-    const isSaving = isSavingTestimonials || isUploadingPhoto;
+    const isSaving = isSavingTestimonials || isUploadingPhoto || isAddingTestimonial;
     const fileInputRef = useRef<HTMLInputElement>(null);
     const loadedRef = useRef(false);
 
@@ -104,7 +131,6 @@ export function TestimonialsContent() {
                 status: t.is_active !== undefined ? Boolean(t.is_active) : true,
             }));
             setTestimonials(mapped);
-            setEditingId(mapped[0].id);
             loadedRef.current = true;
         }
     }, [savedTestimonials]);
@@ -156,53 +182,63 @@ export function TestimonialsContent() {
         }
     };
 
-    const handleAddTestimonial = () => {
-        const next: Testimonial = {
-            id: `new-${Date.now()}`,
-            customerName: 'New Customer',
-            eventName: 'Event Name',
-            feedback: 'Add customer feedback here.',
-            photoUrl: avatarDataUrl('New Customer', '#6366f1'),
-            rating: 5,
-            showRating: true,
-            status: true,
-        };
-        setTestimonials((prev) => [...prev, next]);
-        setEditingId(next.id);
-        toast.success('New testimonial added.');
+    // Creates the row immediately (rather than staging a local draft with a
+    // fake id) so it has a real database id to select and, from there, to
+    // address translations against — a staged-until-Save row could never be
+    // translated because there was nothing yet for a slot to point at.
+    const handleAddTestimonial = async () => {
+        setIsAddingTestimonial(true);
+        try {
+            const created: any = await createTestimonial({
+                customer_name: 'New Customer',
+                event_name: 'Event Name',
+                feedback: 'Add customer feedback here.',
+                photo_url: avatarDataUrl('New Customer', '#6366f1'),
+                rating: 5,
+                show_rating: 1,
+                is_active: 1,
+                sort_order: testimonials.length + 1,
+            });
+            const newId = created?.data?.id ?? created?.id;
+            if (newId) setEditingId(String(newId));
+        } catch (err: any) {
+            toast.error(err?.message || 'Failed to add testimonial');
+        } finally {
+            setIsAddingTestimonial(false);
+        }
     };
 
-    const handleDeleteTestimonial = (testimonial: Testimonial) => {
-        setTestimonials((prev) => {
-            const next = prev.filter((t) => t.id !== testimonial.id);
-            if (testimonial.id === editingId && next[0]) {
-                setEditingId(next[0].id);
+    const handleDeleteTestimonial = async (testimonial: Testimonial) => {
+        try {
+            await removeTestimonial(Number(testimonial.id));
+            if (testimonial.id === editingId) {
+                const next = testimonials.find((t) => t.id !== testimonial.id);
+                if (next) setEditingId(next.id);
             }
-            return next.length ? next : prev;
-        });
-        toast.success('Testimonial removed.');
+        } catch (err: any) {
+            toast.error(err?.message || 'Failed to remove testimonial');
+        }
     };
 
     const handleSave = async () => {
         // In translation mode only the selected testimonial's translated text
         // is written; the testimonial rows themselves are untouched.
         if (await handleTranslationSave(translation, 'Testimonial')) return;
+        // Updates ONLY the testimonial being edited — not the bulk replace
+        // that used to rewrite every other testimonial's row (and id) too.
         try {
-            const payload = testimonials.map((t, idx) => ({
-                id: t.id.startsWith('new-') ? undefined : Number(t.id),
-                customer_name: t.customerName,
-                event_name: t.eventName,
-                feedback: t.feedback,
-                photo_url: t.photoUrl,
-                rating: t.rating,
-                show_rating: t.showRating ? 1 : 0,
-                is_active: t.status ? 1 : 0,
-                sort_order: idx + 1,
-            }));
-            await replaceTestimonials(payload);
-            toast.success('Testimonials saved successfully');
+            await updateTestimonial({
+                id: Number(activeItem.id),
+                customer_name: activeItem.customerName,
+                event_name: activeItem.eventName,
+                feedback: activeItem.feedback,
+                photo_url: activeItem.photoUrl,
+                rating: activeItem.rating,
+                show_rating: activeItem.showRating ? 1 : 0,
+                is_active: activeItem.status ? 1 : 0,
+            });
         } catch (err: any) {
-            toast.error(err?.message || 'Failed to save testimonials');
+            toast.error(err?.message || 'Failed to save testimonial');
         }
     };
 

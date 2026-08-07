@@ -37,8 +37,12 @@ import { IconPickerDialog } from '@/components/common/icon-picker-dialog';
 import {
     usePricingMatrixFeaturesData,
     useSavePricingMatrixFeatures,
+    useCreatePricingMatrixFeature,
+    useUpdatePricingMatrixFeature,
+    useDeletePricingMatrixFeature,
     type PricingMatrixFeature,
 } from '@/hooks/usePricingPlans';
+import { RowTranslateButton } from '../_components/row-translate-dialog';
 
 const ICON_OPTIONS = [
     { label: 'Live Streaming', value: 'Video', icon: Video },
@@ -226,7 +230,16 @@ const PLAN_TIERS = [
 
 export default function PlanFeaturesPage() {
     const { data: dbFeatures, isLoading } = usePricingMatrixFeaturesData();
+    // Per-item create/update/delete, NOT the bulk save-all hook: that endpoint
+    // deletes every feature and reinserts the whole table with fresh
+    // auto-increment ids on every save, which silently orphaned every
+    // feature's translations (their record_id no longer matched any row) the
+    // moment ANY feature was added, edited, or removed. Kept only for the
+    // drag-reorder path below, which just persists sort_order.
     const saveMutation = useSavePricingMatrixFeatures();
+    const createFeatureMutation = useCreatePricingMatrixFeature();
+    const updateFeatureMutation = useUpdatePricingMatrixFeature();
+    const deleteFeatureMutation = useDeletePricingMatrixFeature();
 
     const [features, setFeatures] = useState<PricingMatrixFeature[]>(DEFAULT_MATRIX_FEATURES);
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -309,33 +322,31 @@ export default function PlanFeaturesPage() {
         setModalOpen(true);
     };
 
-    const handleSaveFeature = () => {
+    const handleSaveFeature = async () => {
         if (!title.trim()) {
             toast.error('Feature title is required');
             return;
         }
 
-        const updatedFeat: PricingMatrixFeature = {
-            id: editingFeature ? editingFeature.id : Date.now(),
+        const payload: Partial<PricingMatrixFeature> = {
             feature_name: title.trim(),
             icon,
             description: description.trim(),
             category: 'Features',
             plan_values_json: tierLimits,
             is_active: isActive,
-            sort_order: editingFeature ? editingFeature.sort_order : features.length + 1,
         };
 
-        let next: PricingMatrixFeature[];
-        if (editingFeature) {
-            next = features.map((f) => (f.id === editingFeature.id || f.feature_name === editingFeature.feature_name ? updatedFeat : f));
-        } else {
-            next = [...features, updatedFeat];
+        try {
+            if (editingFeature?.id) {
+                await updateFeatureMutation.mutateAsync({ id: Number(editingFeature.id), payload });
+            } else {
+                await createFeatureMutation.mutateAsync({ ...payload, sort_order: features.length + 1 });
+            }
+            setModalOpen(false);
+        } catch {
+            // error toast handled by the mutation
         }
-
-        setFeatures(next);
-        setModalOpen(false);
-        toast.success(editingFeature ? 'Feature updated' : 'New feature added');
     };
 
     const handleDeleteFeature = (feat: PricingMatrixFeature) => {
@@ -343,12 +354,15 @@ export default function PlanFeaturesPage() {
         setDeleteDialogOpen(true);
     };
 
-    const confirmDelete = () => {
-        if (!featureToDelete) return;
-        setFeatures((prev) => prev.filter((f) => f.id !== featureToDelete.id && f.feature_name !== featureToDelete.feature_name));
-        setDeleteDialogOpen(false);
-        setFeatureToDelete(null);
-        toast.success('Feature removed');
+    const confirmDelete = async () => {
+        if (!featureToDelete?.id) return;
+        try {
+            await deleteFeatureMutation.mutateAsync(Number(featureToDelete.id));
+            setDeleteDialogOpen(false);
+            setFeatureToDelete(null);
+        } catch {
+            // error toast handled by the mutation
+        }
     };
 
     const handleSaveAll = async () => {
@@ -560,6 +574,15 @@ export default function PlanFeaturesPage() {
                                                     >
                                                         <Pencil className="h-3.5 w-3.5" />
                                                     </button>
+                                                    <RowTranslateButton
+                                                        section="pricing-features"
+                                                        recordId={Number(feat.id) || undefined}
+                                                        rowLabel={feat.feature_name}
+                                                        fields={[
+                                                            { key: 'feature_name', label: 'Feature Name', value: feat.feature_name || '' },
+                                                            { key: 'description', label: 'Description', value: feat.description || '', type: 'textarea' },
+                                                        ]}
+                                                    />
                                                     <button
                                                         type="button"
                                                         onClick={() => handleDeleteFeature(feat)}
@@ -762,8 +785,13 @@ export default function PlanFeaturesPage() {
                         <Button variant="outline" size="sm" onClick={() => setModalOpen(false)}>
                             Cancel
                         </Button>
-                        <Button size="sm" onClick={handleSaveFeature} className="bg-primary text-primary-foreground font-bold">
-                            Save Feature
+                        <Button
+                            size="sm"
+                            onClick={handleSaveFeature}
+                            disabled={createFeatureMutation.isPending || updateFeatureMutation.isPending}
+                            className="bg-primary text-primary-foreground font-bold"
+                        >
+                            {createFeatureMutation.isPending || updateFeatureMutation.isPending ? 'Saving...' : 'Save Feature'}
                         </Button>
                     </div>
                 </DialogContent>

@@ -38,7 +38,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { Icon } from '@iconify/react';
 import { IconPickerDialog } from '@/components/common/icon-picker-dialog';
-import { useFeaturesData, useSaveFeaturesList, type FeatureItem } from '@/hooks/useFeatures';
+import { useFeaturesData, useCreateFeature, useUpdateFeature, type FeatureItem } from '@/hooks/useFeatures';
 import { mediaApi } from '@/hooks/use-media';
 import { useSectionTranslation, handleTranslationSave } from '@/hooks/useSectionTranslation';
 import { TranslationSideCard } from '../../_components/translation-side-card';
@@ -74,7 +74,13 @@ function FeatureFormContent() {
     const featureId = searchParams.get('id');
 
     const { data: dbFeatures, isLoading: isFeaturesLoading } = useFeaturesData();
-    const saveFeaturesMutation = useSaveFeaturesList();
+    // Per-item create/update, NOT the bulk list-replace hook: that endpoint
+    // deletes every feature and reinserts the whole table with fresh
+    // auto-increment ids on every single save, which silently orphaned every
+    // feature's translations (their record_id no longer matched any row) the
+    // moment ANY feature was added or edited.
+    const createFeatureMutation = useCreateFeature();
+    const updateFeatureMutation = useUpdateFeature();
 
     const [selectedIcon, setSelectedIcon] = useState('lucide:sparkles');
     const [iconPickerOpen, setIconPickerOpen] = useState(false);
@@ -92,7 +98,7 @@ function FeatureFormContent() {
     const [featureImageUrl, setFeatureImageUrl] = useState<string>('');
     const [errors, setErrors] = useState<{ title?: boolean; shortDesc?: boolean; detailedDesc?: boolean }>({});
 
-    const isSaving = saveFeaturesMutation.isPending;
+    const isSaving = createFeatureMutation.isPending || updateFeatureMutation.isPending;
 
     // Per-form translation mode (?lang=<id>), same as Hero Section.
     // Field keys match the `features` entry in the backend FIELD_CATALOG,
@@ -195,9 +201,7 @@ function FeatureFormContent() {
         }
         setErrors({});
 
-        const existingList = dbFeatures || [];
-        const featurePayload: FeatureItem = {
-            id: featureId || undefined,
+        const featurePayload: Partial<FeatureItem> = {
             title,
             description: shortDesc,
             short_description: shortDesc,
@@ -210,18 +214,23 @@ function FeatureFormContent() {
             status,
         };
 
-        let updatedList: FeatureItem[];
         if (featureId) {
-            updatedList = existingList.map((f) => (String(f.id) === String(featureId) ? { ...f, ...featurePayload } : f));
+            updateFeatureMutation.mutate(
+                { id: Number(featureId), payload: featurePayload },
+                // Stay on the form — nothing to navigate, ?id= already points here.
+            );
         } else {
-            updatedList = [...existingList, featurePayload];
+            createFeatureMutation.mutate(featurePayload as FeatureItem, {
+                onSuccess: (created: any) => {
+                    // Stay on the form instead of bouncing to the list — a
+                    // translation slot needs a saved record id, so leaving
+                    // immediately after Add meant there was never a page where
+                    // the language card could appear.
+                    const newId = created?.data?.id;
+                    if (newId) router.replace(`/admin/website-builder/features/create?id=${newId}`);
+                },
+            });
         }
-
-        saveFeaturesMutation.mutate(updatedList, {
-            onSuccess: () => {
-                router.push('/admin/website-builder/features');
-            },
-        });
     };
 
     const CurrentIcon = getIconComponent(selectedIcon);

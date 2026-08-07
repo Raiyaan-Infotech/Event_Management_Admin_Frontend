@@ -31,13 +31,17 @@ import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import {
     usePricingPlansData,
-    useSavePricingPlans,
+    useCreatePricingPlan,
+    useUpdatePricingPlan,
     type PricingPlan,
 } from '@/hooks/usePricingPlans';
 import {
     BuilderCountedInput,
     BuilderCountedTextarea,
 } from '../../_components/builder-field';
+import { useSectionTranslation, handleTranslationSave } from '@/hooks/useSectionTranslation';
+import { TranslationSideCard } from '../../_components/translation-side-card';
+import { TranslationModeBanner } from '../../_components/translation-mode-banner';
 
 interface PlanFeatureItem {
     label: string;
@@ -50,7 +54,13 @@ function PricingPlanFormContent() {
     const planId = searchParams.get('id');
 
     const { data: dbPlans, isLoading: isPlansLoading } = usePricingPlansData();
-    const savePlansMutation = useSavePricingPlans();
+    // Per-item create/update, NOT the bulk list-replace hook: that endpoint
+    // deletes every plan and reinserts the whole table with fresh
+    // auto-increment ids on every single save, which silently orphaned every
+    // plan's translations (their record_id no longer matched any row) the
+    // moment ANY plan was added or edited.
+    const createPlanMutation = useCreatePricingPlan();
+    const updatePlanMutation = useUpdatePricingPlan();
 
     // Form state
     const [planName, setPlanName] = useState('');
@@ -68,7 +78,26 @@ function PricingPlanFormContent() {
     const [newFeatureText, setNewFeatureText] = useState('');
     const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
 
-    const isSaving = savePlansMutation.isPending;
+    const isSaving = createPlanMutation.isPending || updatePlanMutation.isPending;
+
+    // Per-form translation mode (?lang=<id>), same as Hero Section.
+    // Field keys match the `pricing-plans` entry in the backend FIELD_CATALOG,
+    // registered at page_slug='' with the plan row id as record_id.
+    const translationFields = [
+        { key: 'plan_name', label: 'Plan Name', type: 'input' as const, value: planName },
+        { key: 'subtitle', label: 'Subtitle', type: 'textarea' as const, value: subtitle },
+        { key: 'period_label', label: 'Period Label', type: 'input' as const, value: periodLabel },
+        { key: 'badge_text', label: 'Badge Text', type: 'input' as const, value: badgeText },
+    ];
+    const translation = useSectionTranslation({
+        section: 'pricing-plans',
+        recordId: planId ? Number(planId) : undefined,
+        fields: translationFields,
+    });
+    const { isTranslationMode, bind } = translation;
+    // Pricing, currency, badge style, features and status are shared across
+    // languages - they are edited from the English version only.
+    const sharedOnly = cn(isTranslationMode && 'opacity-50 pointer-events-none');
 
     // Load plan if editing
     useEffect(() => {
@@ -111,7 +140,11 @@ function PricingPlanFormContent() {
     const [priceMonthlyError, setPriceMonthlyError] = useState(false);
     const [previewBillingCycle, setPreviewBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
 
-    const handleSavePlan = () => {
+    const handleSavePlan = async () => {
+        // In translation mode only the translated text is written; the plan
+        // row itself is untouched, so the English validation below does not apply.
+        if (await handleTranslationSave(translation, 'Pricing Plan')) return;
+
         let hasError = false;
         if (!planName.trim()) {
             setPlanNameError(true);
@@ -130,9 +163,7 @@ function PricingPlanFormContent() {
 
         if (hasError) return;
 
-        const existingList = dbPlans || [];
-        const planPayload: PricingPlan = {
-            id: planId ? parseInt(planId, 10) : undefined,
+        const planPayload: Partial<PricingPlan> = {
             plan_name: planName,
             subtitle,
             target_type: targetType,
@@ -147,18 +178,23 @@ function PricingPlanFormContent() {
             is_active: isActive,
         };
 
-        let updatedList: PricingPlan[];
         if (planId) {
-            updatedList = existingList.map((p) => (String(p.id) === String(planId) ? { ...p, ...planPayload } : p));
+            updatePlanMutation.mutate(
+                { id: parseInt(planId, 10), payload: planPayload },
+                // Stay on the form — nothing to navigate, ?id= already points here.
+            );
         } else {
-            updatedList = [...existingList, planPayload];
+            createPlanMutation.mutate(planPayload as PricingPlan, {
+                onSuccess: (created: any) => {
+                    // Stay on the form instead of bouncing to the list — a
+                    // translation slot needs a saved record id, so leaving
+                    // immediately after Add meant there was never a page where
+                    // the language card could appear.
+                    const newId = created?.data?.id;
+                    if (newId) router.replace(`/admin/website-builder/pricing-plans/create?id=${newId}`);
+                },
+            });
         }
-
-        savePlansMutation.mutate(updatedList, {
-            onSuccess: () => {
-                router.push('/admin/website-builder/pricing-plans');
-            },
-        });
     };
 
     // Helper for Badge Style Classes
@@ -190,6 +226,9 @@ function PricingPlanFormContent() {
                     </div>
                     <h1 className="text-xl font-extrabold tracking-tight text-foreground">
                         {planId ? 'Edit Pricing Plan' : 'Add New Pricing Plan'}
+                        {isTranslationMode && translation.activeLanguage && (
+                            <span className="ml-2 text-primary">({translation.activeLanguage.name})</span>
+                        )}
                     </h1>
                     <p className="text-xs text-muted-foreground">
                         Configure pricing tier details, features checklist, and view live preview card.
@@ -205,14 +244,34 @@ function PricingPlanFormContent() {
                     <Button
                         size="sm"
                         onClick={handleSavePlan}
-                        disabled={isSaving}
+                        disabled={isSaving || translation.isSaving}
                         className="h-9 px-4 text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs gap-1.5 cursor-pointer"
                     >
-                        {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                        {isSaving ? 'Saving...' : 'Save Pricing Plan'}
+                        {isSaving || translation.isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                        {isSaving || translation.isSaving ? 'Saving...' : isTranslationMode ? 'Save Translation' : 'Save Pricing Plan'}
                     </Button>
                 </div>
             </div>
+
+            {/* Languages + translation mode - only once the plan exists, since
+                a translation slot is addressed by the saved row's id. */}
+            {planId ? (
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-start">
+                    <div className="w-full shrink-0 lg:w-64">
+                        <TranslationSideCard
+                            section="pricing-plans"
+                            recordId={Number(planId)}
+                            activeLanguageId={translation.activeLanguage?.id ?? null}
+                            buildHref={translation.buildHref}
+                            canTranslate={translation.canTranslate}
+                            fields={translationFields}
+                        />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                        <TranslationModeBanner translation={translation} label={planName || 'this plan'} />
+                    </div>
+                </div>
+            ) : null}
 
             {/* Form Layout: 2 Columns */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -233,20 +292,20 @@ function PricingPlanFormContent() {
                             <BuilderCountedInput
                                 label="Plan Name"
                                 required
-                                placeholder="e.g. Professional Plan"
-                                value={planName}
-                                onChange={(val) => {
+                                maxLength={40}
+                                {...bind('plan_name', planName, (val) => {
                                     setPlanName(val);
                                     if (planNameError && val.trim()) setPlanNameError(false);
-                                }}
-                                maxLength={40}
+                                })}
+                                placeholder={isTranslationMode ? planName : 'e.g. Professional Plan'}
                                 inputClassName={cn(
                                     '!h-9 text-xs border-border bg-card text-foreground',
                                     planNameError && 'border-red-500 ring-1 ring-red-500 bg-red-50/20'
                                 )}
                             />
 
-                            <div className="space-y-1.5">
+                            {/* Target Audience - shared across languages */}
+                            <div className={cn('space-y-1.5', sharedOnly)}>
                                 <Label className="text-xs font-bold text-foreground">
                                     Target Audience <span className="text-destructive">*</span>
                                 </Label>
@@ -280,10 +339,9 @@ function PricingPlanFormContent() {
 
                             <BuilderCountedTextarea
                                 label="Plan Subtitle / Description"
-                                placeholder="e.g. Everything you need to manage events seamlessly."
-                                value={subtitle}
-                                onChange={setSubtitle}
                                 maxLength={140}
+                                {...bind('subtitle', subtitle, setSubtitle)}
+                                placeholder={isTranslationMode ? subtitle : 'e.g. Everything you need to manage events seamlessly.'}
                                 textareaClassName="min-h-[70px] text-xs border-border bg-card text-foreground"
                             />
                         </CardContent>
@@ -302,7 +360,8 @@ function PricingPlanFormContent() {
                         </CardHeader>
                         <CardContent className="p-4 space-y-4">
                             <div className="grid grid-cols-2 gap-4 items-start">
-                                <div className="space-y-1">
+                                {/* Currency - shared across languages */}
+                                <div className={cn('space-y-1', sharedOnly)}>
                                     <div className="flex items-center justify-between">
                                         <Label className="text-xs font-bold text-foreground">Currency Symbol</Label>
                                     </div>
@@ -324,15 +383,20 @@ function PricingPlanFormContent() {
                                         <Label className="text-xs font-bold text-foreground">Period Unit Label</Label>
                                     </div>
                                     <Input
-                                        placeholder="e.g. /month or /year"
-                                        value={periodLabel}
-                                        onChange={(e) => setPeriodLabel(e.target.value)}
+                                        value={isTranslationMode ? (translation.values.period_label ?? '') : periodLabel}
+                                        onChange={(e) =>
+                                            isTranslationMode
+                                                ? translation.setValue('period_label', e.target.value)
+                                                : setPeriodLabel(e.target.value)
+                                        }
+                                        placeholder={isTranslationMode ? periodLabel : 'e.g. /month or /year'}
                                         className="h-9 text-xs border-border bg-card text-foreground"
                                     />
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            {/* Prices - shared across languages */}
+                            <div className={cn('grid grid-cols-2 gap-4', sharedOnly)}>
                                 <div className="space-y-1">
                                     <Label className="text-xs font-bold text-foreground">
                                         Monthly Price ({currency}) <span className="text-destructive">*</span>
@@ -384,15 +448,15 @@ function PricingPlanFormContent() {
                             <div className="grid grid-cols-2 gap-4 items-start">
                                 <BuilderCountedInput
                                     label="Badge Text (Optional)"
-                                    placeholder="e.g. Most Popular, Best Value"
-                                    value={badgeText}
-                                    onChange={setBadgeText}
                                     maxLength={25}
+                                    {...bind('badge_text', badgeText, setBadgeText)}
+                                    placeholder={isTranslationMode ? badgeText : 'e.g. Most Popular, Best Value'}
                                     labelClassName="text-xs font-bold text-foreground"
                                     inputClassName="!h-9 text-xs border-border bg-card text-foreground"
                                 />
 
-                                <div className="space-y-1">
+                                {/* Badge style - shared across languages */}
+                                <div className={cn('space-y-1', sharedOnly)}>
                                     <div className="flex items-center justify-between">
                                         <Label className="text-xs font-bold text-foreground">Badge Style</Label>
                                     </div>
@@ -410,7 +474,8 @@ function PricingPlanFormContent() {
                                 </div>
                             </div>
 
-                            <div className="flex items-center justify-between p-3 border border-border rounded-xl bg-muted/20">
+                            {/* Popular toggle - shared across languages */}
+                            <div className={cn('flex items-center justify-between p-3 border border-border rounded-xl bg-muted/20', sharedOnly)}>
                                 <div>
                                     <div className="text-xs font-bold text-foreground">Highlight as Popular Plan</div>
                                     <div className="text-[11px] text-muted-foreground">Adds a highlighted border and badge on website</div>
@@ -420,8 +485,8 @@ function PricingPlanFormContent() {
                         </CardContent>
                     </Card>
 
-                    {/* Section 4: Features & Included Capabilities */}
-                    <Card className="border-border bg-card shadow-xs">
+                    {/* Section 4: Features & Included Capabilities - shared across languages */}
+                    <Card className={cn('border-border bg-card shadow-xs', sharedOnly)}>
                         <CardHeader className="py-3.5 px-4 border-b border-border flex flex-row items-center gap-3">
                             <div className="h-7 w-7 rounded-full bg-emerald-500/20 text-emerald-600 font-extrabold flex items-center justify-center text-xs shrink-0">
                                 4
@@ -492,8 +557,8 @@ function PricingPlanFormContent() {
                         </CardContent>
                     </Card>
 
-                    {/* Section 5: Status & Display Options */}
-                    <Card className="border-border bg-card shadow-xs">
+                    {/* Section 5: Status & Display Options - shared across languages */}
+                    <Card className={cn('border-border bg-card shadow-xs', sharedOnly)}>
                         <CardHeader className="py-3.5 px-4 border-b border-border flex flex-row items-center gap-3">
                             <div className="h-7 w-7 rounded-full bg-emerald-500/20 text-emerald-600 font-extrabold flex items-center justify-center text-xs shrink-0">
                                 5

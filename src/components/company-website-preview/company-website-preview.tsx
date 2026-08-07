@@ -115,7 +115,7 @@ function CompanyWebsitePreviewInner({ initialPage = 'home' }: { initialPage?: st
   // On the default language `translator` is a pass-through and the records are
   // returned untouched. Section names must match FIELD_CATALOG in the backend's
   // websiteBuilderTranslation.service.js.
-  const { translator, direction } = useWebsiteLanguage();
+  const { translator, direction, isLoadingBundle } = useWebsiteLanguage();
 
   // ── Font Family Hook ───────────────────────────────────────────────────────
   const fontFamily = String((themeRaw as AnyRecord)?.font_family || (themeRaw as AnyRecord)?.font || (basicInfoRaw as AnyRecord)?.font_family || 'Inter');
@@ -458,6 +458,24 @@ function extractList(raw: unknown): AnyRecord[] {
           font-family: '${fontFamily}', Inter, "Inter Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
         }
       `}</style>
+      {/* Language-switch overlay. `isLoadingBundle` was already exposed by the
+          language provider but nothing consumed it, so switching language
+          rendered nothing while the translation bundle loaded — this fills
+          that gap. Keeps the current (still-English) content visible
+          underneath rather than blanking the page, since the switch is
+          usually fast. */}
+      {isLoadingBundle && (
+        <div className="fixed inset-0 z-[250] flex items-center justify-center bg-white/70 backdrop-blur-[1px]">
+          <div className="flex items-center gap-3 rounded-full bg-white px-5 py-3 shadow-xl ring-1 ring-slate-200">
+            <div
+              className="h-4 w-4 animate-spin rounded-full border-2 border-slate-200"
+              style={{ borderTopColor: theme.primaryButton }}
+            />
+            <span className="text-[13px] font-semibold text-slate-700">Switching language…</span>
+          </div>
+        </div>
+      )}
+
       {/* Floating refresh button */}
       <button
         type="button"

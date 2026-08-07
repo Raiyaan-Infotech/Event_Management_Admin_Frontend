@@ -203,8 +203,16 @@ function CreateTemplatePage() {
                 is_draft: isDraft,
             },
             {
-                onSuccess: () => {
-                    router.push('/admin/website-builder/templates');
+                onSuccess: (created: any) => {
+                    // Stay on the form instead of bouncing to the list — a
+                    // translation slot needs a saved record id, so leaving
+                    // immediately after Add meant there was never a page where
+                    // the language card could appear. Editing an existing
+                    // template already has ?id= and needs no navigation at all.
+                    if (!templateId) {
+                        const newId = created?.data?.id;
+                        if (newId) router.replace(`/admin/website-builder/templates/create?id=${newId}`);
+                    }
                 },
             }
         );
