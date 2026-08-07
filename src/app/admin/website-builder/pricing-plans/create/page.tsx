@@ -19,6 +19,7 @@ import {
     Building2,
     User,
     CheckCircle2,
+    Eye,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +29,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { PageLoader } from '@/components/common/page-loader';
 import { cn } from '@/lib/utils';
 import {
     usePricingPlansData,
@@ -77,6 +80,7 @@ function PricingPlanFormContent() {
     const [features, setFeatures] = useState<PlanFeatureItem[]>([]);
     const [newFeatureText, setNewFeatureText] = useState('');
     const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
+    const [previewOpen, setPreviewOpen] = useState(false);
 
     const isSaving = createPlanMutation.isPending || updatePlanMutation.isPending;
 
@@ -214,6 +218,7 @@ function PricingPlanFormContent() {
 
     return (
         <div className="space-y-5 max-w-7xl mx-auto pb-12 text-foreground">
+            <PageLoader open={isSaving || translation.isSaving} text="Saving Pricing Plan..." />
             {/* Header */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-4">
                 <div>
@@ -241,6 +246,15 @@ function PricingPlanFormContent() {
                             <ArrowLeft className="h-3.5 w-3.5" /> Back to Plans List
                         </Button>
                     </Link>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPreviewOpen(true)}
+                        className="h-9 px-3 text-xs font-semibold text-emerald-700 border-emerald-300 hover:bg-emerald-50 gap-1.5 cursor-pointer"
+                    >
+                        <Eye className="h-3.5 w-3.5 text-emerald-600" /> Live Preview
+                    </Button>
                     <Button
                         size="sm"
                         onClick={handleSavePlan}
@@ -274,9 +288,9 @@ function PricingPlanFormContent() {
             ) : null}
 
             {/* Form Layout: 2 Columns */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            <div className="grid grid-cols-1 gap-6 items-start">
                 {/* Left Column: 4 Section Cards (7 cols) */}
-                <div className="lg:col-span-7 space-y-6">
+                <div className="space-y-6">
                     {/* Section 1: Basic Plan Information */}
                     <Card className="border-border bg-card shadow-xs">
                         <CardHeader className="py-3.5 px-4 border-b border-border flex flex-row items-center gap-3">
@@ -580,156 +594,172 @@ function PricingPlanFormContent() {
                     </Card>
                 </div>
 
-                {/* Right Column: Live Pricing Card Preview (5 cols) */}
-                <div className="lg:col-span-5 space-y-5 sticky top-6">
-                    <Card className="shadow-xs border-border bg-card overflow-hidden">
-                        <CardHeader className="py-3 px-4 border-b border-border flex flex-row items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <Sparkles className="h-4 w-4 text-amber-500" />
-                                <CardTitle className="text-xs font-bold text-foreground uppercase tracking-wide">
-                                    Live Pricing Card Preview
-                                </CardTitle>
-                            </div>
+            </div>
 
+            {/* Live Preview Modal — preview opens from the header button
+                rather than occupying a permanent side column, matching
+                Hero Section and the rest of the builder. */}
+            <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+                <DialogContent className="max-w-3xl w-[92vw] max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-base font-bold">
+                            <Eye className="h-4 w-4 text-emerald-600" /> Pricing Card Live Preview
+                        </DialogTitle>
+                        <DialogDescription className="text-xs">
+                            Real-time preview of how this plan card appears on your website.
+                        </DialogDescription>
+                    </DialogHeader>
+                    {/* Right Column: Live Pricing Card Preview (5 cols) */}
+                    <div className="lg:col-span-5 space-y-5 sticky top-6">
+                        <Card className="shadow-xs border-border bg-card overflow-hidden">
+                            <CardHeader className="py-3 px-4 border-b border-border flex flex-row items-center justify-between">
                                 <div className="flex items-center gap-2">
-                                    {/* Monthly / Yearly Billing Preview Toggle */}
-                                    <div className="flex items-center border border-border rounded-lg p-0.5 bg-muted/40 text-[11px] font-bold">
-                                        <button
-                                            type="button"
-                                            onClick={() => setPreviewBillingCycle('monthly')}
-                                            className={cn(
-                                                'px-2 py-0.5 rounded-md transition-colors cursor-pointer',
-                                                previewBillingCycle === 'monthly'
-                                                    ? 'bg-card text-foreground shadow-xs'
-                                                    : 'text-muted-foreground hover:text-foreground'
-                                            )}
-                                        >
-                                            Monthly
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setPreviewBillingCycle('yearly')}
-                                            className={cn(
-                                                'px-2 py-0.5 rounded-md transition-colors cursor-pointer',
-                                                previewBillingCycle === 'yearly'
-                                                    ? 'bg-card text-foreground shadow-xs'
-                                                    : 'text-muted-foreground hover:text-foreground'
-                                            )}
-                                        >
-                                            Yearly
-                                        </button>
-                                    </div>
-
-                                    {/* Device Toggle */}
-                                    <div className="flex items-center border border-border rounded-lg p-0.5 bg-card">
-                                        <button
-                                            type="button"
-                                            onClick={() => setPreviewDevice('desktop')}
-                                            className={cn(
-                                                'p-1 rounded-md text-xs transition-colors cursor-pointer',
-                                                previewDevice === 'desktop'
-                                                    ? 'bg-primary text-primary-foreground'
-                                                    : 'text-muted-foreground hover:text-foreground'
-                                            )}
-                                            title="Desktop View"
-                                        >
-                                            <Monitor className="h-3.5 w-3.5" />
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setPreviewDevice('mobile')}
-                                            className={cn(
-                                                'p-1 rounded-md text-xs transition-colors cursor-pointer',
-                                                previewDevice === 'mobile'
-                                                    ? 'bg-primary text-primary-foreground'
-                                                    : 'text-muted-foreground hover:text-foreground'
-                                            )}
-                                            title="Mobile View"
-                                        >
-                                            <Smartphone className="h-3.5 w-3.5" />
-                                        </button>
-                                    </div>
+                                    <Sparkles className="h-4 w-4 text-amber-500" />
+                                    <CardTitle className="text-xs font-bold text-foreground uppercase tracking-wide">
+                                        Live Pricing Card Preview
+                                    </CardTitle>
                                 </div>
-                        </CardHeader>
 
-                        <CardContent className="p-5 flex justify-center bg-muted/10">
-                            <div
-                                className={cn(
-                                    'transition-all duration-300 w-full',
-                                    previewDevice === 'mobile' ? 'max-w-[320px]' : 'max-w-full'
-                                )}
-                            >
+                                    <div className="flex items-center gap-2">
+                                        {/* Monthly / Yearly Billing Preview Toggle */}
+                                        <div className="flex items-center border border-border rounded-lg p-0.5 bg-muted/40 text-[11px] font-bold">
+                                            <button
+                                                type="button"
+                                                onClick={() => setPreviewBillingCycle('monthly')}
+                                                className={cn(
+                                                    'px-2 py-0.5 rounded-md transition-colors cursor-pointer',
+                                                    previewBillingCycle === 'monthly'
+                                                        ? 'bg-card text-foreground shadow-xs'
+                                                        : 'text-muted-foreground hover:text-foreground'
+                                                )}
+                                            >
+                                                Monthly
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setPreviewBillingCycle('yearly')}
+                                                className={cn(
+                                                    'px-2 py-0.5 rounded-md transition-colors cursor-pointer',
+                                                    previewBillingCycle === 'yearly'
+                                                        ? 'bg-card text-foreground shadow-xs'
+                                                        : 'text-muted-foreground hover:text-foreground'
+                                                )}
+                                            >
+                                                Yearly
+                                            </button>
+                                        </div>
+
+                                        {/* Device Toggle */}
+                                        <div className="flex items-center border border-border rounded-lg p-0.5 bg-card">
+                                            <button
+                                                type="button"
+                                                onClick={() => setPreviewDevice('desktop')}
+                                                className={cn(
+                                                    'p-1 rounded-md text-xs transition-colors cursor-pointer',
+                                                    previewDevice === 'desktop'
+                                                        ? 'bg-primary text-primary-foreground'
+                                                        : 'text-muted-foreground hover:text-foreground'
+                                                )}
+                                                title="Desktop View"
+                                            >
+                                                <Monitor className="h-3.5 w-3.5" />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setPreviewDevice('mobile')}
+                                                className={cn(
+                                                    'p-1 rounded-md text-xs transition-colors cursor-pointer',
+                                                    previewDevice === 'mobile'
+                                                        ? 'bg-primary text-primary-foreground'
+                                                        : 'text-muted-foreground hover:text-foreground'
+                                                )}
+                                                title="Mobile View"
+                                            >
+                                                <Smartphone className="h-3.5 w-3.5" />
+                                            </button>
+                                        </div>
+                                    </div>
+                            </CardHeader>
+
+                            <CardContent className="p-5 flex justify-center bg-muted/10">
                                 <div
                                     className={cn(
-                                        'rounded-2xl border bg-card p-6 shadow-xl space-y-5 relative transition-all',
-                                        isPopular ? 'border-primary ring-2 ring-primary/20' : 'border-border'
+                                        'transition-all duration-300 w-full',
+                                        previewDevice === 'mobile' ? 'max-w-[320px]' : 'max-w-full'
                                     )}
                                 >
-                                    {badgeText ? (
-                                        <div className="absolute -top-3 left-6">
-                                            <Badge className={cn('px-3 py-0.5 text-[10px] uppercase tracking-wider', getBadgeStyleClass())}>
-                                                {badgeText}
-                                            </Badge>
-                                        </div>
-                                    ) : null}
-
-                                    <div>
-                                        <div className="text-xs font-bold text-primary uppercase tracking-wider mb-1">
-                                            {targetType === 'companies' ? 'Company Plan' : 'Individual Plan'}
-                                        </div>
-                                        <h3 className="text-xl font-extrabold text-foreground tracking-tight">
-                                            {planName || 'Plan Name'}
-                                        </h3>
-                                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                                            {subtitle || 'Plan description explaining key benefits for subscribers.'}
-                                        </p>
-                                    </div>
-
-                                    <div className="border-t border-b border-border py-4">
-                                        <div className="flex items-baseline gap-1">
-                                            <span className="text-3xl font-extrabold text-foreground tracking-tight">
-                                                {currency}
-                                                {previewBillingCycle === 'yearly'
-                                                    ? (priceYearly || priceMonthly || '0')
-                                                    : (priceMonthly || '0')}
-                                            </span>
-                                            <span className="text-xs text-muted-foreground font-semibold">
-                                                {previewBillingCycle === 'yearly' ? '/year' : periodLabel}
-                                            </span>
-                                        </div>
-                                        {priceYearly ? (
-                                            <div className="text-[11px] font-bold text-emerald-600 mt-1">
-                                                Yearly Option: {currency}{priceYearly} / year
+                                    <div
+                                        className={cn(
+                                            'rounded-2xl border bg-card p-6 shadow-xl space-y-5 relative transition-all',
+                                            isPopular ? 'border-primary ring-2 ring-primary/20' : 'border-border'
+                                        )}
+                                    >
+                                        {badgeText ? (
+                                            <div className="absolute -top-3 left-6">
+                                                <Badge className={cn('px-3 py-0.5 text-[10px] uppercase tracking-wider', getBadgeStyleClass())}>
+                                                    {badgeText}
+                                                </Badge>
                                             </div>
                                         ) : null}
+
+                                        <div>
+                                            <div className="text-xs font-bold text-primary uppercase tracking-wider mb-1">
+                                                {targetType === 'companies' ? 'Company Plan' : 'Individual Plan'}
+                                            </div>
+                                            <h3 className="text-xl font-extrabold text-foreground tracking-tight">
+                                                {planName || 'Plan Name'}
+                                            </h3>
+                                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                                {subtitle || 'Plan description explaining key benefits for subscribers.'}
+                                            </p>
+                                        </div>
+
+                                        <div className="border-t border-b border-border py-4">
+                                            <div className="flex items-baseline gap-1">
+                                                <span className="text-3xl font-extrabold text-foreground tracking-tight">
+                                                    {currency}
+                                                    {previewBillingCycle === 'yearly'
+                                                        ? (priceYearly || priceMonthly || '0')
+                                                        : (priceMonthly || '0')}
+                                                </span>
+                                                <span className="text-xs text-muted-foreground font-semibold">
+                                                    {previewBillingCycle === 'yearly' ? '/year' : periodLabel}
+                                                </span>
+                                            </div>
+                                            {priceYearly ? (
+                                                <div className="text-[11px] font-bold text-emerald-600 mt-1">
+                                                    Yearly Option: {currency}{priceYearly} / year
+                                                </div>
+                                            ) : null}
+                                        </div>
+
+                                        {features.length > 0 ? (
+                                            <ul className="space-y-2">
+                                                {features.map((feat, idx) => (
+                                                    <li key={idx} className="flex items-center gap-2 text-xs font-semibold">
+                                                        {feat.included ? (
+                                                            <Check className="h-4 w-4 text-emerald-500 shrink-0" />
+                                                        ) : (
+                                                            <X className="h-4 w-4 text-muted-foreground/50 shrink-0" />
+                                                        )}
+                                                        <span className={cn(feat.included ? 'text-foreground' : 'text-muted-foreground line-through')}>
+                                                            {feat.label}
+                                                        </span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        ) : null}
+
+                                        <Button className="w-full h-10 font-bold text-xs bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm">
+                                            Choose {planName || 'Plan'}
+                                        </Button>
                                     </div>
-
-                                    {features.length > 0 ? (
-                                        <ul className="space-y-2">
-                                            {features.map((feat, idx) => (
-                                                <li key={idx} className="flex items-center gap-2 text-xs font-semibold">
-                                                    {feat.included ? (
-                                                        <Check className="h-4 w-4 text-emerald-500 shrink-0" />
-                                                    ) : (
-                                                        <X className="h-4 w-4 text-muted-foreground/50 shrink-0" />
-                                                    )}
-                                                    <span className={cn(feat.included ? 'text-foreground' : 'text-muted-foreground line-through')}>
-                                                        {feat.label}
-                                                    </span>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    ) : null}
-
-                                    <Button className="w-full h-10 font-bold text-xs bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm">
-                                        Choose {planName || 'Plan'}
-                                    </Button>
                                 </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-            </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

@@ -32,6 +32,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { BuilderCountedInput, BuilderCountedTextarea } from '../_components/builder-field';
 import { ConfirmResetDialog } from '@/components/common/confirm-reset-dialog';
 import { cn } from '@/lib/utils';
+import { PageLoader } from '@/components/common/page-loader';
 
 type EditorMode = 'static' | 'dynamic';
 type PreviewDevice = 'desktop' | 'mobile';
@@ -99,6 +100,7 @@ export default function ContactUsPage() {
 
     return (
         <div className="space-y-6">
+            <PageLoader open={isSaving} text="Saving Contact Settings..." />
             <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
                 <DialogContent className="max-w-4xl">
                     <DialogHeader>

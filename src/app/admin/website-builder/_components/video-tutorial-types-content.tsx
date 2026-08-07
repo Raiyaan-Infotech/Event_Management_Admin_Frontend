@@ -39,6 +39,7 @@ import {
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { RowTranslateButton } from './row-translate-dialog';
+import { PageLoader } from '@/components/common/page-loader';
 
 const PRESET_COLORS = [
     '#F97316',
@@ -167,6 +168,7 @@ export function VideoTutorialTypesContent() {
 
     return (
         <div className="space-y-6 max-w-7xl mx-auto pb-16 text-foreground">
+            <PageLoader open={isSaving} text="Saving Tutorial Types..." />
             {/* Header Bar */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border/80 pb-4">
                 <div>

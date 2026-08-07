@@ -34,6 +34,7 @@ import {
     ChatSignupDemoSection,
     TemplateDemoSection,
 } from '@/components/company-website-preview/sections/login-demo-section';
+import { PageLoader } from '@/components/common/page-loader';
 
 export const PAGES_CONFIG = [
     { slug: 'home', title: 'Home Page', icon: Monitor, defaultVariant: 'variant_1' },
@@ -167,6 +168,7 @@ export function LoginDemoContent({ initialPageSlug = 'home' }: LoginDemoContentP
 
     return (
         <div className="space-y-6">
+            <PageLoader open={isSaving} text="Saving Login & Demo..." />
             {/* Top Page Selector Tabs */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b pb-4">
                 <div>

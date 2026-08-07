@@ -21,6 +21,7 @@ import {
     MoreHorizontal,
     PartyPopper,
     X,
+    Eye,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -28,7 +29,8 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { PageLoader } from '@/components/common/page-loader';
 import {
     BuilderCountedInput,
     BuilderCountedTextarea,
@@ -88,6 +90,7 @@ function CreateTemplatePage() {
     const [allowCustomize, setAllowCustomize] = useState(true);
     const [viewDevice, setViewDevice] = useState<'desktop' | 'mobile'>('mobile');
     const [fullScreenPreview, setFullScreenPreview] = useState(false);
+    const [previewOpen, setPreviewOpen] = useState(false);
 
     const [errors, setErrors] = useState<{
         name?: boolean;
@@ -220,6 +223,7 @@ function CreateTemplatePage() {
 
     return (
         <div className="space-y-6 max-w-7xl mx-auto pb-12">
+            <PageLoader open={isSaving || translation.isSaving} text="Saving Template..." />
             {/* Header */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-4">
                 <div>
@@ -240,6 +244,15 @@ function CreateTemplatePage() {
                             <ArrowLeft className="h-3.5 w-3.5 mr-1.5" /> Back to Templates
                         </Button>
                     </Link>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPreviewOpen(true)}
+                        className="h-9 text-xs font-semibold text-emerald-700 border-emerald-300 hover:bg-emerald-50"
+                    >
+                        <Eye className="h-3.5 w-3.5 mr-1.5 text-emerald-600" /> Live Preview
+                    </Button>
                     <Button
                         size="sm"
                         onClick={() => handleSave(false)}
@@ -560,77 +573,6 @@ function CreateTemplatePage() {
 
                 {/* Right Column - Live Preview & Tips */}
                 <div className="lg:col-span-5 space-y-6 sticky top-6">
-                    {/* Template Preview Card */}
-                    <Card className="shadow-xs border-border overflow-hidden">
-                        <div className="p-4 border-b border-border bg-muted/30 flex items-center justify-between">
-                            <h4 className="text-xs font-bold text-foreground">Template Preview ({viewDevice})</h4>
-                            <div className="flex items-center border border-border rounded-lg p-0.5 bg-card">
-                                <button
-                                    type="button"
-                                    onClick={() => setViewDevice('desktop')}
-                                    className={cn(
-                                        'p-1 rounded-md text-xs transition-colors cursor-pointer',
-                                        viewDevice === 'desktop' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
-                                    )}
-                                    title="Desktop View"
-                                >
-                                    <Monitor className="h-3.5 w-3.5" />
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setViewDevice('mobile')}
-                                    className={cn(
-                                        'p-1 rounded-md text-xs transition-colors cursor-pointer',
-                                        viewDevice === 'mobile' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
-                                    )}
-                                    title="Mobile View"
-                                >
-                                    <Smartphone className="h-3.5 w-3.5" />
-                                </button>
-                            </div>
-                        </div>
-
-                        <CardContent className="p-6 flex flex-col items-center justify-center bg-slate-900/10 min-h-[380px]">
-                            {/* Invitation Card Mockup */}
-                            <div
-                                className={cn(
-                                    'w-full transition-all duration-300 rounded-2xl border-4 p-6 shadow-xl text-center space-y-3 relative overflow-hidden bg-gradient-to-br',
-                                    viewDevice === 'mobile' ? 'max-w-[280px]' : 'max-w-full',
-                                    DESIGN_STYLES.find(s => s.id === designStyle)?.bg || 'from-amber-100 to-amber-50 border-amber-200'
-                                )}
-                                style={{ borderColor: primaryColor }}
-                            >
-                                {thumbnailUrl ? (
-                                    <img src={thumbnailUrl} alt="Thumbnail Preview" className="h-56 w-full object-cover rounded-xl border border-border mb-2" />
-                                ) : (
-                                    <div className="h-28 w-full rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-xs" style={{ backgroundColor: primaryColor }}>
-                                        {templateName || 'Template Preview'}
-                                    </div>
-                                )}
-
-                                <p className="text-[9px] font-black uppercase tracking-widest opacity-80">
-                                    {templateType.toUpperCase()} INVITATION
-                                </p>
-
-                                <h2 className="text-xl font-serif font-extrabold tracking-tight capitalize">
-                                    {templateName || 'Template Name'}
-                                </h2>
-
-                                <div className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full inline-block bg-white/20 backdrop-blur-xs border border-white/30">
-                                    Style: {designStyle}
-                                </div>
-                            </div>
-
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setFullScreenPreview(true)}
-                                className="mt-4 text-xs font-semibold text-primary border-primary/30 w-full cursor-pointer bg-card hover:bg-primary/10"
-                            >
-                                Preview Full Screen <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
-                            </Button>
-                        </CardContent>
-                    </Card>
 
                     {/* Tips Card */}
                     <Card className="shadow-xs border-border bg-gradient-to-br from-amber-500/5 to-primary/5">
@@ -660,6 +602,92 @@ function CreateTemplatePage() {
             </div>
 
             {/* Full Screen Preview Modal */}
+            {/* Live Preview Modal - opened from the header button rather than
+                occupying a permanent side column, matching Hero Section. */}
+            <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+                <DialogContent className="max-w-2xl w-[92vw] max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-base font-bold">
+                            <Eye className="h-4 w-4 text-emerald-600" /> Template Live Preview
+                        </DialogTitle>
+                        <DialogDescription className="text-xs">
+                            Real-time preview of how this template appears to your users.
+                        </DialogDescription>
+                    </DialogHeader>
+                        {/* Template Preview Card */}
+                        <Card className="shadow-xs border-border overflow-hidden">
+                            <div className="p-4 border-b border-border bg-muted/30 flex items-center justify-between">
+                                <h4 className="text-xs font-bold text-foreground">Template Preview ({viewDevice})</h4>
+                                <div className="flex items-center border border-border rounded-lg p-0.5 bg-card">
+                                    <button
+                                        type="button"
+                                        onClick={() => setViewDevice('desktop')}
+                                        className={cn(
+                                            'p-1 rounded-md text-xs transition-colors cursor-pointer',
+                                            viewDevice === 'desktop' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
+                                        )}
+                                        title="Desktop View"
+                                    >
+                                        <Monitor className="h-3.5 w-3.5" />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setViewDevice('mobile')}
+                                        className={cn(
+                                            'p-1 rounded-md text-xs transition-colors cursor-pointer',
+                                            viewDevice === 'mobile' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
+                                        )}
+                                        title="Mobile View"
+                                    >
+                                        <Smartphone className="h-3.5 w-3.5" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            <CardContent className="p-6 flex flex-col items-center justify-center bg-slate-900/10 min-h-[380px]">
+                                {/* Invitation Card Mockup */}
+                                <div
+                                    className={cn(
+                                        'w-full transition-all duration-300 rounded-2xl border-4 p-6 shadow-xl text-center space-y-3 relative overflow-hidden bg-gradient-to-br',
+                                        viewDevice === 'mobile' ? 'max-w-[280px]' : 'max-w-full',
+                                        DESIGN_STYLES.find(s => s.id === designStyle)?.bg || 'from-amber-100 to-amber-50 border-amber-200'
+                                    )}
+                                    style={{ borderColor: primaryColor }}
+                                >
+                                    {thumbnailUrl ? (
+                                        <img src={thumbnailUrl} alt="Thumbnail Preview" className="h-56 w-full object-cover rounded-xl border border-border mb-2" />
+                                    ) : (
+                                        <div className="h-28 w-full rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-xs" style={{ backgroundColor: primaryColor }}>
+                                            {templateName || 'Template Preview'}
+                                        </div>
+                                    )}
+
+                                    <p className="text-[9px] font-black uppercase tracking-widest opacity-80">
+                                        {templateType.toUpperCase()} INVITATION
+                                    </p>
+
+                                    <h2 className="text-xl font-serif font-extrabold tracking-tight capitalize">
+                                        {templateName || 'Template Name'}
+                                    </h2>
+
+                                    <div className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full inline-block bg-white/20 backdrop-blur-xs border border-white/30">
+                                        Style: {designStyle}
+                                    </div>
+                                </div>
+
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setFullScreenPreview(true)}
+                                    className="mt-4 text-xs font-semibold text-primary border-primary/30 w-full cursor-pointer bg-card hover:bg-primary/10"
+                                >
+                                    Preview Full Screen <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
+                                </Button>
+                            </CardContent>
+                        </Card>
+                </DialogContent>
+            </Dialog>
+
             <Dialog open={fullScreenPreview} onOpenChange={setFullScreenPreview}>
                 <DialogContent className="max-w-4xl p-6 border-border bg-card text-foreground">
                     <DialogHeader>

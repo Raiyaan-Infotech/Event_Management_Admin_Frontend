@@ -20,6 +20,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { BuilderCountedInput } from '../_components/builder-field';
 import { ConfirmResetDialog } from '@/components/common/confirm-reset-dialog';
 import { cn } from '@/lib/utils';
+import { PageLoader } from '@/components/common/page-loader';
 
 interface Sponsor {
     id: string;
@@ -135,6 +136,7 @@ export default function PortfolioSponsorsPage() {
 
     return (
         <div className="space-y-4 p-4 md:p-6 bg-slate-50/50 min-h-screen">
+            <PageLoader open={isSaving} text="Saving Sponsors..." />
             {/* Top Bar Navigation & Actions */}
             <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4 bg-white p-4 rounded-xl shadow-2xs">
                 <div>

@@ -45,6 +45,7 @@ import { cn } from '@/lib/utils';
 import { useSectionTranslation, handleTranslationSave } from '@/hooks/useSectionTranslation';
 import { TranslationSideCard } from './translation-side-card';
 import { TranslationModeBanner } from './translation-mode-banner';
+import { PageLoader } from '@/components/common/page-loader';
 
 interface VideoTutorialFormContentProps {
     id?: number;
@@ -261,6 +262,7 @@ export function VideoTutorialFormContent({ id }: VideoTutorialFormContentProps) 
 
     return (
         <div className="space-y-6 max-w-7xl mx-auto pb-16 text-foreground relative">
+            <PageLoader open={isSaving} text="Saving Video Tutorial..." />
             {/* Full Page Loading Overlay */}
             {isSaving && (
                 <div className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-xs flex flex-col items-center justify-center gap-3 animate-in fade-in duration-200">

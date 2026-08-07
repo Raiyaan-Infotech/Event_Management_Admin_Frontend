@@ -46,6 +46,7 @@ import { BuilderCountedInput, BuilderCountedTextarea } from '../_components/buil
 import { mediaApi } from '@/hooks/use-media';
 import { DeleteDialog } from '@/components/common/delete-dialog';
 import { RowTranslateButton } from '../_components/row-translate-dialog';
+import { PageLoader } from '@/components/common/page-loader';
 
 const ICON_PRESETS = [
     { name: 'gift', Icon: Gift, label: 'Gift / Template' },
@@ -345,6 +346,7 @@ export default function HowItWorksPage() {
 
     return (
         <div className="space-y-6 max-w-7xl mx-auto pb-16 text-foreground relative">
+            <PageLoader open={isSaving} text="Saving Steps..." />
             {/* Full Page Loading Overlay */}
             {isSaving && (
                 <div className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-xs flex flex-col items-center justify-center gap-3 animate-in fade-in duration-200">

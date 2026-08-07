@@ -53,6 +53,7 @@ import {
     BuilderCountedTextarea,
 } from './builder-field';
 import { RowTranslateButton } from './row-translate-dialog';
+import { PageLoader } from '@/components/common/page-loader';
 
 const ICON_PRESETS = [
     { name: 'calendar', Icon: Calendar, label: 'Calendar' },
@@ -202,6 +203,7 @@ export function FeaturesBuilderContent() {
 
     return (
         <div className="space-y-5 max-w-7xl mx-auto pb-12">
+            <PageLoader open={isSaving} text="Saving Features..." />
             {/* Top Header Bar */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-4">
                 <div>

@@ -27,6 +27,7 @@ import {
     QrCode,
     Sparkles,
     Check,
+    Eye,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -38,6 +39,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { Icon } from '@iconify/react';
 import { IconPickerDialog } from '@/components/common/icon-picker-dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { PageLoader } from '@/components/common/page-loader';
 import { useFeaturesData, useCreateFeature, useUpdateFeature, type FeatureItem } from '@/hooks/useFeatures';
 import { mediaApi } from '@/hooks/use-media';
 import { useSectionTranslation, handleTranslationSave } from '@/hooks/useSectionTranslation';
@@ -93,6 +96,7 @@ function FeatureFormContent() {
     const [menuOrder, setMenuOrder] = useState('1');
     const [status, setStatus] = useState<'Active' | 'Inactive' | 'Draft'>('Active');
     const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
+    const [previewOpen, setPreviewOpen] = useState(false);
 
     const [customIconUrl, setCustomIconUrl] = useState<string>('');
     const [featureImageUrl, setFeatureImageUrl] = useState<string>('');
@@ -237,6 +241,7 @@ function FeatureFormContent() {
 
     return (
         <div className="space-y-5 max-w-7xl mx-auto pb-12 text-foreground">
+            <PageLoader open={isSaving || translation.isSaving} text="Saving Feature..." />
             {/* Header */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-4">
                 <div>
@@ -264,6 +269,15 @@ function FeatureFormContent() {
                             <ArrowLeft className="h-3.5 w-3.5" /> Back to Features List
                         </Button>
                     </Link>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPreviewOpen(true)}
+                        className="h-9 px-3 text-xs font-semibold text-emerald-700 border-emerald-300 hover:bg-emerald-50 gap-1.5 cursor-pointer"
+                    >
+                        <Eye className="h-3.5 w-3.5 text-emerald-600" /> Live Preview
+                    </Button>
                     <Button
                         size="sm"
                         onClick={handleSaveFeature}
@@ -297,9 +311,9 @@ function FeatureFormContent() {
             ) : null}
 
             {/* Form Layout: 2 Columns */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            <div className="grid grid-cols-1 gap-6 items-start">
                 {/* Left Column: 5 Section Cards (7 cols) */}
-                <div className="lg:col-span-7 space-y-6">
+                <div className="space-y-6">
                     {/* Section 1: Basic Information */}
                     <Card className="border-border bg-card shadow-xs">
                         <CardHeader className="py-3.5 px-4 border-b border-border flex flex-row items-center gap-3">
@@ -605,102 +619,118 @@ function FeatureFormContent() {
                     </Card>
                 </div>
 
-                {/* Right Column: Live Feature Card Preview (5 cols) */}
-                <div className="lg:col-span-5 space-y-5 sticky top-6">
-                    <Card className="shadow-xs border-border bg-card overflow-hidden">
-                        <CardHeader className="py-3 px-4 border-b border-border flex flex-row items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <Sparkles className="h-4 w-4 text-amber-500" />
-                                <CardTitle className="text-xs font-bold text-foreground uppercase tracking-wide">
-                                    Live Feature Card Preview
-                                </CardTitle>
-                            </div>
-
-                            <div className="flex items-center border border-border rounded-lg p-0.5 bg-card">
-                                <button
-                                    type="button"
-                                    onClick={() => setPreviewDevice('desktop')}
-                                    className={cn(
-                                        'p-1 rounded-md text-xs transition-colors cursor-pointer',
-                                        previewDevice === 'desktop'
-                                            ? 'bg-primary text-primary-foreground'
-                                            : 'text-muted-foreground hover:text-foreground'
-                                    )}
-                                    title="Desktop View"
-                                >
-                                    <Monitor className="h-3.5 w-3.5" />
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setPreviewDevice('mobile')}
-                                    className={cn(
-                                        'p-1 rounded-md text-xs transition-colors cursor-pointer',
-                                        previewDevice === 'mobile'
-                                            ? 'bg-primary text-primary-foreground'
-                                            : 'text-muted-foreground hover:text-foreground'
-                                    )}
-                                    title="Mobile View"
-                                >
-                                    <Smartphone className="h-3.5 w-3.5" />
-                                </button>
-                            </div>
-                        </CardHeader>
-
-                        <CardContent className="p-5 flex justify-center bg-muted/10">
-                            <div
-                                className={cn(
-                                    'transition-all duration-300 w-full',
-                                    previewDevice === 'mobile' ? 'max-w-[320px]' : 'max-w-full'
-                                )}
-                            >
-                                <div className="rounded-2xl border border-border bg-card p-5 shadow-lg space-y-4">
-                                    {featureImageUrl ? (
-                                        <img src={featureImageUrl} alt="Preview Header" className="h-36 w-full object-cover rounded-xl border border-border mb-2" />
-                                    ) : null}
-                                    <div className="flex items-center justify-between">
-                                        <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-primary to-purple-600 text-white flex items-center justify-center shadow-md overflow-hidden p-2">
-                                            {customIconUrl ? (
-                                                <img src={customIconUrl} alt="Icon" className="h-6 w-6 object-contain" />
-                                            ) : (
-                                                <Icon icon={selectedIcon?.includes(':') ? selectedIcon : `lucide:${selectedIcon || 'sparkles'}`} className="h-6 w-6 text-white" />
-                                            )}
-                                        </div>
-                                        <Badge variant="outline" className="text-[10px] font-bold text-primary border-primary/30">
-                                            {status}
-                                        </Badge>
-                                    </div>
-
-                                    <div>
-                                        <h3 className="text-base font-extrabold text-foreground tracking-tight">
-                                            {title || 'Feature Title'}
-                                        </h3>
-                                        <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                                            {shortDesc || 'Feature short description explaining key benefits for event organizers.'}
-                                        </p>
-                                    </div>
-
-                                    {detailedDesc ? (
-                                        <p className="text-[11px] text-muted-foreground/90 bg-muted/40 p-2.5 rounded-xl border border-border">
-                                            {detailedDesc}
-                                        </p>
-                                    ) : null}
-
-                                    {bullets.length > 0 ? (
-                                        <ul className="space-y-1.5 pt-1">
-                                            {bullets.map((bullet, idx) => (
-                                                <li key={idx} className="flex items-center gap-2 text-xs font-semibold text-foreground">
-                                                    <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                                                    <span>{bullet}</span>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    ) : null}
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
             </div>
+
+            {/* Live Preview Modal — preview opens from the header button
+                rather than occupying a permanent side column, matching
+                Hero Section and the rest of the builder. */}
+            <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+                <DialogContent className="max-w-3xl w-[92vw] max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-base font-bold">
+                            <Eye className="h-4 w-4 text-emerald-600" /> Feature Card Live Preview
+                        </DialogTitle>
+                        <DialogDescription className="text-xs">
+                            Real-time preview of how this feature card appears on your website.
+                        </DialogDescription>
+                    </DialogHeader>
+                    {/* Right Column: Live Feature Card Preview (5 cols) */}
+                    <div className="lg:col-span-5 space-y-5 sticky top-6">
+                        <Card className="shadow-xs border-border bg-card overflow-hidden">
+                            <CardHeader className="py-3 px-4 border-b border-border flex flex-row items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <Sparkles className="h-4 w-4 text-amber-500" />
+                                    <CardTitle className="text-xs font-bold text-foreground uppercase tracking-wide">
+                                        Live Feature Card Preview
+                                    </CardTitle>
+                                </div>
+
+                                <div className="flex items-center border border-border rounded-lg p-0.5 bg-card">
+                                    <button
+                                        type="button"
+                                        onClick={() => setPreviewDevice('desktop')}
+                                        className={cn(
+                                            'p-1 rounded-md text-xs transition-colors cursor-pointer',
+                                            previewDevice === 'desktop'
+                                                ? 'bg-primary text-primary-foreground'
+                                                : 'text-muted-foreground hover:text-foreground'
+                                        )}
+                                        title="Desktop View"
+                                    >
+                                        <Monitor className="h-3.5 w-3.5" />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setPreviewDevice('mobile')}
+                                        className={cn(
+                                            'p-1 rounded-md text-xs transition-colors cursor-pointer',
+                                            previewDevice === 'mobile'
+                                                ? 'bg-primary text-primary-foreground'
+                                                : 'text-muted-foreground hover:text-foreground'
+                                        )}
+                                        title="Mobile View"
+                                    >
+                                        <Smartphone className="h-3.5 w-3.5" />
+                                    </button>
+                                </div>
+                            </CardHeader>
+
+                            <CardContent className="p-5 flex justify-center bg-muted/10">
+                                <div
+                                    className={cn(
+                                        'transition-all duration-300 w-full',
+                                        previewDevice === 'mobile' ? 'max-w-[320px]' : 'max-w-full'
+                                    )}
+                                >
+                                    <div className="rounded-2xl border border-border bg-card p-5 shadow-lg space-y-4">
+                                        {featureImageUrl ? (
+                                            <img src={featureImageUrl} alt="Preview Header" className="h-36 w-full object-cover rounded-xl border border-border mb-2" />
+                                        ) : null}
+                                        <div className="flex items-center justify-between">
+                                            <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-primary to-purple-600 text-white flex items-center justify-center shadow-md overflow-hidden p-2">
+                                                {customIconUrl ? (
+                                                    <img src={customIconUrl} alt="Icon" className="h-6 w-6 object-contain" />
+                                                ) : (
+                                                    <Icon icon={selectedIcon?.includes(':') ? selectedIcon : `lucide:${selectedIcon || 'sparkles'}`} className="h-6 w-6 text-white" />
+                                                )}
+                                            </div>
+                                            <Badge variant="outline" className="text-[10px] font-bold text-primary border-primary/30">
+                                                {status}
+                                            </Badge>
+                                        </div>
+
+                                        <div>
+                                            <h3 className="text-base font-extrabold text-foreground tracking-tight">
+                                                {title || 'Feature Title'}
+                                            </h3>
+                                            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                                                {shortDesc || 'Feature short description explaining key benefits for event organizers.'}
+                                            </p>
+                                        </div>
+
+                                        {detailedDesc ? (
+                                            <p className="text-[11px] text-muted-foreground/90 bg-muted/40 p-2.5 rounded-xl border border-border">
+                                                {detailedDesc}
+                                            </p>
+                                        ) : null}
+
+                                        {bullets.length > 0 ? (
+                                            <ul className="space-y-1.5 pt-1">
+                                                {bullets.map((bullet, idx) => (
+                                                    <li key={idx} className="flex items-center gap-2 text-xs font-semibold text-foreground">
+                                                        <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                                                        <span>{bullet}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        ) : null}
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

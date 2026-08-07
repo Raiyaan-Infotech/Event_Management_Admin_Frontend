@@ -25,6 +25,7 @@ import {
 import { BuilderCountedInput } from './builder-field';
 import { ConfirmResetDialog } from '@/components/common/confirm-reset-dialog';
 import { cn } from '@/lib/utils';
+import { PageLoader } from '@/components/common/page-loader';
 
 interface GalleryImage {
     id: string;
@@ -108,6 +109,7 @@ export function GalleryContent() {
 
     return (
         <div className="space-y-5">
+            <PageLoader open={isSaving} text="Saving Gallery..." />
             {/* Header Bar */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b pb-4">
                 <div>

@@ -40,6 +40,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { RowTranslateButton } from './row-translate-dialog';
+import { PageLoader } from '@/components/common/page-loader';
 
 const PRESET_COLORS = [
     '#FF4D8D',
@@ -162,6 +163,7 @@ export function VideoTutorialCategoriesContent() {
 
     return (
         <div className="space-y-6 max-w-7xl mx-auto pb-16 text-foreground">
+            <PageLoader open={isSaving} text="Saving Categories..." />
             {/* Header Bar */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border/80 pb-4">
                 <div>
