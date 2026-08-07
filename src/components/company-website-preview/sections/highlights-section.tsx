@@ -28,7 +28,12 @@ import {
     Package,
     LucideIcon,
 } from 'lucide-react';
-import { DEFAULT_HIGHLIGHTS, useHighlights, type HighlightsSettings } from '@/hooks/useHighlights';
+import {
+    DEFAULT_HIGHLIGHTS,
+    useHighlights,
+    highlightsBackgroundStyle,
+    type HighlightsSettings,
+} from '@/hooks/useHighlights';
 
 const ICON_MAP: Record<string, LucideIcon> = {
     Calendar,
@@ -119,34 +124,56 @@ export function HighlightsSection({ pageSlug = 'home', instance = 1, data, theme
         }));
     }
 
-    // Container background style mapped directly from config settings to inner box
-    let containerStyle: React.CSSProperties = {};
-    if (config.preset === 'gradient-1') {
-        containerStyle = { backgroundImage: 'linear-gradient(135deg, #E0F2FE 0%, #F0FDFA 100%)' };
-    } else if (config.preset === 'gradient-2') {
-        containerStyle = { backgroundImage: 'linear-gradient(90deg, #EC4899 0%, #A855F7 50%, #4F46E5 100%)' };
-    } else if (config.preset === 'gradient-3') {
-        containerStyle = { backgroundImage: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)' };
-    } else if (config.background_type === 'gradient') {
-        containerStyle = { backgroundImage: 'linear-gradient(90deg, #EC4899 0%, #A855F7 50%, #4F46E5 100%)' };
-    } else if (config.background_type === 'image' && config.background_image_url) {
-        containerStyle = {
-            backgroundImage: `url(${config.background_image_url})`,
-            backgroundSize: config.image_size || 'cover',
-            backgroundPosition: config.image_position || 'center',
-        };
-    } else if (config.background_color && config.background_color !== '#FFFFFF' && config.background_color !== '#FAFAFA') {
-        containerStyle = { backgroundColor: config.background_color };
-    } else if (instance === 2) {
-        containerStyle = { backgroundImage: 'linear-gradient(90deg, #EC4899 0%, #A855F7 50%, #4F46E5 100%)' };
-    } else {
-        containerStyle = { backgroundColor: '#FFFFFF' };
-    }
+    // Background comes from the shared helper so the admin picker, its preview
+    // modal and this section can't disagree. (The old code here ignored the
+    // configured colours entirely and hardcoded a pink/purple gradient for every
+    // `background_type: 'gradient'` block.)
+    //
+    // Instance 2 historically rendered that pink/purple as its default look, so
+    // it is preserved for blocks that have never had a background configured —
+    // otherwise upgrading would silently restyle live sites.
+    const hasConfiguredBackground = Boolean(
+        config.gradient_from || config.gradient_to || config.preset || config.background_image_url
+    );
+    const containerStyle: React.CSSProperties =
+        !hasConfiguredBackground && instance === 2
+            ? { backgroundImage: 'linear-gradient(90deg, #EC4899 0%, #A855F7 50%, #4F46E5 100%)' }
+            : highlightsBackgroundStyle(config);
 
     return (
         <section className="w-full py-8 border-b border-slate-100 bg-white">
             <div className="mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-8">
-                {instance === 2 ? (
+                {config.card_style === 'individual' ? (
+                    /* Individual Cards — each item is its own bordered card rather
+                       than all items sharing one container. Takes priority over the
+                       instance-based banner/bar below; only applies where an admin
+                       has explicitly opted a block into this layout. */
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-5">
+                        {items.slice(0, 5).map((item: any, idx: number) => {
+                            const IconComp = ICON_MAP[item.icon] || Sparkles;
+                            const pastel = PASTEL_THEMES[idx % PASTEL_THEMES.length];
+                            const iconBg = item.icon_bg_color || pastel.bg;
+                            const iconColor = item.icon_color || pastel.color;
+                            return (
+                                <div
+                                    key={item.id || idx}
+                                    className="flex flex-col items-center gap-2 rounded-xl border border-slate-200 bg-white p-5 text-center shadow-xs transition hover:shadow-md"
+                                >
+                                    <div
+                                        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition-transform hover:scale-105"
+                                        style={{ backgroundColor: iconBg, color: iconColor }}
+                                    >
+                                        <IconComp className="h-5 w-5" />
+                                    </div>
+                                    <h4 className="text-[13px] font-bold leading-snug text-slate-900">{item.title}</h4>
+                                    <p className="line-clamp-2 text-[11px] font-medium leading-snug text-slate-500">
+                                        {item.description}
+                                    </p>
+                                </div>
+                            );
+                        })}
+                    </div>
+                ) : instance === 2 ? (
                     /* Instance 2 Gradient Stats Banner (Mapped to inner container box) */
                     <div className="rounded-2xl p-6 sm:p-7 text-white shadow-md overflow-hidden" style={containerStyle}>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 items-center justify-center">

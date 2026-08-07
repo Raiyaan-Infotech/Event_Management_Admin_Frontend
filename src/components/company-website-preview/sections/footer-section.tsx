@@ -152,20 +152,26 @@ function FooterSectionBase({ footer, socialLinks, theme, onNavigate }: { footer:
             <p className="mt-3 text-[12.5px] font-medium leading-relaxed text-slate-500">
               {t('footer.newsletter_subtitle', 'Subscribe to get updates and offers')}
             </p>
-            <form className="mt-4 flex items-center gap-2" onSubmit={handleNewsletter}>
+            {/* Input and button are one joined control — no gap. The rounding is
+                split across the pair (left on the input, right on the button)
+                and the input drops its right border so the seam reads as a
+                single element rather than two touching ones. */}
+            <form className="mt-4 flex items-stretch shadow-2xs" onSubmit={handleNewsletter}>
+              {/* `flex-1 min-w-0` rather than `w-full`: a 100%-wide flex child
+                  overflows the row and forces the button to shrink. */}
               <input
                 type="email"
                 value={newsletterEmail}
                 onChange={(e) => setNewsletterEmail(e.target.value)}
                 placeholder={t('footer.email_placeholder', 'Enter your email')}
                 disabled={submitting}
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-[12.5px] text-slate-800 outline-none placeholder:text-slate-400 disabled:opacity-70 shadow-2xs"
+                className="h-10 min-w-0 flex-1 rounded-l-xl border border-r-0 border-slate-200 bg-white px-3.5 text-[12.5px] text-slate-800 outline-none placeholder:text-slate-400 disabled:opacity-70"
               />
               <button
                 type="submit"
                 disabled={submitting}
                 aria-label="Subscribe to newsletter"
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white font-bold transition hover:opacity-90 active:scale-95 disabled:opacity-70 shadow-xs"
+                className="flex h-10 w-11 shrink-0 items-center justify-center rounded-r-xl font-bold text-white transition hover:opacity-90 active:scale-95 disabled:opacity-70"
                 style={{ backgroundColor: theme.primaryButton || '#ec4899' }}
               >
                 <Send className="h-4 w-4" />

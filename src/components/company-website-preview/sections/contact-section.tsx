@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Icon, loadIcons } from '@iconify/react';
-import { Mail, MapPin, Phone } from 'lucide-react';
+import { Mail, MapPin, Phone, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import type { ContactData, SocialLink, ThemeColors } from './preview-shared';
 
@@ -50,90 +50,189 @@ function ContactSectionBase({ contact, theme }: { contact: ContactData; theme: T
           <div className="mx-auto mt-3 h-[3px] w-12 rounded-full" style={{ backgroundColor: theme.primaryButton }} />
         </div>
 
-        <div className="grid gap-10 lg:grid-cols-2 items-start">
-          {/* Info & Map Column */}
-          <div className="space-y-6">
-            {contact.address ? (
-              <div className="flex items-start gap-4">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white" style={{ backgroundColor: theme.primaryButton }}>
-                  <MapPin className="h-4 w-4" />
-                </span>
-                <div>
-                  <p className="text-[13px] font-black" style={{ color: theme.primaryText }}>Address</p>
-                  <p className="mt-1 text-[13px] font-medium text-slate-600">{contact.address}</p>
-                </div>
+        {/* Two cards side by side, matching the mockup: the form on the left,
+            contact details + map sharing one card on the right. */}
+        <div className="grid items-stretch gap-6 lg:grid-cols-2">
+          {/* ── Send Us a Message ───────────────────────────────────────── */}
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7">
+            <div className="flex items-center gap-3">
+              <span
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white"
+                style={{ backgroundColor: theme.primaryButton }}
+              >
+                <Send className="h-4 w-4" />
+              </span>
+              <div>
+                <h3 className="text-[17px] font-black" style={{ color: theme.primaryText }}>
+                  {t('contact.subtitle', 'Send Us a Message')}
+                </h3>
+                <p className="text-[12px] font-medium text-slate-500">
+                  {t('contact.form_hint', 'Fill out the form and our team will get back to you shortly.')}
+                </p>
               </div>
-            ) : null}
-            {contact.mobile ? (
-              <div className="flex items-start gap-4">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white" style={{ backgroundColor: theme.primaryButton }}>
-                  <Phone className="h-4 w-4" />
-                </span>
-                <div>
-                  <p className="text-[13px] font-black" style={{ color: theme.primaryText }}>Phone</p>
-                  <p className="mt-1 text-[13px] font-medium text-slate-600">{contact.mobile}</p>
-                </div>
-              </div>
-            ) : null}
-            {contact.email ? (
-              <div className="flex items-start gap-4">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white" style={{ backgroundColor: theme.primaryButton }}>
-                  <Mail className="h-4 w-4" />
-                </span>
-                <div>
-                  <p className="text-[13px] font-black" style={{ color: theme.primaryText }}>Email</p>
-                  <p className="mt-1 text-[13px] font-medium text-slate-600">{contact.email}</p>
-                </div>
-              </div>
-            ) : null}
-            {contact.socialLinksEnabled && contact.socialLinks && contact.socialLinks.length ? (
-              <div className="flex gap-3 pt-2">
-                {contact.socialLinks.map((link: SocialLink) => {
-                  const raw = String(link.iconName || 'simple-icons:linktree').trim().toLowerCase();
-                  const iconKey = raw.includes(':') ? raw : `simple-icons:${raw}`;
-                  return (
-                    <a key={link.label} href={link.href} aria-label={link.label} target="_blank" rel="noopener noreferrer" className="flex h-9 w-9 items-center justify-center rounded-full text-white transition hover:opacity-80" style={{ backgroundColor: link.color || theme.primaryButton }}>
-                      <Icon icon={iconKey} className="h-4 w-4" />
-                    </a>
-                  );
-                })}
-              </div>
-            ) : null}
-
-            {/* Embedded Google Map */}
-            <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200/80 shadow-xs h-[240px] w-full">
-              <iframe
-                title="Company Location Map"
-                src={mapSrc}
-                width="100%"
-                height="100%"
-                style={{ border: 0 }}
-                allowFullScreen
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              />
             </div>
+
+            <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+              <div>
+                <label className="mb-1.5 block text-[12px] font-bold text-slate-700">{t('contact.full_name', 'Full Name')}</label>
+                <input
+                  value={formData.name}
+                  onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))}
+                  placeholder={t('contact.full_name_placeholder', 'Enter your full name')}
+                  className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[13px] text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-900/5"
+                  required
+                />
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1.5 block text-[12px] font-bold text-slate-700">{t('contact.email_address', 'Email Address')}</label>
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData((p) => ({ ...p, email: e.target.value }))}
+                    placeholder={t('contact.email_placeholder', 'Enter your email address')}
+                    className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[13px] text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-900/5"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-[12px] font-bold text-slate-700">{t('contact.phone_number', 'Phone Number')}</label>
+                  <input
+                    value={formData.phone}
+                    onChange={(e) => setFormData((p) => ({ ...p, phone: e.target.value }))}
+                    placeholder={t('contact.phone_placeholder', 'Enter your phone number')}
+                    className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[13px] text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-900/5"
+                  />
+                </div>
+              </div>
+
+              {contact.categories && contact.categories.length ? (
+                <div>
+                  <label className="mb-1.5 block text-[12px] font-bold text-slate-700">{t('contact.subject', 'Subject')}</label>
+                  <select
+                    value={formData.category}
+                    onChange={(e) => setFormData((p) => ({ ...p, category: e.target.value }))}
+                    className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[13px] text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-900/5"
+                  >
+                    <option value="">{t('contact.select_subject', 'Select a subject')}</option>
+                    {contact.categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    ))}
+                  </select>
+                </div>
+              ) : null}
+
+              <div>
+                <label className="mb-1.5 block text-[12px] font-bold text-slate-700">{t('contact.message', 'Message')}</label>
+                <textarea
+                  value={formData.message}
+                  onChange={(e) => setFormData((p) => ({ ...p, message: e.target.value }))}
+                  placeholder={t('contact.message_placeholder', 'Type your message here...')}
+                  rows={4}
+                  className="w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 text-[13px] text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-900/5"
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={submitting}
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-xl text-[13px] font-bold text-white shadow-xs transition hover:opacity-90 active:scale-95 disabled:opacity-70"
+                style={{ backgroundColor: theme.primaryButton }}
+              >
+                {submitting ? 'Sending...' : t('contact.send_message', 'Send Message')}
+                {!submitting && <Send className="h-3.5 w-3.5" />}
+              </button>
+            </form>
           </div>
 
-          {/* Form Column */}
-          <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-slate-100 bg-slate-50/50 p-6 sm:p-7 shadow-xs">
-            <h3 className="text-[18px] font-black text-slate-900 mb-2" style={{ color: theme.primaryText }}>{t('contact.subtitle', 'Send Us A Message')}</h3>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <input value={formData.name} onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))} placeholder={`${t('contact.full_name', 'Full Name')} *`} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[13px] text-slate-800 outline-none focus:border-slate-400 focus:ring-2 focus:ring-rose-500/20 shadow-2xs" required />
-              <input type="email" value={formData.email} onChange={(e) => setFormData((p) => ({ ...p, email: e.target.value }))} placeholder={`${t('contact.email_address', 'Email Address')} *`} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[13px] text-slate-800 outline-none focus:border-slate-400 focus:ring-2 focus:ring-rose-500/20 shadow-2xs" required />
+          {/* ── Contact Information + map (one card) ────────────────────── */}
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="grid h-full sm:grid-cols-[1.3fr_1fr]">
+              <div className="p-6 sm:p-7">
+                <h3 className="text-[17px] font-black" style={{ color: theme.primaryText }}>
+                  {t('contact.info_title', 'Contact Information')}
+                </h3>
+                <div className="mt-2 h-[3px] w-10 rounded-full" style={{ backgroundColor: theme.primaryButton }} />
+
+                <div className="mt-6 space-y-5">
+                  {contact.email ? (
+                    <div className="flex items-start gap-3">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: `${theme.primaryButton}1A`, color: theme.primaryButton }}>
+                        <Mail className="h-4 w-4" />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-[13px] font-black" style={{ color: theme.primaryText }}>{t('contact.email_us', 'Email Us')}</p>
+                        <p className="mt-0.5 break-words text-[12.5px] font-medium text-slate-600">{contact.email}</p>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {contact.mobile ? (
+                    <div className="flex items-start gap-3">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: `${theme.primaryButton}1A`, color: theme.primaryButton }}>
+                        <Phone className="h-4 w-4" />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-[13px] font-black" style={{ color: theme.primaryText }}>{t('contact.call_us', 'Call Us')}</p>
+                        <p className="mt-0.5 break-words text-[12.5px] font-medium text-slate-600">{contact.mobile}</p>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {contact.address ? (
+                    <div className="flex items-start gap-3">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: `${theme.primaryButton}1A`, color: theme.primaryButton }}>
+                        <MapPin className="h-4 w-4" />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-[13px] font-black" style={{ color: theme.primaryText }}>{t('contact.head_office', 'Head Office')}</p>
+                        <p className="mt-0.5 break-words text-[12.5px] font-medium leading-relaxed text-slate-600">{contact.address}</p>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+
+                {contact.socialLinksEnabled && contact.socialLinks && contact.socialLinks.length ? (
+                  <div className="mt-6 flex flex-wrap gap-2.5">
+                    {contact.socialLinks.map((link: SocialLink) => {
+                      const raw = String(link.iconName || 'simple-icons:linktree').trim().toLowerCase();
+                      const iconKey = raw.includes(':') ? raw : `simple-icons:${raw}`;
+                      return (
+                        <a
+                          key={link.label}
+                          href={link.href}
+                          aria-label={link.label}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex h-9 w-9 items-center justify-center rounded-full text-white transition hover:opacity-80"
+                          style={{ backgroundColor: link.color || theme.primaryButton }}
+                        >
+                          <Icon icon={iconKey} className="h-4 w-4" />
+                        </a>
+                      );
+                    })}
+                  </div>
+                ) : null}
+              </div>
+
+              {/* Map sits flush inside the card, full height, as in the mockup. */}
+              <div className="relative min-h-[220px] border-t border-slate-100 sm:min-h-full sm:border-l sm:border-t-0">
+                <iframe
+                  title="Company Location Map"
+                  src={mapSrc}
+                  width="100%"
+                  height="100%"
+                  className="absolute inset-0 h-full w-full"
+                  style={{ border: 0 }}
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              </div>
             </div>
-            <input value={formData.phone} onChange={(e) => setFormData((p) => ({ ...p, phone: e.target.value }))} placeholder={t('contact.phone_number', 'Phone Number')} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[13px] text-slate-800 outline-none focus:border-slate-400 focus:ring-2 focus:ring-rose-500/20 shadow-2xs" />
-            {contact.categories && contact.categories.length ? (
-              <select value={formData.category} onChange={(e) => setFormData((p) => ({ ...p, category: e.target.value }))} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[13px] text-slate-800 outline-none focus:border-slate-400 focus:ring-2 focus:ring-rose-500/20 shadow-2xs">
-                <option value="">Select Category</option>
-                {contact.categories.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
-              </select>
-            ) : null}
-            <textarea value={formData.message} onChange={(e) => setFormData((p) => ({ ...p, message: e.target.value }))} placeholder={`${t('contact.message', 'Your Message')} *`} rows={4} className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-[13px] text-slate-800 outline-none focus:border-slate-400 focus:ring-2 focus:ring-rose-500/20 resize-none shadow-2xs" required />
-            <button type="submit" disabled={submitting} className="h-11 w-full rounded-xl text-[13px] font-bold text-white transition hover:opacity-90 active:scale-95 disabled:opacity-70 shadow-xs" style={{ backgroundColor: theme.primaryButton }}>
-              {submitting ? 'Sending...' : t('contact.send_message', 'Send Message')}
-            </button>
-          </form>
+          </div>
         </div>
       </div>
     </section>

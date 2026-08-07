@@ -119,9 +119,11 @@ function FeaturesSectionBase({ features, theme }: { features: FeatureItem[]; the
               : 'lucide:sparkles';
 
             return (
+              // `h-full` + column flex lets the CTA below pin to the bottom, so
+              // it lines up across a row no matter how much text each card has.
               <div
                 key={item.id}
-                className="group relative rounded-xl border border-slate-100 bg-slate-50/50 p-6 shadow-xs transition duration-300 hover:-translate-y-1 hover:border-slate-200 hover:bg-white hover:shadow-md"
+                className="group relative flex h-full flex-col rounded-xl border border-slate-100 bg-slate-50/50 p-6 shadow-xs transition duration-300 hover:-translate-y-1 hover:border-slate-200 hover:bg-white hover:shadow-md"
               >
                 <div
                   className="mb-4 flex h-11 w-11 items-center justify-center rounded-lg transition duration-300 group-hover:scale-110"
@@ -153,10 +155,14 @@ function FeaturesSectionBase({ features, theme }: { features: FeatureItem[]; the
                   </ul>
                 )}
 
+                {/* One theme colour for every card — the rotating accent stays
+                    on the icon and bullets, but a call to action that changes
+                    colour per card reads as four different links. `mt-auto`
+                    pins it to the card's bottom edge so the row aligns. */}
                 <a
                   href="#"
-                  className="mt-4 inline-flex items-center gap-1 text-[13px] font-bold transition-colors"
-                  style={{ color: accent.fg }}
+                  className="mt-auto inline-flex items-center gap-1 pt-4 text-[13px] font-bold transition-colors"
+                  style={{ color: theme.primaryButton }}
                 >
                   {item.ctaLabel || t('features.view_details', 'View Feature')}
                   <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />

@@ -45,7 +45,17 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { useHighlights, useSaveHighlights, DEFAULT_HIGHLIGHTS, type HighlightItem, type HighlightsSettings } from '@/hooks/useHighlights';
+import {
+    useHighlights,
+    useSaveHighlights,
+    highlightsBackgroundStyle,
+    DEFAULT_HIGHLIGHTS,
+    DEFAULT_GRADIENT_FROM,
+    DEFAULT_GRADIENT_TO,
+    DEFAULT_GRADIENT_ANGLE,
+    type HighlightItem,
+    type HighlightsSettings,
+} from '@/hooks/useHighlights';
 import { PageLoader } from '@/components/common/page-loader';
 import { ConfirmResetDialog } from '@/components/common/confirm-reset-dialog';
 import { IconPickerDialog } from '@/components/common/icon-picker-dialog';
@@ -217,29 +227,28 @@ export function HighlightsContent({ pageSlug, instance }: HighlightsContentProps
         toast.info('Reset highlights settings to default.');
     };
 
-    const presets = [
-        { id: 'default', label: 'Default', bg: 'linear-gradient(135deg, #F3F0FF 0%, #FFFFFF 100%)', color: '#F3F0FF' },
-        { id: 'gradient-1', label: 'Gradient 1', bg: 'linear-gradient(135deg, #E0F2FE 0%, #F0FDFA 100%)', color: '#E0F2FE' },
-        { id: 'gradient-2', label: 'Gradient 2', bg: 'linear-gradient(135deg, #FCE7F3 0%, #FFF1F2 100%)', color: '#FCE7F3' },
-        { id: 'gradient-3', label: 'Gradient 3', bg: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)', color: '#EFF6FF' },
-    ];
+    // Resolved stops for the picker. A row saved before the picker existed has
+    // no gradient_* fields, so fall back through the legacy preset the shared
+    // helper understands, then to the defaults.
+    const gradientFrom = settings.gradient_from || DEFAULT_GRADIENT_FROM;
+    const gradientTo = settings.gradient_to || DEFAULT_GRADIENT_TO;
+    const gradientAngle = settings.gradient_angle ?? DEFAULT_GRADIENT_ANGLE;
 
-    const selectPreset = (presetId: string) => {
-        const found = presets.find((p) => p.id === presetId);
+    // Editing any stop commits the block to a gradient background and clears the
+    // legacy preset id, so the two can never disagree about what to render.
+    const updateGradient = (patch: Partial<HighlightsSettings>) => {
         setSettings((prev) => ({
             ...prev,
-            preset: presetId,
             background_type: 'gradient',
-            background_color: found?.color || '#FFFFFF',
+            preset: undefined,
+            gradient_from: prev.gradient_from || DEFAULT_GRADIENT_FROM,
+            gradient_to: prev.gradient_to || DEFAULT_GRADIENT_TO,
+            gradient_angle: prev.gradient_angle ?? DEFAULT_GRADIENT_ANGLE,
+            ...patch,
         }));
     };
 
-    const activePresetObj = presets.find((p) => p.id === settings.preset);
-    const previewBackgroundStyle = activePresetObj
-        ? { backgroundImage: activePresetObj.bg }
-        : settings.background_type === 'gradient'
-        ? { backgroundImage: 'linear-gradient(135deg, #F3F0FF 0%, #FFFFFF 100%)' }
-        : { backgroundColor: settings.background_color || '#FFFFFF' };
+    const previewBackgroundStyle = highlightsBackgroundStyle(settings);
 
     const getGridClass = (count: number) => {
         if (count === 3) return 'grid grid-cols-1 sm:grid-cols-3 gap-4';
@@ -460,6 +469,23 @@ export function HighlightsContent({ pageSlug, instance }: HighlightsContentProps
                                         </SelectContent>
                                     </Select>
                                 </div>
+
+                                {/* Grouped = every item shares one bordered bar (the
+                                    original look). Individual = each item gets its own
+                                    card, for blocks that read more like a small
+                                    features grid than a single stat strip. */}
+                                <div className="space-y-1">
+                                    <Label className="text-xs font-semibold">Card Layout</Label>
+                                    <Select value={settings.card_style || 'grouped'} onValueChange={(val: any) => updateSetting('card_style', val)}>
+                                        <SelectTrigger className="h-8 text-xs">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="grouped">Grouped Bar (Default)</SelectItem>
+                                            <SelectItem value="individual">Individual Cards</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                             </div>
                         </div>
 
@@ -505,25 +531,59 @@ export function HighlightsContent({ pageSlug, instance }: HighlightsContentProps
                                 </div>
                             </div>
 
-                            {/* Presets */}
-                            <div className="space-y-2 pt-3">
-                                <Label className="text-xs font-semibold">Background Presets</Label>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                    {presets.map((p) => (
-                                        <button
-                                            key={p.id}
-                                            type="button"
-                                            onClick={() => selectPreset(p.id)}
-                                            className={cn(
-                                                'h-12 rounded-lg border flex flex-col items-center justify-center text-[10px] font-bold p-1 transition-all cursor-pointer shadow-xs',
-                                                settings.preset === p.id ? 'border-primary ring-2 ring-primary/40 font-extrabold scale-105' : 'border-slate-200 hover:border-slate-300'
-                                            )}
-                                            style={{ background: p.bg }}
-                                        >
-                                            {p.label}
-                                        </button>
-                                    ))}
+                            {/* Background Gradient — replaces the old fixed presets
+                                so any two colours can be used, not just four. */}
+                            <div className="space-y-2.5 pt-3">
+                                <Label className="text-xs font-semibold">Background Gradient</Label>
+
+                                <div className="flex flex-wrap items-end gap-4">
+                                    <div className="space-y-1">
+                                        <span className="block text-[10px] font-bold uppercase tracking-wide text-muted-foreground">From</span>
+                                        <div className="flex items-center gap-1.5">
+                                            <input
+                                                type="color"
+                                                value={gradientFrom}
+                                                onChange={(e) => updateGradient({ gradient_from: e.target.value })}
+                                                className="h-7 w-9 cursor-pointer rounded border border-slate-300 bg-transparent p-0"
+                                            />
+                                            <span className="font-mono text-[10px] uppercase text-muted-foreground">{gradientFrom}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-1">
+                                        <span className="block text-[10px] font-bold uppercase tracking-wide text-muted-foreground">To</span>
+                                        <div className="flex items-center gap-1.5">
+                                            <input
+                                                type="color"
+                                                value={gradientTo}
+                                                onChange={(e) => updateGradient({ gradient_to: e.target.value })}
+                                                className="h-7 w-9 cursor-pointer rounded border border-slate-300 bg-transparent p-0"
+                                            />
+                                            <span className="font-mono text-[10px] uppercase text-muted-foreground">{gradientTo}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="min-w-[140px] flex-1 space-y-1">
+                                        <span className="block text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                                            Angle ({gradientAngle}&deg;)
+                                        </span>
+                                        <input
+                                            type="range"
+                                            min={0}
+                                            max={360}
+                                            step={5}
+                                            value={gradientAngle}
+                                            onChange={(e) => updateGradient({ gradient_angle: Number(e.target.value) })}
+                                            className="h-7 w-full cursor-pointer accent-primary"
+                                        />
+                                    </div>
                                 </div>
+
+                                {/* Live swatch of exactly what the section will render. */}
+                                <div
+                                    className="h-12 rounded-lg border border-slate-200 shadow-xs"
+                                    style={highlightsBackgroundStyle(settings)}
+                                />
                             </div>
                         </div>
                     </CardContent>
@@ -542,20 +602,23 @@ export function HighlightsContent({ pageSlug, instance }: HighlightsContentProps
                         </DialogDescription>
                     </DialogHeader>
 
-                    <div
-                        className="rounded-xl border p-6 transition-all shadow-xs my-3 overflow-hidden"
-                        style={previewBackgroundStyle}
-                    >
-                        <div className={getGridClass(Number(settings.items_per_row))}>
+                    {settings.card_style === 'individual' ? (
+                        // Individual mode: no shared container - each item is its
+                        // own bordered/shadowed card, background applies per-card.
+                        <div className={cn('my-3', getGridClass(Number(settings.items_per_row)))}>
                             {settings.items.map((item, idx) => {
                                 const IconComp = ICON_MAP[item.icon] || Sparkles;
                                 const itemColor = item.icon_color || settings.icon_color || '#6C5DD3';
                                 const itemBg = item.icon_bg_color || settings.icon_bg_color || '#F3F0FF';
 
                                 return (
-                                    <div key={idx} className="flex flex-col items-center text-center space-y-2 p-3 rounded-lg border border-transparent hover:border-slate-200/60 transition-all min-w-0">
+                                    <div
+                                        key={idx}
+                                        className="flex flex-col items-center space-y-2 rounded-xl border border-slate-200 p-4 text-center shadow-xs transition-all hover:shadow-md min-w-0"
+                                        style={previewBackgroundStyle}
+                                    >
                                         <div
-                                            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-transform hover:scale-105 shadow-xs"
+                                            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full shadow-xs transition-transform hover:scale-105"
                                             style={{
                                                 backgroundColor: settings.icon_style === 'filled' ? itemBg : 'transparent',
                                                 border: settings.icon_style === 'outline' ? `2px solid ${itemColor}` : 'none',
@@ -564,17 +627,51 @@ export function HighlightsContent({ pageSlug, instance }: HighlightsContentProps
                                         >
                                             <IconComp className="h-5 w-5" />
                                         </div>
-                                        <h4 className="text-xs font-bold break-words line-clamp-2 max-w-full text-center" style={{ color: settings.title_color }}>
+                                        <h4 className="line-clamp-2 max-w-full break-words text-center text-xs font-bold" style={{ color: settings.title_color }}>
                                             {item.title}
                                         </h4>
-                                        <p className="text-[11px] leading-relaxed break-words line-clamp-3 max-w-full text-center" style={{ color: settings.description_color }}>
+                                        <p className="line-clamp-3 max-w-full break-words text-center text-[11px] leading-relaxed" style={{ color: settings.description_color }}>
                                             {item.description}
                                         </p>
                                     </div>
                                 );
                             })}
                         </div>
-                    </div>
+                    ) : (
+                        <div
+                            className="rounded-xl border p-6 transition-all shadow-xs my-3 overflow-hidden"
+                            style={previewBackgroundStyle}
+                        >
+                            <div className={getGridClass(Number(settings.items_per_row))}>
+                                {settings.items.map((item, idx) => {
+                                    const IconComp = ICON_MAP[item.icon] || Sparkles;
+                                    const itemColor = item.icon_color || settings.icon_color || '#6C5DD3';
+                                    const itemBg = item.icon_bg_color || settings.icon_bg_color || '#F3F0FF';
+
+                                    return (
+                                        <div key={idx} className="flex flex-col items-center text-center space-y-2 p-3 rounded-lg border border-transparent hover:border-slate-200/60 transition-all min-w-0">
+                                            <div
+                                                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-transform hover:scale-105 shadow-xs"
+                                                style={{
+                                                    backgroundColor: settings.icon_style === 'filled' ? itemBg : 'transparent',
+                                                    border: settings.icon_style === 'outline' ? `2px solid ${itemColor}` : 'none',
+                                                    color: itemColor,
+                                                }}
+                                            >
+                                                <IconComp className="h-5 w-5" />
+                                            </div>
+                                            <h4 className="text-xs font-bold break-words line-clamp-2 max-w-full text-center" style={{ color: settings.title_color }}>
+                                                {item.title}
+                                            </h4>
+                                            <p className="text-[11px] leading-relaxed break-words line-clamp-3 max-w-full text-center" style={{ color: settings.description_color }}>
+                                                {item.description}
+                                            </p>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
                 </DialogContent>
             </Dialog>
 

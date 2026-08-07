@@ -456,6 +456,13 @@ function CreateTemplatePage() {
                                     <span>Template Thumbnail <span className="text-rose-500">*</span></span>
                                     {errors.thumbnail && <span className="text-rose-500 font-bold lowercase">Required</span>}
                                 </label>
+                                {/* ImageCropper has no error state of its own, so the
+                                    required-field styling is applied to a wrapper —
+                                    matching the Template File dropzone below. */}
+                                <div className={cn(
+                                    'rounded-xl transition-colors',
+                                    errors.thumbnail && 'border-2 border-dashed border-red-500 ring-1 ring-red-500 bg-red-50/20 p-1'
+                                )}>
                                 <ImageCropper
                                     title="Template Thumbnail"
                                     description="Upload & crop your template thumbnail image"
@@ -479,6 +486,7 @@ function CreateTemplatePage() {
                                     }}
                                     onRemove={() => setThumbnailUrl('')}
                                 />
+                                </div>
                             </div>
 
                             {/* Template File Upload */}

@@ -1382,91 +1382,6 @@ export function PricingPlansBuilderContent() {
 
                         {/* Right Column: Cards (Plan Preview, Plan Summary, Tips) (5 Cols) */}
                         <div className="xl:col-span-5 space-y-4">
-                            {/* Card 1: Live Plan Preview */}
-                            <Card className="shadow-sm border-border bg-card sticky top-4">
-                                <CardHeader className="py-3 px-4 border-b border-border flex flex-row items-center justify-between bg-card">
-                                    <CardTitle className="text-xs font-bold text-card-foreground flex items-center gap-1.5">
-                                        <Sparkles className="h-4 w-4 text-primary" /> Plan Preview
-                                    </CardTitle>
-
-                                    {/* Viewport switcher */}
-                                    <div className="flex items-center gap-1 bg-muted p-0.5 rounded-lg border border-border">
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => setPreviewDevice('desktop')}
-                                            className={cn('h-7 w-7 p-0 text-muted-foreground', previewDevice === 'desktop' ? 'bg-card text-primary shadow-xs' : '')}
-                                        >
-                                            <Monitor className="h-4 w-4" />
-                                        </Button>
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => setPreviewDevice('mobile')}
-                                            className={cn('h-7 w-7 p-0 text-muted-foreground', previewDevice === 'mobile' ? 'bg-card text-primary shadow-xs' : '')}
-                                        >
-                                            <Smartphone className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="p-5 flex justify-center">
-                                    <div className={cn('transition-all w-full', previewDevice === 'mobile' ? 'max-w-[300px]' : 'max-w-[360px]')}>
-                                        {/* Card Container */}
-                                        <div className="relative rounded-2xl bg-card p-6 text-card-foreground shadow-lg border border-border text-center">
-                                            {/* Badge at top */}
-                                            {currentPlan.badgeText ? (
-                                                <div className="mb-4 inline-block">
-                                                    {renderBadgePreview(currentPlan.badgeText, currentPlan.badgeStyle, currentPlan.badgeColor)}
-                                                </div>
-                                            ) : null}
-
-                                            {/* Big Icon */}
-                                            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
-                                                {renderPlanIcon(currentPlan.icon)}
-                                            </div>
-
-                                            {/* Plan Name */}
-                                            <h3 className="text-xl font-extrabold text-foreground tracking-tight">{currentPlan.name}</h3>
-                                            <p className="text-xs font-semibold text-primary mt-0.5">For {currentPlan.planFor}</p>
-
-                                            {/* Description */}
-                                            <p className="text-xs text-muted-foreground mt-2 px-2 leading-relaxed">{currentPlan.description}</p>
-
-                                            {/* Price */}
-                                            <div className="my-5">
-                                                <div className="flex items-baseline justify-center gap-1">
-                                                    <span className="text-3xl font-black text-foreground">₹{currentPlan.price || '0'}</span>
-                                                    <span className="text-xs font-bold text-muted-foreground">
-                                                        {currentPlan.customUnitLabel || `/${currentPlan.billingCycle.toLowerCase()}`}
-                                                    </span>
-                                                </div>
-                                                {currentPlan.compareAtPrice ? (
-                                                    <div className="text-xs text-muted-foreground line-through mt-0.5">₹{currentPlan.compareAtPrice}</div>
-                                                ) : null}
-                                            </div>
-
-                                            {/* Feature Checkmarks List */}
-                                            <div className="space-y-2.5 text-left border-t border-border pt-4 my-4">
-                                                {currentPlan.features.map((feat) => (
-                                                    <div key={feat.id} className="flex items-center gap-2 text-xs text-foreground">
-                                                        <Check className="h-4 w-4 text-primary shrink-0 font-bold" />
-                                                        <span className="font-semibold text-foreground">{feat.text}</span>
-                                                        <span className="ml-auto font-bold text-foreground">{feat.value}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-
-                                            {/* CTA Button */}
-                                            <Button className="w-full h-11 text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-md transition-all">
-                                                {currentPlan.ctaText || 'Choose This Plan'}
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-
                             {/* Card 2: Plan Summary */}
                             <Card className="shadow-xs border-border bg-card">
                                 <CardHeader className="py-3 px-4 border-b border-border bg-muted/40">
@@ -1841,8 +1756,98 @@ export function PricingPlansBuilderContent() {
                     </DialogHeader>
 
                     <div className="py-2 max-h-[70vh] overflow-y-auto space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            {plans.slice(0, 3).map((plan) => (
+                        {/* Device-switchable mockup of the plan currently being
+                            edited — was a sticky card beside the form; now lives
+                            here so the form gets the full width, like Hero Section. */}
+                        {/* Card 1: Live Plan Preview */}
+                        <Card className="shadow-sm border-border bg-card w-full">
+                            <CardHeader className="py-3 px-4 border-b border-border flex flex-row items-center justify-between bg-card">
+                                <CardTitle className="text-xs font-bold text-card-foreground flex items-center gap-1.5">
+                                    <Sparkles className="h-4 w-4 text-primary" /> Plan Preview
+                                </CardTitle>
+
+                                {/* Viewport switcher */}
+                                <div className="flex items-center gap-1 bg-muted p-0.5 rounded-lg border border-border">
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setPreviewDevice('desktop')}
+                                        className={cn('h-7 w-7 p-0 text-muted-foreground', previewDevice === 'desktop' ? 'bg-card text-primary shadow-xs' : '')}
+                                    >
+                                        <Monitor className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setPreviewDevice('mobile')}
+                                        className={cn('h-7 w-7 p-0 text-muted-foreground', previewDevice === 'mobile' ? 'bg-card text-primary shadow-xs' : '')}
+                                    >
+                                        <Smartphone className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="p-5 flex justify-center">
+                                <div className={cn('transition-all w-full', previewDevice === 'mobile' ? 'max-w-[300px]' : 'max-w-[360px]')}>
+                                    {/* Card Container */}
+                                    <div className="relative rounded-2xl bg-card p-6 text-card-foreground shadow-lg border border-border text-center">
+                                        {/* Badge at top */}
+                                        {currentPlan.badgeText ? (
+                                            <div className="mb-4 inline-block">
+                                                {renderBadgePreview(currentPlan.badgeText, currentPlan.badgeStyle, currentPlan.badgeColor)}
+                                            </div>
+                                        ) : null}
+
+                                        {/* Big Icon */}
+                                        <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+                                            {renderPlanIcon(currentPlan.icon)}
+                                        </div>
+
+                                        {/* Plan Name */}
+                                        <h3 className="text-xl font-extrabold text-foreground tracking-tight">{currentPlan.name}</h3>
+                                        <p className="text-xs font-semibold text-primary mt-0.5">For {currentPlan.planFor}</p>
+
+                                        {/* Description */}
+                                        <p className="text-xs text-muted-foreground mt-2 px-2 leading-relaxed">{currentPlan.description}</p>
+
+                                        {/* Price */}
+                                        <div className="my-5">
+                                            <div className="flex items-baseline justify-center gap-1">
+                                                <span className="text-3xl font-black text-foreground">₹{currentPlan.price || '0'}</span>
+                                                <span className="text-xs font-bold text-muted-foreground">
+                                                    {currentPlan.customUnitLabel || `/${currentPlan.billingCycle.toLowerCase()}`}
+                                                </span>
+                                            </div>
+                                            {currentPlan.compareAtPrice ? (
+                                                <div className="text-xs text-muted-foreground line-through mt-0.5">₹{currentPlan.compareAtPrice}</div>
+                                            ) : null}
+                                        </div>
+
+                                        {/* Feature Checkmarks List */}
+                                        <div className="space-y-2.5 text-left border-t border-border pt-4 my-4">
+                                            {currentPlan.features.map((feat) => (
+                                                <div key={feat.id} className="flex items-center gap-2 text-xs text-foreground">
+                                                    <Check className="h-4 w-4 text-primary shrink-0 font-bold" />
+                                                    <span className="font-semibold text-foreground">{feat.text}</span>
+                                                    <span className="ml-auto font-bold text-foreground">{feat.value}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {/* CTA Button */}
+                                        <Button className="w-full h-11 text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-md transition-all">
+                                            {currentPlan.ctaText || 'Choose This Plan'}
+                                        </Button>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        <div className="space-y-2">
+                            <p className="text-xs font-bold text-foreground">All Plans — Side by Side</p>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {plans.slice(0, 3).map((plan) => (
                                 <Card key={plan.id} className={cn('relative border-2', plan.badgeText ? 'border-primary shadow-lg' : 'border-border')}>
                                     {plan.badgeText ? (
                                         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
@@ -1873,6 +1878,7 @@ export function PricingPlansBuilderContent() {
                                     </CardContent>
                                 </Card>
                             ))}
+                            </div>
                         </div>
                     </div>
                 </DialogContent>

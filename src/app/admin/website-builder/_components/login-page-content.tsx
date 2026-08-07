@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Save, Plus, Trash2, Sparkles, PanelLeft, ImageIcon, ListChecks, Check, Monitor, Smartphone, HelpCircle, RotateCcw, Loader2 } from 'lucide-react';
+import { Save, Plus, Trash2, Sparkles, PanelLeft, ImageIcon, ListChecks, Check, Monitor, Smartphone, HelpCircle, RotateCcw, Loader2, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import { useCompanyLoginSettings } from '@/hooks/useCompanyWebsiteBuilder';
 import { mediaApi } from '@/hooks/use-media';
 import { PageLoader } from '@/components/common/page-loader';
 import { ConfirmResetDialog } from '@/components/common/confirm-reset-dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { useSectionTranslation, handleTranslationSave } from '@/hooks/useSectionTranslation';
 import { TranslationSideCard } from './translation-side-card';
@@ -40,6 +41,7 @@ export function LoginPageContent() {
     const [bullets, setBullets] = useState<BulletRow[]>(initialBullets);
     const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
     const [resetDialogOpen, setResetDialogOpen] = useState(false);
+    const [previewOpen, setPreviewOpen] = useState(false);
 
     // Per-form translation mode (?lang=<id>), same as Hero Section.
     // Field keys match the `login-page` entry in the backend FIELD_CATALOG,
@@ -153,6 +155,9 @@ export function LoginPageContent() {
                     <Button variant="outline" size="sm" onClick={() => toast.info('Customize client login panel background image, copy, and bullet features.')} className="h-8 px-3 text-xs font-semibold text-slate-600 border-slate-200 hover:bg-slate-50">
                         <HelpCircle className="h-3.5 w-3.5 text-slate-400 mr-1" /> How It Works
                     </Button>
+                    <Button type="button" variant="outline" size="sm" onClick={() => setPreviewOpen(true)} className="h-8 px-3 text-xs font-semibold text-emerald-700 border-emerald-300 hover:bg-emerald-50">
+                        <Eye className="h-3.5 w-3.5 text-emerald-600 mr-1" /> Live Preview
+                    </Button>
                     <Button type="button" variant="outline" size="sm" onClick={() => setResetDialogOpen(true)} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
                         <RotateCcw className="h-3.5 w-3.5 text-rose-500 mr-1" /> Reset
                     </Button>
@@ -180,9 +185,9 @@ export function LoginPageContent() {
                 </div>
             </div>
 
-            {/* Split Screen: Left Controls | Right Live Branded Login Panel Preview */}
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.1fr] gap-4 items-start">
-                {/* Left Column: Compact Form Controls */}
+            {/* Preview lives in the Live Preview dialog, matching Hero Section —
+                the form gets the full width. */}
+            <div className="grid grid-cols-1 gap-4 items-start">
                 <div className="space-y-3">
                     {/* Toggle: Show Side Panel */}
                     <Card className="shadow-xs">
@@ -335,114 +340,127 @@ export function LoginPageContent() {
                     )}
                 </div>
 
-                {/* Right Column: Live Branded Login Panel Preview */}
-                <div className="sticky top-4 space-y-2">
-                    <Card className="border-primary/30 shadow-xs overflow-hidden">
-                        <CardHeader className="bg-muted/30 p-3 border-b">
-                            <div className="flex flex-wrap items-center justify-between gap-2">
-                                <div className="flex items-center gap-2">
-                                    <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                                    <CardTitle className="text-xs font-bold uppercase tracking-wider text-foreground">Live Login Side Panel Preview</CardTitle>
-                                </div>
-                                <div className="flex items-center gap-1 rounded-lg border p-0.5 bg-background shadow-2xs">
-                                    <button
-                                        type="button"
-                                        onClick={() => setPreviewDevice('desktop')}
-                                        className={cn(
-                                            'flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-bold transition-all',
-                                            previewDevice === 'desktop' ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-500 hover:text-slate-900'
-                                        )}
-                                    >
-                                        <Monitor className="h-3 w-3" /> Desktop
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setPreviewDevice('mobile')}
-                                        className={cn(
-                                            'flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-bold transition-all',
-                                            previewDevice === 'mobile' ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-500 hover:text-slate-900'
-                                        )}
-                                    >
-                                        <Smartphone className="h-3 w-3" /> Mobile
-                                    </button>
-                                </div>
-                            </div>
-                            <CardDescription className="text-[10px]">Real-time interactive rendering of client login branded panel.</CardDescription>
-                        </CardHeader>
-
-                        <CardContent className="p-0 bg-slate-50/50">
-                            {enabled ? (
-                                <div className={cn(
-                                    'relative min-h-[440px] flex flex-col justify-between p-5 bg-primary text-primary-foreground overflow-hidden transition-all duration-300',
-                                    previewDevice === 'mobile' ? 'max-w-[320px] mx-auto my-3 rounded-xl border border-slate-300 shadow-md' : 'w-full'
-                                )}>
-                                    {/* Optional Background Image */}
-                                    {showBackgroundImage && backgroundImage && (
-                                        <>
-                                            <img
-                                                src={backgroundImage}
-                                                alt="Login panel background"
-                                                className="pointer-events-none absolute inset-0 h-full w-full object-cover"
-                                            />
-                                            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-black/20" />
-                                        </>
-                                    )}
-
-                                    {/* Top Brand Header */}
-                                    <div className="relative z-10 space-y-3">
-                                        <div className="flex items-center gap-2.5">
-                                            <div className="flex h-9 w-9 items-center justify-center rounded-md bg-white/20 backdrop-blur-md text-white font-extrabold text-xs border border-white/30">
-                                                RA
-                                            </div>
-                                            <div>
-                                                <h3 className="text-xs font-extrabold leading-none text-white">RA EVENTS</h3>
-                                                <p className="text-[9px] font-semibold text-white/70 uppercase tracking-widest mt-0.5">Tirunelveli</p>
-                                            </div>
-                                        </div>
-
-                                        <div className="pt-4 space-y-1.5">
-                                            {eyebrow && (
-                                                <span className="text-[9px] font-extrabold text-white/75 uppercase tracking-widest block">
-                                                    {eyebrow}
-                                                </span>
-                                            )}
-                                            {title && (
-                                                <h2 className="text-lg font-black leading-snug text-white">
-                                                    {title}
-                                                </h2>
-                                            )}
-                                            {description && (
-                                                <p className="text-[11px] text-white/80 leading-normal pt-0.5">
-                                                    {description}
-                                                </p>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Highlights List */}
-                                    {bullets.filter((b) => b.text.trim()).length > 0 && (
-                                        <div className="relative z-10 pt-4 space-y-1.5 border-t border-white/20 mt-4">
-                                            {bullets.filter((b) => b.text.trim()).map((bullet) => (
-                                                <div key={bullet.id} className="flex items-center gap-2 text-[11px] font-semibold text-white/95">
-                                                    <div className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-white/25 text-white">
-                                                        <Check className="h-2 w-2" />
-                                                    </div>
-                                                    <span>{bullet.text}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            ) : (
-                                <div className="p-6 text-center text-xs text-muted-foreground space-y-1">
-                                    <p className="font-semibold text-foreground">Side Panel is Turned Off</p>
-                                    <p className="text-[10px]">When off, the client login modal displays only the authentication form.</p>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-                </div>
             </div>
+
+            {/* Live Preview Modal Dialog */}
+            <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+                <DialogContent className="max-w-3xl w-[92vw]">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-base font-bold">
+                            <Eye className="h-4 w-4 text-emerald-600" /> Login Page Live Preview
+                        </DialogTitle>
+                        <DialogDescription className="text-xs">
+                            Real-time preview of the branded side panel shown on the client login modal.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="max-h-[70vh] space-y-2 overflow-y-auto py-1">
+                        <Card className="border-primary/30 shadow-xs overflow-hidden">
+                            <CardHeader className="bg-muted/30 p-3 border-b">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2">
+                                        <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                                        <CardTitle className="text-xs font-bold uppercase tracking-wider text-foreground">Live Login Side Panel Preview</CardTitle>
+                                    </div>
+                                    <div className="flex items-center gap-1 rounded-lg border p-0.5 bg-background shadow-2xs">
+                                        <button
+                                            type="button"
+                                            onClick={() => setPreviewDevice('desktop')}
+                                            className={cn(
+                                                'flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-bold transition-all',
+                                                previewDevice === 'desktop' ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-500 hover:text-slate-900'
+                                            )}
+                                        >
+                                            <Monitor className="h-3 w-3" /> Desktop
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setPreviewDevice('mobile')}
+                                            className={cn(
+                                                'flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-bold transition-all',
+                                                previewDevice === 'mobile' ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-500 hover:text-slate-900'
+                                            )}
+                                        >
+                                            <Smartphone className="h-3 w-3" /> Mobile
+                                        </button>
+                                    </div>
+                                </div>
+                                <CardDescription className="text-[10px]">Real-time interactive rendering of client login branded panel.</CardDescription>
+                            </CardHeader>
+
+                            <CardContent className="p-0 bg-slate-50/50">
+                                {enabled ? (
+                                    <div className={cn(
+                                        'relative min-h-[440px] flex flex-col justify-between p-5 bg-primary text-primary-foreground overflow-hidden transition-all duration-300',
+                                        previewDevice === 'mobile' ? 'max-w-[320px] mx-auto my-3 rounded-xl border border-slate-300 shadow-md' : 'w-full'
+                                    )}>
+                                        {/* Optional Background Image */}
+                                        {showBackgroundImage && backgroundImage && (
+                                            <>
+                                                <img
+                                                    src={backgroundImage}
+                                                    alt="Login panel background"
+                                                    className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+                                                />
+                                                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-black/20" />
+                                            </>
+                                        )}
+
+                                        {/* Top Brand Header */}
+                                        <div className="relative z-10 space-y-3">
+                                            <div className="flex items-center gap-2.5">
+                                                <div className="flex h-9 w-9 items-center justify-center rounded-md bg-white/20 backdrop-blur-md text-white font-extrabold text-xs border border-white/30">
+                                                    RA
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-xs font-extrabold leading-none text-white">RA EVENTS</h3>
+                                                    <p className="text-[9px] font-semibold text-white/70 uppercase tracking-widest mt-0.5">Tirunelveli</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="pt-4 space-y-1.5">
+                                                {eyebrow && (
+                                                    <span className="text-[9px] font-extrabold text-white/75 uppercase tracking-widest block">
+                                                        {eyebrow}
+                                                    </span>
+                                                )}
+                                                {title && (
+                                                    <h2 className="text-lg font-black leading-snug text-white">
+                                                        {title}
+                                                    </h2>
+                                                )}
+                                                {description && (
+                                                    <p className="text-[11px] text-white/80 leading-normal pt-0.5">
+                                                        {description}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Highlights List */}
+                                        {bullets.filter((b) => b.text.trim()).length > 0 && (
+                                            <div className="relative z-10 pt-4 space-y-1.5 border-t border-white/20 mt-4">
+                                                {bullets.filter((b) => b.text.trim()).map((bullet) => (
+                                                    <div key={bullet.id} className="flex items-center gap-2 text-[11px] font-semibold text-white/95">
+                                                        <div className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-white/25 text-white">
+                                                            <Check className="h-2 w-2" />
+                                                        </div>
+                                                        <span>{bullet.text}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="p-6 text-center text-xs text-muted-foreground space-y-1">
+                                        <p className="font-semibold text-foreground">Side Panel is Turned Off</p>
+                                        <p className="text-[10px]">When off, the client login modal displays only the authentication form.</p>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </div>
+                </DialogContent>
+            </Dialog>
 
             <ConfirmResetDialog
                 open={resetDialogOpen}

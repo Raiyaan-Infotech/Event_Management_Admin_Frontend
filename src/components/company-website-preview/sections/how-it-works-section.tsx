@@ -1,7 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { PhoneCall, Clipboard, Settings2, Star, Gift, Sliders, QrCode, LayoutDashboard, Heart, CheckCircle2 } from 'lucide-react';
+import { Icon } from '@iconify/react';
+import { Heart } from 'lucide-react';
 import type { ThemeColors } from './preview-shared';
 
 export type StepItem = {
@@ -15,47 +16,51 @@ export type StepItem = {
   badgeSub?: string;
 };
 
-const STEP_ICONS: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
-  'lucide:phone-call': PhoneCall,
-  'lucide:clipboard': Clipboard,
-  'lucide:settings-2': Settings2,
-  'lucide:star': Star,
-  'lucide:gift': Gift,
-  'lucide:sliders': Sliders,
-  'lucide:qr-code': QrCode,
-  'lucide:layout-dashboard': LayoutDashboard,
-  'phone-call': PhoneCall,
-  'clipboard': Clipboard,
-  'settings-2': Settings2,
-  'star': Star,
+/** Bare names from older saved rows are assumed to be lucide icons. */
+const iconName = (key?: string) => {
+  const raw = (key || '').trim();
+  if (!raw) return 'lucide:circle-check-big';
+  return raw.includes(':') ? raw : `lucide:${raw}`;
 };
 
-function DynamicStepGraphic({ step, theme }: { step: StepItem; theme: ThemeColors }) {
+// Each step gets its own accent rather than one flat theme colour, so the four
+// steps read as distinct stages.
+const STEP_ACCENTS: { bg: string; fg: string }[] = [
+  { bg: '#FCE7F3', fg: '#DB2777' }, // pink
+  { bg: '#EDE9FE', fg: '#7C3AED' }, // violet
+  { bg: '#D1FAE5', fg: '#059669' }, // green
+  { bg: '#FFEDD5', fg: '#EA580C' }, // orange
+  { bg: '#DBEAFE', fg: '#2563EB' }, // blue
+];
+
+// Unbordered and unrounded on purpose: it sits flush against the card's own
+// edge with no padding around it, and the CARD's `overflow-hidden` + rounded
+// corners are what clip its exposed edges. Giving the graphic its own border
+// and radius on top of that drew a second box outline inside the card — a
+// "box within a box" instead of one continuous shape, which is what "no space
+// around the image" was pointing at.
+function DynamicStepGraphic({ step, accent }: { step: StepItem; accent: { bg: string; fg: string } }) {
   if (step.imageUrl) {
     return (
-      <div className="relative h-full w-full overflow-hidden rounded-md bg-slate-100 border border-slate-200">
+      <div className="relative h-full w-full bg-slate-100">
         <img src={step.imageUrl} alt={step.title} className="h-full w-full object-cover" />
       </div>
     );
   }
 
-  const IconComp = (step.iconKey && STEP_ICONS[step.iconKey]) || CheckCircle2;
-
+  // No "Step N" label here: the numbered badge on the timeline to the left
+  // already identifies the step, so repeating it inside the card read as
+  // duplicated content next to the mockup's plain, unlabeled graphic.
   return (
     <div
-      className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-md border border-slate-100 p-4 transition duration-300"
-      style={{ backgroundColor: `${theme.primaryButton}0F` }}
+      className="relative flex h-full w-full items-center justify-center transition duration-300"
+      style={{ backgroundColor: accent.bg }}
     >
-      <div className="flex flex-col items-center gap-2 text-center">
-        <div
-          className="flex h-12 w-12 items-center justify-center rounded-md text-white shadow-xs"
-          style={{ backgroundColor: theme.primaryButton }}
-        >
-          <IconComp className="h-6 w-6 text-white" />
-        </div>
-        <span className="text-[12px] font-extrabold uppercase tracking-wider" style={{ color: theme.primaryButton }}>
-          Step {step.stepNumber}
-        </span>
+      <div
+        className="flex h-14 w-14 items-center justify-center rounded-xl text-white shadow-xs"
+        style={{ backgroundColor: accent.fg }}
+      >
+        <Icon icon={iconName(step.iconKey)} className="h-7 w-7 text-white" />
       </div>
     </div>
   );
@@ -94,38 +99,65 @@ function HowItWorksSectionBase({ steps, theme }: { steps: StepItem[]; theme: The
         {/* Timeline & Cards Stack */}
         <div className="relative space-y-6">
           {steps.map((step, idx) => {
-            const StepIconComp = (step.iconKey && STEP_ICONS[step.iconKey]) || CheckCircle2;
+            const accent = STEP_ACCENTS[idx % STEP_ACCENTS.length];
             const stepNum = step.stepNumber || idx + 1;
             const hasBadgeText = Boolean(step.badgeTitle || step.badgeSub);
 
             return (
-              <div key={step.id} className="relative flex items-start gap-4 sm:gap-6">
-                {/* Number Badge Timeline Column */}
-                <div className="relative flex flex-col items-center pt-5 shrink-0">
+              // `items-stretch` (not `items-start`) is load-bearing: the badge
+              // column below needs to match the card's rendered height so the
+              // connector SVG has real height to draw into. With items-start the
+              // column was only ever as tall as the circle itself, so the curve
+              // had nothing to stretch through and collapsed to a stub.
+              <div key={step.id} className="relative flex items-stretch gap-4 sm:gap-6">
+                {/* Number badge + connector — a continuous curved line running
+                    behind the card, matching the mockup's flowing thread. */}
+                <div className="relative flex w-10 shrink-0 flex-col items-center">
                   <div
-                    className="z-10 flex h-10 w-10 items-center justify-center rounded-full font-black text-white shadow-md text-sm transition-transform hover:scale-110"
+                    className="z-10 mt-5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-black text-white shadow-md transition-transform hover:scale-110"
                     style={{ backgroundColor: theme.primaryButton }}
                   >
                     {stepNum}
                   </div>
                   {idx < steps.length - 1 && (
-                    <div
-                      className="absolute top-12 bottom-0 w-0.5 border-r-2 border-dashed opacity-30"
-                      style={{ borderColor: theme.primaryButton, height: 'calc(100% + 24px)' }}
-                    />
+                    <svg
+                      aria-hidden
+                      className="absolute left-1/2 top-[3.75rem] -translate-x-1/2"
+                      width="24"
+                      viewBox="0 0 24 100"
+                      preserveAspectRatio="none"
+                      style={{ height: 'calc(100% - 2.25rem)' }}
+                    >
+                      <path
+                        d="M12 0 C 20 30, 4 70, 12 100"
+                        fill="none"
+                        stroke={theme.primaryButton}
+                        strokeOpacity={0.35}
+                        strokeWidth={2}
+                        strokeLinecap="round"
+                      />
+                    </svg>
                   )}
                 </div>
 
-                {/* Card Container */}
-                <div className="flex-1 overflow-hidden rounded-md border border-slate-200 bg-white p-4 sm:p-6 shadow-xs transition-all duration-300 hover:shadow-md">
-                  <div className="flex flex-col md:flex-row items-center gap-6">
-                    {/* Left Dynamic Graphic Box */}
-                    <div className="h-36 w-full md:w-60 shrink-0">
-                      <DynamicStepGraphic step={step} theme={theme} />
+                {/* Card Container — no padding here. The graphic needs to bleed
+                    flush to the card's own edges (top/left/bottom), so padding
+                    moved onto the content and badge columns individually
+                    instead of wrapping the whole row uniformly. */}
+                <div className="flex-1 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs transition-all duration-300 hover:shadow-md">
+                  {/* items-stretch so the graphic fills the card's full height.
+                      `gap` is what spaces the graphic from its neighbour — on
+                      each column, padding is applied only to the edges NOT
+                      touching the graphic, so gap and padding don't stack into
+                      a double gap. */}
+                  <div className="flex flex-col items-stretch gap-4 sm:gap-6 md:flex-row">
+                    {/* Left Dynamic Graphic Box — flush to the card's edges */}
+                    <div className="h-36 w-full shrink-0 md:h-auto md:min-h-[9rem] md:w-60">
+                      <DynamicStepGraphic step={step} accent={accent} />
                     </div>
 
                     {/* Middle Content */}
-                    <div className="flex-1 text-center md:text-left">
+                    <div className="flex flex-1 flex-col justify-center px-4 pb-4 text-center sm:px-6 sm:pb-6 md:py-6 md:pl-0 md:pr-6 md:text-left">
                       <h3 className="text-[19px] font-black" style={{ color: theme.primaryText }}>
                         {step.title}
                       </h3>
@@ -134,18 +166,19 @@ function HowItWorksSectionBase({ steps, theme }: { steps: StepItem[]; theme: The
                       </p>
                     </div>
 
-                    {/* Right Icon / Badge */}
-                    <div className="hidden lg:flex items-center gap-3 shrink-0 pl-6 border-l border-slate-100">
+                    {/* Right Icon / Badge — fixed width so the icons line up in a
+                        straight column across every step regardless of label length. */}
+                    <div className="hidden w-[200px] shrink-0 items-center gap-3 self-center border-l border-slate-100 py-6 pl-6 pr-6 lg:flex">
                       <div
-                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md"
-                        style={{ backgroundColor: `${theme.primaryButton}1A` }}
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg"
+                        style={{ backgroundColor: accent.bg }}
                       >
-                        <StepIconComp className="h-5 w-5" style={{ color: theme.primaryButton }} />
+                        <Icon icon={iconName(step.iconKey)} className="h-5 w-5" style={{ color: accent.fg }} />
                       </div>
                       {hasBadgeText ? (
-                        <div className="text-left">
-                          {step.badgeTitle && <span className="block text-[13px] font-black text-slate-900">{step.badgeTitle}</span>}
-                          {step.badgeSub && <span className="block text-[11px] font-semibold text-slate-500">{step.badgeSub}</span>}
+                        <div className="min-w-0 text-left">
+                          {step.badgeTitle && <span className="block truncate text-[13px] font-black text-slate-900">{step.badgeTitle}</span>}
+                          {step.badgeSub && <span className="block truncate text-[11px] font-semibold text-slate-500">{step.badgeSub}</span>}
                         </div>
                       ) : null}
                     </div>
