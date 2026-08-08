@@ -182,6 +182,15 @@ export function useSectionTranslation({
       toast.error('Save this section in English first, then translate it.');
       return;
     }
+    // Nothing to send. Without this the run streams zero events and the overlay
+    // flashes "0%" then closes with no visible change, which reads as a broken
+    // button rather than "there is no source text yet".
+    if (!fields.some((field) => String(field.value ?? '').trim())) {
+      toast.error(
+        'There is no English text in this section yet. Click "Back to English", fill it in and save, then translate.'
+      );
+      return;
+    }
 
     const languageId = activeLanguage.id;
     setAutoTranslateProgress({ done: 0, total: 0 });
@@ -253,7 +262,7 @@ export function useSectionTranslation({
     } finally {
       setAutoTranslateProgress(null);
     }
-  }, [activeLanguage, recordId, section, pageSlug, queryClient]);
+  }, [activeLanguage, recordId, section, pageSlug, queryClient, fields]);
 
   const buildHref = useCallback(
     (languageId: number | null) => {
