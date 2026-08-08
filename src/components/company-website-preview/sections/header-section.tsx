@@ -109,9 +109,9 @@ function HeaderSectionBase({ theme, header, navItems, socialLinks, companyName, 
 
       {/* Main nav */}
       <div className="shadow-sm bg-white">
-        <div className="mx-auto flex min-h-[74px] w-full max-w-[1280px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex min-h-[74px] w-full max-w-[1280px] items-center justify-between gap-3 px-4 sm:px-6 lg:gap-4 lg:px-8">
           {/* Logo */}
-          <a href="/" onClick={(e) => handleNavClick(e, { href: '/' })} className="flex shrink-0 items-center gap-3">
+          <a href="/" onClick={(e) => handleNavClick(e, { href: '/' })} className="flex min-w-0 shrink items-center gap-3">
             {companyLogo ? (
               <img
                 src={companyLogo}
@@ -132,8 +132,15 @@ function HeaderSectionBase({ theme, header, navItems, socialLinks, companyName, 
             >
               {companyName.split(/\s+/).slice(0, 2).map((p) => p[0]).join('').toUpperCase()}
             </span>
-            <span className="shrink-0">
-              <span className="block text-[14px] font-black uppercase leading-4 tracking-[0.12em]" style={{ color: theme.primaryButton }}>
+            {/* Hidden below xl: translated nav labels are far wider than their
+                English source (Tamil runs ~2x), and the wordmark is the least
+                costly thing to drop before links or the CTA start overflowing.
+                The logo mark still identifies the brand. */}
+            <span className="hidden min-w-0 xl:block">
+              <span
+                className="block truncate text-[14px] font-black uppercase leading-4 tracking-[0.12em]"
+                style={{ color: theme.primaryButton }}
+              >
                 {companyName}
               </span>
             </span>
@@ -145,8 +152,16 @@ function HeaderSectionBase({ theme, header, navItems, socialLinks, companyName, 
             const visibleItems = navItems.length > VISIBLE_LIMIT ? navItems.slice(0, VISIBLE_LIMIT - 1) : navItems;
             const overflowItems = navItems.length > VISIBLE_LIMIT ? navItems.slice(VISIBLE_LIMIT - 1) : [];
 
+            // `min-w-0 flex-1` lets the link row absorb the squeeze instead of
+            // pushing the language picker and CTA past the right edge, which is
+            // what happened once the labels were translated. Anything that still
+            // doesn't fit scrolls inside this row, so every link stays reachable
+            // in any language.
             return (
-              <nav className="hidden items-center gap-6 text-[13px] font-bold lg:flex" style={{ color: theme.primaryButton }}>
+              <nav
+                className="hidden min-w-0 flex-1 items-center justify-center gap-4 overflow-x-auto text-[12.5px] font-bold lg:flex xl:gap-6 xl:text-[13px] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                style={{ color: theme.primaryButton }}
+              >
                 {visibleItems.map((item) => {
                   const isActive = viewKeyFromHref(item.href) === activeKey;
                   if (item.children.length) {
