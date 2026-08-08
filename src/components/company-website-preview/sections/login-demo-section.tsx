@@ -85,6 +85,7 @@ export function LoginDemoSection({ theme, companyName }: SectionProps) {
 
 // 2. Features Page: Features First Highlight Showcase (1:1 Match to 3-Column Screenshot Design)
 export function FeaturesFirstHighlightSection({ theme, companyName }: SectionProps) {
+    const { t } = useWebsiteLanguage();
     const primaryBtn = theme?.primaryButton || '#E11D48';
 
     return (
@@ -129,10 +130,10 @@ export function FeaturesFirstHighlightSection({ theme, companyName }: SectionPro
                         <div className="lg:col-span-5 space-y-4">
                             <div>
                                 <h3 className="text-xl sm:text-2xl font-extrabold tracking-tight text-foreground">
-                                    And Much More
+                                    {t('login_demo.much_more_title', 'And Much More')}
                                 </h3>
                                 <p className="text-xs sm:text-sm text-muted-foreground pt-1">
-                                    We keep adding new features to make your event experience better and better.
+                                    {t('login_demo.much_more_subtitle', 'We keep adding new features to make your event experience better and better.')}
                                 </p>
                             </div>
 
@@ -140,33 +141,33 @@ export function FeaturesFirstHighlightSection({ theme, companyName }: SectionPro
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                 <div className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-2.5 py-2 text-xs font-semibold text-foreground shadow-xs hover:border-primary/40 transition-colors">
                                     <Globe className="h-3.5 w-3.5 text-blue-500 shrink-0" />
-                                    <span className="truncate">Social Media</span>
+                                    <span className="truncate">{t('login_demo.social_media', 'Social Media')}</span>
                                 </div>
                                 <div className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-2.5 py-2 text-xs font-semibold text-foreground shadow-xs hover:border-primary/40 transition-colors">
                                     <Music className="h-3.5 w-3.5 text-purple-500 shrink-0" />
-                                    <span className="truncate">Music Player</span>
+                                    <span className="truncate">{t('login_demo.music_player', 'Music Player')}</span>
                                 </div>
                                 <div className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-2.5 py-2 text-xs font-semibold text-foreground shadow-xs hover:border-primary/40 transition-colors">
                                     <Timer className="h-3.5 w-3.5 text-rose-500 shrink-0" />
-                                    <span className="truncate">Countdown</span>
+                                    <span className="truncate">{t('login_demo.countdown', 'Countdown')}</span>
                                 </div>
                                 <div className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-2.5 py-2 text-xs font-semibold text-foreground shadow-xs hover:border-primary/40 transition-colors">
                                     <UserCheck className="h-3.5 w-3.5 text-indigo-500 shrink-0" />
-                                    <span className="truncate">Contact / Org</span>
+                                    <span className="truncate">{t('login_demo.contact_org', 'Contact / Org')}</span>
                                 </div>
                                 <div className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-2.5 py-2 text-xs font-semibold text-foreground shadow-xs hover:border-primary/40 transition-colors">
                                     <Layout className="h-3.5 w-3.5 text-violet-500 shrink-0" />
-                                    <span className="truncate">Custom Pages</span>
+                                    <span className="truncate">{t('login_demo.custom_pages', 'Custom Pages')}</span>
                                 </div>
                                 <div className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-2.5 py-2 text-xs font-semibold text-foreground shadow-xs hover:border-primary/40 transition-colors">
                                     <Languages className="h-3.5 w-3.5 text-amber-500 shrink-0" />
-                                    <span className="truncate">Multi Language</span>
+                                    <span className="truncate">{t('login_demo.multi_language', 'Multi Language')}</span>
                                 </div>
                             </div>
 
                             <div>
                                 <span className="inline-flex items-center rounded-xl bg-primary/10 text-primary text-xs font-bold px-3 py-1.5 border border-primary/20">
-                                    ... and Feature Plans
+                                    {t('login_demo.and_feature_plans', '... and Feature Plans')}
                                 </span>
                             </div>
                         </div>
@@ -183,7 +184,7 @@ export function FeaturesFirstHighlightSection({ theme, companyName }: SectionPro
                                     </div>
                                     <div className="space-y-1">
                                         <h4 className="text-sm sm:text-base font-bold text-foreground tracking-tight leading-snug">
-                                            Ready to Create Your Amazing Event App?
+                                            {t('login_demo.ready_app_title', 'Ready to Create Your Amazing Event App?')}
                                         </h4>
                                         <p className="text-xs text-muted-foreground leading-relaxed">
                                             Join thousands of happy customers who trust {companyName || 'Event Invit'}.
@@ -218,6 +219,7 @@ export function FeaturesFirstHighlightSection({ theme, companyName }: SectionPro
 
 // 3. Features Page (Dark Variant): Sign In & Demo Section
 export function SignInDemoSection({ theme }: SectionProps) {
+    const { t } = useWebsiteLanguage();
     const primaryBtn = theme?.primaryButton || '#E11D48';
 
     return (
@@ -235,7 +237,7 @@ export function SignInDemoSection({ theme }: SectionProps) {
                             Your <span style={{ color: primaryBtn }}>Special Moments</span>
                         </h2>
                         <p className="text-xs sm:text-sm text-slate-400 max-w-md">
-                            Start creating your event app today. It&apos;s easy, fast and absolutely amazing!
+                            {t('login_demo.banner_subtitle', "Start creating your event app today. It's easy, fast and absolutely amazing!")}
                         </p>
                     </div>
 
@@ -245,7 +247,7 @@ export function SignInDemoSection({ theme }: SectionProps) {
                             className="font-bold text-white shadow-lg px-7 py-3 rounded-xl transition-all hover:scale-[1.02] active:scale-95 border-0"
                             style={{ backgroundColor: primaryBtn }}
                         >
-                            Create Your App Now
+                            {t('login_demo.create_app_now', 'Create Your App Now')}
                         </Button>
                         <Button
                             size="lg"
@@ -254,7 +256,7 @@ export function SignInDemoSection({ theme }: SectionProps) {
                             style={{ borderColor: primaryBtn, color: '#FFFFFF' }}
                         >
                             <Smartphone className="h-4 w-4 shrink-0" style={{ color: primaryBtn }} />
-                            <span className="text-white">Book a Demo</span>
+                            <span className="text-white">{t('login_demo.book_demo', 'Book a Demo')}</span>
                         </Button>
                     </div>
                 </div>
@@ -265,21 +267,22 @@ export function SignInDemoSection({ theme }: SectionProps) {
 
 // 4. Pricing Page: Contact & Signup Demo Section (1:1 Match with Unsplash Support Agent & Event App Mockup Images)
 export function ContactSignupDemoSection({ theme, companyName }: SectionProps) {
+    const { t } = useWebsiteLanguage();
     const primaryBtn = theme?.primaryButton || '#E11D48';
 
     return (
         <section className="w-full py-6 px-4 sm:px-6 lg:px-8">
             <div className="mx-auto w-full max-w-[1280px]">
                 <div className="flex flex-col lg:flex-row items-stretch gap-4 sm:gap-6">
-                    {/* Left Card: Still Have Questions? (Support Card with Customer Support Agent Image) */}
+                    {/* Left Card: {t('login_demo.still_questions', 'Still Have Questions?')} (Support Card with Customer Support Agent Image) */}
                     <div className="w-full lg:w-[40%] relative overflow-hidden rounded-3xl bg-[#F3F6FA] border border-slate-200/60 p-5 sm:p-6 flex items-center justify-between gap-4 shadow-xs">
                         <div className="space-y-2.5 z-10 flex-1 min-w-0">
                             <div className="space-y-1">
                                 <h3 className="text-base sm:text-lg font-bold tracking-tight text-slate-900 truncate sm:whitespace-normal">
-                                    Still Have Questions?
+                                    {t('login_demo.still_questions', 'Still Have Questions?')}
                                 </h3>
                                 <p className="text-[11px] sm:text-xs text-slate-500 font-medium leading-normal max-w-[210px]">
-                                    We&apos;re here to help you choose the best plan for your needs.
+                                    {t('login_demo.still_questions_subtitle', 'We are here to help you choose the best plan for your needs.')}
                                 </p>
                             </div>
                             <button
@@ -287,7 +290,7 @@ export function ContactSignupDemoSection({ theme, companyName }: SectionProps) {
                                 className="inline-flex items-center gap-1 text-xs font-bold hover:underline transition-colors cursor-pointer pt-0.5"
                                 style={{ color: primaryBtn }}
                             >
-                                <span>Contact Support</span>
+                                <span>{t('login_demo.contact_support', 'Contact Support')}</span>
                                 <ArrowRight className="h-3.5 w-3.5" />
                             </button>
                         </div>
@@ -307,12 +310,12 @@ export function ContactSignupDemoSection({ theme, companyName }: SectionProps) {
                         </div>
                     </div>
 
-                    {/* Right Card: Ready to Create Your Amazing Event? (Phone Frame with Event App Mockup Image) */}
+                    {/* Right Card: {t('login_demo.ready_event_title', 'Ready to Create Your Amazing Event?')} (Phone Frame with Event App Mockup Image) */}
                     <div className="w-full lg:w-[60%] relative overflow-hidden rounded-3xl bg-gradient-to-r from-pink-50/90 via-rose-50/70 to-pink-100/90 border border-pink-200/60 p-5 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-5 shadow-xs">
                         <div className="space-y-3 text-left z-10 flex-1 min-w-0">
                             <div className="space-y-1">
                                 <h3 className="text-base sm:text-lg lg:text-xl font-bold tracking-tight text-slate-900 leading-snug">
-                                    Ready to Create Your Amazing Event?
+                                    {t('login_demo.ready_event_title', 'Ready to Create Your Amazing Event?')}
                                 </h3>
                                 <p className="text-[11px] sm:text-xs text-slate-600 font-medium leading-normal max-w-sm">
                                     Join thousands of happy customers who trust {companyName || 'Event Invit'} for their special moments.
@@ -372,6 +375,7 @@ export function ContactSignupDemoSection({ theme, companyName }: SectionProps) {
 
 // 5. How It Works Page: Signup Demo Section
 export function SignupDemoSection({ theme, companyName }: SectionProps) {
+    const { t } = useWebsiteLanguage();
     const primaryBtn = theme?.primaryButton || '#E11D48';
 
     return (
@@ -420,6 +424,7 @@ export function SignupDemoSection({ theme, companyName }: SectionProps) {
 
 // 6. Contact Page: Chat & Signup Demo Section (1:1 Match with Unsplash Support Mail Image)
 export function ChatSignupDemoSection({ theme, companyName }: SectionProps) {
+    const { t } = useWebsiteLanguage();
     const primaryBtn = theme?.primaryButton || '#E11D48';
 
     return (
@@ -439,7 +444,7 @@ export function ChatSignupDemoSection({ theme, companyName }: SectionProps) {
                         {/* Title & Subtitle */}
                         <div className="space-y-1 text-left">
                             <h3 className="text-xl sm:text-2xl font-extrabold tracking-tight text-foreground">
-                                Still Have Questions?
+                                {t('login_demo.still_questions', 'Still Have Questions?')}
                             </h3>
                             <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                                 Our friendly team is here to help you with anything you need.
@@ -455,7 +460,7 @@ export function ChatSignupDemoSection({ theme, companyName }: SectionProps) {
                             style={{ backgroundColor: primaryBtn }}
                         >
                             <MessageSquare className="h-4 w-4 shrink-0 text-white" />
-                            <span>Start Live Chat</span>
+                            <span>{t('login_demo.start_live_chat', 'Start Live Chat')}</span>
                         </Button>
                         <Button
                             size="lg"
@@ -464,7 +469,7 @@ export function ChatSignupDemoSection({ theme, companyName }: SectionProps) {
                             style={{ borderColor: primaryBtn, color: primaryBtn }}
                         >
                             <Calendar className="h-4 w-4 shrink-0" style={{ color: primaryBtn }} />
-                            <span>Book a Demo</span>
+                            <span>{t('login_demo.book_demo', 'Book a Demo')}</span>
                         </Button>
                     </div>
                 </div>
@@ -475,6 +480,7 @@ export function ChatSignupDemoSection({ theme, companyName }: SectionProps) {
 
 // 7. Template Page: Custom Template Builder Banner (1:1 Match to Template Screenshot Design)
 export function TemplateDemoSection({ theme, companyName }: SectionProps) {
+    const { t } = useWebsiteLanguage();
     const primaryBtn = theme?.primaryButton || '#E11D48';
 
     return (
@@ -514,10 +520,10 @@ export function TemplateDemoSection({ theme, companyName }: SectionProps) {
                         <div className="lg:col-span-5 space-y-3 text-left">
                             <div className="space-y-1">
                                 <h3 className="text-xl sm:text-2xl font-extrabold tracking-tight text-foreground">
-                                    Can&apos;t Find What You&apos;re Looking For?
+                                    {t('login_demo.cant_find_title', "Can't Find What You're Looking For?")}
                                 </h3>
                                 <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                                    Create your own unique template with our easy drag &amp; drop builder.
+                                    {t('login_demo.cant_find_subtitle', 'Create your own unique template with our easy drag & drop builder.')}
                                 </p>
                             </div>
 
@@ -525,11 +531,11 @@ export function TemplateDemoSection({ theme, companyName }: SectionProps) {
                             <div className="flex flex-wrap items-center gap-3 sm:gap-4 pt-1">
                                 <div className="inline-flex items-center gap-1.5 text-xs font-bold text-foreground/80 shrink-0">
                                     <Wand2 className="h-4 w-4 shrink-0" style={{ color: primaryBtn }} />
-                                    <span>Fully Customizable</span>
+                                    <span>{t('login_demo.fully_customizable', 'Fully Customizable')}</span>
                                 </div>
                                 <div className="inline-flex items-center gap-1.5 text-xs font-bold text-foreground/80 shrink-0">
                                     <Code className="h-4 w-4 shrink-0" style={{ color: primaryBtn }} />
-                                    <span>No Coding Required</span>
+                                    <span>{t('login_demo.no_coding', 'No Coding Required')}</span>
                                 </div>
                                 <div className="inline-flex items-center gap-1.5 text-xs font-bold text-foreground/80 shrink-0">
                                     <Eye className="h-4 w-4 shrink-0" style={{ color: primaryBtn }} />
@@ -545,14 +551,14 @@ export function TemplateDemoSection({ theme, companyName }: SectionProps) {
                                 className="w-full sm:w-auto font-bold text-white shadow-md px-6 py-3 rounded-xl transition-all hover:opacity-95 text-xs sm:text-sm cursor-pointer"
                                 style={{ backgroundColor: primaryBtn }}
                             >
-                                Create Custom Template
+                                {t('login_demo.create_custom_template', 'Create Custom Template')}
                             </Button>
                             <button
                                 type="button"
                                 className="inline-flex items-center justify-center gap-2 text-xs font-bold text-slate-800 hover:text-primary transition-colors cursor-pointer py-1.5 px-3 rounded-lg hover:bg-slate-100/60"
                             >
                                 <PlayCircle className="h-4 w-4 shrink-0" style={{ color: primaryBtn }} />
-                                <span>View How It Works</span>
+                                <span>{t('login_demo.view_how_it_works', 'View How It Works')}</span>
                             </button>
                         </div>
                     </div>

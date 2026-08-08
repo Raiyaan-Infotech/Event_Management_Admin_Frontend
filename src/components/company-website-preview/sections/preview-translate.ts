@@ -58,6 +58,37 @@ function parseJson(value: unknown): AnyRecord | null {
  * `button_1_json` / `button_2_json` columns, so they must be written back into
  * that JSON rather than set as top-level fields.
  */
+/**
+ * Writes a translated `<prefix>_<n>` key set back into a JSON column holding a
+ * flat string array. Positions are 1-based, matching the backend extractors in
+ * websiteBuilderTranslation.service.js — the two must agree or the translated
+ * text lands on the wrong bullet.
+ */
+const writeIndexedArray = (
+  record: AnyRecord,
+  values: Record<string, string>,
+  column: string,
+  prefix: string
+) => {
+  const current = parseJson(record[column]);
+  const list =
+    Array.isArray(current)
+      ? current
+      : typeof record[column] === 'string'
+        ? []
+        : null;
+  if (!list || list.length === 0) return;
+
+  let touched = false;
+  const next = list.map((entry: unknown, index: number) => {
+    const translated = values[`${prefix}_${index + 1}`];
+    if (!usable(translated)) return entry;
+    touched = true;
+    return translated;
+  });
+  if (touched) record[column] = next;
+};
+
 const NESTED_FIELD_WRITERS: Record<string, (record: AnyRecord, values: Record<string, string>) => void> = {
   'hero-section': (record, values) => {
     ([
@@ -70,11 +101,21 @@ const NESTED_FIELD_WRITERS: Record<string, (record: AnyRecord, values: Record<st
       record[column] = { ...button, label: values[fieldKey] };
     });
   },
+  // Feature card bullet lists — `bullet_points_json` is a plain string array.
+  features: (record, values) => writeIndexedArray(record, values, 'bullet_points_json', 'bullet'),
+  // Plan tick-lists — `features_json` is a plain string array.
+  'pricing-plans': (record, values) => writeIndexedArray(record, values, 'features_json', 'feature'),
 };
 
-/** Field keys consumed by a nested writer — never set as plain columns. */
-const NESTED_FIELD_KEYS: Record<string, Set<string>> = {
-  'hero-section': new Set(['button_1_label', 'button_2_label']),
+/**
+ * Field keys consumed by a nested writer — never set as plain columns.
+ * A predicate rather than a set, because the indexed array keys are open-ended
+ * (`bullet_1`, `bullet_2`, … for as many entries as the row has).
+ */
+const NESTED_FIELD_KEYS: Record<string, (fieldKey: string) => boolean> = {
+  'hero-section': (key) => key === 'button_1_label' || key === 'button_2_label',
+  features: (key) => /^bullet_\d+$/.test(key),
+  'pricing-plans': (key) => /^feature_\d+$/.test(key),
 };
 
 export interface Translator {
@@ -110,12 +151,12 @@ export function createTranslator(bundle: TranslationBundle | undefined | null, e
     const values = bundle[slotKey(section, pageSlug, Number(record.id) || 0)];
     if (!values) return record;
 
-    const nested = NESTED_FIELD_KEYS[section];
+    const isNestedKey = NESTED_FIELD_KEYS[section];
     const next = { ...record } as AnyRecord;
     let changed = false;
 
     Object.entries(values).forEach(([fieldKey, value]) => {
-      if (nested?.has(fieldKey)) return;
+      if (isNestedKey?.(fieldKey)) return;
       if (!usable(value)) return;
       next[fieldKey] = value;
       changed = true;
@@ -123,9 +164,11 @@ export function createTranslator(bundle: TranslationBundle | undefined | null, e
 
     const writeNested = NESTED_FIELD_WRITERS[section];
     if (writeNested) {
-      const before = JSON.stringify([next.button_1_json, next.button_2_json]);
+      // Snapshot the whole record rather than named columns — each section's
+      // writer touches different ones.
+      const before = JSON.stringify(next);
       writeNested(next, values);
-      if (JSON.stringify([next.button_1_json, next.button_2_json]) !== before) changed = true;
+      if (JSON.stringify(next) !== before) changed = true;
     }
 
     return (changed ? next : record) as T;

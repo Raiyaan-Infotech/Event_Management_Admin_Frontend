@@ -105,7 +105,7 @@ function PricingSectionBase({ plans, theme }: { plans: PricingPlan[]; theme: The
                     : { color: theme.secondaryText }
                 }
               >
-                Monthly Billing
+                {t('pricing.monthly', 'Monthly Billing')}
               </button>
               <button
                 type="button"
@@ -132,11 +132,14 @@ function PricingSectionBase({ plans, theme }: { plans: PricingPlan[]; theme: The
                   >
                     <meta.icon className="h-5 w-5" style={{ color: theme.primaryButton }} />
                   </div>
+                  {/* Keyed by group so `individuals` / `companies` each get their
+                      own translation; an unknown group falls back to the derived
+                      English heading. */}
                   <h2 className="text-[22px] font-black leading-tight" style={{ color: theme.primaryText }}>
-                    {meta.title}
+                    {t(`pricing.group_${key}_title`, meta.title)}
                   </h2>
                   <p className="mt-1.5 text-[13px] font-medium" style={{ color: theme.paragraph }}>
-                    {meta.subtitle}
+                    {t(`pricing.group_${key}_subtitle`, meta.subtitle)}
                   </p>
                 </div>
               )}
@@ -206,7 +209,9 @@ function PricingSectionBase({ plans, theme }: { plans: PricingPlan[]; theme: The
                           <span className="text-[32px] font-black tracking-tight" style={{ color: theme.primaryText }}>
                             {formatPrice(plan.currencySymbol || '₹', displayedAmount)}
                           </span>
-                          <span className="text-[13px] font-semibold text-slate-500">/ {displayedPeriod}</span>
+                          <span className="text-[13px] font-semibold text-slate-500">
+                            / {t(`pricing.period_${displayedPeriod}`, String(displayedPeriod))}
+                          </span>
                           {savingsPct > 0 && (
                             <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-600">
                               Save {savingsPct}%
@@ -353,10 +358,14 @@ export function PlanFeaturesComparisonSection({ theme }: { theme: ThemeColors })
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/80 text-slate-700">
-                <th className="py-3 px-4 font-bold text-[12px]">Features</th>
-                {TIERS.map((t) => (
-                  <th key={t.key} className="py-3 px-3 font-extrabold text-center text-[12px]">
-                    {t.label}
+                <th className="py-3 px-4 font-bold text-[12px]">
+                  {t('pricing.table_features', 'Features')}
+                </th>
+                {/* Named `tier`, not `t` — the shorthand would shadow the
+                    translation function this row now depends on. */}
+                {TIERS.map((tier) => (
+                  <th key={tier.key} className="py-3 px-3 font-extrabold text-center text-[12px]">
+                    {t(`pricing.tier_${tier.key}`, tier.label)}
                   </th>
                 ))}
               </tr>

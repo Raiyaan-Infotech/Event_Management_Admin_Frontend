@@ -105,7 +105,7 @@ function FeaturesSectionBase({ features, theme }: { features: FeatureItem[]; the
             {t('features.subtitle', 'All the Features You Need')}
           </h2>
           <p className="mx-auto mt-3 max-w-2xl text-[14px] font-medium" style={{ color: theme.paragraph }}>
-            Everything you need to inspire, manage and enhance your event experience.
+            {t('features.description', 'Everything you need to inspire, manage and enhance your event experience.')}
           </p>
         </div>
 

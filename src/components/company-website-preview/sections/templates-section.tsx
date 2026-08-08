@@ -327,6 +327,7 @@ export function TemplateGridGallerySection({
   onPreview,
   onUseTemplate,
 }: TemplatesSectionProps) {
+  const { t } = useWebsiteLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(ALL_CATEGORY);
   const [selectedColor, setSelectedColor] = useState('all');
@@ -394,7 +395,7 @@ export function TemplateGridGallerySection({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search templates for weddings, events..."
+              placeholder={t('templates.search_placeholder', 'Search templates for weddings, events...')}
               className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-4 pr-10 text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500/20"
             />
             <Search className="absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -407,7 +408,9 @@ export function TemplateGridGallerySection({
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="h-10 w-full appearance-none rounded-xl border border-slate-200 bg-white px-3.5 pr-8 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-rose-500/20 cursor-pointer"
             >
-              <option value={ALL_CATEGORY}>All Categories</option>
+              {/* Distinct key from `templates.all_categories`, which is the
+                  "All Templates" pill — same concept, different wording. */}
+              <option value={ALL_CATEGORY}>{t('templates.filter_all_categories', 'All Categories')}</option>
               {derivedCategories.map((cat) => (
                 <option key={cat} value={cat}>{cat}</option>
               ))}
@@ -422,12 +425,12 @@ export function TemplateGridGallerySection({
               onChange={(e) => setSelectedColor(e.target.value)}
               className="h-10 w-full appearance-none rounded-xl border border-slate-200 bg-white pl-9 pr-8 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-rose-500/20 cursor-pointer"
             >
-              <option value="all">All Colors</option>
-              <option value="red">Red</option>
-              <option value="gold">Gold</option>
-              <option value="green">Green</option>
-              <option value="purple">Purple</option>
-              <option value="blue">Blue</option>
+              <option value="all">{t('templates.all_colors', 'All Colors')}</option>
+              <option value="red">{t('templates.color_red', 'Red')}</option>
+              <option value="gold">{t('templates.color_gold', 'Gold')}</option>
+              <option value="green">{t('templates.color_green', 'Green')}</option>
+              <option value="purple">{t('templates.color_purple', 'Purple')}</option>
+              <option value="blue">{t('templates.color_blue', 'Blue')}</option>
             </select>
             <Palette className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-rose-500" />
             <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
@@ -440,9 +443,9 @@ export function TemplateGridGallerySection({
               onChange={(e) => setSelectedPopularity(e.target.value)}
               className="h-10 w-full appearance-none rounded-xl border border-slate-200 bg-white pl-9 pr-8 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-rose-500/20 cursor-pointer"
             >
-              <option value="all">All Items</option>
-              <option value="popular">Popular</option>
-              <option value="trending">Trending</option>
+              <option value="all">{t('templates.all_items', 'All Items')}</option>
+              <option value="popular">{t('templates.popular', 'Popular')}</option>
+              <option value="trending">{t('templates.trending', 'Trending')}</option>
             </select>
             <Flame className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-orange-500" />
             <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
@@ -455,7 +458,7 @@ export function TemplateGridGallerySection({
             style={{ backgroundColor: theme.primaryButton }}
           >
             <Filter className="h-3.5 w-3.5" />
-            <span>Filter</span>
+            <span>{t('templates.filter', 'Filter')}</span>
           </button>
         </div>
 
@@ -471,7 +474,7 @@ export function TemplateGridGallerySection({
                 : { backgroundColor: '#ffffff', color: '#475569', border: '1px solid #e2e8f0' }
             }
           >
-            All Templates
+            {t('templates.all_categories', 'All Templates')}
           </button>
 
           {derivedCategories.map((cat) => (
@@ -564,7 +567,7 @@ export function TemplateGridGallerySection({
                       onClick={() => onPreview?.(template)}
                       className="flex-1 rounded-lg border border-slate-200 bg-white py-1.5 text-[10.5px] font-bold text-slate-700 transition hover:bg-slate-50 cursor-pointer"
                     >
-                      Preview
+                      {t('templates.preview', 'Preview')}
                     </button>
                     <button
                       type="button"
@@ -572,7 +575,7 @@ export function TemplateGridGallerySection({
                       className="flex-1 rounded-lg py-1.5 text-[10.5px] font-bold text-white shadow-2xs transition hover:opacity-90 cursor-pointer"
                       style={{ backgroundColor: theme.primaryButton }}
                     >
-                      Use Template
+                      {t('templates.use_template', 'Use Template')}
                     </button>
                   </div>
                 </div>
@@ -598,7 +601,7 @@ export function TemplateGridGallerySection({
               style={{ color: theme.primaryButton, borderColor: `${theme.primaryButton}40` }}
             >
               <ArrowDown className="h-3.5 w-3.5" />
-              <span>Load More Templates</span>
+              <span>{t('templates.load_more', 'Load More Templates')}</span>
             </button>
           </div>
         )}
