@@ -740,13 +740,34 @@ export default function HowItWorksPage() {
             <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
                 <DialogContent className="max-w-2xl bg-card border-border text-foreground p-6 rounded-2xl shadow-xl">
                     <DialogHeader>
-                        <DialogTitle className="text-xl font-extrabold text-foreground flex items-center gap-2">
-                            Edit Step {selectedStepId ? `#${selectedStepId}` : ''}
-                            {isDetailLoading && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
-                        </DialogTitle>
-                        <DialogDescription className="text-xs text-muted-foreground">
-                            Update details and options for this step.
-                        </DialogDescription>
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <DialogTitle className="text-xl font-extrabold text-foreground flex items-center gap-2">
+                                    Edit Step {selectedStepId ? `#${selectedStepId}` : ''}
+                                    {isDetailLoading && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
+                                </DialogTitle>
+                                <DialogDescription className="text-xs text-muted-foreground">
+                                    Update details and options for this step.
+                                </DialogDescription>
+                            </div>
+                            {/* Same slot as the list row's translate button, so both
+                                entry points write identical translations. The row
+                                pattern is used here (rather than the ?lang= form
+                                mode) because a URL round-trip would close this modal. */}
+                            {selectedStepId ? (
+                                <RowTranslateButton
+                                    section="how-it-works"
+                                    recordId={Number(selectedStepId) || undefined}
+                                    rowLabel={modalTitle}
+                                    fields={[
+                                        { key: 'title', label: 'Title', value: modalTitle || '' },
+                                        { key: 'description', label: 'Description', value: modalDesc || '', type: 'textarea' },
+                                        { key: 'highlight_title', label: 'Highlight Title', value: modalHighlightTitle || '' },
+                                        { key: 'highlight_subtext', label: 'Highlight Subtext', value: modalHighlightSubtext || '' },
+                                    ]}
+                                />
+                            ) : null}
+                        </div>
                     </DialogHeader>
 
                     <div className="space-y-5 py-2">

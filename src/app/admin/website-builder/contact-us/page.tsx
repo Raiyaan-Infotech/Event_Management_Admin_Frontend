@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     Save,
     RotateCcw,
@@ -30,9 +30,13 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { BuilderCountedInput, BuilderCountedTextarea } from '../_components/builder-field';
+import { TranslationSideCard } from '../_components/translation-side-card';
+import { TranslationModeBanner } from '../_components/translation-mode-banner';
 import { ConfirmResetDialog } from '@/components/common/confirm-reset-dialog';
 import { cn } from '@/lib/utils';
 import { PageLoader } from '@/components/common/page-loader';
+import { useSectionTranslation, handleTranslationSave } from '@/hooks/useSectionTranslation';
+import { useCompanyContactSettings } from '@/hooks/useCompanyWebsiteBuilder';
 
 type EditorMode = 'static' | 'dynamic';
 type PreviewDevice = 'desktop' | 'mobile';
@@ -47,6 +51,14 @@ interface SocialLinkItem {
 }
 
 export default function ContactUsPage() {
+    const {
+        data: contactData,
+        isLoading,
+        save,
+        isSaving: isPersisting,
+        refetch,
+    } = useCompanyContactSettings();
+
     const [editorMode, setEditorMode] = useState<EditorMode>('static');
     const [previewDevice, setPreviewDevice] = useState<PreviewDevice>('desktop');
     const [previewOpen, setPreviewOpen] = useState(false);
@@ -57,12 +69,12 @@ export default function ContactUsPage() {
     const [enableSocialLinks, setEnableSocialLinks] = useState(true);
     const [enableGoogleMap, setEnableGoogleMap] = useState(true);
 
-    // Contact Information
+    // Contact Information — seeded from the DB row once it loads.
     const [contactMode, setContactMode] = useState<'default' | 'alternative'>('default');
     const [socialHeading, setSocialHeading] = useState('FOLLOW US ON SOCIAL MEDIA');
-    const [email, setEmail] = useState('jamal@gmail.com');
-    const [mobile, setMobile] = useState('9884699435');
-    const [address, setAddress] = useState('company address f...');
+    const [email, setEmail] = useState('');
+    const [mobile, setMobile] = useState('');
+    const [address, setAddress] = useState('');
 
     // Social Links List
     const [socialLinks, setSocialLinks] = useState<SocialLinkItem[]>([
@@ -75,6 +87,37 @@ export default function ContactUsPage() {
     const [longitude, setLongitude] = useState('78.486671');
 
     const [isSaving, setIsSaving] = useState(false);
+    // Guards the load-once effect so typing isn't overwritten by a refetch.
+    const [loadedId, setLoadedId] = useState<number | null>(null);
+
+    const settings = contactData as any;
+
+    useEffect(() => {
+        if (!settings?.id || loadedId === Number(settings.id)) return;
+        setEditorMode((settings.mode as EditorMode) || 'static');
+        setEmail(settings.email || '');
+        setMobile(settings.mobile || '');
+        setAddress(settings.address || '');
+        setEnableContactDetails(Number(settings.contact_form_enabled ?? 1) === 1);
+        setEnableSocialLinks(Number(settings.social_links_enabled ?? 1) === 1);
+        setEnableGoogleMap(Number(settings.google_map_enabled ?? 0) === 1);
+        if (settings.latitude) setLatitude(String(settings.latitude));
+        if (settings.longitude) setLongitude(String(settings.longitude));
+        setLoadedId(Number(settings.id));
+    }, [settings, loadedId]);
+
+    // Translation mode. `address` is the only free text on this row — email,
+    // phone and the map coordinates read the same in every language, so they
+    // stay shared and are edited from the English version.
+    const translation = useSectionTranslation({
+        section: 'contact-settings',
+        recordId: settings?.id ? Number(settings.id) : undefined,
+        fields: [
+            { key: 'address', label: 'Address', type: 'textarea', value: address },
+        ],
+    });
+    const { isTranslationMode, bind } = translation;
+    const sharedOnly = cn(isTranslationMode && 'opacity-50 pointer-events-none');
 
     const handleToggleSocial = (id: string, show: boolean) => {
         setSocialLinks((prev) =>
@@ -82,25 +125,46 @@ export default function ContactUsPage() {
         );
     };
 
-    const handleReset = () => {
-        setEmail('jamal@gmail.com');
-        setMobile('9884699435');
-        setAddress('company address f...');
-        setEditorMode('static');
-        toast.info('Contact Us settings reset to defaults.');
+    /** Discards local edits and re-reads the stored settings. */
+    const handleReset = async () => {
+        setLoadedId(null);
+        await refetch();
+        toast.info('Reloaded contact settings from the saved version.');
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
+        if (await handleTranslationSave(translation, 'Contact Information')) return;
+
         setIsSaving(true);
-        setTimeout(() => {
-            setIsSaving(false);
+        try {
+            await save({
+                mode: editorMode,
+                email,
+                mobile,
+                address,
+                contact_form_enabled: enableContactDetails ? 1 : 0,
+                social_links_enabled: enableSocialLinks ? 1 : 0,
+                google_map_enabled: enableGoogleMap ? 1 : 0,
+                latitude: latitude || null,
+                longitude: longitude || null,
+            } as any);
+            // Refresh the key catalog so the side card counts and auto-translate
+            // see the English text that was just saved.
+            translation.registerKeys();
             toast.success('Contact Us settings saved successfully!');
-        }, 500);
+        } catch (err: any) {
+            toast.error(err?.message || 'Failed to save contact settings');
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (
         <div className="space-y-6">
-            <PageLoader open={isSaving} text="Saving Contact Settings..." />
+            <PageLoader
+                open={isLoading || isSaving || isPersisting}
+                text={isLoading ? 'Loading Contact Settings...' : 'Saving Contact Settings...'}
+            />
             <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
                 <DialogContent className="max-w-4xl">
                     <DialogHeader>
@@ -133,10 +197,29 @@ export default function ContactUsPage() {
                     <Button type="button" variant="outline" size="sm" onClick={() => setResetDialogOpen(true)} className="h-8 px-3 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50">
                         <RotateCcw className="h-3.5 w-3.5 text-rose-500 mr-1" /> Reset
                     </Button>
-                    <Button type="button" size="sm" onClick={handleSave} disabled={isSaving} className="h-8 px-4 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs">
-                        {isSaving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
-                        {isSaving ? 'Saving...' : 'Save Changes'}
+                    <Button type="button" size="sm" onClick={handleSave} disabled={isSaving || isPersisting || translation.isSaving} className="h-8 px-4 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs">
+                        {isSaving || translation.isSaving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+                        {isSaving || translation.isSaving ? 'Saving...' : isTranslationMode ? 'Save Translation' : 'Save Changes'}
                     </Button>
+                </div>
+            </div>
+
+            {/* Languages + translation mode */}
+            <div className="flex flex-col gap-3">
+                <div className="w-full self-end lg:w-72">
+                    <TranslationSideCard
+                        section="contact-settings"
+                        recordId={settings?.id ? Number(settings.id) : undefined}
+                        activeLanguageId={translation.activeLanguage?.id ?? null}
+                        buildHref={translation.buildHref}
+                        canTranslate={translation.canTranslate}
+                        fields={[
+                            { key: 'address', label: 'Address', value: address, type: 'textarea' },
+                        ]}
+                    />
+                </div>
+                <div className="order-first min-w-0">
+                    <TranslationModeBanner translation={translation} label="Contact Information" />
                 </div>
             </div>
 
@@ -196,16 +279,25 @@ export default function ContactUsPage() {
                                 <CardTitle className="text-sm font-bold">Contact Information</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-3">
-                                <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border mb-2">
+                                <div className={cn('flex items-center justify-between p-2 rounded-lg bg-slate-50 border mb-2', sharedOnly)}>
                                     <span className="text-xs font-bold text-slate-700">Contact Mode</span>
                                     <div className="flex items-center gap-1 rounded-md bg-white border p-1">
                                         <button type="button" onClick={() => setContactMode('default')} className={cn('px-2.5 py-0.5 text-[11px] font-bold rounded', contactMode === 'default' ? 'bg-blue-600 text-white' : 'text-slate-600')}>Default</button>
                                         <button type="button" onClick={() => setContactMode('alternative')} className={cn('px-2.5 py-0.5 text-[11px] font-bold rounded', contactMode === 'alternative' ? 'bg-blue-600 text-white' : 'text-slate-600')}>Alternative</button>
                                     </div>
                                 </div>
-                                <BuilderCountedInput label="Mobile" value={mobile} onChange={setMobile} maxLength={20} />
-                                <BuilderCountedInput label="Email" value={email} onChange={setEmail} maxLength={80} />
-                                <BuilderCountedTextarea label="Address" value={address} onChange={setAddress} maxLength={160} rows={2} />
+                                <div className={sharedOnly}>
+                                    <BuilderCountedInput label="Mobile" value={mobile} onChange={setMobile} maxLength={20} />
+                                </div>
+                                <div className={sharedOnly}>
+                                    <BuilderCountedInput label="Email" value={email} onChange={setEmail} maxLength={80} />
+                                </div>
+                                <BuilderCountedTextarea
+                                    label="Address"
+                                    maxLength={160}
+                                    rows={2}
+                                    {...bind('address', address, setAddress)}
+                                />
                             </CardContent>
                         </Card>
                     )}

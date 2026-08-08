@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Save, ArrowLeft, Sparkles, Eye, HelpCircle, RotateCcw, Loader2 } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Save, ArrowLeft, Eye, HelpCircle, RotateCcw, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -12,36 +12,118 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { RichTextEditor } from '@/components/common/rich-text-editor';
 import { ConfirmResetDialog } from '@/components/common/confirm-reset-dialog';
+import { PageLoader } from '@/components/common/page-loader';
 import { cn } from '@/lib/utils';
+import { useCompanyPages } from '@/hooks/useCompanyWebsiteBuilder';
 
-export default function CreateCustomPage() {
+const slugify = (val: string) =>
+    val
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+
+/**
+ * Create / edit a Website Builder page — backed by `company_website_pages`.
+ *
+ * `?edit=<id>` switches the form into edit mode. After a create the route is
+ * replaced with the new row's id rather than navigating away, so the record
+ * exists at a stable id for anything keyed on it (translations included).
+ */
+function PageFormContent() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const editId = Number(searchParams.get('edit')) || null;
+
+    const { data: pagesData, isLoading, create, update, refetch } = useCompanyPages();
+
     const [title, setTitle] = useState('');
+    const [slug, setSlug] = useState('');
     const [isPublished, setIsPublished] = useState(true);
     const [content, setContent] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     const [resetDialogOpen, setResetDialogOpen] = useState(false);
+    // Guards the load-once effect so typing isn't overwritten by a refetch.
+    const [loadedId, setLoadedId] = useState<number | null>(null);
 
-    const handleReset = () => {
+    const existing = useMemo(
+        () => (pagesData || []).find((p: any) => Number(p.id) === editId),
+        [pagesData, editId]
+    );
+
+    useEffect(() => {
+        if (!editId || !existing || loadedId === editId) return;
+        setTitle(existing.title || '');
+        setSlug(existing.slug || '');
+        setContent(existing.content || '');
+        setIsPublished((existing.status || 'published') === 'published');
+        setLoadedId(editId);
+    }, [editId, existing, loadedId]);
+
+    const isSystemPage = Number(existing?.is_system) === 1;
+
+    const handleTitleChange = (val: string) => {
+        setTitle(val);
+        // Only auto-derive the slug for new pages — changing a live page's slug
+        // would break any menu entry or footer link already pointing at it.
+        if (!editId) setSlug(slugify(val));
+    };
+
+    const handleReset = async () => {
+        if (editId) {
+            setLoadedId(null);
+            await refetch();
+            toast.info('Reloaded the page from the saved version.');
+            return;
+        }
         setTitle('');
+        setSlug('');
         setIsPublished(true);
         setContent('');
         toast.info('Create page form reset to defaults.');
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!title.trim()) {
             toast.error('Page title is required.');
             return;
         }
+
         setIsSaving(true);
-        setTimeout(() => {
+        try {
+            const payload = {
+                title: title.trim(),
+                slug: slug.trim() || slugify(title),
+                content,
+                status: isPublished ? 'published' : 'draft',
+            };
+
+            if (editId) {
+                await update({ id: editId, ...payload } as any);
+                toast.success(`Page "${payload.title}" updated successfully!`);
+            } else {
+                const created: any = await create({ ...payload, page_type: 'custom', is_active: 1 } as any);
+                const newId = Number(created?.id);
+                toast.success(`Custom page "${payload.title}" saved successfully!`);
+                // Stay on the form at the saved record's id (session.md §66).
+                if (newId) {
+                    setLoadedId(newId);
+                    router.replace(`/admin/website-builder/pages/create?edit=${newId}`);
+                }
+            }
+        } catch {
+            toast.error('Could not save the page. Please try again.');
+        } finally {
             setIsSaving(false);
-            toast.success(`Custom page "${title}" saved successfully!`);
-        }, 500);
+        }
     };
 
     return (
         <div className="space-y-6">
+            <PageLoader
+                open={(isLoading && !!editId) || isSaving}
+                text={isSaving ? 'Saving page...' : 'Loading page...'}
+            />
             {/* Header */}
             <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-5">
                 <div className="flex items-center gap-3">
@@ -51,8 +133,14 @@ export default function CreateCustomPage() {
                         </Link>
                     </Button>
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight mt-1">Create Custom Page</h1>
-                        <p className="text-xs text-muted-foreground">Add a new custom page to the website with rich text formatting.</p>
+                        <h1 className="text-2xl font-bold tracking-tight mt-1">
+                            {editId ? 'Edit Page' : 'Create Custom Page'}
+                        </h1>
+                        <p className="text-xs text-muted-foreground">
+                            {editId
+                                ? 'Update this page’s title, status and rich text content.'
+                                : 'Add a new custom page to the website with rich text formatting.'}
+                        </p>
                     </div>
                 </div>
 
@@ -65,7 +153,7 @@ export default function CreateCustomPage() {
                     </Button>
                     <Button type="button" size="sm" onClick={handleSave} disabled={isSaving} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white h-8 text-xs font-bold shadow-xs">
                         {isSaving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
-                        {isSaving ? 'Saving...' : 'Save & Publish Page'}
+                        {isSaving ? 'Saving...' : editId ? 'Save Changes' : 'Save & Publish Page'}
                     </Button>
                 </div>
             </div>
@@ -79,16 +167,32 @@ export default function CreateCustomPage() {
                 <CardContent className="pt-5 space-y-5">
                     {/* Title & Status Switch Row */}
                     <div className="grid gap-6 md:grid-cols-12 items-end">
-                        {/* Page Title (8 cols) */}
-                        <div className="md:col-span-8 space-y-1.5">
+                        {/* Page Title (5 cols) */}
+                        <div className="md:col-span-5 space-y-1.5">
                             <Label htmlFor="pageTitle" className="text-xs font-semibold text-foreground">Page Title</Label>
                             <Input
                                 id="pageTitle"
                                 value={title}
-                                onChange={(e) => setTitle(e.target.value)}
+                                onChange={(e) => handleTitleChange(e.target.value)}
                                 placeholder="e.g. Terms of Service, Event Guidelines, Booking Terms"
                                 className="h-9.5 text-sm"
                             />
+                        </div>
+
+                        {/* Slug (3 cols) */}
+                        <div className="md:col-span-3 space-y-1.5">
+                            <Label htmlFor="pageSlug" className="text-xs font-semibold text-foreground">Slug</Label>
+                            <Input
+                                id="pageSlug"
+                                value={slug}
+                                onChange={(e) => setSlug(e.target.value)}
+                                disabled={isSystemPage}
+                                placeholder="e.g. terms-of-service"
+                                className="h-9.5 text-sm font-mono"
+                            />
+                            {isSystemPage ? (
+                                <p className="text-[10px] text-slate-400">System page — the slug is fixed.</p>
+                            ) : null}
                         </div>
 
                         {/* Published Status Switch (4 cols) */}
@@ -130,5 +234,18 @@ export default function CreateCustomPage() {
                 onConfirm={handleReset}
             />
         </div>
+    );
+}
+
+export default function CreateCustomPage() {
+    return (
+        <Suspense fallback={
+            <div className="py-12 text-center text-xs text-muted-foreground">
+                <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2 text-primary" />
+                Loading page editor...
+            </div>
+        }>
+            <PageFormContent />
+        </Suspense>
     );
 }

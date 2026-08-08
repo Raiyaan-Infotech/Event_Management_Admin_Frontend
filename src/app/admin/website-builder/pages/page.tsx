@@ -2,37 +2,57 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { Plus, Trash2, FileText, Sparkles, Pencil, Search, HelpCircle, RotateCcw } from 'lucide-react';
+import { Plus, Trash2, FileText, Pencil, Search, HelpCircle, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { RowTranslateButton } from '../_components/row-translate-dialog';
 import { ConfirmResetDialog } from '@/components/common/confirm-reset-dialog';
+import { PageLoader } from '@/components/common/page-loader';
+import { cn } from '@/lib/utils';
+import { useCompanyPages } from '@/hooks/useCompanyWebsiteBuilder';
 
-interface WebPageItem {
-    id: string;
-    num: number;
+/**
+ * Pages List — backed by `company_website_pages`.
+ *
+ * Deletes go through the per-row endpoint, never the bulk `replace` one: that
+ * DELETEs and re-INSERTs the whole table, reassigning ids and orphaning every
+ * translation addressed by `record_id` (session.md §64).
+ */
+interface WebPageRow {
+    id: number;
     title: string;
     slug: string;
-    type: 'Fixed' | 'Custom';
-    status: 'Published' | 'Unpublished';
+    excerpt: string;
+    seoTitle: string;
+    seoDescription: string;
+    isSystem: boolean;
+    isPublished: boolean;
 }
 
-const initialPages: WebPageItem[] = [
-    { id: '1', num: 1, title: 'About Us', slug: 'about-us', type: 'Fixed', status: 'Published' },
-    { id: '2', num: 2, title: 'Service', slug: 'service', type: 'Fixed', status: 'Published' },
-    { id: '3', num: 3, title: 'Events', slug: 'events', type: 'Fixed', status: 'Published' },
-    { id: '4', num: 4, title: 'Terms & Conditions', slug: 'terms-conditions', type: 'Fixed', status: 'Published' },
-    { id: '5', num: 5, title: 'Privacy Policy', slug: 'privacy-policy', type: 'Fixed', status: 'Published' },
-    { id: '6', num: 6, title: 'Maintenance', slug: 'maintenance', type: 'Fixed', status: 'Published' },
-];
-
 export default function PagesListPage() {
+    const { data: pagesData, isLoading, remove, refetch } = useCompanyPages();
+
     const [searchQuery, setSearchQuery] = useState('');
-    const [pages, setPages] = useState<WebPageItem[]>(initialPages);
     const [resetDialogOpen, setResetDialogOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const pages: WebPageRow[] = useMemo(
+        () =>
+            (pagesData || []).map((row: any) => ({
+                id: Number(row.id),
+                title: row.title || '',
+                slug: row.slug || '',
+                excerpt: row.excerpt || '',
+                seoTitle: row.seo_title || '',
+                seoDescription: row.seo_description || '',
+                isSystem: Number(row.is_system) === 1,
+                isPublished: (row.status || 'published') === 'published',
+            })),
+        [pagesData]
+    );
 
     const filteredPages = useMemo(() => {
         if (!searchQuery.trim()) return pages;
@@ -40,24 +60,32 @@ export default function PagesListPage() {
         return pages.filter((p) => p.title.toLowerCase().includes(q) || p.slug.toLowerCase().includes(q));
     }, [pages, searchQuery]);
 
-    const handleReset = () => {
+    const handleReset = async () => {
         setSearchQuery('');
-        setPages(initialPages);
-        toast.info('Pages list reset to defaults.');
+        await refetch();
+        toast.info('Reloaded pages from the saved list.');
     };
 
-    const handleDeletePage = (id: string) => {
-        const page = pages.find((p) => p.id === id);
-        if (page?.type === 'Fixed') {
+    const handleDeletePage = async (page: WebPageRow) => {
+        if (page.isSystem) {
             toast.error('Fixed system pages cannot be deleted.');
             return;
         }
-        setPages((prev) => prev.filter((p) => p.id !== id));
-        toast.success('Page deleted successfully.');
+
+        setIsDeleting(true);
+        try {
+            await remove(page.id);
+            toast.success('Page deleted successfully.');
+        } catch {
+            toast.error('Could not delete the page. Please try again.');
+        } finally {
+            setIsDeleting(false);
+        }
     };
 
     return (
         <div className="space-y-6">
+            <PageLoader open={isLoading || isDeleting} text={isDeleting ? 'Deleting page...' : 'Loading Pages...'} />
             {/* Page Header */}
             <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-5">
                 <div>
@@ -112,15 +140,15 @@ export default function PagesListPage() {
                                     <TableHead className="font-bold text-[11px] text-slate-500 uppercase">PAGE</TableHead>
                                     <TableHead className="font-bold text-[11px] text-slate-500 uppercase w-[120px]">TYPE</TableHead>
                                     <TableHead className="font-bold text-[11px] text-slate-500 uppercase w-[140px]">STATUS</TableHead>
-                                    <TableHead className="font-bold text-[11px] text-slate-500 uppercase w-[100px] text-right">ACTIONS</TableHead>
+                                    <TableHead className="font-bold text-[11px] text-slate-500 uppercase w-[140px] text-right">ACTIONS</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {filteredPages.map((page) => (
+                                {filteredPages.map((page, idx) => (
                                     <TableRow key={page.id} className="hover:bg-slate-50/50 transition-colors border-b border-slate-100">
                                         {/* Column 1: # Index */}
                                         <TableCell className="font-bold text-xs text-slate-700 w-[60px]">
-                                            {page.num}
+                                            {idx + 1}
                                         </TableCell>
 
                                         {/* Column 2: Page Title & Slug */}
@@ -139,20 +167,36 @@ export default function PagesListPage() {
                                         {/* Column 3: Type (Yellow/Orange Pill) */}
                                         <TableCell>
                                             <span className="inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-700 border border-amber-200">
-                                                {page.type}
+                                                {page.isSystem ? 'Fixed' : 'Custom'}
                                             </span>
                                         </TableCell>
 
-                                        {/* Column 4: Status (Green Pill) */}
+                                        {/* Column 4: Status Pill */}
                                         <TableCell>
-                                            <span className="inline-flex items-center rounded-md bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-600 border border-emerald-200">
-                                                {page.status}
+                                            <span className={cn(
+                                                'inline-flex items-center rounded-md px-2.5 py-0.5 text-[11px] font-bold border',
+                                                page.isPublished
+                                                    ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
+                                                    : 'bg-slate-100 text-slate-600 border-slate-200'
+                                            )}>
+                                                {page.isPublished ? 'Published' : 'Unpublished'}
                                             </span>
                                         </TableCell>
 
                                         {/* Column 5: Actions */}
                                         <TableCell className="text-right">
                                             <div className="flex items-center justify-end gap-1.5">
+                                                <RowTranslateButton
+                                                    section="pages"
+                                                    recordId={page.id}
+                                                    rowLabel={page.title}
+                                                    fields={[
+                                                        { key: 'title', label: 'Title', value: page.title },
+                                                        { key: 'excerpt', label: 'Excerpt', value: page.excerpt, type: 'textarea' },
+                                                        { key: 'seo_title', label: 'SEO Title', value: page.seoTitle },
+                                                        { key: 'seo_description', label: 'SEO Description', value: page.seoDescription, type: 'textarea' },
+                                                    ]}
+                                                />
                                                 <Button
                                                     type="button"
                                                     variant="outline"
@@ -169,8 +213,8 @@ export default function PagesListPage() {
                                                     type="button"
                                                     variant="outline"
                                                     size="icon"
-                                                    onClick={() => handleDeletePage(page.id)}
-                                                    disabled={page.type === 'Fixed'}
+                                                    onClick={() => handleDeletePage(page)}
+                                                    disabled={page.isSystem || isDeleting}
                                                     className="h-8 w-8 rounded-lg p-0 text-red-500 border-red-200 hover:bg-red-50 hover:border-red-300 disabled:opacity-40"
                                                 >
                                                     <Trash2 className="h-3.5 w-3.5" />
@@ -179,6 +223,14 @@ export default function PagesListPage() {
                                         </TableCell>
                                     </TableRow>
                                 ))}
+
+                                {!isLoading && filteredPages.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="py-8 text-center text-xs text-slate-400">
+                                            No pages found yet.
+                                        </TableCell>
+                                    </TableRow>
+                                ) : null}
                             </TableBody>
                         </Table>
                     </div>

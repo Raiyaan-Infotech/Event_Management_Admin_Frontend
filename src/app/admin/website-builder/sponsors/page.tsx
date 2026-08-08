@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
     Save,
     RotateCcw,
@@ -15,19 +15,32 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { BuilderCountedInput } from '../_components/builder-field';
+import { RowTranslateButton } from '../_components/row-translate-dialog';
 import { ConfirmResetDialog } from '@/components/common/confirm-reset-dialog';
-import { cn } from '@/lib/utils';
 import { PageLoader } from '@/components/common/page-loader';
+import { useCompanySponsors } from '@/hooks/useCompanyWebsiteBuilder';
 
-interface Sponsor {
-    id: string;
+/**
+ * Portfolio > Sponsors — backed by `company_website_sponsors`.
+ *
+ * Rows are persisted one at a time (create / update / remove), never through the
+ * bulk `replace` mutation: that endpoint DELETEs and re-INSERTs the whole table,
+ * which reassigns auto-increment ids and orphans every translation addressed by
+ * `record_id`. See session.md §64.
+ */
+interface SponsorRow {
+    id: number;
     name: string;
-    logoUrl: string;
+    logo_url: string;
+    sort_order: number;
 }
 
+const MAX_LOGO_BYTES = 2 * 1024 * 1024;
+
+/** Display-only placeholder for rows with no uploaded logo. Never persisted. */
 function logoDataUrl(name: string, color: string, accent: string) {
     const initials = name
         .split(/\s+/)
@@ -46,98 +59,165 @@ function logoDataUrl(name: string, color: string, accent: string) {
   `)}`;
 }
 
-const initialSponsors: Sponsor[] = [
-    { id: '1', name: 'Platinum Events', logoUrl: logoDataUrl('Platinum Events', '#0f172a', '#b7791f') },
-    { id: '2', name: 'Dream Decor', logoUrl: logoDataUrl('Dream Decor', '#be185d', '#be185d') },
-    { id: '3', name: 'Elite Catering', logoUrl: logoDataUrl('Elite Catering', '#111827', '#c58a16') },
-    { id: '4', name: 'Media Connect', logoUrl: logoDataUrl('Media Connect', '#1e3a8a', '#4f46e5') },
-];
+const displayLogo = (sponsor: SponsorRow) =>
+    sponsor.logo_url || logoDataUrl(sponsor.name, '#0f172a', '#b7791f');
+
+const fileToDataUrl = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(new Error('Could not read the selected file.'));
+        reader.readAsDataURL(file);
+    });
 
 export default function PortfolioSponsorsPage() {
-    const [sponsors, setSponsors] = useState<Sponsor[]>(initialSponsors);
-    const [editingId, setEditingId] = useState<string | null>(null);
+    const {
+        data: sponsorsData,
+        isLoading,
+        create,
+        update,
+        remove,
+        refetch,
+    } = useCompanySponsors();
+
+    const [editingId, setEditingId] = useState<number | null>(null);
     const [sponsorName, setSponsorName] = useState('');
+    // Either an existing logo_url or a freshly-read base64 data URL. The backend
+    // converts `data:image/...` payloads into stored media on save.
     const [draftLogo, setDraftLogo] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
+    const [savingLabel, setSavingLabel] = useState('Saving Sponsors...');
     const [previewOpen, setPreviewOpen] = useState(false);
     const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const handleLogoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        const url = URL.createObjectURL(file);
-        setDraftLogo(url);
-        toast.success('Sponsor logo uploaded.');
+    const sponsors: SponsorRow[] = useMemo(
+        () =>
+            (sponsorsData || []).map((row: any, index: number) => ({
+                id: Number(row.id),
+                name: row.name || '',
+                logo_url: row.logo_url || '',
+                sort_order: Number(row.sort_order) || index + 1,
+            })),
+        [sponsorsData]
+    );
+
+    const resetForm = () => {
+        setEditingId(null);
+        setSponsorName('');
+        setDraftLogo(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
-    const handleSaveSponsor = () => {
+    const handleLogoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > MAX_LOGO_BYTES) {
+            toast.error('Logo must be 2MB or smaller.');
+            e.target.value = '';
+            return;
+        }
+
+        try {
+            setDraftLogo(await fileToDataUrl(file));
+            toast.success('Sponsor logo ready. Click Add/Update to save it.');
+        } catch {
+            toast.error('Could not read that image. Try another file.');
+        }
+    };
+
+    const handleSaveSponsor = async () => {
         const name = sponsorName.trim();
         if (!name) {
             toast.error('Sponsor Name is required.');
             return;
         }
 
-        if (editingId) {
-            setSponsors((prev) =>
-                prev.map((s) =>
-                    s.id === editingId
-                        ? {
-                              ...s,
-                              name,
-                              logoUrl: draftLogo || s.logoUrl,
-                          }
-                        : s
-                )
-            );
-            toast.success(`Sponsor "${name}" updated.`);
-            setEditingId(null);
-        } else {
-            const newSponsor: Sponsor = {
-                id: String(Date.now()),
-                name,
-                logoUrl: draftLogo || logoDataUrl(name, '#0f172a', '#2563eb'),
-            };
-            setSponsors((prev) => [...prev, newSponsor]);
-            toast.success(`Sponsor "${name}" added.`);
+        setSavingLabel(editingId ? 'Updating sponsor...' : 'Adding sponsor...');
+        setIsSaving(true);
+        try {
+            if (editingId) {
+                const existing = sponsors.find((s) => s.id === editingId);
+                await update({
+                    id: editingId,
+                    name,
+                    // Only send a logo when one is present, so an untouched row
+                    // keeps whatever is already stored.
+                    ...(draftLogo && draftLogo !== existing?.logo_url ? { logo_url: draftLogo } : {}),
+                } as any);
+                toast.success(`Sponsor "${name}" updated.`);
+            } else {
+                await create({
+                    name,
+                    logo_url: draftLogo || '',
+                    sort_order: sponsors.length + 1,
+                    is_active: 1,
+                } as any);
+                toast.success(`Sponsor "${name}" added.`);
+            }
+            resetForm();
+        } catch {
+            toast.error('Could not save the sponsor. Please try again.');
+        } finally {
+            setIsSaving(false);
         }
-
-        setSponsorName('');
-        setDraftLogo(null);
     };
 
-    const handleEdit = (sponsor: Sponsor) => {
+    const handleEdit = (sponsor: SponsorRow) => {
         setEditingId(sponsor.id);
         setSponsorName(sponsor.name);
-        setDraftLogo(sponsor.logoUrl);
+        setDraftLogo(sponsor.logo_url || null);
     };
 
-    const handleDelete = (id: string) => {
-        setSponsors((prev) => prev.filter((s) => s.id !== id));
-        toast.success('Sponsor deleted.');
-    };
-
-    const handleSaveAll = () => {
+    const handleDelete = async (sponsor: SponsorRow) => {
+        setSavingLabel('Deleting sponsor...');
         setIsSaving(true);
-        setTimeout(() => {
+        try {
+            await remove(sponsor.id);
+            if (editingId === sponsor.id) resetForm();
+            toast.success('Sponsor deleted.');
+        } catch {
+            toast.error('Could not delete the sponsor. Please try again.');
+        } finally {
             setIsSaving(false);
-            toast.success('Sponsors saved successfully.');
-        }, 600);
+        }
     };
 
-    const handleReset = () => {
-        setSponsors(initialSponsors);
-        setSponsorName('');
-        setDraftLogo(null);
-        setEditingId(null);
-        toast.info('Reset to default sponsors.');
+    /** Discards the in-progress form and re-reads the stored list. */
+    const handleReset = async () => {
+        resetForm();
+        await refetch();
+        toast.info('Reloaded sponsors from the saved list.');
+    };
+
+    /** Persists the current display order one row at a time. */
+    const handleSaveAll = async () => {
+        if (sponsors.length === 0) {
+            toast.info('There are no sponsors to save yet.');
+            return;
+        }
+
+        setSavingLabel('Saving Sponsors...');
+        setIsSaving(true);
+        try {
+            for (let i = 0; i < sponsors.length; i += 1) {
+                if (sponsors[i].sort_order === i + 1) continue;
+                await update({ id: sponsors[i].id, sort_order: i + 1 } as any);
+            }
+            toast.success('Sponsors saved successfully.');
+        } catch {
+            toast.error('Could not save the sponsor order. Please try again.');
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (
         <div className="space-y-4 p-4 md:p-6 bg-slate-50/50 min-h-screen">
-            <PageLoader open={isSaving} text="Saving Sponsors..." />
-            {/* Top Bar Navigation & Actions */}
+            <PageLoader open={isLoading || isSaving} text={isLoading ? 'Loading Sponsors...' : savingLabel} />
+            {/* Header Bar */}
             <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4 bg-white p-4 rounded-xl shadow-2xs">
                 <div>
                     <div className="flex items-center gap-1.5 text-xs text-slate-500 mb-1">
@@ -182,7 +262,7 @@ export default function PortfolioSponsorsPage() {
                 </div>
             </div>
 
-            {/* Main Workspace: Form & List */}
+            {/* Main Workspace */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
                 {/* Card 1: Add New Sponsor */}
                 <div className="md:col-span-5">
@@ -213,7 +293,6 @@ export default function PortfolioSponsorsPage() {
                                     accept="image/*"
                                     className="hidden"
                                 />
-
                                 <div
                                     onClick={() => fileInputRef.current?.click()}
                                     className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50 hover:bg-slate-100/60 cursor-pointer transition-all text-center group"
@@ -238,12 +317,25 @@ export default function PortfolioSponsorsPage() {
                                 </div>
                             </div>
 
-                            <Button
-                                onClick={handleSaveSponsor}
-                                className="w-full h-9 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
-                            >
-                                <Plus className="h-4 w-4 mr-1" /> {editingId ? 'Update Sponsor' : 'Add Sponsor'}
-                            </Button>
+                            <div className="flex items-center gap-2">
+                                {editingId ? (
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={resetForm}
+                                        className="h-9 flex-1 text-xs font-bold border-slate-200 text-slate-700"
+                                    >
+                                        Cancel
+                                    </Button>
+                                ) : null}
+                                <Button
+                                    onClick={handleSaveSponsor}
+                                    disabled={isSaving}
+                                    className="h-9 flex-1 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
+                                >
+                                    <Plus className="h-4 w-4 mr-1" /> {editingId ? 'Update Sponsor' : 'Add Sponsor'}
+                                </Button>
+                            </div>
                         </CardContent>
                     </Card>
                 </div>
@@ -267,12 +359,18 @@ export default function PortfolioSponsorsPage() {
                                         <GripVertical className="h-4 w-4 text-slate-300 group-hover:text-slate-500 cursor-grab" />
                                         <span className="text-xs font-bold text-slate-400">#{index + 1}</span>
                                         <div className="h-10 w-16 border rounded bg-slate-50 flex items-center justify-center overflow-hidden p-1">
-                                            <img src={sponsor.logoUrl} alt={sponsor.name} className="max-h-full max-w-full object-contain" />
+                                            <img src={displayLogo(sponsor)} alt={sponsor.name} className="max-h-full max-w-full object-contain" />
                                         </div>
                                         <span className="text-xs font-bold text-slate-800">{sponsor.name}</span>
                                     </div>
 
                                     <div className="flex items-center gap-1">
+                                        <RowTranslateButton
+                                            section="sponsors"
+                                            recordId={sponsor.id}
+                                            rowLabel={sponsor.name}
+                                            fields={[{ key: 'name', label: 'Sponsor Name', value: sponsor.name }]}
+                                        />
                                         <Button
                                             variant="ghost"
                                             size="icon"
@@ -284,7 +382,7 @@ export default function PortfolioSponsorsPage() {
                                         <Button
                                             variant="ghost"
                                             size="icon"
-                                            onClick={() => handleDelete(sponsor.id)}
+                                            onClick={() => handleDelete(sponsor)}
                                             className="h-7 w-7 text-slate-500 hover:text-rose-600 hover:bg-rose-50"
                                         >
                                             <Trash2 className="h-3.5 w-3.5" />
@@ -292,6 +390,14 @@ export default function PortfolioSponsorsPage() {
                                     </div>
                                 </div>
                             ))}
+
+                            {!isLoading && sponsors.length === 0 ? (
+                                <div className="py-10 text-center border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50">
+                                    <ImageIcon className="mx-auto h-8 w-8 text-slate-300 mb-2" />
+                                    <p className="text-xs font-bold text-slate-600">No Sponsors Added</p>
+                                    <p className="text-[11px] text-slate-400 mt-1">Add your first sponsor using the form.</p>
+                                </div>
+                            ) : null}
 
                             <p className="text-[10px] text-slate-400 font-medium pt-2">
                                 You can upload up to 30 sponsors.
@@ -323,7 +429,7 @@ export default function PortfolioSponsorsPage() {
                                         className="flex h-32 items-center justify-center rounded-xl border border-slate-200 bg-white p-4 shadow-2xs transition-all hover:shadow-md hover:border-blue-300 group"
                                     >
                                         <img
-                                            src={s.logoUrl}
+                                            src={displayLogo(s)}
                                             alt={s.name}
                                             className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform"
                                         />

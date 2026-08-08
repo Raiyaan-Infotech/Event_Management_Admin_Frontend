@@ -124,7 +124,18 @@ export function FaqFormContent({ id }: FaqFormContentProps) {
             });
         } else {
             createMutation.mutate(payload, {
-                onSuccess: () => router.push('/admin/website-builder/faqs')
+                // Stay on the form at the new row's id instead of returning to the
+                // list. A translation slot is addressed by the saved row's id, so
+                // leaving immediately meant a new FAQ never had a screen where the
+                // language card could appear (session.md §66).
+                onSuccess: (created: any) => {
+                    const newId = Number(created?.id ?? created?.data?.id);
+                    if (newId) {
+                        router.replace(`/admin/website-builder/faqs/edit/${newId}`);
+                    } else {
+                        router.push('/admin/website-builder/faqs');
+                    }
+                },
             });
         }
     };

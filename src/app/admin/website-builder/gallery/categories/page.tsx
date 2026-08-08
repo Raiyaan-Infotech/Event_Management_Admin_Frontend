@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
     Save,
     RotateCcw,
@@ -9,72 +9,61 @@ import {
     Trash2,
     Search,
     GripVertical,
-    Plus,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import {
     BuilderCountedInput,
     BuilderCountedTextarea,
 } from '../../_components/builder-field';
+import { RowTranslateButton } from '../../_components/row-translate-dialog';
 import { ConfirmResetDialog } from '@/components/common/confirm-reset-dialog';
+import { PageLoader } from '@/components/common/page-loader';
 import { cn } from '@/lib/utils';
+import {
+    useCompanyGalleryCategories,
+    useCompanyGalleryItems,
+} from '@/hooks/useCompanyWebsiteBuilder';
 
-interface CategoryItem {
-    id: string;
+/**
+ * Gallery > Categories — backed by `company_website_gallery_categories`.
+ *
+ * Persisted per row (create / update / remove). The bulk `replace` mutation is
+ * deliberately unused: it DELETEs and re-INSERTs the table, reassigning ids and
+ * orphaning translations addressed by `record_id` (session.md §64).
+ */
+interface CategoryRow {
+    id: number;
     name: string;
     slug: string;
     description: string;
-    status: boolean;
-    order: number;
+    is_active: boolean;
+    sort_order: number;
     imageCount: number;
 }
 
-const initialCategories: CategoryItem[] = [
-    {
-        id: '1',
-        name: 'Wedding Decor',
-        slug: 'wedding-decor',
-        description: 'Floral, stage decoration, and mandap setups.',
-        status: true,
-        order: 1,
-        imageCount: 12,
-    },
-    {
-        id: '2',
-        name: 'Corporate Summits',
-        slug: 'corporate-summits',
-        description: 'AV production, keynote stages, and exhibition booths.',
-        status: true,
-        order: 2,
-        imageCount: 8,
-    },
-    {
-        id: '3',
-        name: 'Private Parties',
-        slug: 'private-parties',
-        description: 'Birthday bashes, anniversaries, and theme parties.',
-        status: true,
-        order: 3,
-        imageCount: 5,
-    },
-    {
-        id: '4',
-        name: 'Exhibition',
-        slug: 'exhibition',
-        description: 'Stalls, lighting, and brand displays.',
-        status: true,
-        order: 4,
-        imageCount: 6,
-    },
-];
+const slugify = (val: string) =>
+    val
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
 
 export default function GalleryCategoriesPage() {
-    const [categories, setCategories] = useState<CategoryItem[]>(initialCategories);
-    const [editingId, setEditingId] = useState<string | null>(null);
+    const {
+        data: categoriesData,
+        isLoading,
+        create,
+        update,
+        remove,
+        refetch,
+    } = useCompanyGalleryCategories();
+    const { data: galleryItems } = useCompanyGalleryItems();
+
+    const [editingId, setEditingId] = useState<number | null>(null);
     const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
     const [categoryName, setCategoryName] = useState('');
@@ -85,75 +74,100 @@ export default function GalleryCategoriesPage() {
 
     const [searchQuery, setSearchQuery] = useState('');
     const [isSaving, setIsSaving] = useState(false);
+    const [savingLabel, setSavingLabel] = useState('Saving category...');
+
+    const imageCounts = useMemo(() => {
+        const counts = new Map<number, number>();
+        (galleryItems || []).forEach((item: any) => {
+            const key = Number(item.category_id);
+            if (!key) return;
+            counts.set(key, (counts.get(key) || 0) + 1);
+        });
+        return counts;
+    }, [galleryItems]);
+
+    const categories: CategoryRow[] = useMemo(
+        () =>
+            (categoriesData || []).map((row: any, index: number) => ({
+                id: Number(row.id),
+                name: row.name || '',
+                slug: row.slug || '',
+                description: row.description || '',
+                is_active: Number(row.is_active) === 1,
+                sort_order: Number(row.sort_order) || index + 1,
+                imageCount: imageCounts.get(Number(row.id)) || 0,
+            })),
+        [categoriesData, imageCounts]
+    );
 
     const handleCategoryNameChange = (val: string) => {
         setCategoryName(val);
-        if (!editingId) {
-            setSlug(
-                val
-                    .toLowerCase()
-                    .trim()
-                    .replace(/[^a-z0-9]+/g, '-')
-                    .replace(/^-|-$/g, '')
-            );
-        }
+        if (!editingId) setSlug(slugify(val));
     };
 
-    const handleSaveCategory = () => {
-        if (!categoryName.trim()) {
+    const handleSaveCategory = async () => {
+        const name = categoryName.trim();
+        if (!name) {
             toast.error('Category Name is required.');
             return;
         }
 
+        setSavingLabel(editingId ? 'Updating category...' : 'Creating category...');
         setIsSaving(true);
-        setTimeout(() => {
+        try {
+            const payload = {
+                name,
+                slug: slug.trim() || slugify(name),
+                description,
+                sort_order: displayOrder,
+                is_active: status ? 1 : 0,
+            };
+
             if (editingId) {
-                setCategories((prev) =>
-                    prev.map((c) =>
-                        c.id === editingId
-                            ? {
-                                  ...c,
-                                  name: categoryName,
-                                  slug: slug || categoryName.toLowerCase().replace(/\s+/g, '-'),
-                                  description,
-                                  status,
-                                  order: displayOrder,
-                              }
-                            : c
-                    )
-                );
+                await update({ id: editingId, ...payload } as any);
                 toast.success('Category updated successfully!');
             } else {
-                const newCat: CategoryItem = {
-                    id: String(Date.now()),
-                    name: categoryName,
-                    slug: slug || categoryName.toLowerCase().replace(/\s+/g, '-'),
-                    description,
-                    status,
-                    order: displayOrder,
-                    imageCount: 0,
-                };
-                setCategories((prev) => [...prev, newCat]);
+                await create(payload as any);
                 toast.success('Category created successfully!');
             }
             handleCancel();
+        } catch {
+            toast.error('Could not save the category. Please try again.');
+        } finally {
             setIsSaving(false);
-        }, 400);
+        }
     };
 
-    const handleEdit = (cat: CategoryItem) => {
+    const handleEdit = (cat: CategoryRow) => {
         setEditingId(cat.id);
         setCategoryName(cat.name);
         setSlug(cat.slug);
         setDescription(cat.description);
-        setStatus(cat.status);
-        setDisplayOrder(cat.order);
+        setStatus(cat.is_active);
+        setDisplayOrder(cat.sort_order);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    const handleDelete = (id: string) => {
-        setCategories((prev) => prev.filter((c) => c.id !== id));
-        toast.success('Category deleted.');
+    const handleDelete = async (cat: CategoryRow) => {
+        setSavingLabel('Deleting category...');
+        setIsSaving(true);
+        try {
+            await remove(cat.id);
+            if (editingId === cat.id) handleCancel();
+            toast.success('Category deleted.');
+        } catch {
+            toast.error('Could not delete the category. Please try again.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleToggleStatus = async (cat: CategoryRow, next: boolean) => {
+        try {
+            await update({ id: cat.id, is_active: next ? 1 : 0 } as any);
+        } catch {
+            toast.error('Could not update the status. Please try again.');
+        }
     };
 
     const handleCancel = () => {
@@ -165,10 +179,11 @@ export default function GalleryCategoriesPage() {
         setDisplayOrder(categories.length + 1);
     };
 
-    const handleReset = () => {
-        setCategories(initialCategories);
+    /** Discards the in-progress form and re-reads the stored list. */
+    const handleReset = async () => {
         handleCancel();
-        toast.info('Gallery Categories reset to defaults.');
+        await refetch();
+        toast.info('Reloaded categories from the saved list.');
     };
 
     const filteredCategories = categories.filter(
@@ -179,6 +194,7 @@ export default function GalleryCategoriesPage() {
 
     return (
         <div className="space-y-5">
+            <PageLoader open={isLoading || isSaving} text={isLoading ? 'Loading Categories...' : savingLabel} />
             {/* Header Bar */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b pb-4">
                 <div>
@@ -291,6 +307,7 @@ export default function GalleryCategoriesPage() {
                                 type="button"
                                 size="sm"
                                 onClick={handleSaveCategory}
+                                disabled={isSaving}
                                 className="h-9 w-full text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-xs"
                             >
                                 Save Category
@@ -358,22 +375,25 @@ export default function GalleryCategoriesPage() {
                                             <td className="py-3 px-3 text-center">
                                                 <div className="flex items-center justify-center">
                                                     <Switch
-                                                        checked={cat.status}
-                                                        onCheckedChange={(val) => {
-                                                            setCategories(
-                                                                categories.map((c) =>
-                                                                    c.id === cat.id ? { ...c, status: val } : c
-                                                                )
-                                                            );
-                                                        }}
+                                                        checked={cat.is_active}
+                                                        onCheckedChange={(val) => handleToggleStatus(cat, val)}
                                                     />
                                                 </div>
                                             </td>
                                             <td className="py-3 px-3 text-center font-semibold text-slate-700">
-                                                {cat.order}
+                                                {cat.sort_order}
                                             </td>
                                             <td className="py-3 px-3 text-right">
                                                 <div className="flex items-center justify-end gap-1.5">
+                                                    <RowTranslateButton
+                                                        section="gallery-categories"
+                                                        recordId={cat.id}
+                                                        rowLabel={cat.name}
+                                                        fields={[
+                                                            { key: 'name', label: 'Category Name', value: cat.name },
+                                                            { key: 'description', label: 'Description', value: cat.description, type: 'textarea' },
+                                                        ]}
+                                                    />
                                                     <Button
                                                         type="button"
                                                         variant="outline"
@@ -392,7 +412,7 @@ export default function GalleryCategoriesPage() {
                                                         type="button"
                                                         variant="outline"
                                                         size="icon"
-                                                        onClick={() => handleDelete(cat.id)}
+                                                        onClick={() => handleDelete(cat)}
                                                         className="h-8 w-8 rounded-lg p-0 text-red-500 border-red-200 hover:bg-red-50 hover:border-red-300"
                                                     >
                                                         <Trash2 className="h-3.5 w-3.5" />

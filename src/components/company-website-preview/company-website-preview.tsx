@@ -179,7 +179,12 @@ function CompanyWebsitePreviewInner({ initialPage = 'home' }: { initialPage?: st
   const clients = buildLogos(translator.many('clients', clientsRaw as AnyRecord[]));
   const sponsors = buildLogos(translator.many('sponsors', sponsorsRaw as AnyRecord[]));
   const footer = buildFooter(translator.one('footer', footerRaw as AnyRecord), pages, basicInfo as AnyRecord);
-  const contact = buildContact(contactRaw as AnyRecord, translator.many('contact-categories', contactCatsRaw as AnyRecord[]), socialLinks, basicInfo);
+  const contact = buildContact(
+    translator.one('contact-settings', contactRaw as AnyRecord),
+    translator.many('contact-categories', contactCatsRaw as AnyRecord[]),
+    socialLinks,
+    basicInfo
+  );
   const legalPages = buildLegalPages(pages);
   const companyName = String(basicInfo.company_name || 'Company');
   const companyLogo = String(
@@ -305,7 +310,15 @@ function extractList(raw: unknown): AnyRecord[] {
     .map((t) => ({
       id: Number(t.id),
       title: String(t.template_name || t.name || t.title || ''),
-      categoryName: String(t.category_name || t.category || ''),
+      // `category_name` is joined onto the template row, so it is not a
+      // translatable field of the `templates` section. The filter pills read it,
+      // so resolve it against the category's own translation by id. Falls back
+      // to the English join when the row has no category_id or no translation.
+      categoryName: (() => {
+        const raw = String(t.category_name || t.category || '');
+        const catId = Number((t as AnyRecord).category_id);
+        return catId ? translator.field('template-categories', catId, 'name', raw) : raw;
+      })(),
       templateType: String(t.template_type || 'Invitation'),
       primaryColor: String(t.primary_color || '#4F46E5'),
       thumbnailUrl: String(t.thumbnail_url || ''),

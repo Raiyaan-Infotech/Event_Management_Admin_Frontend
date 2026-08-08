@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
     Save,
     RotateCcw,
@@ -15,19 +15,32 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { BuilderCountedInput } from '../_components/builder-field';
+import { RowTranslateButton } from '../_components/row-translate-dialog';
 import { ConfirmResetDialog } from '@/components/common/confirm-reset-dialog';
-import { cn } from '@/lib/utils';
 import { PageLoader } from '@/components/common/page-loader';
+import { useCompanyClients } from '@/hooks/useCompanyWebsiteBuilder';
 
-interface ClientLogo {
-    id: string;
+/**
+ * Portfolio > Clients — backed by `company_website_clients`.
+ *
+ * Rows are persisted one at a time (create / update / remove), never through the
+ * bulk `replace` mutation: that endpoint DELETEs and re-INSERTs the whole table,
+ * which reassigns auto-increment ids and orphans every translation addressed by
+ * `record_id`. See session.md §64.
+ */
+interface ClientRow {
+    id: number;
     name: string;
-    logoUrl: string;
+    logo_url: string;
+    sort_order: number;
 }
 
+const MAX_LOGO_BYTES = 2 * 1024 * 1024;
+
+/** Display-only placeholder for rows with no uploaded logo. Never persisted. */
 function logoDataUrl(name: string, color: string, accent: string) {
     const initials = name
         .split(/\s+/)
@@ -46,99 +59,164 @@ function logoDataUrl(name: string, color: string, accent: string) {
   `)}`;
 }
 
-const initialClients: ClientLogo[] = [
-    { id: '1', name: 'Google', logoUrl: logoDataUrl('Google', '#4285f4', '#34a853') },
-    { id: '2', name: 'TATA', logoUrl: logoDataUrl('TATA', '#3158b7', '#3158b7') },
-    { id: '3', name: 'Microsoft', logoUrl: logoDataUrl('Microsoft', '#737373', '#f25022') },
-    { id: '4', name: 'amazon', logoUrl: logoDataUrl('amazon', '#111827', '#ff9900') },
-    { id: '5', name: 'IBM', logoUrl: logoDataUrl('IBM', '#0062ff', '#0062ff') },
-    { id: '6', name: 'Infosys', logoUrl: logoDataUrl('Infosys', '#007cc3', '#007cc3') },
-];
+const displayLogo = (client: ClientRow) =>
+    client.logo_url || logoDataUrl(client.name, '#2563eb', '#7c3aed');
+
+const fileToDataUrl = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(new Error('Could not read the selected file.'));
+        reader.readAsDataURL(file);
+    });
 
 export default function PortfolioClientsPage() {
-    const [clients, setClients] = useState<ClientLogo[]>(initialClients);
-    const [editingId, setEditingId] = useState<string | null>(null);
+    const {
+        data: clientsData,
+        isLoading,
+        create,
+        update,
+        remove,
+        refetch,
+    } = useCompanyClients();
+
+    const [editingId, setEditingId] = useState<number | null>(null);
     const [clientName, setClientName] = useState('');
+    // Either an existing logo_url or a freshly-read base64 data URL. The backend
+    // converts `data:image/...` payloads into stored media on save.
     const [draftLogo, setDraftLogo] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
+    const [savingLabel, setSavingLabel] = useState('Saving Clients...');
     const [previewOpen, setPreviewOpen] = useState(false);
     const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const handleLogoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        const url = URL.createObjectURL(file);
-        setDraftLogo(url);
-        toast.success('Client logo uploaded.');
+    const clients: ClientRow[] = useMemo(
+        () =>
+            (clientsData || []).map((row: any, index: number) => ({
+                id: Number(row.id),
+                name: row.name || '',
+                logo_url: row.logo_url || '',
+                sort_order: Number(row.sort_order) || index + 1,
+            })),
+        [clientsData]
+    );
+
+    const resetForm = () => {
+        setEditingId(null);
+        setClientName('');
+        setDraftLogo(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
-    const handleSaveClient = () => {
+    const handleLogoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > MAX_LOGO_BYTES) {
+            toast.error('Logo must be 2MB or smaller.');
+            e.target.value = '';
+            return;
+        }
+
+        try {
+            setDraftLogo(await fileToDataUrl(file));
+            toast.success('Client logo ready. Click Add/Update to save it.');
+        } catch {
+            toast.error('Could not read that image. Try another file.');
+        }
+    };
+
+    const handleSaveClient = async () => {
         const name = clientName.trim();
         if (!name) {
             toast.error('Client Name is required.');
             return;
         }
 
-        if (editingId) {
-            setClients((prev) =>
-                prev.map((c) =>
-                    c.id === editingId
-                        ? {
-                              ...c,
-                              name,
-                              logoUrl: draftLogo || c.logoUrl,
-                          }
-                        : c
-                )
-            );
-            toast.success(`Client "${name}" updated.`);
-            setEditingId(null);
-        } else {
-            const newClient: ClientLogo = {
-                id: String(Date.now()),
-                name,
-                logoUrl: draftLogo || logoDataUrl(name, '#2563eb', '#7c3aed'),
-            };
-            setClients((prev) => [...prev, newClient]);
-            toast.success(`Client "${name}" added.`);
+        setSavingLabel(editingId ? 'Updating client...' : 'Adding client...');
+        setIsSaving(true);
+        try {
+            if (editingId) {
+                const existing = clients.find((c) => c.id === editingId);
+                await update({
+                    id: editingId,
+                    name,
+                    // Only send a logo when one is present, so an untouched row
+                    // keeps whatever is already stored.
+                    ...(draftLogo && draftLogo !== existing?.logo_url ? { logo_url: draftLogo } : {}),
+                } as any);
+                toast.success(`Client "${name}" updated.`);
+            } else {
+                await create({
+                    name,
+                    logo_url: draftLogo || '',
+                    sort_order: clients.length + 1,
+                    is_active: 1,
+                } as any);
+                toast.success(`Client "${name}" added.`);
+            }
+            resetForm();
+        } catch {
+            toast.error('Could not save the client. Please try again.');
+        } finally {
+            setIsSaving(false);
         }
-
-        setClientName('');
-        setDraftLogo(null);
     };
 
-    const handleEdit = (client: ClientLogo) => {
+    const handleEdit = (client: ClientRow) => {
         setEditingId(client.id);
         setClientName(client.name);
-        setDraftLogo(client.logoUrl);
+        setDraftLogo(client.logo_url || null);
     };
 
-    const handleDelete = (id: string) => {
-        setClients((prev) => prev.filter((c) => c.id !== id));
-        toast.success('Client deleted.');
-    };
-
-    const handleReset = () => {
-        setClients(initialClients);
-        setEditingId(null);
-        setClientName('');
-        setDraftLogo(null);
-        toast.info('Clients reset to default list.');
-    };
-
-    const handleSaveAll = () => {
+    const handleDelete = async (client: ClientRow) => {
+        setSavingLabel('Deleting client...');
         setIsSaving(true);
-        setTimeout(() => {
+        try {
+            await remove(client.id);
+            if (editingId === client.id) resetForm();
+            toast.success('Client deleted.');
+        } catch {
+            toast.error('Could not delete the client. Please try again.');
+        } finally {
             setIsSaving(false);
+        }
+    };
+
+    /** Discards the in-progress form and re-reads the stored list. */
+    const handleReset = async () => {
+        resetForm();
+        await refetch();
+        toast.info('Reloaded clients from the saved list.');
+    };
+
+    /** Persists the current display order one row at a time. */
+    const handleSaveAll = async () => {
+        if (clients.length === 0) {
+            toast.info('There are no clients to save yet.');
+            return;
+        }
+
+        setSavingLabel('Saving Clients...');
+        setIsSaving(true);
+        try {
+            for (let i = 0; i < clients.length; i += 1) {
+                if (clients[i].sort_order === i + 1) continue;
+                await update({ id: clients[i].id, sort_order: i + 1 } as any);
+            }
             toast.success('Clients logo wall saved successfully.');
-        }, 600);
+        } catch {
+            toast.error('Could not save the client order. Please try again.');
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (
         <div className="space-y-4 p-4 md:p-6 bg-slate-50/50 min-h-screen">
-            <PageLoader open={isSaving} text="Saving Clients..." />
+            <PageLoader open={isLoading || isSaving} text={isLoading ? 'Loading Clients...' : savingLabel} />
             {/* Header Bar */}
             <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4 bg-white p-4 rounded-xl shadow-2xs">
                 <div>
@@ -239,12 +317,25 @@ export default function PortfolioClientsPage() {
                                 </div>
                             </div>
 
-                            <Button
-                                onClick={handleSaveClient}
-                                className="w-full h-9 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
-                            >
-                                <Plus className="h-4 w-4 mr-1" /> {editingId ? 'Update Client' : 'Add Client'}
-                            </Button>
+                            <div className="flex items-center gap-2">
+                                {editingId ? (
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={resetForm}
+                                        className="h-9 flex-1 text-xs font-bold border-slate-200 text-slate-700"
+                                    >
+                                        Cancel
+                                    </Button>
+                                ) : null}
+                                <Button
+                                    onClick={handleSaveClient}
+                                    disabled={isSaving}
+                                    className="h-9 flex-1 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
+                                >
+                                    <Plus className="h-4 w-4 mr-1" /> {editingId ? 'Update Client' : 'Add Client'}
+                                </Button>
+                            </div>
                         </CardContent>
                     </Card>
                 </div>
@@ -268,12 +359,18 @@ export default function PortfolioClientsPage() {
                                         <GripVertical className="h-4 w-4 text-slate-300 group-hover:text-slate-500 cursor-grab" />
                                         <span className="text-xs font-bold text-slate-400">#{index + 1}</span>
                                         <div className="h-10 w-16 border rounded bg-slate-50 flex items-center justify-center overflow-hidden p-1">
-                                            <img src={client.logoUrl} alt={client.name} className="max-h-full max-w-full object-contain" />
+                                            <img src={displayLogo(client)} alt={client.name} className="max-h-full max-w-full object-contain" />
                                         </div>
                                         <span className="text-xs font-bold text-slate-800">{client.name}</span>
                                     </div>
 
                                     <div className="flex items-center gap-1">
+                                        <RowTranslateButton
+                                            section="clients"
+                                            recordId={client.id}
+                                            rowLabel={client.name}
+                                            fields={[{ key: 'name', label: 'Client Name', value: client.name }]}
+                                        />
                                         <Button
                                             variant="ghost"
                                             size="icon"
@@ -285,7 +382,7 @@ export default function PortfolioClientsPage() {
                                         <Button
                                             variant="ghost"
                                             size="icon"
-                                            onClick={() => handleDelete(client.id)}
+                                            onClick={() => handleDelete(client)}
                                             className="h-7 w-7 text-slate-500 hover:text-rose-600 hover:bg-rose-50"
                                         >
                                             <Trash2 className="h-3.5 w-3.5" />
@@ -293,6 +390,14 @@ export default function PortfolioClientsPage() {
                                     </div>
                                 </div>
                             ))}
+
+                            {!isLoading && clients.length === 0 ? (
+                                <div className="py-10 text-center border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50">
+                                    <ImageIcon className="mx-auto h-8 w-8 text-slate-300 mb-2" />
+                                    <p className="text-xs font-bold text-slate-600">No Clients Added</p>
+                                    <p className="text-[11px] text-slate-400 mt-1">Add your first client using the form.</p>
+                                </div>
+                            ) : null}
 
                             <p className="text-[10px] text-slate-400 font-medium pt-2">
                                 You can upload up to 30 clients.
@@ -324,7 +429,7 @@ export default function PortfolioClientsPage() {
                                         className="flex h-32 items-center justify-center rounded-xl border border-slate-200 bg-white p-4 shadow-2xs transition-all hover:shadow-md hover:border-blue-300 group"
                                     >
                                         <img
-                                            src={c.logoUrl}
+                                            src={displayLogo(c)}
                                             alt={c.name}
                                             className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform"
                                         />

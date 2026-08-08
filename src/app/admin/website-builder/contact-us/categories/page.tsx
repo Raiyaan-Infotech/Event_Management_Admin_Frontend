@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Save, RotateCcw, Sparkles, Search, Pencil, Trash2, HelpCircle, Loader2 } from 'lucide-react';
+import { Save, RotateCcw, Search, Pencil, Trash2, HelpCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,117 +10,152 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { BuilderCountedInput, BuilderCountedTextarea } from '../../_components/builder-field';
+import { RowTranslateButton } from '../../_components/row-translate-dialog';
 import { ConfirmResetDialog } from '@/components/common/confirm-reset-dialog';
+import { PageLoader } from '@/components/common/page-loader';
 import { cn } from '@/lib/utils';
+import { useCompanyContactCategories } from '@/hooks/useCompanyWebsiteBuilder';
 
-interface CategoryItem {
-    id: string;
-    num: number;
+/**
+ * Contact Us > Categories — backed by `company_website_contact_categories`.
+ *
+ * Persisted per row (create / update / remove). The bulk `replace` mutation is
+ * deliberately unused: it DELETEs and re-INSERTs the table, reassigning ids and
+ * orphaning translations addressed by `record_id` (session.md §64).
+ */
+interface CategoryRow {
+    id: number;
     name: string;
     description: string;
     slug: string;
-    status: boolean;
-    order: number;
+    is_active: boolean;
+    sort_order: number;
 }
 
+const slugify = (val: string) =>
+    val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+
 export default function ContactCategoriesPage() {
+    const {
+        data: categoriesData,
+        isLoading,
+        create,
+        update,
+        remove,
+        refetch,
+    } = useCompanyContactCategories();
+
     // New Category Form State
     const [name, setName] = useState('');
     const [slug, setSlug] = useState('');
     const [description, setDescription] = useState('');
     const [status, setStatus] = useState(true);
-    const [displayOrder, setDisplayOrder] = useState('3');
+    const [displayOrder, setDisplayOrder] = useState('1');
 
     const [searchQuery, setSearchQuery] = useState('');
-    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editingId, setEditingId] = useState<number | null>(null);
     const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
-    // Existing Categories
-    const [categories, setCategories] = useState<CategoryItem[]>([
-        { id: '1', num: 1, name: 'Others', description: 'Other Section', slug: 'others', status: true, order: 1 },
-        { id: '2', num: 2, name: 'fdsadgdg', description: 'dsgasgdg', slug: 'fdsadgdg', status: true, order: 2 },
-    ]);
-
     const [isSaving, setIsSaving] = useState(false);
+    const [savingLabel, setSavingLabel] = useState('Saving category...');
+
+    const categories: CategoryRow[] = useMemo(
+        () =>
+            (categoriesData || []).map((row: any, index: number) => ({
+                id: Number(row.id),
+                name: row.name || '',
+                description: row.description || '',
+                slug: row.slug || '',
+                is_active: Number(row.is_active) === 1,
+                sort_order: Number(row.sort_order) || index + 1,
+            })),
+        [categoriesData]
+    );
 
     const handleNameChange = (val: string) => {
         setName(val);
-        if (!editingId) {
-            setSlug(val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''));
-        }
+        if (!editingId) setSlug(slugify(val));
     };
 
-    const handleSaveCategory = () => {
-        if (!name.trim()) {
-            toast.error('Category Name is required.');
-            return;
-        }
-
-        setIsSaving(true);
-        setTimeout(() => {
-            setIsSaving(false);
-            if (editingId) {
-                setCategories((prev) =>
-                    prev.map((c) =>
-                        c.id === editingId
-                            ? { ...c, name, slug: slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-'), description, status, order: parseInt(displayOrder) || 1 }
-                            : c
-                    )
-                );
-                toast.success(`Category "${name}" updated successfully.`);
-                setEditingId(null);
-            } else {
-                const newCat: CategoryItem = {
-                    id: Date.now().toString(),
-                    num: categories.length + 1,
-                    name,
-                    slug: slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-                    description,
-                    status,
-                    order: parseInt(displayOrder) || categories.length + 1,
-                };
-                setCategories([...categories, newCat]);
-                toast.success(`Category "${name}" created successfully.`);
-            }
-
-            // Reset form
-            setName('');
-            setSlug('');
-            setDescription('');
-            setStatus(true);
-            setDisplayOrder((categories.length + 2).toString());
-        }, 400);
-    };
-
-    const handleEdit = (cat: CategoryItem) => {
-        setEditingId(cat.id);
-        setName(cat.name);
-        setSlug(cat.slug);
-        setDescription(cat.description);
-        setStatus(cat.status);
-        setDisplayOrder(cat.order.toString());
-        toast.info(`Editing category "${cat.name}".`);
-    };
-
-    const handleDelete = (id: string) => {
-        setCategories((prev) => prev.filter((c) => c.id !== id));
-        toast.success('Category deleted.');
-    };
-
-    const handleToggleStatus = (id: string, newStatus: boolean) => {
-        setCategories((prev) =>
-            prev.map((c) => (c.id === id ? { ...c, status: newStatus } : c))
-        );
-    };
-
-    const handleResetForm = () => {
+    const clearForm = () => {
         setName('');
         setSlug('');
         setDescription('');
         setStatus(true);
-        setDisplayOrder('3');
+        setDisplayOrder(String(categories.length + 1));
         setEditingId(null);
-        toast.info('Form reset.');
+    };
+
+    const handleSaveCategory = async () => {
+        const trimmed = name.trim();
+        if (!trimmed) {
+            toast.error('Category Name is required.');
+            return;
+        }
+
+        setSavingLabel(editingId ? 'Updating category...' : 'Creating category...');
+        setIsSaving(true);
+        try {
+            const payload = {
+                name: trimmed,
+                slug: slug.trim() || slugify(trimmed),
+                description,
+                sort_order: parseInt(displayOrder, 10) || categories.length + 1,
+                is_active: status ? 1 : 0,
+            };
+
+            if (editingId) {
+                await update({ id: editingId, ...payload } as any);
+                toast.success(`Category "${trimmed}" updated successfully.`);
+            } else {
+                await create(payload as any);
+                toast.success(`Category "${trimmed}" created successfully.`);
+            }
+            clearForm();
+        } catch {
+            toast.error('Could not save the category. Please try again.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleEdit = (cat: CategoryRow) => {
+        setEditingId(cat.id);
+        setName(cat.name);
+        setSlug(cat.slug);
+        setDescription(cat.description);
+        setStatus(cat.is_active);
+        setDisplayOrder(String(cat.sort_order));
+        toast.info(`Editing category "${cat.name}".`);
+    };
+
+    const handleDelete = async (cat: CategoryRow) => {
+        setSavingLabel('Deleting category...');
+        setIsSaving(true);
+        try {
+            await remove(cat.id);
+            if (editingId === cat.id) clearForm();
+            toast.success('Category deleted.');
+        } catch {
+            toast.error('Could not delete the category. Please try again.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleToggleStatus = async (cat: CategoryRow, newStatus: boolean) => {
+        try {
+            await update({ id: cat.id, is_active: newStatus ? 1 : 0 } as any);
+        } catch {
+            toast.error('Could not update the status. Please try again.');
+        }
+    };
+
+    /** Discards the in-progress form and re-reads the stored list. */
+    const handleResetForm = async () => {
+        clearForm();
+        await refetch();
+        toast.info('Reloaded categories from the saved list.');
     };
 
     const filteredCategories = useMemo(() => {
@@ -132,6 +166,7 @@ export default function ContactCategoriesPage() {
 
     return (
         <div className="space-y-6">
+            <PageLoader open={isLoading || isSaving} text={isLoading ? 'Loading Categories...' : savingLabel} />
             {/* Header */}
             <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-5">
                 <div>
@@ -221,7 +256,7 @@ export default function ContactCategoriesPage() {
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                onClick={handleResetForm}
+                                onClick={clearForm}
                                 className="h-9 text-xs font-semibold border-slate-200 hover:bg-slate-50"
                             >
                                 Cancel
@@ -275,11 +310,11 @@ export default function ContactCategoriesPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {filteredCategories.map((cat) => (
+                                {filteredCategories.map((cat, idx) => (
                                     <TableRow key={cat.id} className="hover:bg-slate-50/50 transition-colors border-b border-slate-100">
                                         {/* Column 1: # Index */}
                                         <TableCell className="font-bold text-xs text-slate-700 w-[50px]">
-                                            {cat.num}
+                                            {idx + 1}
                                         </TableCell>
 
                                         {/* Column 2: Category Name & Description */}
@@ -300,19 +335,28 @@ export default function ContactCategoriesPage() {
                                         {/* Column 4: Status Toggle */}
                                         <TableCell>
                                             <Switch
-                                                checked={cat.status}
-                                                onCheckedChange={(val) => handleToggleStatus(cat.id, val)}
+                                                checked={cat.is_active}
+                                                onCheckedChange={(val) => handleToggleStatus(cat, val)}
                                             />
                                         </TableCell>
 
                                         {/* Column 5: Order */}
                                         <TableCell className="font-bold text-xs text-slate-700">
-                                            {cat.order}
+                                            {cat.sort_order}
                                         </TableCell>
 
                                         {/* Column 6: Actions */}
                                         <TableCell className="text-right">
                                             <div className="flex items-center justify-end gap-1.5">
+                                                <RowTranslateButton
+                                                    section="contact-categories"
+                                                    recordId={cat.id}
+                                                    rowLabel={cat.name}
+                                                    fields={[
+                                                        { key: 'name', label: 'Category Name', value: cat.name },
+                                                        { key: 'description', label: 'Description', value: cat.description, type: 'textarea' },
+                                                    ]}
+                                                />
                                                 <Button
                                                     type="button"
                                                     variant="outline"
@@ -332,7 +376,7 @@ export default function ContactCategoriesPage() {
                                                     type="button"
                                                     variant="outline"
                                                     size="icon"
-                                                    onClick={() => handleDelete(cat.id)}
+                                                    onClick={() => handleDelete(cat)}
                                                     className="h-8 w-8 rounded-lg p-0 text-red-500 border-red-200 hover:bg-red-50 hover:border-red-300"
                                                 >
                                                     <Trash2 className="h-3.5 w-3.5" />
@@ -341,6 +385,14 @@ export default function ContactCategoriesPage() {
                                         </TableCell>
                                     </TableRow>
                                 ))}
+
+                                {filteredCategories.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="py-8 text-center text-xs text-slate-400">
+                                            No categories found yet.
+                                        </TableCell>
+                                    </TableRow>
+                                ) : null}
                             </TableBody>
                         </Table>
                     </div>

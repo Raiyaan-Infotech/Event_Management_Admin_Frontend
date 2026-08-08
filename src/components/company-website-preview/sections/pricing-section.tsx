@@ -296,8 +296,16 @@ function PricingSectionBase({ plans, theme }: { plans: PricingPlan[]; theme: The
 import { usePricingMatrixFeaturesData } from '@/hooks/usePricingPlans';
 
 export function PlanFeaturesComparisonSection({ theme }: { theme: ThemeColors }) {
-  const { t } = useWebsiteLanguage();
-  const { data: matrixFeatures = [] } = usePricingMatrixFeaturesData();
+  // This section self-fetches, so the data-layer overlay applied in
+  // company-website-preview.tsx never touches it — it has to translate its own
+  // rows, the same way PageHeroSection does.
+  const { t, translator } = useWebsiteLanguage();
+  const { data: rawMatrixFeatures = [] } = usePricingMatrixFeaturesData();
+
+  const matrixFeatures = React.useMemo(
+    () => translator.many('pricing-features', (rawMatrixFeatures || []) as any[]),
+    [translator, rawMatrixFeatures]
+  );
 
   const displayItems = matrixFeatures && matrixFeatures.length > 0 ? matrixFeatures : [
     { feature_name: 'Beautiful Templates', plan_values_json: { free: { not_included: false, limit: '' }, basic: { not_included: false, limit: '' }, pro: { not_included: false, limit: '' }, premium: { not_included: false, limit: '' }, companies: { not_included: false, limit: '' } } },

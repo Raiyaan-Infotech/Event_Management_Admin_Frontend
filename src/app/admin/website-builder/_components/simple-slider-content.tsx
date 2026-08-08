@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
     Save,
     Plus,
@@ -10,7 +10,6 @@ import {
     ChevronRight,
     GripVertical,
     HelpCircle,
-    X,
     Image as ImageIcon,
     Eye,
 } from 'lucide-react';
@@ -34,23 +33,39 @@ import {
     BuilderImageUploadDropzone,
     BuilderStatusSwitch,
 } from './builder-field';
+import { RowTranslateButton } from './row-translate-dialog';
 import { PageLoader } from '@/components/common/page-loader';
 import { mediaApi } from '@/hooks/use-media';
 import { MediaCropDialog } from '@/components/common/media-crop-dialog';
 import { cn } from '@/lib/utils';
+import {
+    useCompanyPages,
+    useCompanySliders,
+    useCompanySliderItems,
+} from '@/hooks/useCompanyWebsiteBuilder';
 
 type SliderHeight = 'small' | 'medium' | 'large' | 'fullscreen';
 type LinkTargetMode = 'page' | 'custom';
 
+/**
+ * Simple Slider — backed by `company_website_sliders` (the settings row, one per
+ * slider_type) and `company_website_slider_items` (the slides).
+ *
+ * Slides are written one at a time. The bulk replace path is deliberately not
+ * used: it DELETEs and re-INSERTs the table, reassigning ids and orphaning the
+ * per-slide translations, which are addressed by `record_id` (session.md §64).
+ */
 interface Slide {
-    id: string;
+    id: number;
     title: string;
     description: string;
     buttonLabel: string;
     targetMode: LinkTargetMode;
+    pageId: number | null;
     customUrl: string;
     imageUrl: string;
     status: boolean;
+    sortOrder: number;
 }
 
 const sliderHeightOptions: { label: string; value: SliderHeight }[] = [
@@ -60,51 +75,48 @@ const sliderHeightOptions: { label: string; value: SliderHeight }[] = [
     { label: 'Fullscreen', value: 'fullscreen' },
 ];
 
+const toSlide = (row: any, index: number): Slide => ({
+    id: Number(row.id),
+    title: row.title || '',
+    description: row.description || '',
+    buttonLabel: row.button_label || '',
+    targetMode: row.button_page_id ? 'page' : 'custom',
+    pageId: row.button_page_id ? Number(row.button_page_id) : null,
+    customUrl: row.button_url || '',
+    imageUrl: row.image_url || '',
+    status: (row.status || 'active') === 'active',
+    sortOrder: Number(row.sort_order) || index + 1,
+});
+
 export function SimpleSliderContent() {
+    const {
+        data: slidersData,
+        isLoading: slidersLoading,
+        create: createSlider,
+        update: updateSlider,
+    } = useCompanySliders();
+    const {
+        data: slideItemsData,
+        isLoading: itemsLoading,
+        create: createSlide,
+        update: updateSlide,
+        remove: removeSlide,
+    } = useCompanySliderItems();
+    const { data: pagesData } = useCompanyPages();
+
     const [previewOpen, setPreviewOpen] = useState(false);
-    const [sliderTitle, setSliderTitle] = useState('Home Page Slider');
+    const [sliderTitle, setSliderTitle] = useState('');
     const [sliderHeight, setSliderHeight] = useState<SliderHeight>('medium');
+    // Guards the load-once effect so typing isn't overwritten by a refetch.
+    const [loadedSliderId, setLoadedSliderId] = useState<number | null>(null);
 
-    // Slide Items State
-    const [slides, setSlides] = useState<Slide[]>([
-        {
-            id: '1',
-            title: 'Creating Unforgettable Moments',
-            description:
-                'From elegant weddings to corporate events, we handle every detail with creativity and perfection. Let us bring your dream event to life.',
-            buttonLabel: 'Explore Events',
-            targetMode: 'custom',
-            customUrl: '/events',
-            imageUrl: '',
-            status: true,
-        },
-        {
-            id: '2',
-            title: 'Perfect Events, Lasting Memories',
-            description:
-                'We create beautiful moments that last forever with top tier planning and execution.',
-            buttonLabel: 'View Service',
-            targetMode: 'custom',
-            customUrl: '/services',
-            imageUrl: '',
-            status: true,
-        },
-        {
-            id: '3',
-            title: 'We Plan. You Celebrate.',
-            description:
-                'Stress-free event management tailored to your specific budget and style preferences.',
-            buttonLabel: 'Contact Us',
-            targetMode: 'custom',
-            customUrl: '/contact',
-            imageUrl: '',
-            status: true,
-        },
-    ]);
-
-    const [editingSlideId, setEditingSlideId] = useState<string>('1');
+    const [editingSlideId, setEditingSlideId] = useState<number | null>(null);
+    // Local working copy of the selected slide; persisted on "Update Slide" so
+    // the form doesn't fire a request per keystroke.
+    const [draft, setDraft] = useState<Slide | null>(null);
     const [activePreviewIndex, setActivePreviewIndex] = useState<number>(0);
     const [isSaving, setIsSaving] = useState(false);
+    const [savingLabel, setSavingLabel] = useState('Saving slider...');
 
     // Image Cropper State
     const [cropOpen, setCropOpen] = useState(false);
@@ -112,44 +124,129 @@ export function SimpleSliderContent() {
     const [cropFileName, setCropFileName] = useState('slide.jpg');
     const [cropMimeType, setCropMimeType] = useState('image/jpeg');
 
-    const activeSlide = slides.find((s) => s.id === editingSlideId) || slides[0] || null;
+    const slider = useMemo(() => {
+        const rows = slidersData || [];
+        return rows.find((s: any) => s.slider_type === 'simple') || rows[0] || null;
+    }, [slidersData]);
 
-    const handleAddSlide = () => {
-        const newSlide: Slide = {
-            id: Date.now().toString(),
-            title: 'New Slide Title',
-            description: 'Add slide description copy here.',
-            buttonLabel: 'Learn More',
-            targetMode: 'custom',
-            customUrl: '/events',
-            imageUrl: '',
-            status: true,
-        };
-        setSlides([...slides, newSlide]);
-        setEditingSlideId(newSlide.id);
-        setActivePreviewIndex(slides.length);
-        toast.info('New slide added and selected for editing.');
+    const slides: Slide[] = useMemo(() => {
+        if (!slider) return [];
+        return (slideItemsData || [])
+            .filter((row: any) => Number(row.slider_id) === Number(slider.id))
+            .map(toSlide);
+    }, [slideItemsData, slider]);
+
+    const pages = useMemo(
+        () =>
+            (pagesData || []).map((p: any) => ({
+                id: Number(p.id),
+                title: p.title || '',
+                slug: p.slug || '',
+            })),
+        [pagesData]
+    );
+
+    // Seed the settings form from the stored slider once it arrives.
+    useEffect(() => {
+        if (!slider || loadedSliderId === Number(slider.id)) return;
+        setSliderTitle(slider.title || '');
+        setSliderHeight((slider.slider_height as SliderHeight) || 'medium');
+        setLoadedSliderId(Number(slider.id));
+    }, [slider, loadedSliderId]);
+
+    // Select the first slide once the list loads, so the editor isn't empty.
+    useEffect(() => {
+        if (editingSlideId !== null || slides.length === 0) return;
+        setEditingSlideId(slides[0].id);
+        setDraft(slides[0]);
+    }, [slides, editingSlideId]);
+
+    const activeSlide = draft;
+
+    const selectSlide = (slide: Slide, index: number) => {
+        setEditingSlideId(slide.id);
+        setDraft(slide);
+        setActivePreviewIndex(index);
     };
 
-    const handleDeleteSlide = (id: string) => {
+    /** Creates the settings row on first save if the company has none yet. */
+    const ensureSlider = async (): Promise<any> => {
+        if (slider) return slider;
+        return createSlider({
+            slider_type: 'simple',
+            title: sliderTitle || 'Home Page Slider',
+            slider_height: sliderHeight,
+            status: 'active',
+            is_active: 1,
+        } as any);
+    };
+
+    const handleAddSlide = async () => {
+        setSavingLabel('Adding slide...');
+        setIsSaving(true);
+        try {
+            const target = await ensureSlider();
+            const created: any = await createSlide({
+                slider_id: Number(target.id),
+                title: 'New Slide Title',
+                description: 'Add slide description copy here.',
+                button_label: 'Learn More',
+                button_url: '',
+                image_url: '',
+                sort_order: slides.length + 1,
+                status: 'active',
+                is_active: 1,
+            } as any);
+
+            if (created?.id) {
+                const newSlide = toSlide(created, slides.length);
+                setEditingSlideId(newSlide.id);
+                setDraft(newSlide);
+                setActivePreviewIndex(slides.length);
+            }
+            toast.info('New slide added and selected for editing.');
+        } catch {
+            toast.error('Could not add the slide. Please try again.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleDeleteSlide = async (slide: Slide) => {
         if (slides.length <= 1) {
             toast.error('At least one slide is required.');
             return;
         }
-        const updated = slides.filter((s) => s.id !== id);
-        setSlides(updated);
-        if (editingSlideId === id) {
-            setEditingSlideId(updated[0]?.id || '');
+
+        setSavingLabel('Deleting slide...');
+        setIsSaving(true);
+        try {
+            await removeSlide(slide.id);
+            if (editingSlideId === slide.id) {
+                const next = slides.find((s) => s.id !== slide.id) || null;
+                setEditingSlideId(next?.id ?? null);
+                setDraft(next);
+            }
+            setActivePreviewIndex((prev) => Math.max(0, Math.min(prev, slides.length - 2)));
+            toast.success('Slide removed.');
+        } catch {
+            toast.error('Could not delete the slide. Please try again.');
+        } finally {
+            setIsSaving(false);
         }
-        if (activePreviewIndex >= updated.length) {
-            setActivePreviewIndex(Math.max(0, updated.length - 1));
-        }
-        toast.success('Slide removed.');
     };
 
     const updateActiveSlide = (field: keyof Slide, value: any) => {
-        if (!editingSlideId) return;
-        setSlides(slides.map((s) => (s.id === editingSlideId ? { ...s, [field]: value } : s)));
+        setDraft((prev) => (prev ? { ...prev, [field]: value } : prev));
+    };
+
+    const handleToggleSlideStatus = async (slide: Slide, next: boolean) => {
+        try {
+            await updateSlide({ id: slide.id, status: next ? 'active' : 'inactive' } as any);
+            if (editingSlideId === slide.id) updateActiveSlide('status', next);
+        } catch {
+            toast.error('Could not update the slide status. Please try again.');
+        }
     };
 
     const handleFileSelect = (file: File) => {
@@ -181,12 +278,37 @@ export function SimpleSliderContent() {
         }
     };
 
-    const handleSave = () => {
+    /** Persists the slider settings and the slide currently being edited. */
+    const handleSave = async () => {
+        setSavingLabel('Saving slider...');
         setIsSaving(true);
-        setTimeout(() => {
-            setIsSaving(false);
+        try {
+            const target = await ensureSlider();
+            await updateSlider({
+                id: Number(target.id),
+                title: sliderTitle,
+                slider_height: sliderHeight,
+            } as any);
+
+            if (draft) {
+                await updateSlide({
+                    id: draft.id,
+                    title: draft.title,
+                    description: draft.description,
+                    button_label: draft.buttonLabel,
+                    button_page_id: draft.targetMode === 'page' ? draft.pageId : null,
+                    button_url: draft.targetMode === 'custom' ? draft.customUrl : '',
+                    image_url: draft.imageUrl,
+                    status: draft.status ? 'active' : 'inactive',
+                } as any);
+            }
+
             toast.success('Simple Slider settings updated successfully!');
-        }, 500);
+        } catch {
+            toast.error('Could not save the slider. Please try again.');
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const previewSlide = slides[activePreviewIndex] || activeSlide || slides[0];
@@ -201,6 +323,10 @@ export function SimpleSliderContent() {
 
     return (
         <div className="space-y-5">
+            <PageLoader
+                open={slidersLoading || itemsLoading || isSaving}
+                text={isSaving ? savingLabel : 'Loading Slider...'}
+            />
             {/* Top Page Header Bar */}
             <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-4">
                 <div>
@@ -252,15 +378,26 @@ export function SimpleSliderContent() {
                                     {activeSlide.targetMode === 'page' ? (
                                         <div className="space-y-1.5">
                                             <label className="text-xs font-semibold text-slate-700">Select Page</label>
-                                            <Select value={activeSlide.customUrl || '/events'} onValueChange={(val) => updateActiveSlide('customUrl', val)}>
-                                                <SelectTrigger className="h-9 text-xs border-slate-200"><SelectValue /></SelectTrigger>
+                                            <Select
+                                                value={activeSlide.pageId ? String(activeSlide.pageId) : ''}
+                                                onValueChange={(val) => updateActiveSlide('pageId', Number(val))}
+                                            >
+                                                <SelectTrigger className="h-9 text-xs border-slate-200">
+                                                    <SelectValue placeholder="Choose a page" />
+                                                </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="/about">About Us</SelectItem>
-                                                    <SelectItem value="/services">Services</SelectItem>
-                                                    <SelectItem value="/events">Events Portfolio</SelectItem>
-                                                    <SelectItem value="/contact">Contact Us</SelectItem>
+                                                    {pages.map((p) => (
+                                                        <SelectItem key={p.id} value={String(p.id)}>
+                                                            {p.title}
+                                                        </SelectItem>
+                                                    ))}
                                                 </SelectContent>
                                             </Select>
+                                            {pages.length === 0 ? (
+                                                <p className="text-[10px] text-slate-400">
+                                                    No pages yet — create one under Website Builder › Pages.
+                                                </p>
+                                            ) : null}
                                         </div>
                                     ) : (
                                         <BuilderCountedInput label="Custom URL" value={activeSlide.customUrl} onChange={(val) => updateActiveSlide('customUrl', val)} maxLength={200} />
@@ -268,8 +405,8 @@ export function SimpleSliderContent() {
                                     <BuilderImageUploadDropzone label="Slide Image" imageUrl={activeSlide.imageUrl} onFileSelect={handleFileSelect} onRemove={() => updateActiveSlide('imageUrl', '')} recommendedText="1920x800px (Max: 5MB)" />
                                     <BuilderStatusSwitch label="Status" checked={activeSlide.status} onCheckedChange={(val) => updateActiveSlide('status', val)} />
                                     <div className="pt-2">
-                                        <Button type="button" size="sm" onClick={handleSave} className="w-full h-9 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs gap-1.5">
-                                            <Save className="h-3.5 w-3.5" /> Update Slide
+                                        <Button type="button" size="sm" onClick={handleSave} disabled={isSaving} className="w-full h-9 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs gap-1.5">
+                                            <Save className="h-3.5 w-3.5" /> {isSaving ? 'Saving...' : 'Update Slide'}
                                         </Button>
                                     </div>
                                 </>
@@ -290,6 +427,7 @@ export function SimpleSliderContent() {
                             <Button
                                 size="sm"
                                 onClick={handleAddSlide}
+                                disabled={isSaving}
                                 className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs h-8 px-3"
                             >
                                 <Plus className="h-3.5 w-3.5" /> Add New Slide
@@ -350,7 +488,9 @@ export function SimpleSliderContent() {
                                                             {slide.title}
                                                         </p>
                                                         <span className="text-[10px] text-muted-foreground font-mono">
-                                                            {slide.customUrl || '/'}
+                                                            {slide.targetMode === 'page'
+                                                                ? `/${pages.find((p) => p.id === slide.pageId)?.slug || ''}`
+                                                                : slide.customUrl || '/'}
                                                         </span>
                                                     </td>
 
@@ -364,13 +504,7 @@ export function SimpleSliderContent() {
                                                         <div className="flex items-center justify-center">
                                                             <Switch
                                                                 checked={slide.status}
-                                                                onCheckedChange={(val) => {
-                                                                    setSlides(
-                                                                        slides.map((s) =>
-                                                                            s.id === slide.id ? { ...s, status: val } : s
-                                                                        )
-                                                                    );
-                                                                }}
+                                                                onCheckedChange={(val) => handleToggleSlideStatus(slide, val)}
                                                             />
                                                         </div>
                                                     </td>
@@ -378,14 +512,21 @@ export function SimpleSliderContent() {
                                                     {/* Actions */}
                                                     <td className="py-3 px-3 text-right">
                                                         <div className="flex items-center justify-end gap-1.5">
+                                                            <RowTranslateButton
+                                                                section="sliders"
+                                                                recordId={slide.id}
+                                                                rowLabel={slide.title}
+                                                                fields={[
+                                                                    { key: 'title', label: 'Title', value: slide.title },
+                                                                    { key: 'description', label: 'Description', value: slide.description, type: 'textarea' },
+                                                                    { key: 'button_label', label: 'Button Label', value: slide.buttonLabel },
+                                                                ]}
+                                                            />
                                                             <Button
                                                                 type="button"
                                                                 variant="outline"
                                                                 size="icon"
-                                                                onClick={() => {
-                                                                    setEditingSlideId(slide.id);
-                                                                    setActivePreviewIndex(idx);
-                                                                }}
+                                                                onClick={() => selectSlide(slide, idx)}
                                                                 className={cn(
                                                                     'h-7.5 w-7.5 rounded-lg p-0 transition-colors',
                                                                     isEditing
@@ -399,7 +540,8 @@ export function SimpleSliderContent() {
                                                                 type="button"
                                                                 variant="outline"
                                                                 size="icon"
-                                                                onClick={() => handleDeleteSlide(slide.id)}
+                                                                onClick={() => handleDeleteSlide(slide)}
+                                                                disabled={isSaving}
                                                                 className="h-7.5 w-7.5 rounded-lg p-0 text-red-500 border-red-200 hover:bg-red-50 hover:border-red-300"
                                                             >
                                                                 <Trash2 className="h-3.5 w-3.5" />
@@ -409,6 +551,14 @@ export function SimpleSliderContent() {
                                                 </tr>
                                             );
                                         })}
+
+                                        {!slidersLoading && !itemsLoading && slides.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={6} className="py-8 text-center text-xs text-slate-400">
+                                                    No slides yet — use “Add New Slide” to create one.
+                                                </td>
+                                            </tr>
+                                        ) : null}
                                     </tbody>
                                 </table>
                             </div>
