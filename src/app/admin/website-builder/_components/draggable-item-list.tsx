@@ -23,6 +23,15 @@ export interface DraggableItemListItem {
     children?: ChildMenuItem[];
     locked?: boolean;
     required?: boolean;
+    /**
+     * The database row id, when this item is backed by a saved row.
+     *
+     * Distinct from `id`, which callers set to a page slug ('home', 'features')
+     * so the list can be matched against page options. Translations are
+     * addressed by the row id, so it has to survive that mapping — dropping it
+     * is what made nav-menu labels untranslatable.
+     */
+    dbId?: number;
 }
 
 export interface PageOption {
@@ -38,6 +47,8 @@ interface DraggableItemListProps {
     onReorder?: (items: DraggableItemListItem[]) => void;
     onAddChild?: (parentId: string | number, child: ChildMenuItem) => void;
     onDeleteChild?: (parentId: string | number, childId: string) => void;
+    /** Extra per-row controls, rendered left of the built-in buttons. */
+    renderActions?: (item: DraggableItemListItem) => React.ReactNode;
     emptyText?: string;
     className?: string;
 }
@@ -178,6 +189,7 @@ export function DraggableItemList({
     onReorder,
     onAddChild,
     onDeleteChild,
+    renderActions,
     emptyText = 'No items added.',
     className,
 }: DraggableItemListProps) {
@@ -255,6 +267,8 @@ export function DraggableItemList({
                             </div>
 
                             <div className="flex items-center gap-2">
+                                {renderActions?.(item)}
+
                                 <Button
                                     type="button"
                                     variant="outline"

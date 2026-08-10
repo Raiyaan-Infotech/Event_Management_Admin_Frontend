@@ -27,6 +27,7 @@ import { Switch } from '@/components/ui/switch';
 import { BuilderCountedInput } from './builder-field';
 import { MultiSelectPages } from './multi-select-pages';
 import { DraggableItemList, AddCustomLinkRow, type DraggableItemListItem, type ChildMenuItem } from './draggable-item-list';
+import { RowTranslateButton } from './row-translate-dialog';
 import { useCompanyBasicInformation, useCompanyMenuItems, useCompanyFooterSettings } from '@/hooks/useCompanyWebsiteBuilder';
 import { mediaApi } from '@/hooks/use-media';
 import { PageLoader } from '@/components/common/page-loader';
@@ -48,6 +49,17 @@ const pageOptions = [
     { label: 'Services', value: 'services', icon: FileText },
 ];
 
+/** The public href for a menu row, defaulting from its page slug. */
+function resolveMenuUrl(item: DraggableItemListItem) {
+    const targetUrl = item.description;
+    if (targetUrl && targetUrl !== `/${item.id}`) return targetUrl;
+    if (item.id === 'home' || item.label.toLowerCase() === 'home') return '/';
+    if (item.id === 'contact-us' || item.id === 'contact') return '/contact';
+    if (item.id === 'pricing' || item.id === 'pricing-plans') return '/pricing-plans';
+    if (item.id === 'videos' || item.id === 'video-tutorials') return '/video-tutorials';
+    return `/${String(item.id).replace(/^\/+/, '')}`;
+}
+
 const initialSelectedPages = [
     'home',
     'features',
@@ -61,7 +73,13 @@ const initialSelectedPages = [
 export function NavMenuContent() {
     const { data: basicInfo, save: saveBasic, isSaving: isSavingBasic } = useCompanyBasicInformation();
     const { data: footerData, save: saveFooter } = useCompanyFooterSettings();
-    const { data: savedMenuItems = [], replace: replaceMenuItems, isSaving: isSavingItems } = useCompanyMenuItems();
+    const {
+        data: savedMenuItems = [],
+        create: createMenuItem,
+        update: updateMenuItem,
+        remove: removeMenuItem,
+        isSaving: isSavingItems,
+    } = useCompanyMenuItems();
 
     const [logoUrl, setLogoUrl] = useState<string>('');
     const [companyName, setCompanyName] = useState('RA EVENTS');
@@ -108,6 +126,11 @@ export function NavMenuContent() {
                     pageOptions.find((p) => p.label.toLowerCase() === item.label.toLowerCase());
                 return {
                     id: opt ? opt.value : String(item.id || item.label.toLowerCase().replace(/\s+/g, '-')),
+                    // `id` above is overwritten with the page slug so the list can
+                    // be matched against pageOptions, so the row id is carried
+                    // separately — it is the slot every nav-menu translation is
+                    // addressed by.
+                    dbId: typeof item.id === 'number' ? item.id : Number(item.id) || undefined,
                     label: item.label,
                     icon: opt?.icon || FileText,
                     children: [],
@@ -289,25 +312,29 @@ export function NavMenuContent() {
                 company_name: companyName,
             });
 
-            await replaceMenuItems(
-                menuItems.map((item, idx) => {
-                    let targetUrl = item.description;
-                    if (!targetUrl || targetUrl === `/${item.id}`) {
-                        if (item.id === 'home' || item.label.toLowerCase() === 'home') targetUrl = '/';
-                        else if (item.id === 'contact-us' || item.id === 'contact') targetUrl = '/contact';
-                        else if (item.id === 'pricing' || item.id === 'pricing-plans') targetUrl = '/pricing-plans';
-                        else if (item.id === 'videos' || item.id === 'video-tutorials') targetUrl = '/video-tutorials';
-                        else targetUrl = `/${String(item.id).replace(/^\/+/, '')}`;
-                    }
-                    return {
-                        label: item.label,
-                        url: targetUrl,
-                        sort_order: idx + 1,
-                        is_visible: 1,
-                        is_active: 1,
-                    };
-                })
-            );
+            // Written per item, never through the bulk replace endpoint. That
+            // endpoint DELETEs every row and re-INSERTs it, so ids change on
+            // every save — and nav-menu translations are addressed by row id,
+            // so a single Save Changes orphaned every translated menu label.
+            const payloads = menuItems.map((item, idx) => ({
+                dbId: item.dbId,
+                label: item.label,
+                url: resolveMenuUrl(item),
+                sort_order: idx + 1,
+                is_visible: 1,
+                is_active: 1,
+            }));
+
+            const keptIds = new Set(payloads.map((p) => p.dbId).filter(Boolean));
+            const removedRows = (savedMenuItems as any[]).filter((row) => row?.id && !keptIds.has(row.id));
+
+            for (const row of removedRows) {
+                await removeMenuItem(row.id);
+            }
+            for (const { dbId, ...payload } of payloads) {
+                if (dbId) await updateMenuItem({ id: dbId, ...payload });
+                else await createMenuItem(payload);
+            }
 
             toast.success('Nav menu brand and ordering saved successfully');
         } catch (err: any) {
@@ -474,6 +501,20 @@ export function NavMenuContent() {
                         onDelete={handleDeleteMenuItem}
                         onAddChild={handleAddChild}
                         onDeleteChild={handleDeleteChild}
+                        // Row dialog rather than the `?lang=` form mode used by
+                        // the singleton sections: every menu row is its own
+                        // translation slot, and a URL round-trip would also
+                        // discard any unsaved reordering.
+                        renderActions={(item) =>
+                            item.dbId ? (
+                                <RowTranslateButton
+                                    section="nav-menu"
+                                    recordId={item.dbId}
+                                    rowLabel={item.label}
+                                    fields={[{ key: 'label', label: 'Menu Label', value: item.label }]}
+                                />
+                            ) : null
+                        }
                     />
 
                     <AddCustomLinkRow onAdd={handleAddCustomLink} />

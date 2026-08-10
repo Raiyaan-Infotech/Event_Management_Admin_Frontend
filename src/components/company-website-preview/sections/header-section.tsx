@@ -208,8 +208,14 @@ function HeaderSectionBase({ theme, header, navItems, socialLinks, companyName, 
             );
           })()}
 
-          {/* Auth & Language buttons */}
-          <div className="hidden sm:flex items-center gap-2 sm:gap-2.5 shrink-0">
+          {/* Auth & Language buttons. Rendered only when at least one of the
+              three is enabled, so both toggles off + a single language leaves
+              no empty flex slot beside the nav. */}
+          <div
+            className={`${
+              languages.length > 1 || header.showLogin || header.showSignIn ? 'hidden sm:flex' : 'hidden'
+            } items-center gap-2 sm:gap-2.5 shrink-0`}
+          >
             {/* Globe Language selector — options come from the Website Builder
                 Languages module (active languages only), not a hardcoded list.
                 Hidden entirely when the site has only one language. */}
@@ -255,22 +261,28 @@ function HeaderSectionBase({ theme, header, navItems, socialLinks, companyName, 
               </div>
             )}
 
-            {/* Login button */}
-            <button
-              type="button"
-              className="h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3.5 sm:px-4 text-[12.5px] font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 active:scale-95 whitespace-nowrap"
-            >
-              {t('header.login', 'Login')}
-            </button>
+            {/* Login button — Website Builder > Nav Menu > "Login" toggle
+                (basic_information.show_login). */}
+            {header.showLogin ? (
+              <button
+                type="button"
+                className="h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3.5 sm:px-4 text-[12.5px] font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 active:scale-95 whitespace-nowrap"
+              >
+                {t('header.login', 'Login')}
+              </button>
+            ) : null}
 
-            {/* Get Started button */}
-            <button
-              type="button"
-              className="h-9 items-center justify-center rounded-lg px-3.5 sm:px-4 text-[12.5px] font-bold text-white shadow-xs transition hover:opacity-90 active:scale-95 whitespace-nowrap"
-              style={{ backgroundColor: theme.primaryButton || '#ec4899' }}
-            >
-              {t('hero.get_started', 'Get Started')}
-            </button>
+            {/* Get Started button — Website Builder > Nav Menu > "Get Started"
+                toggle (basic_information.show_signin). */}
+            {header.showSignIn ? (
+              <button
+                type="button"
+                className="h-9 items-center justify-center rounded-lg px-3.5 sm:px-4 text-[12.5px] font-bold text-white shadow-xs transition hover:opacity-90 active:scale-95 whitespace-nowrap"
+                style={{ backgroundColor: theme.primaryButton || '#ec4899' }}
+              >
+                {t('hero.get_started', 'Get Started')}
+              </button>
+            ) : null}
           </div>
 
           {/* Mobile hamburger */}

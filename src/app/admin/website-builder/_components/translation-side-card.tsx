@@ -53,9 +53,18 @@ export function TranslationSideCard({
   const otherLanguages = (languages || []).filter((lang) => Number(lang.is_default) !== 1);
   const isEnglishActive = !activeLanguageId;
 
+  /**
+   * Only fields that actually have English text are translatable: the backend
+   * skips empty values when registering keys, and deletes a key whose value has
+   * become empty. Counting every form field instead made a fully translated
+   * record read as incomplete — a template with a blank Description showed
+   * "1/2" forever, which is what "translation is not working" usually means.
+   */
+  const translatableFields = fields.filter((f) => (f.value || '').trim().length > 0);
+
   const filledCount = (languageId: number) => {
     const values = translations?.[languageId] || {};
-    return fields.filter((f) => (values[f.key] || '').trim().length > 0).length;
+    return translatableFields.filter((f) => (values[f.key] || '').trim().length > 0).length;
   };
 
 
@@ -126,7 +135,7 @@ export function TranslationSideCard({
               ) : (
                 otherLanguages.map((lang) => {
                   const filled = filledCount(lang.id);
-                  const total = fields.length;
+                  const total = translatableFields.length;
                   const isActive = activeLanguageId === lang.id;
                   const isComplete = total > 0 && filled === total;
                   return (

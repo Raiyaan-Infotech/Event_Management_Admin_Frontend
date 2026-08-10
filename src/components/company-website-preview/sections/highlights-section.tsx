@@ -140,6 +140,48 @@ export function HighlightsSection({ pageSlug = 'home', instance = 1, data, theme
             ? { backgroundImage: 'linear-gradient(90deg, #EC4899 0%, #A855F7 50%, #4F46E5 100%)' }
             : highlightsBackgroundStyle(config);
 
+    // ── Layout + colour settings ────────────────────────────────────────────
+    // Every one of these is editable in the admin form but was previously
+    // ignored here, which is why changing them had no effect on the site.
+
+    // Tailwind needs whole class names at build time, so this is a lookup
+    // rather than an interpolated `lg:grid-cols-${n}`.
+    const COLS: Record<number, string> = {
+        1: 'lg:grid-cols-1',
+        2: 'lg:grid-cols-2',
+        3: 'lg:grid-cols-3',
+        4: 'lg:grid-cols-4',
+        5: 'lg:grid-cols-5',
+        6: 'lg:grid-cols-6',
+    };
+    // Items per ROW — a grid setting, not a cap. It used to also drive a
+    // `slice(0, perRow)`, so choosing "3 per row" with 5 cards silently dropped
+    // two of them from the live site while the admin's own preview still showed
+    // all five. Extra items now wrap onto the next row, as the label implies.
+    const perRow = Math.min(Math.max(Number(config.items_per_row) || 5, 1), 6);
+    const gridColsClass = COLS[perRow] || COLS[5];
+    const isOutlineIcons = config.icon_style === 'outline';
+
+    /**
+     * Icon colours for one item, most specific wins:
+     *   per-item colour → block-wide colour → the branch's own default.
+     *
+     * The block-wide value used to be ignored whenever it equalled the shipped
+     * default, so picking that exact colour did nothing. It is now honoured
+     * as-is; the decorative pastel rotation only fills in when nothing is set.
+     */
+    const resolveIconColors = (item: any, idx: number, fallback: { bg: string; color: string }) => {
+        const bg = item.icon_bg_color || config.icon_bg_color || fallback.bg;
+        const color = item.icon_color || config.icon_color || fallback.color;
+        // Outline style: the colour moves to the ring and glyph, not the fill.
+        return isOutlineIcons
+            ? { backgroundColor: 'transparent', color, border: `1.5px solid ${color}` }
+            : { backgroundColor: bg, color };
+    };
+
+    const titleStyle = config.title_color ? { color: config.title_color } : undefined;
+    const descriptionStyle = config.description_color ? { color: config.description_color } : undefined;
+
     return (
         <section className="w-full py-8 border-b border-slate-100 bg-white">
             <div className="mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-8">
@@ -148,12 +190,11 @@ export function HighlightsSection({ pageSlug = 'home', instance = 1, data, theme
                        than all items sharing one container. Takes priority over the
                        instance-based banner/bar below; only applies where an admin
                        has explicitly opted a block into this layout. */
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-5">
-                        {items.slice(0, 5).map((item: any, idx: number) => {
+                    <div className={`grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 ${gridColsClass}`}>
+                        {items.map((item: any, idx: number) => {
                             const IconComp = ICON_MAP[item.icon] || Sparkles;
                             const pastel = PASTEL_THEMES[idx % PASTEL_THEMES.length];
-                            const iconBg = item.icon_bg_color || pastel.bg;
-                            const iconColor = item.icon_color || pastel.color;
+                            const iconStyle = resolveIconColors(item, idx, { bg: pastel.bg, color: pastel.color });
                             return (
                                 <div
                                     key={item.id || idx}
@@ -161,12 +202,14 @@ export function HighlightsSection({ pageSlug = 'home', instance = 1, data, theme
                                 >
                                     <div
                                         className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition-transform hover:scale-105"
-                                        style={{ backgroundColor: iconBg, color: iconColor }}
+                                        style={iconStyle}
                                     >
                                         <IconComp className="h-5 w-5" />
                                     </div>
-                                    <h4 className="text-[13px] font-bold leading-snug text-slate-900">{item.title}</h4>
-                                    <p className="line-clamp-2 text-[11px] font-medium leading-snug text-slate-500">
+                                    <h4 className="text-[13px] font-bold leading-snug text-slate-900" style={titleStyle}>
+                                        {item.title}
+                                    </h4>
+                                    <p className="line-clamp-2 text-[11px] font-medium leading-snug text-slate-500" style={descriptionStyle}>
                                         {item.description}
                                     </p>
                                 </div>
@@ -176,19 +219,40 @@ export function HighlightsSection({ pageSlug = 'home', instance = 1, data, theme
                 ) : instance === 2 ? (
                     /* Instance 2 Gradient Stats Banner (Mapped to inner container box) */
                     <div className="rounded-2xl p-6 sm:p-7 text-white shadow-md overflow-hidden" style={containerStyle}>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 items-center justify-center">
-                            {items.slice(0, 5).map((item: any, idx: number) => {
+                        <div className={`grid grid-cols-1 sm:grid-cols-2 ${gridColsClass} gap-6 items-center justify-center`}>
+                            {items.map((item: any, idx: number) => {
                                 const IconComp = ICON_MAP[item.icon] || Sparkles;
+                                // This banner sits on a coloured gradient, so white-on-
+                                // translucent stays the default. Any colour the admin
+                                // actually sets still wins — previously they were
+                                // hardcoded, so the pickers appeared to do nothing.
+                                const hasCustomIcon = Boolean(
+                                    item.icon_bg_color || item.icon_color || config.icon_bg_color || config.icon_color
+                                );
+                                const iconStyle = hasCustomIcon || isOutlineIcons
+                                    ? resolveIconColors(item, idx, { bg: 'rgba(255,255,255,0.15)', color: '#ffffff' })
+                                    : undefined;
                                 return (
                                     <div key={item.id || idx} className="flex items-center gap-3.5 text-left text-white">
-                                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15 backdrop-blur-xs text-white shrink-0">
-                                            <IconComp className="h-5 w-5 text-white" />
+                                        <div
+                                            className={`flex h-11 w-11 items-center justify-center rounded-xl shrink-0 ${
+                                                iconStyle ? '' : 'bg-white/15 backdrop-blur-xs text-white'
+                                            }`}
+                                            style={iconStyle}
+                                        >
+                                            <IconComp className="h-5 w-5" />
                                         </div>
                                         <div className="flex flex-col min-w-0">
-                                            <h4 className="text-[14px] font-extrabold tracking-tight text-white leading-snug">
+                                            <h4
+                                                className="text-[14px] font-extrabold tracking-tight text-white leading-snug"
+                                                style={titleStyle}
+                                            >
                                                 {item.title}
                                             </h4>
-                                            <p className="text-[11px] font-medium text-white/80 leading-snug mt-0.5">
+                                            <p
+                                                className="text-[11px] font-medium text-white/80 leading-snug mt-0.5"
+                                                style={descriptionStyle}
+                                            >
                                                 {item.description}
                                             </p>
                                         </div>
@@ -200,34 +264,31 @@ export function HighlightsSection({ pageSlug = 'home', instance = 1, data, theme
                 ) : (
                     /* Instance 1 White Card Features Bar */
                     <div className="rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-sm overflow-hidden" style={containerStyle}>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 items-center justify-center">
-                            {items.slice(0, 5).map((item: any, idx: number) => {
+                        <div className={`grid grid-cols-1 sm:grid-cols-2 ${gridColsClass} gap-6 items-center justify-center`}>
+                            {items.map((item: any, idx: number) => {
                                 const IconComp = ICON_MAP[item.icon] || Sparkles;
                                 const pastel = PASTEL_THEMES[idx % PASTEL_THEMES.length];
-                                
-                                const iconBg = item.icon_bg_color || (config.icon_bg_color && config.icon_bg_color !== '#F3F0FF' 
-                                    ? config.icon_bg_color 
-                                    : pastel.bg);
-                                const iconColor = item.icon_color || (config.icon_color && config.icon_color !== '#6C5DD3' 
-                                    ? config.icon_color 
-                                    : pastel.color);
+                                const iconStyle = resolveIconColors(item, idx, { bg: pastel.bg, color: pastel.color });
 
                                 return (
                                     <div key={item.id || idx} className="flex items-center gap-3.5 sm:gap-4 text-left">
                                         <div
                                             className="flex h-11 w-11 md:h-12 md:w-12 items-center justify-center rounded-full shrink-0 transition-transform hover:scale-105"
-                                            style={{
-                                                backgroundColor: iconBg,
-                                                color: iconColor,
-                                            }}
+                                            style={iconStyle}
                                         >
                                             <IconComp className="h-5 w-5 md:h-6 md:w-6" />
                                         </div>
                                         <div className="flex flex-col text-left min-w-0">
-                                            <h4 className="text-[13px] font-bold tracking-tight text-slate-900 leading-snug truncate">
+                                            <h4
+                                                className="text-[13px] font-bold tracking-tight text-slate-900 leading-snug truncate"
+                                                style={titleStyle}
+                                            >
                                                 {item.title}
                                             </h4>
-                                            <p className="text-[11px] font-medium text-slate-500 leading-snug mt-0.5 line-clamp-2">
+                                            <p
+                                                className="text-[11px] font-medium text-slate-500 leading-snug mt-0.5 line-clamp-2"
+                                                style={descriptionStyle}
+                                            >
                                                 {item.description}
                                             </p>
                                         </div>

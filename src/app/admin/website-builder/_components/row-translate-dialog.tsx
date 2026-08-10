@@ -95,9 +95,13 @@ export function RowTranslateDialog({
     setValues({ ...(translations?.[activeLanguageId] || {}) });
   }, [activeLanguageId, translations]);
 
+  // A field with no English text has no registered key and nothing to
+  // translate, so counting it would make a finished row read as incomplete.
+  const translatableFields = fields.filter((field) => (field.value || '').trim().length > 0);
+
   const filledCount = (languageId: number) => {
     const saved = translations?.[languageId] || {};
-    return fields.filter((field) => (saved[field.key] || '').trim().length > 0).length;
+    return translatableFields.filter((field) => (saved[field.key] || '').trim().length > 0).length;
   };
 
   const handleSave = async () => {
@@ -177,14 +181,14 @@ export function RowTranslateDialog({
                     <Badge
                       variant="outline"
                       className={
-                        filled === fields.length && fields.length > 0
+                        filled === translatableFields.length && translatableFields.length > 0
                           ? 'border-emerald-300 bg-emerald-50 px-1.5 py-0 text-[10px] text-emerald-700'
                           : filled > 0
                           ? 'border-amber-300 bg-amber-50 px-1.5 py-0 text-[10px] text-amber-700'
                           : 'border-slate-200 bg-slate-50 px-1.5 py-0 text-[10px] text-slate-500'
                       }
                     >
-                      {filled}/{fields.length}
+                      {filled}/{translatableFields.length}
                     </Badge>
                   </button>
                 );

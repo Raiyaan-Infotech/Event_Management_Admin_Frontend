@@ -331,6 +331,14 @@ export function HighlightsContent({ pageSlug, instance }: HighlightsContentProps
                                     const IconComp = ICON_MAP[item.icon] || Sparkles;
                                     const itemColor = item.icon_color || settings.icon_color || '#6C5DD3';
                                     const itemBg = item.icon_bg_color || settings.icon_bg_color || '#F3F0FF';
+                                    // A per-item colour always beats the block-wide
+                                    // one, here and on the public site. The swatches
+                                    // below show the *resolved* colour either way, so
+                                    // without this flag there was no way to tell an
+                                    // override apart from an inherited value — or to
+                                    // clear it once set, which made the block-level
+                                    // Icon Background / Icon Color look broken.
+                                    const hasColorOverride = Boolean(item.icon_color || item.icon_bg_color);
 
                                     const isDragging = draggingIndex === index;
                                     const isOver = overIndex === index && draggingIndex !== index;
@@ -407,7 +415,13 @@ export function HighlightsContent({ pageSlug, instance }: HighlightsContentProps
 
                                             {/* Individual Icon Color & Background Color Pickers */}
                                             <div className="flex items-center gap-2 shrink-0">
-                                                <div className="flex items-center gap-1 text-[11px] font-medium text-slate-600 border px-2 py-1 rounded-md bg-slate-50" title="Item Icon Text Color">
+                                                <div
+                                                    className={cn(
+                                                        'flex items-center gap-1 rounded-md border bg-slate-50 px-2 py-1 text-[11px] font-medium text-slate-600',
+                                                        item.icon_color && 'border-primary/50 ring-1 ring-primary/20'
+                                                    )}
+                                                    title={item.icon_color ? 'Overrides the block Icon Color' : 'Item Icon Text Color (inherited)'}
+                                                >
                                                     <span className="text-[10px] text-slate-400">Color:</span>
                                                     <input
                                                         type="color"
@@ -416,7 +430,13 @@ export function HighlightsContent({ pageSlug, instance }: HighlightsContentProps
                                                         className="h-5 w-5 cursor-pointer rounded border border-slate-300 bg-transparent p-0"
                                                     />
                                                 </div>
-                                                <div className="flex items-center gap-1 text-[11px] font-medium text-slate-600 border px-2 py-1 rounded-md bg-slate-50" title="Item Background Color">
+                                                <div
+                                                    className={cn(
+                                                        'flex items-center gap-1 rounded-md border bg-slate-50 px-2 py-1 text-[11px] font-medium text-slate-600',
+                                                        item.icon_bg_color && 'border-primary/50 ring-1 ring-primary/20'
+                                                    )}
+                                                    title={item.icon_bg_color ? 'Overrides the block Icon Background' : 'Item Background Color (inherited)'}
+                                                >
                                                     <span className="text-[10px] text-slate-400">BG:</span>
                                                     <input
                                                         type="color"
@@ -425,6 +445,30 @@ export function HighlightsContent({ pageSlug, instance }: HighlightsContentProps
                                                         className="h-5 w-5 cursor-pointer rounded border border-slate-300 bg-transparent p-0"
                                                     />
                                                 </div>
+
+                                                {/* The only way back to the block-wide colours. A native
+                                                    colour input writes on any interaction, so an override
+                                                    is easy to set by accident and was impossible to undo. */}
+                                                {hasColorOverride && (
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        title="Use the block's Icon Background / Icon Color instead"
+                                                        onClick={() => {
+                                                            setSettings((prev) => {
+                                                                const nextItems = [...prev.items];
+                                                                const { icon_color, icon_bg_color, ...rest } = nextItems[index];
+                                                                nextItems[index] = rest;
+                                                                return { ...prev, items: nextItems };
+                                                            });
+                                                            toast.info('Item now follows the block colours.');
+                                                        }}
+                                                        className="h-8 w-8 text-slate-500 hover:bg-primary/5 hover:text-primary"
+                                                    >
+                                                        <RotateCcw className="h-3.5 w-3.5" />
+                                                    </Button>
+                                                )}
 
                                                 <Button type="button" variant="ghost" size="icon" onClick={() => removeItem(index)} className="h-8 w-8 text-rose-500 hover:bg-rose-50">
                                                     <Trash2 className="h-3.5 w-3.5" />
@@ -492,6 +536,11 @@ export function HighlightsContent({ pageSlug, instance }: HighlightsContentProps
                         {/* Section 3: Colors */}
                         <div className="space-y-3 pt-4 border-t">
                             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">3. Colors & Presets</h3>
+                            <p className="text-[11px] text-muted-foreground">
+                                Icon Background and Icon Color apply to every item that has no colour of its
+                                own. An item whose swatch is outlined above overrides them — use the revert
+                                button on that row to hand it back.
+                            </p>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                 <div className="flex items-center justify-between gap-2 border p-2 rounded-lg">
                                     <Label className="text-xs">Icon Background</Label>
