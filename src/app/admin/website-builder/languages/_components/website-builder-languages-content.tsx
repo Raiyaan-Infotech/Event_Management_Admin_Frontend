@@ -35,6 +35,7 @@ import {
   useSetDefaultBuilderLanguage,
   useDeleteBuilderLanguage,
   useTranslateAllToLanguage,
+  useWBTranslationStats,
   type BuilderLanguage,
 } from '@/hooks/useWebsiteBuilderTranslations';
 
@@ -53,6 +54,10 @@ export function WebsiteBuilderLanguagesContent() {
   const setDefaultLanguage = useSetDefaultBuilderLanguage();
   const deleteLanguage = useDeleteBuilderLanguage();
   const translateAll = useTranslateAllToLanguage();
+  // Deleting a language also deletes every translation saved for it, with no
+  // undo. Stats already carries the per-language counts, so the confirmation
+  // can state exactly what is about to be destroyed instead of warning vaguely.
+  const { data: translationStats } = useWBTranslationStats();
   const [translateTarget, setTranslateTarget] = useState<BuilderLanguage | null>(null);
 
   const filtered = (languages || []).filter((lang) => {
@@ -105,6 +110,29 @@ export function WebsiteBuilderLanguagesContent() {
   };
 
   const isSaving = createLanguage.isPending || updateLanguage.isPending;
+
+  /**
+   * Spells out what deleting this language destroys. Hand-reviewed translations
+   * are called out separately because they are the only ones that cannot be
+   * recreated by re-running auto-translate.
+   */
+  const deleteWarning = (() => {
+    const language = (languages || []).find((lang) => lang.id === deleteId);
+    const stats = translationStats?.languages?.find((entry) => entry.id === deleteId);
+    const name = language?.name || 'this language';
+    const total = stats?.total ?? 0;
+    const reviewed = stats?.reviewed ?? 0;
+
+    if (total === 0) {
+      return `Delete ${name}? It has no saved translations, so nothing else is lost. To hide a language from your site without deleting it, switch it to Inactive instead.`;
+    }
+
+    const reviewedNote = reviewed > 0
+      ? ` ${reviewed} of them ${reviewed === 1 ? 'was' : 'were'} edited by hand and cannot be recreated by auto-translate.`
+      : '';
+
+    return `Delete ${name}? This permanently removes ${total} saved translation${total === 1 ? '' : 's'}.${reviewedNote} This cannot be undone. To hide the language from your site but keep its translations, switch it to Inactive instead.`;
+  })();
 
   return (
     <div className="space-y-4">
@@ -333,7 +361,7 @@ export function WebsiteBuilderLanguagesContent() {
         onConfirm={confirmDelete}
         isDeleting={deleteLanguage.isPending}
         title="Delete Language"
-        description="Are you sure you want to delete this language? Any translated content saved for it will also be removed."
+        description={deleteWarning}
       />
 
       {/* Translate All Confirmation */}

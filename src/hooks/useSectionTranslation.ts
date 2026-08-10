@@ -209,6 +209,8 @@ export function useSectionTranslation({
       if (companyId) params.set('company_id', companyId);
     }
 
+    let preservedCount = 0;
+
     try {
       await new Promise<void>((resolve, reject) => {
         const source = new EventSource(
@@ -222,6 +224,9 @@ export function useSectionTranslation({
           try {
             const data = JSON.parse((event as MessageEvent).data);
             setAutoTranslateProgress({ done: data.done, total: data.total, field: data.field });
+            // Fields edited by hand are excluded from the run; remember how many
+            // so the result toast can say they were left alone.
+            if (typeof data.preserved === 'number') preservedCount = data.preserved;
           } catch {
             // a malformed frame shouldn't abort the run
           }
@@ -256,7 +261,11 @@ export function useSectionTranslation({
       queryClient.invalidateQueries({ queryKey: ['website-builder-content-translations'] });
       queryClient.invalidateQueries({ queryKey: ['website-builder-translation-keys'] });
       queryClient.invalidateQueries({ queryKey: ['website-builder-translation-stats'] });
-      toast.success(`Translated to ${activeLanguage.name}`);
+      toast.success(
+        preservedCount > 0
+          ? `Translated to ${activeLanguage.name}. Kept ${preservedCount} field${preservedCount === 1 ? '' : 's'} you edited by hand.`
+          : `Translated to ${activeLanguage.name}`
+      );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to auto-translate');
     } finally {

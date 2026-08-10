@@ -380,8 +380,10 @@ export function PlanFeaturesComparisonSection({ theme }: { theme: ThemeColors })
                       {item.feature_name || item.title}
                     </td>
 
-                    {TIERS.map((t) => {
-                      const val = planMap[t.key];
+                    {/* Named `tier`, not `t` — the shorthand would shadow the
+                        translation function for anything added inside this cell. */}
+                    {TIERS.map((tier) => {
+                      const val = planMap[tier.key];
                       let isNotIncluded = false;
                       let limitText = '';
 
@@ -395,7 +397,7 @@ export function PlanFeaturesComparisonSection({ theme }: { theme: ThemeColors })
                       }
 
                       return (
-                        <td key={t.key} className="py-3 px-3 text-center align-middle font-semibold text-[11.5px]">
+                        <td key={tier.key} className="py-3 px-3 text-center align-middle font-semibold text-[11.5px]">
                           {isNotIncluded ? (
                             <span className="inline-flex h-5 w-5 items-center justify-center text-rose-500 mx-auto">
                               <X className="h-4 w-4 stroke-[2.5]" />

@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useWebsiteLanguage } from '../website-language-provider';
 import { Play } from 'lucide-react';
 import type { ThemeColors } from './preview-shared';
 
@@ -14,6 +15,7 @@ export type VideoTutorialItem = {
 };
 
 function VideoTutorialsSectionBase({ videos, theme }: { videos: VideoTutorialItem[]; theme: ThemeColors }) {
+  const { t } = useWebsiteLanguage();
   if (!videos || !videos.length) return null;
 
   return (
@@ -21,10 +23,10 @@ function VideoTutorialsSectionBase({ videos, theme }: { videos: VideoTutorialIte
       <div className="mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-8">
         <div className="mb-12 text-center">
           <span className="mb-3 inline-flex rounded px-3 py-1 text-[12px] font-bold text-white" style={{ backgroundColor: theme.primaryButton }}>
-            Video Showcase
+            {t('video_tutorials.badge', 'Video Showcase')}
           </span>
           <h2 className="mt-4 text-[28px] font-black leading-tight tracking-tight sm:text-[36px]" style={{ color: theme.primaryText }}>
-            Video Tutorials & Event Highlights
+            {t('video_tutorials.heading', 'Video Tutorials & Event Highlights')}
           </h2>
           <div className="mx-auto mt-3 h-[3px] w-12 rounded-full" style={{ backgroundColor: theme.primaryButton }} />
         </div>
