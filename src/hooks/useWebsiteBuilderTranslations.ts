@@ -272,6 +272,14 @@ export interface WBTranslationEntry {
   language_id: number;
   value: string;
   status: 'auto' | 'reviewed';
+  /** The English text this translation was written from. */
+  source_value?: string | null;
+  /**
+   * True when the English source changed after this translation was saved, so
+   * the translated text no longer matches it. Hand-reviewed translations are
+   * never auto-overwritten, so this is the only signal that one needs redoing.
+   */
+  is_outdated?: boolean;
 }
 
 export interface WBTranslationKey {
@@ -296,6 +304,8 @@ export interface WBTranslationStats {
     total: number;
     reviewed: number;
     auto: number;
+    /** Translations whose English source has changed since they were written. */
+    outdated: number;
     missing: number;
     completion: number;
   }[];
