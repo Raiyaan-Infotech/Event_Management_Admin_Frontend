@@ -186,6 +186,8 @@ function PricingPlanFormContent() {
             updatePlanMutation.mutate(
                 { id: parseInt(planId, 10), payload: planPayload },
                 // Stay on the form — nothing to navigate, ?id= already points here.
+                // Translating every language runs straight off the save.
+                { onSuccess: () => translation.translateAfterSave() },
             );
         } else {
             createPlanMutation.mutate(planPayload as PricingPlan, {
@@ -196,6 +198,8 @@ function PricingPlanFormContent() {
                     // the language card could appear.
                     const newId = created?.data?.id;
                     if (newId) router.replace(`/admin/website-builder/pricing-plans/create?id=${newId}`);
+                    // The id only exists here, so it is passed in explicitly.
+                    if (newId) translation.translateAfterSave(Number(newId));
                 },
             });
         }

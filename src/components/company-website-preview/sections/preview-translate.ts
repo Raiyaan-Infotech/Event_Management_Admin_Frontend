@@ -84,6 +84,17 @@ const writeIndexedArray = (
     const translated = values[`${prefix}_${index + 1}`];
     if (!usable(translated)) return entry;
     touched = true;
+    // These lists hold either a plain string or an object carrying the text
+    // alongside display state — `features_json` is
+    // `{ label: '1 Active Event', included: true }`. Returning the bare string
+    // for an object entry would throw `included` away and break the tick/cross.
+    if (entry && typeof entry === 'object' && !Array.isArray(entry)) {
+      const obj = entry as Record<string, unknown>;
+      const prop = ['label', 'text', 'title', 'name', 'value'].find(
+        (p) => typeof obj[p] === 'string'
+      );
+      return prop ? { ...obj, [prop]: translated } : entry;
+    }
     return translated;
   });
   if (touched) record[column] = next;
@@ -103,8 +114,29 @@ const NESTED_FIELD_WRITERS: Record<string, (record: AnyRecord, values: Record<st
   },
   // Feature card bullet lists — `bullet_points_json` is a plain string array.
   features: (record, values) => writeIndexedArray(record, values, 'bullet_points_json', 'bullet'),
-  // Plan tick-lists — `features_json` is a plain string array.
+  // Plan tick-lists — `features_json` entries are either a plain string or
+  // `{ label, included }` depending on when the row was saved.
   'pricing-plans': (record, values) => writeIndexedArray(record, values, 'features_json', 'feature'),
+  // Comparison-table cell values, keyed by tier name (`limit_free`,
+  // `limit_pro`, …) inside plan_values_json. Only the `limit` text is replaced;
+  // `not_included` decides the tick/cross and must survive untouched.
+  'pricing-features': (record, values) => {
+    const tiers = parseJson(record.plan_values_json);
+    if (!tiers || typeof tiers !== 'object' || Array.isArray(tiers)) return;
+    let touched = false;
+    const next: Record<string, unknown> = { ...(tiers as Record<string, unknown>) };
+    Object.keys(next).forEach((tier) => {
+      const translated = values[`limit_${tier}`];
+      if (!usable(translated)) return;
+      const cell = next[tier];
+      touched = true;
+      next[tier] =
+        cell && typeof cell === 'object' && !Array.isArray(cell)
+          ? { ...(cell as Record<string, unknown>), limit: translated }
+          : translated;
+    });
+    if (touched) record.plan_values_json = next;
+  },
 };
 
 /**
@@ -116,6 +148,7 @@ const NESTED_FIELD_KEYS: Record<string, (fieldKey: string) => boolean> = {
   'hero-section': (key) => key === 'button_1_label' || key === 'button_2_label',
   features: (key) => /^bullet_\d+$/.test(key),
   'pricing-plans': (key) => /^feature_\d+$/.test(key),
+  'pricing-features': (key) => /^limit_/.test(key),
 };
 
 export interface Translator {

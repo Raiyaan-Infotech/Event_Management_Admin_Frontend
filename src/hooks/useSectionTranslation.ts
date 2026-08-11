@@ -72,6 +72,11 @@ export interface SectionTranslation {
   isSaving: boolean;
   /** Machine-translates every field from English and fills the form. */
   autoTranslate: () => Promise<void>;
+  /**
+   * Run after an English save so every language is filled with no extra click.
+   * Pass the new row id when saving a record that did not exist yet.
+   */
+  translateAfterSave: (overrideRecordId?: number) => Promise<void>;
   isAutoTranslating: boolean;
   /**
    * Live progress of the running auto-translation, or null when idle.
@@ -176,23 +181,40 @@ export function useSectionTranslation({
     }
   }, [activeLanguage, recordId, fieldKeys, values, saveTranslation]);
 
-  const autoTranslate = useCallback(async () => {
-    if (!activeLanguage) return;
-    if (!recordId) {
-      toast.error('Save this section in English first, then translate it.');
+  /**
+   * Runs the translation for this record across every active language.
+   *
+   * `silent` is used by the post-save path: there the run is a side effect of
+   * saving English, so "there is nothing to translate" is a normal outcome and
+   * must not raise an error toast. `targetLanguageId` is the language whose
+   * values get written back into the form — only meaningful in translation mode.
+   */
+  const runTranslation = useCallback(
+    async ({
+      targetLanguageId,
+      silent,
+      overrideRecordId,
+    }: { targetLanguageId?: number; silent?: boolean; overrideRecordId?: number } = {}) => {
+    // On CREATE the id only exists in the mutation's response — this closure
+    // still has `recordId` undefined — so the caller passes it in explicitly.
+    const targetRecordId = overrideRecordId ?? recordId;
+    if (!targetRecordId) {
+      if (!silent) toast.error('Save this section in English first, then translate it.');
       return;
     }
     // Nothing to send. Without this the run streams zero events and the overlay
     // flashes "0%" then closes with no visible change, which reads as a broken
     // button rather than "there is no source text yet".
     if (!fields.some((field) => String(field.value ?? '').trim())) {
-      toast.error(
-        'There is no English text in this section yet. Click "Back to English", fill it in and save, then translate.'
-      );
+      if (!silent) {
+        toast.error(
+          'There is no English text in this section yet. Click "Back to English", fill it in and save, then translate.'
+        );
+      }
       return;
     }
 
-    const languageId = activeLanguage.id;
+    const languageId = targetLanguageId;
     setAutoTranslateProgress({ done: 0, total: 0 });
 
     // Streams one event per translated field so the overlay can show a real
@@ -207,9 +229,11 @@ export function useSectionTranslation({
     const params = new URLSearchParams({
       section,
       page_slug: pageSlug || '',
-      record_id: String(recordId),
-      language_id: String(languageId),
+      record_id: String(targetRecordId),
     });
+    // Omitted entirely when saving English: there is no form language to write
+    // back to, and the backend translates every language either way.
+    if (languageId) params.set('language_id', String(languageId));
     if (typeof window !== 'undefined') {
       const companyId = window.localStorage.getItem('currentCompanyId');
       if (companyId) params.set('company_id', companyId);
@@ -251,7 +275,9 @@ export function useSectionTranslation({
         source.addEventListener('complete', (event) => {
           try {
             const data = JSON.parse((event as MessageEvent).data);
-            const translated = data?.translations?.[languageId];
+            // Only when a form language is on screen — saving English has no
+            // translated values to display.
+            const translated = languageId ? data?.translations?.[languageId] : null;
             if (translated) setValues({ ...translated });
           } catch {
             // fall through — the refetch below still picks the values up
@@ -282,7 +308,10 @@ export function useSectionTranslation({
       const where =
         languagesTouched.size > 0
           ? [...languagesTouched].join(', ')
-          : activeLanguage.name;
+          : activeLanguage?.name || 'other languages';
+      // After an English save, "nothing to do" means every language was already
+      // translated — silence is the right feedback, not a success toast.
+      if (translatedCount === 0 && silent) return;
       const headline =
         translatedCount > 0
           ? `Translated ${translatedCount} field${translatedCount === 1 ? '' : 's'} into ${where}`
@@ -293,11 +322,35 @@ export function useSectionTranslation({
           : headline
       );
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to auto-translate');
+      // A failed background translation must not make a successful save look
+      // like it failed, so the post-save path reports quietly.
+      const message = err instanceof Error ? err.message : 'Failed to auto-translate';
+      if (silent) toast.warning(`Saved, but translating failed: ${message}`);
+      else toast.error(message);
     } finally {
       setAutoTranslateProgress(null);
     }
-  }, [activeLanguage, recordId, section, pageSlug, queryClient, fields]);
+  },
+    [activeLanguage, recordId, section, pageSlug, queryClient, fields]
+  );
+
+  // The "Translate all languages" button — writes the active language's values
+  // back into the form it is sitting on.
+  const autoTranslate = useCallback(
+    () => runTranslation({ targetLanguageId: activeLanguage?.id }),
+    [runTranslation, activeLanguage]
+  );
+
+  /**
+   * Called by a form right after its ENGLISH save succeeds, so a newly written
+   * section is translated everywhere without the admin pressing anything.
+   * Only empty slots are filled, so re-saving while editing costs no API quota
+   * for text that is already translated.
+   */
+  const translateAfterSave = useCallback(
+    (overrideRecordId?: number) => runTranslation({ silent: true, overrideRecordId }),
+    [runTranslation]
+  );
 
   const buildHref = useCallback(
     (languageId: number | null) => {
@@ -344,6 +397,7 @@ export function useSectionTranslation({
     save,
     isSaving: saveTranslation.isPending,
     autoTranslate,
+    translateAfterSave,
     isAutoTranslating: autoTranslateProgress !== null,
     autoTranslateProgress,
     buildHref,

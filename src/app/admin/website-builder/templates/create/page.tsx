@@ -212,9 +212,15 @@ function CreateTemplatePage() {
                     // immediately after Add meant there was never a page where
                     // the language card could appear. Editing an existing
                     // template already has ?id= and needs no navigation at all.
+                    // Fill every language straight off the save — no second
+                    // button. On create the id only exists here, so it is
+                    // passed in explicitly.
                     if (!templateId) {
                         const newId = created?.data?.id;
                         if (newId) router.replace(`/admin/website-builder/templates/create?id=${newId}`);
+                        if (newId) translation.translateAfterSave(Number(newId));
+                    } else {
+                        translation.translateAfterSave();
                     }
                 },
             }

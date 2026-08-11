@@ -152,6 +152,8 @@ export default function ContactUsPage() {
             // see the English text that was just saved.
             translation.registerKeys();
             toast.success('Contact Us settings saved successfully!');
+            // Fill every language straight off the save — no second button.
+            await translation.translateAfterSave();
         } catch (err: any) {
             toast.error(err?.message || 'Failed to save contact settings');
         } finally {

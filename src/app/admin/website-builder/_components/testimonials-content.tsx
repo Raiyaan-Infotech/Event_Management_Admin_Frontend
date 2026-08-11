@@ -237,6 +237,8 @@ export function TestimonialsContent() {
                 show_rating: activeItem.showRating ? 1 : 0,
                 is_active: activeItem.status ? 1 : 0,
             });
+            // Fill every language straight off the save — no second button.
+            await translation.translateAfterSave();
         } catch (err: any) {
             toast.error(err?.message || 'Failed to save testimonial');
         }

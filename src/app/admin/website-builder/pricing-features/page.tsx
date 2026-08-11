@@ -581,6 +581,28 @@ export default function PlanFeaturesPage() {
                                                         fields={[
                                                             { key: 'feature_name', label: 'Feature Name', value: feat.feature_name || '' },
                                                             { key: 'description', label: 'Description', value: feat.description || '', type: 'textarea' },
+                                                            // The table's CELL values ("Up to 50", "Limited") live per
+                                                            // tier inside plan_values_json. The backend registers them
+                                                            // as `limit_<tier>`, sorted by tier name — this must build
+                                                            // the identical keys or the dialog edits nothing. A tier
+                                                            // showing only a tick/cross has no text and is skipped.
+                                                            ...Object.entries(feat.plan_values_json || {})
+                                                                .map(([tier, cell]) => {
+                                                                    const limit =
+                                                                        typeof cell === 'string'
+                                                                            ? cell
+                                                                            : cell && typeof cell === 'object'
+                                                                                ? String((cell as { limit?: string }).limit ?? '')
+                                                                                : '';
+                                                                    return { tier, limit: limit.trim() };
+                                                                })
+                                                                .filter((x) => x.limit)
+                                                                .sort((a, b) => a.tier.localeCompare(b.tier))
+                                                                .map((x) => ({
+                                                                    key: `limit_${x.tier}`,
+                                                                    label: `Limit — ${x.tier}`,
+                                                                    value: x.limit,
+                                                                })),
                                                         ]}
                                                     />
                                                     <button

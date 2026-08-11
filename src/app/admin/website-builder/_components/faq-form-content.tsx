@@ -120,7 +120,12 @@ export function FaqFormContent({ id }: FaqFormContentProps) {
 
         if (isEdit && id) {
             updateMutation.mutate({ id, data: payload }, {
-                onSuccess: () => router.push('/admin/website-builder/faqs')
+                // Translate before navigating away, so the overlay is visible
+                // and the run isn't torn down by the route change.
+                onSuccess: async () => {
+                    await translation.translateAfterSave();
+                    router.push('/admin/website-builder/faqs');
+                },
             });
         } else {
             createMutation.mutate(payload, {
@@ -128,10 +133,12 @@ export function FaqFormContent({ id }: FaqFormContentProps) {
                 // list. A translation slot is addressed by the saved row's id, so
                 // leaving immediately meant a new FAQ never had a screen where the
                 // language card could appear (session.md §66).
-                onSuccess: (created: any) => {
+                onSuccess: async (created: any) => {
                     const newId = Number(created?.id ?? created?.data?.id);
                     if (newId) {
                         router.replace(`/admin/website-builder/faqs/edit/${newId}`);
+                        // The id exists only here, so it is passed in explicitly.
+                        await translation.translateAfterSave(newId);
                     } else {
                         router.push('/admin/website-builder/faqs');
                     }

@@ -215,6 +215,8 @@ export function HeroSectionContent({ pageSlug = 'home' }: HeroSectionContentProp
             });
 
             toast.success(`Hero section settings for ${activePageTitle} saved successfully`);
+            // Fill every language straight off the save — no second button.
+            await translation.translateAfterSave();
         } catch (err: any) {
             toast.error(err?.message || 'Failed to save hero section');
         }

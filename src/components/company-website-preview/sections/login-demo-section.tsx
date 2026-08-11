@@ -139,29 +139,29 @@ export function FeaturesFirstHighlightSection({ theme, companyName }: SectionPro
 
                             {/* 2x3 Feature Pills Grid */}
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                <div className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-2.5 py-2 text-xs font-semibold text-foreground shadow-xs hover:border-primary/40 transition-colors">
+                                <div className="inline-flex min-w-0 items-center gap-1.5 rounded-xl border border-border bg-card px-2.5 py-2 text-xs font-semibold text-foreground shadow-xs hover:border-primary/40 transition-colors">
                                     <Globe className="h-3.5 w-3.5 text-blue-500 shrink-0" />
-                                    <span className="truncate">{t('login_demo.social_media', 'Social Media')}</span>
+                                    <span className="min-w-0 break-words leading-tight">{t('login_demo.social_media', 'Social Media')}</span>
                                 </div>
-                                <div className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-2.5 py-2 text-xs font-semibold text-foreground shadow-xs hover:border-primary/40 transition-colors">
+                                <div className="inline-flex min-w-0 items-center gap-1.5 rounded-xl border border-border bg-card px-2.5 py-2 text-xs font-semibold text-foreground shadow-xs hover:border-primary/40 transition-colors">
                                     <Music className="h-3.5 w-3.5 text-purple-500 shrink-0" />
-                                    <span className="truncate">{t('login_demo.music_player', 'Music Player')}</span>
+                                    <span className="min-w-0 break-words leading-tight">{t('login_demo.music_player', 'Music Player')}</span>
                                 </div>
-                                <div className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-2.5 py-2 text-xs font-semibold text-foreground shadow-xs hover:border-primary/40 transition-colors">
+                                <div className="inline-flex min-w-0 items-center gap-1.5 rounded-xl border border-border bg-card px-2.5 py-2 text-xs font-semibold text-foreground shadow-xs hover:border-primary/40 transition-colors">
                                     <Timer className="h-3.5 w-3.5 text-rose-500 shrink-0" />
-                                    <span className="truncate">{t('login_demo.countdown', 'Countdown')}</span>
+                                    <span className="min-w-0 break-words leading-tight">{t('login_demo.countdown', 'Countdown')}</span>
                                 </div>
-                                <div className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-2.5 py-2 text-xs font-semibold text-foreground shadow-xs hover:border-primary/40 transition-colors">
+                                <div className="inline-flex min-w-0 items-center gap-1.5 rounded-xl border border-border bg-card px-2.5 py-2 text-xs font-semibold text-foreground shadow-xs hover:border-primary/40 transition-colors">
                                     <UserCheck className="h-3.5 w-3.5 text-indigo-500 shrink-0" />
-                                    <span className="truncate">{t('login_demo.contact_org', 'Contact / Org')}</span>
+                                    <span className="min-w-0 break-words leading-tight">{t('login_demo.contact_org', 'Contact / Org')}</span>
                                 </div>
-                                <div className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-2.5 py-2 text-xs font-semibold text-foreground shadow-xs hover:border-primary/40 transition-colors">
+                                <div className="inline-flex min-w-0 items-center gap-1.5 rounded-xl border border-border bg-card px-2.5 py-2 text-xs font-semibold text-foreground shadow-xs hover:border-primary/40 transition-colors">
                                     <Layout className="h-3.5 w-3.5 text-violet-500 shrink-0" />
-                                    <span className="truncate">{t('login_demo.custom_pages', 'Custom Pages')}</span>
+                                    <span className="min-w-0 break-words leading-tight">{t('login_demo.custom_pages', 'Custom Pages')}</span>
                                 </div>
-                                <div className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-2.5 py-2 text-xs font-semibold text-foreground shadow-xs hover:border-primary/40 transition-colors">
+                                <div className="inline-flex min-w-0 items-center gap-1.5 rounded-xl border border-border bg-card px-2.5 py-2 text-xs font-semibold text-foreground shadow-xs hover:border-primary/40 transition-colors">
                                     <Languages className="h-3.5 w-3.5 text-amber-500 shrink-0" />
-                                    <span className="truncate">{t('login_demo.multi_language', 'Multi Language')}</span>
+                                    <span className="min-w-0 break-words leading-tight">{t('login_demo.multi_language', 'Multi Language')}</span>
                                 </div>
                             </div>
 
@@ -283,7 +283,10 @@ export function ContactSignupDemoSection({ theme, companyName }: SectionProps) {
                     <div className="w-full lg:w-[40%] relative overflow-hidden rounded-3xl bg-[#F3F6FA] border border-slate-200/60 p-5 sm:p-6 flex items-center justify-between gap-4 shadow-xs">
                         <div className="space-y-2.5 z-10 flex-1 min-w-0">
                             <div className="space-y-1">
-                                <h3 className="text-base sm:text-lg font-bold tracking-tight text-slate-900 truncate sm:whitespace-normal">
+                                {/* `truncate` also sets overflow-hidden, which
+                                    sm:whitespace-normal does not undo — a long
+                                    translated heading was still clipped. */}
+                                <h3 className="text-base sm:text-lg font-bold tracking-tight text-slate-900 break-words">
                                     {t('login_demo.still_questions', 'Still Have Questions?')}
                                 </h3>
                                 <p className="text-[11px] sm:text-xs text-slate-500 font-medium leading-normal max-w-[210px]">

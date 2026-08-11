@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { BuilderCountedInput, BuilderCountedTextarea } from './builder-field';
 import { MultiSelectPages } from './multi-select-pages';
@@ -240,11 +241,45 @@ export function FooterContent() {
     // Translation mode. Field keys mirror the `footer` entry in the backend's
     // FIELD_CATALOG, which registers this section at page_slug='' keyed by the
     // footer settings row id.
+    // Built once so the field list and the inputs below cannot drift apart.
+    const linkTranslationFields = (() => {
+        const list1 = selectedPages.length > 0
+            ? selectedPages
+            : ['home', 'features', 'templates', 'gallery', 'contact'];
+        const seen = new Set<string>();
+        const out: { key: string; label: string; type: 'input'; value: string }[] = [];
+        [...list1, ...selectedPages2].forEach((entry) => {
+            const slug = String(entry ?? '').trim();
+            if (!slug || seen.has(slug)) return;
+            seen.add(slug);
+            const derived = slug
+                .replace(/^\/+/, '')
+                .split(/[-_/]/)
+                .filter(Boolean)
+                .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
+            out.push({
+                key: `quick_link.${slug}`,
+                label: `Footer Link — ${derived}`,
+                type: 'input',
+                value: derived,
+            });
+        });
+        return out;
+    })();
+
     const translationFields = [
         { key: 'company_name', label: 'Company Name', type: 'input' as const, value: companyName },
         { key: 'description', label: 'Description', type: 'textarea' as const, value: shortDescription },
         { key: 'top_list_heading', label: 'Links Heading 1', type: 'input' as const, value: topListHeading },
         { key: 'top_list_heading_2', label: 'Links Heading 2', type: 'input' as const, value: topListHeading2 },
+        // Quick-link lists store bare slugs. A slug matching a real page renders
+        // that page's own (translatable) title, but the rest fall back to a
+        // label derived from the slug — text in no table, which is why the
+        // headings translated while the links under them stayed English (§68).
+        // This mirrors the backend footer extractor exactly; the derived label
+        // and the `quick_link.<slug>` key must match or the form edits nothing.
+        ...linkTranslationFields,
     ];
     const translation = useSectionTranslation({
         section: 'footer',
@@ -302,6 +337,8 @@ export function FooterContent() {
 
             translation.registerKeys();
             toast.success('Footer settings saved successfully');
+            // Fill every language straight off the save — no second button.
+            await translation.translateAfterSave();
         } catch (err: any) {
             toast.error(err?.message || 'Failed to save footer settings');
         }
@@ -543,6 +580,30 @@ export function FooterContent() {
                                                 placeholder="Add page"
                                             />
                                         </>
+                                    )}
+
+                                    {/* Link LABELS, editable only while translating.
+                                        In English these are derived from the page
+                                        slug and there is nothing to type. */}
+                                    {isTranslationMode && linkTranslationFields.length > 0 && (
+                                        <div className="space-y-2 rounded-lg border border-primary/30 bg-primary/5 p-2.5">
+                                            <p className="text-[11px] font-semibold text-foreground">
+                                                Link Labels
+                                            </p>
+                                            {linkTranslationFields.map((field) => (
+                                                <div key={field.key} className="space-y-1">
+                                                    <label className="text-[10.5px] font-medium text-muted-foreground">
+                                                        {field.value}
+                                                    </label>
+                                                    <Input
+                                                        value={translation.values[field.key] ?? ''}
+                                                        onChange={(e) => translation.setValue(field.key, e.target.value)}
+                                                        placeholder={field.value}
+                                                        className="h-8 text-xs"
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
                                     )}
                                 </div>
 

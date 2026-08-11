@@ -220,6 +220,8 @@ export function HighlightsContent({ pageSlug, instance }: HighlightsContentProps
         await saveMutation.mutateAsync(settings);
         // Refresh the key catalog so newly added cards become translatable.
         translation.registerKeys();
+        // Fill every language straight off the save — no second button.
+        await translation.translateAfterSave();
     };
 
     const handleReset = () => {

@@ -242,11 +242,21 @@ export function VideoTutorialFormContent({ id }: VideoTutorialFormContentProps) 
 
         if (isEdit && id) {
             updateMutation.mutate({ id, data: payload }, {
-                onSuccess: () => router.push('/admin/website-builder/video-tutorials')
+                // Translate before navigating away, so the overlay is visible
+                // and the run isn't torn down by the route change.
+                onSuccess: async () => {
+                    await translation.translateAfterSave();
+                    router.push('/admin/website-builder/video-tutorials');
+                },
             });
         } else {
             createMutation.mutate(payload, {
-                onSuccess: () => router.push('/admin/website-builder/video-tutorials')
+                onSuccess: async (created: any) => {
+                    // The id exists only here, so it is passed in explicitly.
+                    const newId = Number(created?.id ?? created?.data?.id);
+                    if (newId) await translation.translateAfterSave(newId);
+                    router.push('/admin/website-builder/video-tutorials');
+                },
             });
         }
     };

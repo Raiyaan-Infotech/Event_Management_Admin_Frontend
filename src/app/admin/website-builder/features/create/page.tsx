@@ -111,6 +111,16 @@ function FeatureFormContent() {
         { key: 'title', label: 'Title', type: 'input' as const, value: title },
         { key: 'short_description', label: 'Short Description', type: 'textarea' as const, value: shortDesc },
         { key: 'detailed_description', label: 'Detailed Description', type: 'textarea' as const, value: detailedDesc },
+        // Bullet text is translatable content (the backend flattens
+        // bullet_points_json to bullet_1, bullet_2, …). Positions are 1-based on
+        // both sides and must stay that way, or translated text lands on the
+        // wrong bullet.
+        ...bullets.map((bullet, idx) => ({
+            key: `bullet_${idx + 1}`,
+            label: `Bullet ${idx + 1}`,
+            type: 'input' as const,
+            value: bullet,
+        })),
     ];
     const translation = useSectionTranslation({
         section: 'features',
@@ -222,6 +232,9 @@ function FeatureFormContent() {
             updateFeatureMutation.mutate(
                 { id: Number(featureId), payload: featurePayload },
                 // Stay on the form — nothing to navigate, ?id= already points here.
+                // Translating every language runs straight off the save, so the
+                // admin never has to press a second button.
+                { onSuccess: () => translation.translateAfterSave() },
             );
         } else {
             createFeatureMutation.mutate(featurePayload as FeatureItem, {
@@ -232,6 +245,8 @@ function FeatureFormContent() {
                     // the language card could appear.
                     const newId = created?.data?.id;
                     if (newId) router.replace(`/admin/website-builder/features/create?id=${newId}`);
+                    // The id only exists here, so it is passed in explicitly.
+                    if (newId) translation.translateAfterSave(Number(newId));
                 },
             });
         }
@@ -427,8 +442,10 @@ function FeatureFormContent() {
                         </CardContent>
                     </Card>
 
-                    {/* Section 3: Bullet Points - shared across languages */}
-                    <Card className={cn('border-border bg-card shadow-xs', sharedOnly)}>
+                    {/* Section 3: Bullet Points. The TEXT is translatable; only
+                        the list structure (adding, removing, reordering) is
+                        shared, so the card itself must not be blanket-disabled. */}
+                    <Card className="border-border bg-card shadow-xs">
                         <CardHeader className="py-3.5 px-4 border-b border-border flex flex-row items-center gap-3">
                             <div className="h-7 w-7 rounded-full bg-emerald-500/20 text-emerald-600 font-extrabold flex items-center justify-center text-xs shrink-0">
                                 3
@@ -445,12 +462,24 @@ function FeatureFormContent() {
                                         key={idx}
                                         className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 p-2 text-xs"
                                     >
-                                        <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab shrink-0" />
-                                        <span className="flex-1 font-medium text-foreground">{bullet}</span>
+                                        <GripVertical className={cn('h-4 w-4 text-muted-foreground cursor-grab shrink-0', sharedOnly)} />
+                                        {isTranslationMode ? (
+                                            <Input
+                                                value={translation.values[`bullet_${idx + 1}`] ?? ''}
+                                                onChange={(e) => translation.setValue(`bullet_${idx + 1}`, e.target.value)}
+                                                placeholder={bullet}
+                                                className="h-8 flex-1 text-xs border-border bg-card text-foreground"
+                                            />
+                                        ) : (
+                                            <span className="flex-1 font-medium text-foreground">{bullet}</span>
+                                        )}
                                         <button
                                             type="button"
                                             onClick={() => handleRemoveBullet(idx)}
-                                            className="text-muted-foreground hover:text-destructive p-1 cursor-pointer"
+                                            className={cn(
+                                                'text-muted-foreground hover:text-destructive p-1 cursor-pointer',
+                                                sharedOnly
+                                            )}
                                         >
                                             <X className="h-3.5 w-3.5" />
                                         </button>
@@ -458,7 +487,9 @@ function FeatureFormContent() {
                                 ))}
                             </div>
 
-                            <div className="flex gap-2">
+                            {/* Adding a bullet changes the list for every
+                                language, so it stays English-only. */}
+                            <div className={cn('flex gap-2', sharedOnly)}>
                                 <Input
                                     placeholder="Add bullet point (e.g. Easy to Update)"
                                     value={newBulletText}

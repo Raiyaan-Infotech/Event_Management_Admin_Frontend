@@ -92,6 +92,8 @@ export function LoginPageContent() {
             // auto-translate see the English text just saved.
             translation.registerKeys();
             toast.success('Login page settings saved successfully');
+            // Fill every language straight off the save — no second button.
+            await translation.translateAfterSave();
         } catch (err: any) {
             toast.error(err?.message || 'Failed to save login page settings');
         }

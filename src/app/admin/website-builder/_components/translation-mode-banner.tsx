@@ -23,22 +23,27 @@ export function TranslationModeBanner({ translation, label }: TranslationModeBan
   const { isTranslationMode, activeLanguage, autoTranslate, isAutoTranslating, autoTranslateProgress, buildHref } =
     translation;
 
-  if (!isTranslationMode || !activeLanguage) return null;
+  // The overlay must render in ENGLISH mode too: saving English now triggers a
+  // translation run, and that is exactly when there is no banner. Only the
+  // banner itself is translation-mode-only.
+  const overlay = (
+    <TranslationProgressOverlay
+      open={isAutoTranslating}
+      done={autoTranslateProgress?.done ?? 0}
+      total={autoTranslateProgress?.total ?? 0}
+      field={autoTranslateProgress?.field}
+      // The run covers every active language, so show whichever one the stream
+      // is currently on — falling back to the language being edited until the
+      // first event arrives.
+      languageName={autoTranslateProgress?.language || activeLanguage?.name}
+    />
+  );
+
+  if (!isTranslationMode || !activeLanguage) return overlay;
 
   return (
     <>
-      {/* Rendered here so every wired form gets the full-screen progress
-          loader without repeating it. */}
-      <TranslationProgressOverlay
-        open={isAutoTranslating}
-        done={autoTranslateProgress?.done ?? 0}
-        total={autoTranslateProgress?.total ?? 0}
-        field={autoTranslateProgress?.field}
-        // The run covers every active language, so show whichever one the
-        // stream is currently on — falling back to the language being edited
-        // until the first event arrives.
-        languageName={autoTranslateProgress?.language || activeLanguage.name}
-      />
+      {overlay}
       <div className="flex flex-col gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-start gap-2">
           <LanguagesIcon className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
