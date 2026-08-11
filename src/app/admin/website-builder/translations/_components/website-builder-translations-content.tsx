@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Search, RefreshCw, Check, AlertCircle, AlertTriangle, Minus, Pencil, Trash2, Languages as LanguagesIcon } from 'lucide-react';
+import { Search, RefreshCw, Check, AlertCircle, Minus, Pencil, Trash2, Languages as LanguagesIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -87,13 +87,6 @@ export function WebsiteBuilderTranslationsContent() {
     const translation = key.translations?.find((t) => t.language_id === language.id);
     if (!translation || !(translation.value || '').trim()) {
       return { status: 'missing', icon: Minus, color: 'text-red-500' };
-    }
-    // Checked before 'reviewed': a hand-edited translation whose English has
-    // since changed still reads as "reviewed", but it no longer matches its
-    // source and is the one case a person has to redo by hand — auto-translate
-    // deliberately refuses to overwrite it.
-    if (translation.is_outdated) {
-      return { status: 'outdated', icon: AlertTriangle, color: 'text-orange-500' };
     }
     if (translation.status === 'reviewed') {
       return { status: 'reviewed', icon: Check, color: 'text-green-500' };
@@ -220,13 +213,6 @@ export function WebsiteBuilderTranslationsContent() {
                           <span className="text-green-500">{lang.reviewed} ✓</span>
                           <span className="text-yellow-500">{lang.auto} ⚡</span>
                           <span className="text-red-500">{lang.missing} ✗</span>
-                          {/* Only shown when there is something to act on —
-                              a permanent "0 ⚠" would just add noise. */}
-                          {lang.outdated > 0 && (
-                            <span className="font-semibold text-orange-500" title="English changed after these were translated — they need review">
-                              {lang.outdated} ⚠
-                            </span>
-                          )}
                         </div>
                       </CardContent>
                     </Card>
@@ -284,7 +270,6 @@ export function WebsiteBuilderTranslationsContent() {
                     <SelectContent>
                       <SelectItem value="all">All Status</SelectItem>
                       <SelectItem value="missing">✗ Missing</SelectItem>
-                      <SelectItem value="outdated">⚠ Needs review</SelectItem>
                       <SelectItem value="auto">⚡ Auto</SelectItem>
                       <SelectItem value="reviewed">✓ Reviewed</SelectItem>
                     </SelectContent>

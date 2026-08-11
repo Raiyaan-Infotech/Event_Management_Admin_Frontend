@@ -78,7 +78,7 @@ export interface SectionTranslation {
    * `done`/`total` come from real per-field events streamed by the backend —
    * this is not a simulated bar.
    */
-  autoTranslateProgress: { done: number; total: number; field?: string } | null;
+  autoTranslateProgress: { done: number; total: number; field?: string; language?: string } | null;
   /** Builds the `?lang=` URL for the side card; null = back to English. */
   buildHref: (languageId: number | null) => string;
   /** Registers the English source text — call after a successful English save. */
@@ -126,7 +126,7 @@ export function useSectionTranslation({
 
   const [values, setValues] = useState<Record<string, string>>({});
   const [autoTranslateProgress, setAutoTranslateProgress] =
-    useState<{ done: number; total: number; field?: string } | null>(null);
+    useState<{ done: number; total: number; field?: string; language?: string } | null>(null);
 
   // Reload whenever the language changes or fresh translations arrive.
   useEffect(() => {
@@ -198,6 +198,12 @@ export function useSectionTranslation({
     // Streams one event per translated field so the overlay can show a real
     // percentage. EventSource can't send custom headers, so company scoping
     // rides on the query string (optionalCompanyAuth accepts company_id there).
+    //
+    // No `all_languages` param: the backend defaults to every active language.
+    // One press fills them all, so a section written today is translated
+    // everywhere rather than only into whichever language is being viewed.
+    // `language_id` still rides along so the backend knows which language's
+    // values to hand back for this form.
     const params = new URLSearchParams({
       section,
       page_slug: pageSlug || '',
@@ -210,6 +216,9 @@ export function useSectionTranslation({
     }
 
     let preservedCount = 0;
+    let translatedCount = 0;
+    // Which languages the run actually wrote to, so the toast can name them.
+    const languagesTouched = new Set<string>();
 
     try {
       await new Promise<void>((resolve, reject) => {
@@ -223,10 +232,17 @@ export function useSectionTranslation({
         source.addEventListener('progress', (event) => {
           try {
             const data = JSON.parse((event as MessageEvent).data);
-            setAutoTranslateProgress({ done: data.done, total: data.total, field: data.field });
-            // Fields edited by hand are excluded from the run; remember how many
-            // so the result toast can say they were left alone.
+            setAutoTranslateProgress({
+              done: data.done,
+              total: data.total,
+              field: data.field,
+              language: data.language,
+            });
+            // Slots that already had a translation are skipped, never rewritten;
+            // remember how many so the toast can say they were left alone.
             if (typeof data.preserved === 'number') preservedCount = data.preserved;
+            if (typeof data.total === 'number') translatedCount = data.total;
+            if (data.language) languagesTouched.add(String(data.language));
           } catch {
             // a malformed frame shouldn't abort the run
           }
@@ -261,10 +277,20 @@ export function useSectionTranslation({
       queryClient.invalidateQueries({ queryKey: ['website-builder-content-translations'] });
       queryClient.invalidateQueries({ queryKey: ['website-builder-translation-keys'] });
       queryClient.invalidateQueries({ queryKey: ['website-builder-translation-stats'] });
+      // The run covers every active language, so report what it actually did
+      // rather than naming only the language being viewed.
+      const where =
+        languagesTouched.size > 0
+          ? [...languagesTouched].join(', ')
+          : activeLanguage.name;
+      const headline =
+        translatedCount > 0
+          ? `Translated ${translatedCount} field${translatedCount === 1 ? '' : 's'} into ${where}`
+          : 'Everything was already translated';
       toast.success(
         preservedCount > 0
-          ? `Translated to ${activeLanguage.name}. Kept ${preservedCount} field${preservedCount === 1 ? '' : 's'} you edited by hand.`
-          : `Translated to ${activeLanguage.name}`
+          ? `${headline}. Left ${preservedCount} existing translation${preservedCount === 1 ? '' : 's'} untouched.`
+          : headline
       );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to auto-translate');

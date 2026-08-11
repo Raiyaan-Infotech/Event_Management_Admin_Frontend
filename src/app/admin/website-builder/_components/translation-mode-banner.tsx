@@ -34,7 +34,10 @@ export function TranslationModeBanner({ translation, label }: TranslationModeBan
         done={autoTranslateProgress?.done ?? 0}
         total={autoTranslateProgress?.total ?? 0}
         field={autoTranslateProgress?.field}
-        languageName={activeLanguage.name}
+        // The run covers every active language, so show whichever one the
+        // stream is currently on — falling back to the language being edited
+        // until the first event arrives.
+        languageName={autoTranslateProgress?.language || activeLanguage.name}
       />
       <div className="flex flex-col gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-start gap-2">
@@ -42,7 +45,8 @@ export function TranslationModeBanner({ translation, label }: TranslationModeBan
           <p className="min-w-0 text-[11.5px] leading-relaxed text-slate-700">
             You are editing the <strong>{activeLanguage.name}</strong> version
             {label ? ` of ${label}` : ''}. Layout, images, and colors are shared across all languages —
-            only the text fields below are translated.
+            only the text fields below are translated. Translating fills every empty
+            language and never overwrites a translation you already have.
           </p>
         </div>
 
@@ -60,7 +64,9 @@ export function TranslationModeBanner({ translation, label }: TranslationModeBan
             ) : (
               <Sparkles className="mr-1 h-3 w-3" />
             )}
-            Translate from English
+            {/* The run fills every active language, not just the one on screen,
+                so "Translate from English" would understate it. */}
+            Translate all languages
           </Button>
           <Button
             type="button"
