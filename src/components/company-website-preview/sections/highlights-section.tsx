@@ -154,11 +154,12 @@ export function HighlightsSection({ pageSlug = 'home', instance = 1, data, theme
         5: 'lg:grid-cols-5',
         6: 'lg:grid-cols-6',
     };
-    // Items per ROW — a grid setting, not a cap. It used to also drive a
-    // `slice(0, perRow)`, so choosing "3 per row" with 5 cards silently dropped
-    // two of them from the live site while the admin's own preview still showed
-    // all five. Extra items now wrap onto the next row, as the label implies.
-    const perRow = Math.min(Math.max(Number(config.items_per_row) || 5, 1), 6);
+    // All items sit on ONE row, fitted to however many there are — the design
+    // shows a single strip, and the old "Number of Items per Row" setting only
+    // ever made the block disagree with it (5 items at 3-per-row rendered 3+2).
+    // The control has been removed from the admin; `items_per_row` is ignored.
+    // Narrow screens still wrap via the responsive classes below.
+    const perRow = Math.min(Math.max(items.length || 5, 1), 6);
     const gridColsClass = COLS[perRow] || COLS[5];
     const isOutlineIcons = config.icon_style === 'outline';
 

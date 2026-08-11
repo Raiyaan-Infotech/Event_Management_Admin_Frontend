@@ -273,6 +273,7 @@ export function FooterContent() {
         { key: 'description', label: 'Description', type: 'textarea' as const, value: shortDescription },
         { key: 'top_list_heading', label: 'Links Heading 1', type: 'input' as const, value: topListHeading },
         { key: 'top_list_heading_2', label: 'Links Heading 2', type: 'input' as const, value: topListHeading2 },
+        { key: 'address', label: 'Address', type: 'textarea' as const, value: activeContact.address },
         // Quick-link lists store bare slugs. A slug matching a real page renders
         // that page's own (translatable) title, but the rest fall back to a
         // label derived from the slug — text in no table, which is why the
@@ -466,15 +467,18 @@ export function FooterContent() {
                             </CardContent>
                         </Card>
 
-                        {/* Card 2: Contact Information — shared across languages */}
-                        <Card className={sharedOnly}>
+                        {/* Card 2: Contact Information. Phone/email and the mode
+                            toggle are shared across languages, but the ADDRESS is
+                            prose and must stay editable while translating — so
+                            the card cannot be blanket-disabled. */}
+                        <Card>
                             <CardHeader className="pb-3">
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <CardTitle className="text-sm font-bold">Contact Information</CardTitle>
                                         <CardDescription className="text-xs">Footer contact block mode.</CardDescription>
                                     </div>
-                                    <div className="flex gap-1 rounded-lg border p-1 bg-muted/40">
+                                    <div className={cn('flex gap-1 rounded-lg border p-1 bg-muted/40', sharedOnly)}>
                                         <button
                                             type="button"
                                             onClick={() => setContactType('default')}
@@ -497,24 +501,33 @@ export function FooterContent() {
                                 </div>
                             </CardHeader>
                             <CardContent className="space-y-3">
-                                <BuilderCountedInput
-                                    label="Mobile"
-                                    value={activeContact.mobile}
-                                    onChange={(v) => updateActiveContact({ mobile: v })}
-                                    maxLength={20}
-                                />
-                                <BuilderCountedInput
-                                    label="Email"
-                                    value={activeContact.email}
-                                    onChange={(v) => updateActiveContact({ email: v })}
-                                    maxLength={80}
-                                />
+                                {/* A phone number and an email address read the
+                                    same in every language. */}
+                                <div className={cn('space-y-3', sharedOnly)}>
+                                    <BuilderCountedInput
+                                        label="Mobile"
+                                        value={activeContact.mobile}
+                                        onChange={(v) => updateActiveContact({ mobile: v })}
+                                        maxLength={20}
+                                    />
+                                    <BuilderCountedInput
+                                        label="Email"
+                                        value={activeContact.email}
+                                        onChange={(v) => updateActiveContact({ email: v })}
+                                        maxLength={80}
+                                    />
+                                </div>
+                                {/* The footer keeps its own address, which
+                                    buildFooter prefers over basic_information —
+                                    so it needs translating in its own right,
+                                    not just in the Contact section. */}
                                 <BuilderCountedTextarea
                                     label="Address"
-                                    value={activeContact.address}
-                                    onChange={(v) => updateActiveContact({ address: v })}
                                     maxLength={160}
                                     rows={2}
+                                    {...bind('address', activeContact.address, (v) =>
+                                        updateActiveContact({ address: v })
+                                    )}
                                 />
                             </CardContent>
                         </Card>

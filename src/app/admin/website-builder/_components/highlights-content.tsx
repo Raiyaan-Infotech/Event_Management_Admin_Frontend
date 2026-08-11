@@ -252,11 +252,22 @@ export function HighlightsContent({ pageSlug, instance }: HighlightsContentProps
 
     const previewBackgroundStyle = highlightsBackgroundStyle(settings);
 
+    // Every count gets its own column class, so this preview matches the public
+    // section exactly. Previously 5 fell through to a 3-column default and the
+    // modal showed 3+2 while the live site showed one row — the admin preview
+    // disagreeing with the real render is how the items-per-row bug hid.
+    // Whole class names on purpose: Tailwind cannot see interpolated ones.
     const getGridClass = (count: number) => {
-        if (count === 3) return 'grid grid-cols-1 sm:grid-cols-3 gap-4';
-        if (count === 4) return 'grid grid-cols-2 sm:grid-cols-4 gap-4';
-        if (count === 6) return 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4';
-        return 'grid grid-cols-1 sm:grid-cols-3 gap-4';
+        const cols: Record<number, string> = {
+            1: 'sm:grid-cols-1',
+            2: 'sm:grid-cols-2',
+            3: 'sm:grid-cols-3',
+            4: 'sm:grid-cols-4',
+            5: 'sm:grid-cols-5',
+            6: 'sm:grid-cols-6',
+        };
+        const n = Math.min(Math.max(count || 1, 1), 6);
+        return `grid grid-cols-2 ${cols[n]} gap-4`;
     };
 
     return (
@@ -422,7 +433,7 @@ export function HighlightsContent({ pageSlug, instance }: HighlightsContentProps
                                                         'flex items-center gap-1 rounded-md border bg-slate-50 px-2 py-1 text-[11px] font-medium text-slate-600',
                                                         item.icon_color && 'border-primary/50 ring-1 ring-primary/20'
                                                     )}
-                                                    title={item.icon_color ? 'Overrides the block Icon Color' : 'Item Icon Text Color (inherited)'}
+                                                    title={item.icon_color ? 'This item has its own icon colour' : 'Icon colour (using the default)'}
                                                 >
                                                     <span className="text-[10px] text-slate-400">Color:</span>
                                                     <input
@@ -437,7 +448,7 @@ export function HighlightsContent({ pageSlug, instance }: HighlightsContentProps
                                                         'flex items-center gap-1 rounded-md border bg-slate-50 px-2 py-1 text-[11px] font-medium text-slate-600',
                                                         item.icon_bg_color && 'border-primary/50 ring-1 ring-primary/20'
                                                     )}
-                                                    title={item.icon_bg_color ? 'Overrides the block Icon Background' : 'Item Background Color (inherited)'}
+                                                    title={item.icon_bg_color ? 'This item has its own background colour' : 'Background colour (using the default)'}
                                                 >
                                                     <span className="text-[10px] text-slate-400">BG:</span>
                                                     <input
@@ -448,15 +459,15 @@ export function HighlightsContent({ pageSlug, instance }: HighlightsContentProps
                                                     />
                                                 </div>
 
-                                                {/* The only way back to the block-wide colours. A native
-                                                    colour input writes on any interaction, so an override
-                                                    is easy to set by accident and was impossible to undo. */}
+                                                {/* A native colour input writes on any interaction, so a
+                                                    colour is easy to set by accident and would otherwise be
+                                                    impossible to clear. */}
                                                 {hasColorOverride && (
                                                     <Button
                                                         type="button"
                                                         variant="ghost"
                                                         size="icon"
-                                                        title="Use the block's Icon Background / Icon Color instead"
+                                                        title="Clear this item's colour and use the default"
                                                         onClick={() => {
                                                             setSettings((prev) => {
                                                                 const nextItems = [...prev.items];
@@ -464,7 +475,7 @@ export function HighlightsContent({ pageSlug, instance }: HighlightsContentProps
                                                                 nextItems[index] = rest;
                                                                 return { ...prev, items: nextItems };
                                                             });
-                                                            toast.info('Item now follows the block colours.');
+                                                            toast.info('Item colour cleared — using the default.');
                                                         }}
                                                         className="h-8 w-8 text-slate-500 hover:bg-primary/5 hover:text-primary"
                                                     >
@@ -488,21 +499,11 @@ export function HighlightsContent({ pageSlug, instance }: HighlightsContentProps
                         {/* Section 2: Layout Settings */}
                         <div className="space-y-3 pt-4 border-t">
                             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">2. Layout Settings</h3>
+                            {/* "Number of Items per Row" was removed. Items always fill a
+                                single row sized to however many there are, which is what
+                                the design shows; the setting only ever split the block
+                                (5 items at 3-per-row rendered 3 + 2). */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-1">
-                                    <Label className="text-xs font-semibold">Number of Items per Row</Label>
-                                    <Select value={String(settings.items_per_row)} onValueChange={(val) => updateSetting('items_per_row', Number(val))}>
-                                        <SelectTrigger className="h-8 text-xs">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="3">3 Items</SelectItem>
-                                            <SelectItem value="4">4 Items</SelectItem>
-                                            <SelectItem value="6">6 Items</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
                                 <div className="space-y-1">
                                     <Label className="text-xs font-semibold">Icon Style</Label>
                                     <Select value={settings.icon_style} onValueChange={(val: any) => updateSetting('icon_style', val)}>
@@ -538,30 +539,18 @@ export function HighlightsContent({ pageSlug, instance }: HighlightsContentProps
                         {/* Section 3: Colors */}
                         <div className="space-y-3 pt-4 border-t">
                             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">3. Colors & Presets</h3>
+                            {/* The block-level Icon Background / Icon Color pickers were
+                                removed: each item carries its own colour, and a per-item
+                                colour always wins, so the block-level pair could never
+                                apply to an item that had one — it read as a dead control.
+                                Icon colours are now set per row, in section 1.
+                                Title and Description colour stay here: they have no
+                                per-item equivalent, so this is the only place to set them. */}
                             <p className="text-[11px] text-muted-foreground">
-                                Icon Background and Icon Color apply to every item that has no colour of its
-                                own. An item whose swatch is outlined above overrides them — use the revert
-                                button on that row to hand it back.
+                                Icon colours are set per item, on each row above. These apply to the
+                                whole block.
                             </p>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                <div className="flex items-center justify-between gap-2 border p-2 rounded-lg">
-                                    <Label className="text-xs">Icon Background</Label>
-                                    <input
-                                        type="color"
-                                        value={settings.icon_bg_color}
-                                        onChange={(e) => updateSetting('icon_bg_color', e.target.value)}
-                                        className="h-6 w-8 cursor-pointer rounded border border-slate-300 bg-transparent p-0"
-                                    />
-                                </div>
-                                <div className="flex items-center justify-between gap-2 border p-2 rounded-lg">
-                                    <Label className="text-xs">Icon Color</Label>
-                                    <input
-                                        type="color"
-                                        value={settings.icon_color}
-                                        onChange={(e) => updateSetting('icon_color', e.target.value)}
-                                        className="h-6 w-8 cursor-pointer rounded border border-slate-300 bg-transparent p-0"
-                                    />
-                                </div>
+                            <div className="grid grid-cols-2 gap-3">
                                 <div className="flex items-center justify-between gap-2 border p-2 rounded-lg">
                                     <Label className="text-xs">Title Color</Label>
                                     <input
@@ -649,14 +638,14 @@ export function HighlightsContent({ pageSlug, instance }: HighlightsContentProps
                             <Eye className="h-4 w-4 text-emerald-600" /> Highlights Live Preview ({pageSlug.toUpperCase()} #{instance})
                         </DialogTitle>
                         <DialogDescription className="text-xs">
-                            Real-time preview of your highlights grid layout ({settings.items_per_row} items per row).
+                            Real-time preview of your highlights grid layout ({settings.items.length} items in one row).
                         </DialogDescription>
                     </DialogHeader>
 
                     {settings.card_style === 'individual' ? (
                         // Individual mode: no shared container - each item is its
                         // own bordered/shadowed card, background applies per-card.
-                        <div className={cn('my-3', getGridClass(Number(settings.items_per_row)))}>
+                        <div className={cn('my-3', getGridClass(settings.items.length))}>
                             {settings.items.map((item, idx) => {
                                 const IconComp = ICON_MAP[item.icon] || Sparkles;
                                 const itemColor = item.icon_color || settings.icon_color || '#6C5DD3';
@@ -693,7 +682,7 @@ export function HighlightsContent({ pageSlug, instance }: HighlightsContentProps
                             className="rounded-xl border p-6 transition-all shadow-xs my-3 overflow-hidden"
                             style={previewBackgroundStyle}
                         >
-                            <div className={getGridClass(Number(settings.items_per_row))}>
+                            <div className={getGridClass(settings.items.length)}>
                                 {settings.items.map((item, idx) => {
                                     const IconComp = ICON_MAP[item.icon] || Sparkles;
                                     const itemColor = item.icon_color || settings.icon_color || '#6C5DD3';
