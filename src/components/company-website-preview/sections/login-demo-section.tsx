@@ -114,10 +114,10 @@ export function FeaturesFirstHighlightSection({ theme, companyName }: SectionPro
                                         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/20 p-2 flex flex-col justify-between pointer-events-none">
                                             <div className="flex items-center justify-between">
                                                 <span className="font-bold text-[10px] text-white flex items-center gap-1 bg-slate-900/80 backdrop-blur-xs px-2 py-0.5 rounded-full border border-white/20">
-                                                    <Sparkles className="h-2.5 w-2.5" style={{ color: primaryBtn }} /> Event App
+                                                    <Sparkles className="h-2.5 w-2.5" style={{ color: primaryBtn }} /> {t('login_demo.event_app_badge', 'Event App')}
                                                 </span>
                                                 <span className="bg-emerald-500/90 text-white px-1.5 py-0.5 rounded text-[8px] font-bold shadow-xs">
-                                                    Live
+                                                    {t('login_demo.live_badge', 'Live')}
                                                 </span>
                                             </div>
                                         </div>
@@ -187,7 +187,7 @@ export function FeaturesFirstHighlightSection({ theme, companyName }: SectionPro
                                             {t('login_demo.ready_app_title', 'Ready to Create Your Amazing Event App?')}
                                         </h4>
                                         <p className="text-xs text-muted-foreground leading-relaxed">
-                                            Join thousands of happy customers who trust {companyName || 'Event Invit'}.
+                                            {t('login_demo.ready_subtitle', 'Join thousands of happy customers who trust {companyName} for their special moments.', { companyName: companyName || 'Event Invit' })}
                                         </p>
                                     </div>
                                 </div>
@@ -198,14 +198,14 @@ export function FeaturesFirstHighlightSection({ theme, companyName }: SectionPro
                                         className="w-full font-bold text-white shadow-md py-2.5 rounded-xl gap-2 transition-all hover:opacity-95"
                                         style={{ backgroundColor: primaryBtn }}
                                     >
-                                        Get Started Free <ArrowRight className="h-4 w-4" />
+                                        {t('login_demo.get_started_free', 'Get Started Free')} <ArrowRight className="h-4 w-4" />
                                     </Button>
                                     <button
                                         type="button"
                                         className="text-xs font-bold hover:underline inline-block mx-auto pt-1 cursor-pointer"
                                         style={{ color: primaryBtn }}
                                     >
-                                        View Pricing Plans
+                                        {t('login_demo.view_pricing_plans', 'View Pricing Plans')}
                                     </button>
                                 </div>
                             </div>
@@ -233,8 +233,13 @@ export function SignInDemoSection({ theme }: SectionProps) {
 
                     <div className="space-y-2 text-left z-10">
                         <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-snug">
-                            Create, Share & Celebrate <br className="hidden sm:inline" />
-                            Your <span style={{ color: primaryBtn }}>Special Moments</span>
+                            {/* No hardcoded <br/>: a translated heading is a
+                                different length (Tamil runs ~2x English), so a
+                                fixed break lands mid-phrase. Let it wrap. */}
+                            {t('login_demo.banner_title', 'Create, Share & Celebrate Your')}{' '}
+                            <span style={{ color: primaryBtn }}>
+                                {t('login_demo.banner_title_accent', 'Special Moments')}
+                            </span>
                         </h2>
                         <p className="text-xs sm:text-sm text-slate-400 max-w-md">
                             {t('login_demo.banner_subtitle', "Start creating your event app today. It's easy, fast and absolutely amazing!")}
@@ -318,7 +323,7 @@ export function ContactSignupDemoSection({ theme, companyName }: SectionProps) {
                                     {t('login_demo.ready_event_title', 'Ready to Create Your Amazing Event?')}
                                 </h3>
                                 <p className="text-[11px] sm:text-xs text-slate-600 font-medium leading-normal max-w-sm">
-                                    Join thousands of happy customers who trust {companyName || 'Event Invit'} for their special moments.
+                                    {t('login_demo.ready_subtitle', 'Join thousands of happy customers who trust {companyName} for their special moments.', { companyName: companyName || 'Event Invit' })}
                                 </p>
                             </div>
 
@@ -329,7 +334,7 @@ export function ContactSignupDemoSection({ theme, companyName }: SectionProps) {
                                     className="font-bold text-white shadow-md px-4 py-2 rounded-xl transition-all hover:opacity-95 text-xs border-0"
                                     style={{ backgroundColor: primaryBtn }}
                                 >
-                                    Get Started Free
+                                    {t('login_demo.get_started_free', 'Get Started Free')}
                                 </Button>
                                 <Button
                                     size="sm"
@@ -337,7 +342,7 @@ export function ContactSignupDemoSection({ theme, companyName }: SectionProps) {
                                     className="font-bold px-4 py-2 rounded-xl bg-white/90 shadow-xs transition-all hover:bg-white border border-primary/50 text-xs text-slate-800"
                                     style={{ borderColor: primaryBtn }}
                                 >
-                                    Book a Demo
+                                    {t('login_demo.book_demo', 'Book a Demo')}
                                 </Button>
                             </div>
                         </div>
@@ -360,7 +365,7 @@ export function ContactSignupDemoSection({ theme, companyName }: SectionProps) {
                                             <QrCode className="h-7 w-7 text-slate-900" />
                                         </div>
                                         <span className="text-[7.5px] font-extrabold text-white leading-none tracking-tight">
-                                            Scan to View Invite
+                                            {t('login_demo.scan_to_view_invite', 'Scan to View Invite')}
                                         </span>
                                     </div>
                                 </div>
@@ -391,10 +396,10 @@ export function SignupDemoSection({ theme, companyName }: SectionProps) {
                         </div>
                         <div className="space-y-1">
                             <h3 className="text-lg sm:text-xl font-bold tracking-tight text-foreground">
-                                Ready to Create Your Event App?
+                                {t('login_demo.ready_title', 'Ready to Create Your Event App?')}
                             </h3>
                             <p className="text-xs sm:text-sm text-muted-foreground">
-                                Join thousands of happy customers who trust {companyName || 'Event Invit'} for their special moments.
+                                {t('login_demo.ready_subtitle', 'Join thousands of happy customers who trust {companyName} for their special moments.', { companyName: companyName || 'Event Invit' })}
                             </p>
                         </div>
                     </div>
@@ -405,7 +410,7 @@ export function SignupDemoSection({ theme, companyName }: SectionProps) {
                             className="font-bold text-white shadow-md px-6 py-2.5 rounded-xl transition-all hover:opacity-95"
                             style={{ backgroundColor: primaryBtn }}
                         >
-                            Get Started Free
+                            {t('login_demo.get_started_free', 'Get Started Free')}
                         </Button>
                         <Button
                             size="lg"
@@ -413,7 +418,7 @@ export function SignupDemoSection({ theme, companyName }: SectionProps) {
                             className="font-bold px-6 py-2.5 rounded-xl bg-background/80 shadow-xs transition-all hover:bg-primary/10 border-2"
                             style={{ borderColor: primaryBtn, color: primaryBtn }}
                         >
-                            View Demo App
+                            {t('login_demo.view_demo_app', 'View Demo App')}
                         </Button>
                     </div>
                 </div>
@@ -447,7 +452,7 @@ export function ChatSignupDemoSection({ theme, companyName }: SectionProps) {
                                 {t('login_demo.still_questions', 'Still Have Questions?')}
                             </h3>
                             <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                                Our friendly team is here to help you with anything you need.
+                                {t('login_demo.friendly_team', 'Our friendly team is here to help you with anything you need.')}
                             </p>
                         </div>
                     </div>
@@ -508,7 +513,7 @@ export function TemplateDemoSection({ theme, companyName }: SectionProps) {
                                         />
                                         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/20 p-1.5 flex flex-col justify-between pointer-events-none">
                                             <span className="font-bold text-[9px] text-white bg-slate-900/80 backdrop-blur-xs px-1.5 py-0.5 rounded-full border border-white/20 self-start">
-                                                Templates
+                                                {t('login_demo.templates_badge', 'Templates')}
                                             </span>
                                         </div>
                                     </div>
@@ -539,7 +544,7 @@ export function TemplateDemoSection({ theme, companyName }: SectionProps) {
                                 </div>
                                 <div className="inline-flex items-center gap-1.5 text-xs font-bold text-foreground/80 shrink-0">
                                     <Eye className="h-4 w-4 shrink-0" style={{ color: primaryBtn }} />
-                                    <span>Preview in Real-time</span>
+                                    <span>{t('login_demo.preview_realtime', 'Preview in Real-time')}</span>
                                 </div>
                             </div>
                         </div>
