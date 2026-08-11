@@ -136,9 +136,15 @@ export function FaqFormContent({ id }: FaqFormContentProps) {
                 onSuccess: async (created: any) => {
                     const newId = Number(created?.id ?? created?.data?.id);
                     if (newId) {
-                        router.replace(`/admin/website-builder/faqs/edit/${newId}`);
+                        // Translate BEFORE navigating. Create lives at
+                        // /faqs/create but this replace goes to /faqs/edit/[id]
+                        // — a different route, so the component unmounts and
+                        // takes the progress overlay with it. Navigating first
+                        // meant a newly created FAQ showed no progress and no
+                        // result toast.
                         // The id exists only here, so it is passed in explicitly.
                         await translation.translateAfterSave(newId);
+                        router.replace(`/admin/website-builder/faqs/edit/${newId}`);
                     } else {
                         router.push('/admin/website-builder/faqs');
                     }
