@@ -68,9 +68,13 @@ export function WebsiteBuilderTranslationsContent() {
   const { data: languages = [] } = useBuilderLanguages();
   const { data: stats } = useWBTranslationStats();
   const { data: sections = [] } = useTranslationSections();
+  // `search` is deliberately NOT sent to the server. It used to sit in the
+  // query key, so every keystroke fired a fresh /translation-keys request — and
+  // that endpoint re-runs a full content scan (~23s on production). Typing five
+  // characters queued five scans. Every key is already loaded here, so the
+  // filter below does it instantly and costs nothing.
   const { data: keys = [], isLoading } = useWBTranslationKeys({
     section: sectionFilter !== 'all' ? sectionFilter : undefined,
-    search: search || undefined,
   });
 
   const saveKeyTranslations = useSaveKeyTranslations();
@@ -125,7 +129,14 @@ export function WebsiteBuilderTranslationsContent() {
     );
   };
 
+  // Mirrors what the server's `search` did (field label, English value, key),
+  // just without the round trip.
+  const needle = search.trim().toLowerCase();
   const filteredKeys = keys.filter((key) => {
+    if (needle) {
+      const haystack = `${key.field_label ?? ''} ${key.default_value ?? ''} ${key.field_key ?? ''}`;
+      if (!haystack.toLowerCase().includes(needle)) return false;
+    }
     if (statusFilter === 'all') return true;
     const languagesToCheck = displayLanguages.length > 0 ? displayLanguages : nonDefaultLanguages;
     for (const lang of languagesToCheck) {

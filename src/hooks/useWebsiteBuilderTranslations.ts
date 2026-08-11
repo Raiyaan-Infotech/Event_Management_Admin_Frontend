@@ -319,13 +319,24 @@ export function useTranslationSections() {
   });
 }
 
-export function useWBTranslationKeys(params: { section?: string; search?: string } = {}) {
+// Both of these hit endpoints that re-run a full content scan (~23s and ~12s on
+// production). With the React Query default of `staleTime: 0` they refetched on
+// every mount, so simply navigating back to the Translations page paid the full
+// cost again. A minute matches the backend's own sync throttle, and every
+// mutation here already invalidates these keys explicitly, so an edit still
+// shows up immediately.
+const TRANSLATION_STALE_MS = 60 * 1000;
+
+export function useWBTranslationKeys(params: { section?: string } = {}) {
   return useQuery({
-    queryKey: [...KEYS_QUERY_KEY, params.section || '', params.search || ''],
+    // `search` is filtered client-side — putting it in the key made every
+    // keystroke trigger another full scan.
+    queryKey: [...KEYS_QUERY_KEY, params.section || ''],
     queryFn: () =>
       api.get<WBTranslationKey[]>('/website-builder/translation-keys', {
-        params: { section: params.section, search: params.search },
+        params: { section: params.section },
       }),
+    staleTime: TRANSLATION_STALE_MS,
   });
 }
 
@@ -333,6 +344,7 @@ export function useWBTranslationStats() {
   return useQuery({
     queryKey: ['website-builder-translation-stats'],
     queryFn: () => api.get<WBTranslationStats>('/website-builder/translation-keys/stats'),
+    staleTime: TRANSLATION_STALE_MS,
   });
 }
 
