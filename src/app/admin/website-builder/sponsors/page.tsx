@@ -369,7 +369,7 @@ export default function PortfolioSponsorsPage() {
                                             section="sponsors"
                                             recordId={sponsor.id}
                                             rowLabel={sponsor.name}
-                                            fields={[{ key: 'name', label: 'Sponsor Name', value: sponsor.name }]}
+                                            fields={[{ key: 'name', label: 'Sponsor Name', value: sponsor.name, required: true }]}
                                         />
                                         <Button
                                             variant="ghost"

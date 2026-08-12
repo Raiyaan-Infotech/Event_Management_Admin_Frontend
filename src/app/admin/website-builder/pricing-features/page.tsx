@@ -579,7 +579,7 @@ export default function PlanFeaturesPage() {
                                                         recordId={Number(feat.id) || undefined}
                                                         rowLabel={feat.feature_name}
                                                         fields={[
-                                                            { key: 'feature_name', label: 'Feature Name', value: feat.feature_name || '' },
+                                                            { key: 'feature_name', label: 'Feature Name', value: feat.feature_name || '', required: true },
                                                             { key: 'description', label: 'Description', value: feat.description || '', type: 'textarea' },
                                                             // The table's CELL values ("Up to 50", "Limited") live per
                                                             // tier inside plan_values_json. The backend registers them

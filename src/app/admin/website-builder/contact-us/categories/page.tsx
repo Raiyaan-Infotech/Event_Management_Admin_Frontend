@@ -353,7 +353,7 @@ export default function ContactCategoriesPage() {
                                                     recordId={cat.id}
                                                     rowLabel={cat.name}
                                                     fields={[
-                                                        { key: 'name', label: 'Category Name', value: cat.name },
+                                                        { key: 'name', label: 'Category Name', value: cat.name, required: true },
                                                         { key: 'description', label: 'Description', value: cat.description, type: 'textarea' },
                                                     ]}
                                                 />

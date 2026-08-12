@@ -323,7 +323,7 @@ export function VideoTutorialDifficultyContent() {
                                                             recordId={Number(lvl.id) || undefined}
                                                             rowLabel={lvl.name}
                                                             fields={[
-                                                                { key: 'name', label: 'Level Name', value: lvl.name || '' },
+                                                                { key: 'name', label: 'Level Name', value: lvl.name || '', required: true },
                                                                 { key: 'description', label: 'Description', value: (lvl as any).description || '', type: 'textarea' },
                                                             ]}
                                                         />

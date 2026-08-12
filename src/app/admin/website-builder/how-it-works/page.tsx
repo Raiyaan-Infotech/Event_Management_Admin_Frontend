@@ -508,10 +508,10 @@ export default function HowItWorksPage() {
                                                     recordId={Number(item.id) || undefined}
                                                     rowLabel={item.title}
                                                     fields={[
-                                                        { key: 'title', label: 'Title', value: item.title || '' },
-                                                        { key: 'description', label: 'Description', value: item.description || '', type: 'textarea' },
-                                                        { key: 'highlight_title', label: 'Highlight Title', value: item.highlight_title || '' },
-                                                        { key: 'highlight_subtext', label: 'Highlight Subtext', value: item.highlight_subtext || '' },
+                                                        { key: 'title', label: 'Title', value: item.title || '', required: true },
+                                                        { key: 'description', label: 'Description', value: item.description || '', type: 'textarea', required: true },
+                                                        { key: 'highlight_title', label: 'Highlight Title', value: item.highlight_title || '', required: true },
+                                                        { key: 'highlight_subtext', label: 'Highlight Subtext', value: item.highlight_subtext || '', required: true },
                                                     ]}
                                                 />
                                                 <Button
@@ -760,10 +760,10 @@ export default function HowItWorksPage() {
                                     recordId={Number(selectedStepId) || undefined}
                                     rowLabel={modalTitle}
                                     fields={[
-                                        { key: 'title', label: 'Title', value: modalTitle || '' },
-                                        { key: 'description', label: 'Description', value: modalDesc || '', type: 'textarea' },
-                                        { key: 'highlight_title', label: 'Highlight Title', value: modalHighlightTitle || '' },
-                                        { key: 'highlight_subtext', label: 'Highlight Subtext', value: modalHighlightSubtext || '' },
+                                        { key: 'title', label: 'Title', value: modalTitle || '', required: true },
+                                        { key: 'description', label: 'Description', value: modalDesc || '', type: 'textarea', required: true },
+                                        { key: 'highlight_title', label: 'Highlight Title', value: modalHighlightTitle || '', required: true },
+                                        { key: 'highlight_subtext', label: 'Highlight Subtext', value: modalHighlightSubtext || '', required: true },
                                     ]}
                                 />
                             ) : null}

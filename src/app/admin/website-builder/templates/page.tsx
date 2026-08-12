@@ -389,7 +389,7 @@ export default function TemplatesPage() {
                                                                 recordId={Number(template.id) || undefined}
                                                                 rowLabel={template.template_name}
                                                                 fields={[
-                                                                    { key: 'template_name', label: 'Template Name', value: template.template_name || '' },
+                                                                    { key: 'template_name', label: 'Template Name', value: template.template_name || '', required: true },
                                                                     { key: 'description', label: 'Description', value: template.description || '', type: 'textarea' },
                                                                 ]}
                                                             />

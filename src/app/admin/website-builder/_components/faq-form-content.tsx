@@ -69,8 +69,8 @@ export function FaqFormContent({ id }: FaqFormContentProps) {
     // Field keys match the `faqs` entry in the backend FIELD_CATALOG, which
     // registers at page_slug='' with the FAQ row id as record_id.
     const translationFields = [
-        { key: 'question', label: 'Question', type: 'textarea' as const, value: question },
-        { key: 'answer', label: 'Answer', type: 'textarea' as const, value: answer },
+        { key: 'question', label: 'Question', type: 'textarea' as const, value: question, required: true },
+        { key: 'answer', label: 'Answer', type: 'textarea' as const, value: answer, required: true },
     ];
     const translation = useSectionTranslation({
         section: 'faqs',
@@ -247,7 +247,8 @@ export function FaqFormContent({ id }: FaqFormContentProps) {
                                     placeholder={isTranslationMode ? question : 'Enter the question here...'}
                                     textareaClassName={cn(
                                         'min-h-[90px] text-xs border-border bg-background text-foreground',
-                                        errors.question && 'border-red-500 ring-1 ring-red-500 bg-red-50/10'
+                                        (errors.question || translation.errors.question) &&
+                                            'border-red-500 ring-1 ring-red-500 bg-red-50/10'
                                     )}
                                 />
                                 <p className="text-[11px] text-muted-foreground mt-1">
@@ -320,7 +321,9 @@ export function FaqFormContent({ id }: FaqFormContentProps) {
 
                             <div className={cn(
                                 'border rounded-xl overflow-hidden bg-background transition-all',
-                                errors.answer ? 'border-red-500 ring-1 ring-red-500' : 'border-border'
+                                errors.answer || translation.errors.answer
+                                    ? 'border-red-500 ring-1 ring-red-500'
+                                    : 'border-border'
                             )}>
                                 <RichTextEditor
                                     {...bind('answer', answer, (val) => {

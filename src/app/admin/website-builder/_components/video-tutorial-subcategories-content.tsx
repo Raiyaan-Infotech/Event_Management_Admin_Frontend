@@ -355,7 +355,7 @@ export function VideoTutorialSubCategoriesContent() {
                                                             recordId={Number(sub.id) || undefined}
                                                             rowLabel={sub.name}
                                                             fields={[
-                                                                { key: 'name', label: 'Sub Category Name', value: sub.name || '' },
+                                                                { key: 'name', label: 'Sub Category Name', value: sub.name || '', required: true },
                                                                 { key: 'description', label: 'Description', value: (sub as any).description || '', type: 'textarea' },
                                                             ]}
                                                         />

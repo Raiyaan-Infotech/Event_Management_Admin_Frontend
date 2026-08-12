@@ -105,7 +105,7 @@ function CreateTemplatePage() {
     // Field keys match the `templates` entry in the backend FIELD_CATALOG,
     // registered at page_slug='' with the template row id as record_id.
     const translationFields = [
-        { key: 'template_name', label: 'Template Name', type: 'input' as const, value: templateName },
+        { key: 'template_name', label: 'Template Name', type: 'input' as const, value: templateName, required: true },
         { key: 'description', label: 'Description', type: 'textarea' as const, value: description },
     ];
     const translation = useSectionTranslation({
@@ -314,7 +314,10 @@ function CreateTemplatePage() {
                                     if (errors.name) setErrors(prev => ({ ...prev, name: false }));
                                 })}
                                 placeholder={isTranslationMode ? templateName : 'e.g., Royal Wedding Invitation'}
-                                inputClassName={cn('!h-10 text-xs', errors.name && 'border-red-500 ring-1 ring-red-500')}
+                                inputClassName={cn(
+                                    '!h-10 text-xs',
+                                    (errors.name || translation.errors.template_name) && 'border-red-500 ring-1 ring-red-500'
+                                )}
                             />
 
                             <div className="space-y-1">

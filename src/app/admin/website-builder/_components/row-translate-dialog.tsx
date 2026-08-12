@@ -46,6 +46,12 @@ export interface RowTranslateField {
   /** Current English source text. */
   value: string;
   type?: 'input' | 'textarea';
+  /**
+   * Mirrors the `*` the row's own form shows. A required field cannot be saved
+   * empty here either — only enforced when the English source has text, since
+   * an empty English field has no registered key and nothing to translate.
+   */
+  required?: boolean;
 }
 
 interface RowTranslateDialogProps {
@@ -78,6 +84,13 @@ export function RowTranslateDialog({
 
   const [activeLanguageId, setActiveLanguageId] = useState<number | null>(null);
   const [values, setValues] = useState<Record<string, string>>({});
+  const [errors, setErrors] = useState<Record<string, boolean>>({});
+
+  // Typing into a field clears its own error, matching every other form here.
+  const setFieldValue = (key: string, value: string) => {
+    setValues((prev) => ({ ...prev, [key]: value }));
+    setErrors((prev) => (prev[key] ? { ...prev, [key]: false } : prev));
+  };
 
   // Default to the first non-default language once they've loaded.
   useEffect(() => {
@@ -88,6 +101,7 @@ export function RowTranslateDialog({
 
   // Reload the editor whenever the selected language or the fetched data changes.
   useEffect(() => {
+    setErrors({});
     if (!activeLanguageId) {
       setValues({});
       return;
@@ -106,6 +120,19 @@ export function RowTranslateDialog({
 
   const handleSave = async () => {
     if (!activeLanguageId) return;
+    // Required fields must be translated, same rule as the per-form mode.
+    const missing = fields.filter(
+      (field) =>
+        field.required &&
+        (field.value || '').trim() &&
+        !(values[field.key] || '').trim()
+    );
+    if (missing.length > 0) {
+      setErrors(Object.fromEntries(missing.map((field) => [field.key, true])));
+      toast.error('Please fill in all required fields marked with *');
+      return;
+    }
+    setErrors({});
     const payload: Record<string, string> = {};
     // Send every field so clearing one back to empty actually persists.
     fields.forEach((field) => {
@@ -124,7 +151,10 @@ export function RowTranslateDialog({
     try {
       const result = await autoTranslate.mutateAsync(activeLanguageId);
       const translated = result?.[activeLanguageId];
-      if (translated) setValues({ ...translated });
+      if (translated) {
+        setValues({ ...translated });
+        setErrors({});
+      }
     } catch {
       // error toast handled by the mutation
     }
@@ -197,31 +227,39 @@ export function RowTranslateDialog({
 
             {/* Field editors — English source shown as the placeholder */}
             <div className="max-h-[45vh] space-y-3 overflow-y-auto pr-1">
-              {fields.map((field) => (
-                <div key={field.key} className="space-y-1">
-                  <Label className="text-[10px] font-bold uppercase text-slate-500">{field.label}</Label>
-                  {field.type === 'textarea' ? (
-                    <Textarea
-                      rows={3}
-                      value={values[field.key] ?? ''}
-                      placeholder={field.value || undefined}
-                      onChange={(event) =>
-                        setValues((prev) => ({ ...prev, [field.key]: event.target.value }))
-                      }
-                      className="text-xs"
-                    />
-                  ) : (
-                    <Input
-                      value={values[field.key] ?? ''}
-                      placeholder={field.value || undefined}
-                      onChange={(event) =>
-                        setValues((prev) => ({ ...prev, [field.key]: event.target.value }))
-                      }
-                      className="h-8 text-xs"
-                    />
-                  )}
-                </div>
-              ))}
+              {fields.map((field) => {
+                const hasError = !!errors[field.key];
+                const errorClass = hasError ? 'border-red-500 ring-1 ring-red-500' : '';
+                return (
+                  <div key={field.key} className="space-y-1">
+                    <Label className="text-[10px] font-bold uppercase text-slate-500">
+                      {field.label}
+                      {field.required ? <span className="ml-1 text-rose-500">*</span> : null}
+                    </Label>
+                    {field.type === 'textarea' ? (
+                      <Textarea
+                        rows={3}
+                        value={values[field.key] ?? ''}
+                        placeholder={field.value || undefined}
+                        onChange={(event) => setFieldValue(field.key, event.target.value)}
+                        className={`text-xs ${errorClass}`}
+                      />
+                    ) : (
+                      <Input
+                        value={values[field.key] ?? ''}
+                        placeholder={field.value || undefined}
+                        onChange={(event) => setFieldValue(field.key, event.target.value)}
+                        className={`h-8 text-xs ${errorClass}`}
+                      />
+                    )}
+                    {hasError ? (
+                      <p className="text-[11px] font-semibold text-rose-500">
+                        {field.label} is required.
+                      </p>
+                    ) : null}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

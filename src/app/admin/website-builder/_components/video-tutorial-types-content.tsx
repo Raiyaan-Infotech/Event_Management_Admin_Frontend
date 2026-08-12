@@ -324,7 +324,7 @@ export function VideoTutorialTypesContent() {
                                                             recordId={Number(t.id) || undefined}
                                                             rowLabel={t.name}
                                                             fields={[
-                                                                { key: 'name', label: 'Type Name', value: t.name || '' },
+                                                                { key: 'name', label: 'Type Name', value: t.name || '', required: true },
                                                                 { key: 'description', label: 'Description', value: (t as any).description || '', type: 'textarea' },
                                                             ]}
                                                         />

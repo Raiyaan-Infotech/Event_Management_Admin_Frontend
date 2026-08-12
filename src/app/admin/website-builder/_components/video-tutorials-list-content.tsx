@@ -459,8 +459,8 @@ export function VideoTutorialsListContent() {
                                                             recordId={Number(item.id) || undefined}
                                                             rowLabel={item.title}
                                                             fields={[
-                                                                { key: 'title', label: 'Title', value: item.title },
-                                                                { key: 'short_description', label: 'Short Description', value: item.short_description || '', type: 'textarea' },
+                                                                { key: 'title', label: 'Title', value: item.title, required: true },
+                                                                { key: 'short_description', label: 'Short Description', value: item.short_description || '', type: 'textarea', required: true },
                                                                 { key: 'key_takeaways', label: 'Key Takeaways', value: (item as any).key_takeaways || '', type: 'textarea' },
                                                             ]}
                                                         />

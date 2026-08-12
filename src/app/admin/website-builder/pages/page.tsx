@@ -191,7 +191,7 @@ export default function PagesListPage() {
                                                     recordId={page.id}
                                                     rowLabel={page.title}
                                                     fields={[
-                                                        { key: 'title', label: 'Title', value: page.title },
+                                                        { key: 'title', label: 'Title', value: page.title, required: true },
                                                         { key: 'excerpt', label: 'Excerpt', value: page.excerpt, type: 'textarea' },
                                                         { key: 'seo_title', label: 'SEO Title', value: page.seoTitle },
                                                         { key: 'seo_description', label: 'SEO Description', value: page.seoDescription, type: 'textarea' },

@@ -511,7 +511,7 @@ export function NavMenuContent() {
                                     section="nav-menu"
                                     recordId={item.dbId}
                                     rowLabel={item.label}
-                                    fields={[{ key: 'label', label: 'Menu Label', value: item.label }]}
+                                    fields={[{ key: 'label', label: 'Menu Label', value: item.label, required: true }]}
                                 />
                             ) : null
                         }

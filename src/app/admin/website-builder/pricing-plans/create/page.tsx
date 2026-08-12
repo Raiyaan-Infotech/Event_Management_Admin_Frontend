@@ -88,7 +88,7 @@ function PricingPlanFormContent() {
     // Field keys match the `pricing-plans` entry in the backend FIELD_CATALOG,
     // registered at page_slug='' with the plan row id as record_id.
     const translationFields = [
-        { key: 'plan_name', label: 'Plan Name', type: 'input' as const, value: planName },
+        { key: 'plan_name', label: 'Plan Name', type: 'input' as const, value: planName, required: true },
         { key: 'subtitle', label: 'Subtitle', type: 'textarea' as const, value: subtitle },
         { key: 'period_label', label: 'Period Label', type: 'input' as const, value: periodLabel },
         { key: 'badge_text', label: 'Badge Text', type: 'input' as const, value: badgeText },
@@ -318,7 +318,8 @@ function PricingPlanFormContent() {
                                 placeholder={isTranslationMode ? planName : 'e.g. Professional Plan'}
                                 inputClassName={cn(
                                     '!h-9 text-xs border-border bg-card text-foreground',
-                                    planNameError && 'border-red-500 ring-1 ring-red-500 bg-red-50/20'
+                                    (planNameError || translation.errors.plan_name) &&
+                                        'border-red-500 ring-1 ring-red-500 bg-red-50/20'
                                 )}
                             />
 

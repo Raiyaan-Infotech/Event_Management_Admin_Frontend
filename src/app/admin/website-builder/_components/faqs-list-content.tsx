@@ -349,8 +349,8 @@ export function FaqsListContent() {
                                                             recordId={Number(faq.id) || undefined}
                                                             rowLabel={faq.question}
                                                             fields={[
-                                                                { key: 'question', label: 'Question', value: faq.question, type: 'textarea' },
-                                                                { key: 'answer', label: 'Answer', value: faq.answer, type: 'textarea' },
+                                                                { key: 'question', label: 'Question', value: faq.question, type: 'textarea', required: true },
+                                                                { key: 'answer', label: 'Answer', value: faq.answer, type: 'textarea', required: true },
                                                             ]}
                                                         />
                                                         <Button

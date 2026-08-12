@@ -141,9 +141,9 @@ export function TestimonialsContent() {
     // edits one testimonial at a time, so the slot follows activeItem —
     // selecting a different row in the table switches what you translate.
     const translationFields = [
-        { key: 'customer_name', label: 'Customer Name', type: 'input' as const, value: activeItem.customerName || '' },
-        { key: 'event_name', label: 'Event Name', type: 'input' as const, value: activeItem.eventName || '' },
-        { key: 'feedback', label: 'Feedback', type: 'textarea' as const, value: activeItem.feedback || '' },
+        { key: 'customer_name', label: 'Customer Name', type: 'input' as const, value: activeItem.customerName || '', required: true },
+        { key: 'event_name', label: 'Event Name', type: 'input' as const, value: activeItem.eventName || '', required: true },
+        { key: 'feedback', label: 'Feedback', type: 'textarea' as const, value: activeItem.feedback || '', required: true },
     ];
     const translation = useSectionTranslation({
         section: 'testimonials',
@@ -339,7 +339,10 @@ export function TestimonialsContent() {
                                 required
                                 maxLength={100}
                                 {...bind('customer_name', activeItem.customerName, (val) => updateActiveItem({ customerName: val }))}
-                                inputClassName="!h-9 text-xs"
+                                inputClassName={cn(
+                                    '!h-9 text-xs',
+                                    translation.errors.customer_name && 'border-red-500 ring-1 ring-red-500'
+                                )}
                             />
 
                             {/* Customer Photo Upload */}
@@ -390,7 +393,10 @@ export function TestimonialsContent() {
                                 required
                                 maxLength={100}
                                 {...bind('event_name', activeItem.eventName, (val) => updateActiveItem({ eventName: val }))}
-                                inputClassName="!h-9 text-xs"
+                                inputClassName={cn(
+                                    '!h-9 text-xs',
+                                    translation.errors.event_name && 'border-red-500 ring-1 ring-red-500'
+                                )}
                             />
 
                             {/* Feedback Text */}
@@ -400,6 +406,9 @@ export function TestimonialsContent() {
                                 maxLength={500}
                                 rows={3}
                                 {...bind('feedback', activeItem.feedback, (val) => updateActiveItem({ feedback: val }))}
+                                textareaClassName={cn(
+                                    translation.errors.feedback && 'border-red-500 ring-1 ring-red-500'
+                                )}
                             />
 
                             {/* Rating Stars */}
@@ -541,9 +550,9 @@ export function TestimonialsContent() {
                                                             recordId={Number(t.id) || undefined}
                                                             rowLabel={t.customerName}
                                                             fields={[
-                                                                { key: 'customer_name', label: 'Customer Name', value: t.customerName },
-                                                                { key: 'event_name', label: 'Event Name', value: t.eventName },
-                                                                { key: 'feedback', label: 'Feedback', value: t.feedback, type: 'textarea' },
+                                                                { key: 'customer_name', label: 'Customer Name', value: t.customerName, required: true },
+                                                                { key: 'event_name', label: 'Event Name', value: t.eventName, required: true },
+                                                                { key: 'feedback', label: 'Feedback', value: t.feedback, type: 'textarea', required: true },
                                                             ]}
                                                         />
                                                         <Button

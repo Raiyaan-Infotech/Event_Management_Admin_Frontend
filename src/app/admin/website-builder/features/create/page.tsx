@@ -108,8 +108,8 @@ function FeatureFormContent() {
     // Field keys match the `features` entry in the backend FIELD_CATALOG,
     // which registers at page_slug='' with the feature row id as record_id.
     const translationFields = [
-        { key: 'title', label: 'Title', type: 'input' as const, value: title },
-        { key: 'short_description', label: 'Short Description', type: 'textarea' as const, value: shortDesc },
+        { key: 'title', label: 'Title', type: 'input' as const, value: title, required: true },
+        { key: 'short_description', label: 'Short Description', type: 'textarea' as const, value: shortDesc, required: true },
         { key: 'detailed_description', label: 'Detailed Description', type: 'textarea' as const, value: detailedDesc },
         // Bullet text is translatable content (the backend flattens
         // bullet_points_json to bullet_1, bullet_2, …). Positions are 1-based on
@@ -403,7 +403,10 @@ function FeatureFormContent() {
                                     if (errors.title) setErrors(prev => ({ ...prev, title: false }));
                                 })}
                                 placeholder={isTranslationMode ? title : 'e.g. Agenda & Schedule'}
-                                inputClassName={cn('!h-9 text-xs border-border bg-card text-foreground', errors.title && 'border-red-500 ring-1 ring-red-500')}
+                                inputClassName={cn(
+                                    '!h-9 text-xs border-border bg-card text-foreground',
+                                    (errors.title || translation.errors.title) && 'border-red-500 ring-1 ring-red-500'
+                                )}
                             />
 
                             <BuilderCountedInput
@@ -415,7 +418,10 @@ function FeatureFormContent() {
                                     if (errors.shortDesc) setErrors(prev => ({ ...prev, shortDesc: false }));
                                 })}
                                 placeholder={isTranslationMode ? shortDesc : 'e.g. Manage events and schedules with beautiful timelines.'}
-                                inputClassName={cn('!h-9 text-xs border-border bg-card text-foreground', errors.shortDesc && 'border-red-500 ring-1 ring-red-500')}
+                                inputClassName={cn(
+                                    '!h-9 text-xs border-border bg-card text-foreground',
+                                    (errors.shortDesc || translation.errors.short_description) && 'border-red-500 ring-1 ring-red-500'
+                                )}
                             />
                         </CardContent>
                     </Card>

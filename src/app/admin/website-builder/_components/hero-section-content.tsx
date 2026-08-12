@@ -224,7 +224,7 @@ export function HeroSectionContent({ pageSlug = 'home' }: HeroSectionContentProp
 
     const translatableFields: TranslatableField[] = [
         { key: 'badge_text', label: 'Badge Text', value: badgeText, type: 'input', maxLength: 60 },
-        { key: 'title', label: 'Title', value: title, type: 'input', maxLength: 120 },
+        { key: 'title', label: 'Title', value: title, type: 'input', maxLength: 120, required: true },
         { key: 'description', label: 'Description', value: description, type: 'textarea', maxLength: 300 },
         { key: 'button_1_label', label: 'Button 1 Label', value: btn1Label, type: 'input', maxLength: 40 },
         { key: 'button_2_label', label: 'Button 2 Label', value: btn2Label, type: 'input', maxLength: 40 },
@@ -428,10 +428,14 @@ export function HeroSectionContent({ pageSlug = 'home' }: HeroSectionContentProp
                             />
 
                             <BuilderCountedInput
-                                label="Title *"
+                                label="Title"
+                                required
                                 {...translation.bind('title', title, setTitle)}
                                 maxLength={70}
-                                inputClassName="!h-7.5 text-xs"
+                                inputClassName={cn(
+                                    '!h-7.5 text-xs',
+                                    translation.errors.title && 'border-red-500 ring-1 ring-red-500'
+                                )}
                             />
 
                             <BuilderCountedTextarea

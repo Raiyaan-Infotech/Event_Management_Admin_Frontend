@@ -231,7 +231,7 @@ export default function TemplateCategoriesPage() {
                             recordId={Number(cat.id) || undefined}
                             rowLabel={cat.name}
                             fields={[
-                                { key: 'name', label: 'Category Name', value: cat.name || '' },
+                                { key: 'name', label: 'Category Name', value: cat.name || '', required: true },
                                 { key: 'description', label: 'Description', value: (cat as any).description || '', type: 'textarea' },
                             ]}
                         />

@@ -16,6 +16,8 @@ export interface TranslatableField {
   value: string; // current English/base value
   type?: 'input' | 'textarea';
   maxLength?: number;
+  /** Mirrors the form's `*`; enforced on save by `useSectionTranslation`. */
+  required?: boolean;
 }
 
 interface TranslationSideCardProps {

@@ -67,7 +67,17 @@ export interface SectionTranslation {
   /** Current translated values, keyed by field key. Empty in English mode. */
   values: Record<string, string>;
   setValue: (fieldKey: string, value: string) => void;
-  /** Persists the translated values. No-op outside translation mode. */
+  /**
+   * Fields flagged `required` that were left blank on the last save attempt,
+   * keyed by field key. Feed into the same red-border className the form
+   * already uses for its English errors. Cleared as soon as the field is typed
+   * into, the language changes, or auto-translate fills it.
+   */
+  errors: Record<string, boolean>;
+  /**
+   * Persists the translated values. No-op outside translation mode.
+   * Returns false (and marks `errors`) when a required field is empty.
+   */
   save: () => Promise<boolean>;
   isSaving: boolean;
   /** Machine-translates every field from English and fills the form. */
@@ -130,11 +140,13 @@ export function useSectionTranslation({
   const registerTranslationKeys = useRegisterTranslationKeys();
 
   const [values, setValues] = useState<Record<string, string>>({});
+  const [errors, setErrors] = useState<Record<string, boolean>>({});
   const [autoTranslateProgress, setAutoTranslateProgress] =
     useState<{ done: number; total: number; field?: string; language?: string } | null>(null);
 
   // Reload whenever the language changes or fresh translations arrive.
   useEffect(() => {
+    setErrors({});
     if (!activeLanguage) {
       setValues({});
       return;
@@ -146,6 +158,7 @@ export function useSectionTranslation({
     // Functional updater: these forms often carry file uploads and rich-text
     // editors whose async callbacks would otherwise write a stale snapshot back.
     setValues((prev) => ({ ...prev, [fieldKey]: value }));
+    setErrors((prev) => (prev[fieldKey] ? { ...prev, [fieldKey]: false } : prev));
   }, []);
 
   const fieldKeys = useMemo(() => fields.map((field) => field.key), [fields]);
@@ -166,6 +179,27 @@ export function useSectionTranslation({
       );
       return false;
     }
+    // A field the form marks with `*` must be translated, exactly as it must be
+    // filled in English. Without this the translated form saved happily with
+    // empty required fields, and the public site silently fell back to the
+    // English text — which reads as "the translation did nothing".
+    //
+    // Skipped when the English source is blank: the backend registers no key
+    // for an empty field (§78), so there would be nothing to translate and the
+    // form could never be saved at all.
+    const missing = fields.filter(
+      (field) =>
+        field.required &&
+        String(field.value ?? '').trim() &&
+        !String(values[field.key] ?? '').trim()
+    );
+    if (missing.length > 0) {
+      setErrors(Object.fromEntries(missing.map((field) => [field.key, true])));
+      toast.error('Please fill in all required fields marked with *');
+      return false;
+    }
+    setErrors({});
+
     // Send every declared field, not just the edited ones, so clearing a
     // translation back to empty actually persists.
     const payload: Record<string, string> = {};
@@ -179,7 +213,7 @@ export function useSectionTranslation({
       // useSaveContentTranslations already surfaces the error toast.
       return false;
     }
-  }, [activeLanguage, recordId, fieldKeys, values, saveTranslation]);
+  }, [activeLanguage, recordId, fields, fieldKeys, values, saveTranslation]);
 
   /**
    * Runs the translation for this record across every active language.
@@ -278,7 +312,12 @@ export function useSectionTranslation({
             // Only when a form language is on screen — saving English has no
             // translated values to display.
             const translated = languageId ? data?.translations?.[languageId] : null;
-            if (translated) setValues({ ...translated });
+            if (translated) {
+              setValues({ ...translated });
+              // Machine-filled fields are no longer blank, so drop any
+              // required-field marks left over from a rejected save.
+              setErrors({});
+            }
           } catch {
             // fall through — the refetch below still picks the values up
           }
@@ -394,6 +433,7 @@ export function useSectionTranslation({
     activeLanguage,
     values,
     setValue,
+    errors,
     save,
     isSaving: saveTranslation.isPending,
     autoTranslate,
@@ -408,7 +448,9 @@ export function useSectionTranslation({
 
 /**
  * Guard for a section's save handler. Returns true when the save was handled as
- * a translation save and the caller should stop.
+ * a translation save and the caller should stop — including when it was
+ * *rejected* for an empty required field, since falling through to the English
+ * save path would then write the English row from a translated form.
  */
 export async function handleTranslationSave(
   translation: SectionTranslation,

@@ -223,6 +223,14 @@ export interface TranslatableFieldInput {
   label: string;
   type?: 'input' | 'textarea';
   value: string;
+  /**
+   * Mirrors the `*` the form shows in English mode. A translation for a
+   * required field cannot be saved empty — see the validation in
+   * `useSectionTranslation.save()`. Only enforced when the English source has
+   * text: with nothing to translate from, the backend registers no key and the
+   * field could never be satisfied.
+   */
+  required?: boolean;
 }
 
 // Called after a section successfully saves its base (English) content, so the

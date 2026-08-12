@@ -139,8 +139,8 @@ export function VideoTutorialFormContent({ id }: VideoTutorialFormContentProps) 
     // Field keys match the `video-tutorials` entry in the backend
     // FIELD_CATALOG, registered at page_slug='' with the row id as record_id.
     const translationFields = [
-        { key: 'title', label: 'Title', type: 'input' as const, value: title },
-        { key: 'short_description', label: 'Short Description', type: 'textarea' as const, value: shortDescription },
+        { key: 'title', label: 'Title', type: 'input' as const, value: title, required: true },
+        { key: 'short_description', label: 'Short Description', type: 'textarea' as const, value: shortDescription, required: true },
         { key: 'key_takeaways', label: 'Key Takeaways', type: 'textarea' as const, value: keyTakeaways },
     ];
     const translation = useSectionTranslation({
@@ -364,7 +364,10 @@ export function VideoTutorialFormContent({ id }: VideoTutorialFormContentProps) 
                                     maxLength={100}
                                     placeholder={isTranslationMode ? title : 'Enter tutorial title...'}
                                     className="bg-background text-xs border-border"
-                                    inputClassName={cn(errors.title && 'border-red-500 ring-1 ring-red-500 bg-red-50/10')}
+                                    inputClassName={cn(
+                                        (errors.title || translation.errors.title) &&
+                                            'border-red-500 ring-1 ring-red-500 bg-red-50/10'
+                                    )}
                                 />
                                 {errors.title && <p className="text-xs text-rose-500 font-semibold">{errors.title}</p>}
                                 <p className="text-[11px] text-muted-foreground">Enter a clear and attractive title for your video tutorial.</p>
@@ -384,7 +387,10 @@ export function VideoTutorialFormContent({ id }: VideoTutorialFormContentProps) 
                                     rows={3}
                                     placeholder={isTranslationMode ? shortDescription : 'Enter a brief description about this tutorial...'}
                                     className="bg-background text-xs border-border"
-                                    textareaClassName={cn(errors.short_description && 'border-red-500 ring-1 ring-red-500 bg-red-50/10')}
+                                    textareaClassName={cn(
+                                        (errors.short_description || translation.errors.short_description) &&
+                                            'border-red-500 ring-1 ring-red-500 bg-red-50/10'
+                                    )}
                                 />
                                 {errors.short_description && <p className="text-xs text-rose-500 font-semibold">{errors.short_description}</p>}
                                 <p className="text-[11px] text-muted-foreground">This will be displayed on the tutorial card.</p>

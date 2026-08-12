@@ -369,7 +369,7 @@ export default function PortfolioClientsPage() {
                                             section="clients"
                                             recordId={client.id}
                                             rowLabel={client.name}
-                                            fields={[{ key: 'name', label: 'Client Name', value: client.name }]}
+                                            fields={[{ key: 'name', label: 'Client Name', value: client.name, required: true }]}
                                         />
                                         <Button
                                             variant="ghost"
