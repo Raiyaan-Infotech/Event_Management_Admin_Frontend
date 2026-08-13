@@ -53,6 +53,10 @@ interface HeroSectionContentProps {
     pageSlug?: string;
 }
 
+// Heroes saved before the colour picker existed have no stored value; white is
+// what they rendered as, so it stays the default here and in `buildHero`.
+const DEFAULT_HERO_TEXT_COLOR = '#FFFFFF';
+
 const PAGES_CONFIG = [
     { slug: 'home', title: 'Home Page' },
     { slug: 'features', title: 'Features Page' },
@@ -108,6 +112,10 @@ export function HeroSectionContent({ pageSlug = 'home' }: HeroSectionContentProp
     const [overlayEnabled, setOverlayEnabled] = useState(true);
     const [overlayColor, setOverlayColor] = useState('#000000');
     const [overlayOpacity, setOverlayOpacity] = useState(60);
+    // Hero text was hardcoded white, which vanishes on a light hero image.
+    // Per page, because each page has its own image.
+    const [titleColor, setTitleColor] = useState(DEFAULT_HERO_TEXT_COLOR);
+    const [descriptionColor, setDescriptionColor] = useState(DEFAULT_HERO_TEXT_COLOR);
     const [buttonLayout, setButtonLayout] = useState<ButtonLayout>('left');
     const [contentAlign, setContentAlign] = useState<ContentAlign>('left');
 
@@ -131,6 +139,8 @@ export function HeroSectionContent({ pageSlug = 'home' }: HeroSectionContentProp
             setOverlayOpacity(heroData.overlay_opacity !== undefined ? Number(heroData.overlay_opacity) : 60);
             setButtonLayout((heroData.button_layout as ButtonLayout) || 'left');
             setContentAlign((heroData.content_alignment as ContentAlign) || 'left');
+            setTitleColor(heroData.title_color || DEFAULT_HERO_TEXT_COLOR);
+            setDescriptionColor(heroData.description_color || DEFAULT_HERO_TEXT_COLOR);
 
             if (heroData.button_1_json) {
                 setBtn1Enabled(Boolean(heroData.button_1_json.enabled));
@@ -166,6 +176,8 @@ export function HeroSectionContent({ pageSlug = 'home' }: HeroSectionContentProp
             setOverlayOpacity(60);
             setButtonLayout('left');
             setContentAlign('left');
+            setTitleColor(DEFAULT_HERO_TEXT_COLOR);
+            setDescriptionColor(DEFAULT_HERO_TEXT_COLOR);
             setBtn1Enabled(true);
             setBtn1Label('Explore Events');
             setBtn1Style('Primary');
@@ -195,6 +207,11 @@ export function HeroSectionContent({ pageSlug = 'home' }: HeroSectionContentProp
                 overlay_opacity: overlayOpacity,
                 button_layout: buttonLayout,
                 content_alignment: contentAlign,
+                // Not columns on company_website_hero_sections — the hook nests
+                // the whole payload under design_json[page_slug] and layers it
+                // back on read, so new fields persist without a migration.
+                title_color: titleColor,
+                description_color: descriptionColor,
                 button_1_json: { enabled: btn1Enabled, label: btn1Label, style: btn1Style, url: btn1CustomUrl },
                 button_2_json: { enabled: btn2Enabled, label: btn2Label, style: btn2Style, url: btn2CustomUrl },
             });
@@ -284,6 +301,8 @@ export function HeroSectionContent({ pageSlug = 'home' }: HeroSectionContentProp
         setOverlayOpacity(60);
         setButtonLayout('left');
         setContentAlign('left');
+        setTitleColor(DEFAULT_HERO_TEXT_COLOR);
+        setDescriptionColor(DEFAULT_HERO_TEXT_COLOR);
         toast.info('Hero Section settings reset.');
     };
 
@@ -672,6 +691,42 @@ export function HeroSectionContent({ pageSlug = 'home' }: HeroSectionContentProp
                         </CardContent>
                     </Card>
 
+                    {/* Text Colors Card */}
+                    <Card className="shadow-xs border-slate-200">
+                        <CardHeader className="py-2 px-3 border-b">
+                            <CardTitle className="text-xs font-bold text-slate-800">Text Colors</CardTitle>
+                            <CardDescription className="text-[10px]">Pick colors that read against this page&apos;s hero image.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-3 space-y-2.5">
+                            {[
+                                { label: 'Title Color', value: titleColor, set: setTitleColor },
+                                { label: 'Description Color', value: descriptionColor, set: setDescriptionColor },
+                            ].map((field) => (
+                                <div key={field.label} className="space-y-1">
+                                    <Label className="text-[10px] font-semibold text-slate-600">{field.label}</Label>
+                                    <div className="flex items-center gap-2 rounded-lg border p-1 bg-white">
+                                        <input
+                                            type="color"
+                                            value={field.value}
+                                            onChange={(e) => field.set(e.target.value)}
+                                            className="h-6 w-7 cursor-pointer p-0.5 rounded border"
+                                        />
+                                        <span className="text-xs font-mono font-bold text-slate-700">{field.value.toUpperCase()}</span>
+                                        {field.value.toUpperCase() !== DEFAULT_HERO_TEXT_COLOR && (
+                                            <button
+                                                type="button"
+                                                onClick={() => field.set(DEFAULT_HERO_TEXT_COLOR)}
+                                                className="ml-auto mr-1 text-[10px] font-semibold text-slate-400 hover:text-slate-700"
+                                            >
+                                                Reset
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </CardContent>
+                    </Card>
+
                     {/* Mobile Settings Card */}
                     <Card className="shadow-xs border-slate-200">
                         <CardHeader className="py-2 px-3 border-b">
@@ -880,11 +935,11 @@ export function HeroSectionContent({ pageSlug = 'home' }: HeroSectionContentProp
                                         </span>
                                     )}
 
-                                    <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white leading-tight">
+                                    <h1 className="text-xl sm:text-2xl font-black tracking-tight leading-tight" style={{ color: titleColor }}>
                                         {title || 'We Create Unforgettable Moments'}
                                     </h1>
 
-                                    <p className="text-xs text-slate-200 leading-relaxed max-w-md">
+                                    <p className="text-xs leading-relaxed max-w-md" style={{ color: descriptionColor }}>
                                         {description || 'From elegant weddings to corporate events, we handle every detail with creativity and perfection.'}
                                     </p>
 

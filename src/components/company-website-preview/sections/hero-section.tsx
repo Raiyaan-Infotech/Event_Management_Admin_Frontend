@@ -54,10 +54,10 @@ function HeroSectionBase({ hero, theme, onNavigate }: { hero: HeroData; theme: T
               {hero.badgeText}
             </span>
           ) : null}
-          <h1 className="max-w-[720px] text-[34px] font-black leading-[1.1] tracking-tight text-white sm:text-[48px] lg:text-[56px]">
+          <h1 className="max-w-[720px] text-[34px] font-black leading-[1.1] tracking-tight sm:text-[48px] lg:text-[56px]" style={{ color: hero.titleColor }}>
             {hero.title}
           </h1>
-          <p className="mt-5 max-w-[500px] text-[15px] font-medium leading-7 text-white/90 sm:text-[16px]" style={{ marginLeft: contentAlign === 'center' ? 'auto' : undefined, marginRight: contentAlign === 'center' ? 'auto' : undefined }}>
+          <p className="mt-5 max-w-[500px] text-[15px] font-medium leading-7 sm:text-[16px]" style={{ color: hero.descriptionColor, marginLeft: contentAlign === 'center' ? 'auto' : undefined, marginRight: contentAlign === 'center' ? 'auto' : undefined }}>
             {hero.description}
           </p>
           <div className="mt-7 flex flex-wrap gap-3" style={{ justifyContent, flexDirection: hero.buttonLayout === 'stack' ? 'column' : 'row' }}>

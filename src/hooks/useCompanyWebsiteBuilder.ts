@@ -30,6 +30,10 @@ export interface CompanyHeroSection {
   overlay_enabled?: boolean | number;
   overlay_color?: string;
   overlay_opacity?: number;
+  // Text colours have no column of their own — they ride inside design_json,
+  // which the query layers over the row and the mutation writes back.
+  title_color?: string;
+  description_color?: string;
   button_1_json?: any;
   button_2_json?: any;
   button_layout?: string;

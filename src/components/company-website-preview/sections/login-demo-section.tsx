@@ -32,6 +32,39 @@ interface SectionProps {
     companyName?: string;
 }
 
+// These CTA cards washed themselves with `bg-primary/5`, `border-primary/20`
+// and `ring-primary/20`. `--primary` in this app is near-black slate, so every
+// one of them rendered grey instead of the site's own colour — the reported
+// "Bg color" on the features and home banners. Washes are mixed from the live
+// theme colour now. Falls back to transparent rather than a solid block if the
+// theme ever hands over something that isn't a hex.
+function alpha(color: string, percent: number) {
+    const value = String(color || '').trim();
+    const short = /^#([0-9a-f])([0-9a-f])([0-9a-f])$/i.exec(value);
+    const full = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(value);
+    const rgb = short
+        ? short.slice(1).map((part) => parseInt(part + part, 16))
+        : full
+            ? full.slice(1).map((part) => parseInt(part, 16))
+            : null;
+    if (!rgb) return 'transparent';
+    return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${percent / 100})`;
+}
+
+// The soft halo behind the round gift/icon badges — was `ring-4 ring-primary/20`.
+function haloStyle(color: string) {
+    return { boxShadow: `0 0 0 4px ${alpha(color, 18)}` };
+}
+
+// Horizontal wash used by the full-width CTA banners.
+function bannerStyle(color: string) {
+    return {
+        borderColor: alpha(color, 22),
+        backgroundColor: '#FFFFFF',
+        backgroundImage: `linear-gradient(90deg, ${alpha(color, 7)}, ${alpha(color, 15)}, ${alpha(color, 7)})`,
+    };
+}
+
 import { useWebsiteLanguage } from '../website-language-provider';
 
 // 1. Home Page / Main: Login & Demo Section
@@ -42,11 +75,11 @@ export function LoginDemoSection({ theme, companyName }: SectionProps) {
     return (
         <section className="w-full py-8 px-4 sm:px-6 lg:px-8">
             <div className="mx-auto w-full max-w-[1280px]">
-                <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
+                <div className="relative overflow-hidden rounded-2xl border p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm" style={bannerStyle(primaryBtn)}>
                     <div className="flex items-center gap-4 sm:gap-5 w-full md:w-auto">
                         <div
-                            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-white shadow-md ring-4 ring-primary/20"
-                            style={{ backgroundColor: primaryBtn }}
+                            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-white"
+                            style={{ backgroundColor: primaryBtn, ...haloStyle(primaryBtn) }}
                         >
                             <Gift className="h-7 w-7 text-white" />
                         </div>
@@ -71,7 +104,7 @@ export function LoginDemoSection({ theme, companyName }: SectionProps) {
                         <Button
                             size="lg"
                             variant="outline"
-                            className="font-bold px-6 py-2.5 rounded-xl bg-background/80 shadow-xs transition-all hover:bg-primary/10 border-2"
+                            className="font-bold px-6 py-2.5 rounded-xl bg-white/80 shadow-xs transition-all hover:bg-white border-2"
                             style={{ borderColor: primaryBtn, color: primaryBtn }}
                         >
                             {t('login_demo.view_demo_app', 'View Demo App')}
@@ -95,7 +128,13 @@ export function FeaturesFirstHighlightSection({ theme, companyName }: SectionPro
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
                         {/* Left Column: Visual Mockup Container with Real Event App Image */}
                         <div className="lg:col-span-3 flex items-center justify-center">
-                            <div className="relative w-full rounded-2xl bg-gradient-to-br from-primary/15 via-primary/5 to-purple-500/10 border border-primary/20 p-4 flex flex-col items-center justify-center min-h-[220px] overflow-hidden group">
+                            <div
+                                className="relative w-full rounded-2xl border p-4 flex flex-col items-center justify-center min-h-[220px] overflow-hidden group"
+                                style={{
+                                    borderColor: alpha(primaryBtn, 22),
+                                    backgroundImage: `linear-gradient(135deg, ${alpha(primaryBtn, 18)}, ${alpha(primaryBtn, 6)}, rgba(168, 85, 247, 0.10))`,
+                                }}
+                            >
                                 <div
                                     className="absolute -right-8 -top-8 h-32 w-32 rounded-full blur-2xl opacity-30 pointer-events-none"
                                     style={{ backgroundColor: primaryBtn }}
@@ -165,20 +204,28 @@ export function FeaturesFirstHighlightSection({ theme, companyName }: SectionPro
                                 </div>
                             </div>
 
-                            <div>
-                                <span className="inline-flex items-center rounded-xl bg-primary/10 text-primary text-xs font-bold px-3 py-1.5 border border-primary/20">
-                                    {t('login_demo.and_feature_plans', '... and Feature Plans')}
-                                </span>
-                            </div>
+                            {/* Plain text, not a pill: in the reference it reads
+                                as a trailing aside to the feature list, and a
+                                seventh chip made it look like another feature. */}
+                            <p className="text-xs font-semibold text-muted-foreground">
+                                {t('login_demo.and_feature_plans', '... and Feature Plans')}
+                            </p>
                         </div>
 
                         {/* Right Column: CTA Box (1:1 Match to Mockup Image 2) */}
                         <div className="lg:col-span-4">
-                            <div className="rounded-2xl border border-primary/20 bg-gradient-to-b from-primary/10 via-primary/5 to-background p-6 space-y-4 shadow-sm">
+                            <div
+                                className="rounded-2xl border p-6 space-y-4 shadow-sm"
+                                style={{
+                                    borderColor: alpha(primaryBtn, 22),
+                                    backgroundColor: '#FFFFFF',
+                                    backgroundImage: `linear-gradient(180deg, ${alpha(primaryBtn, 16)}, ${alpha(primaryBtn, 8)}, ${alpha(primaryBtn, 3)})`,
+                                }}
+                            >
                                 <div className="flex items-start gap-3.5 text-left">
                                     <div
-                                        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-white shadow-md ring-4 ring-primary/20"
-                                        style={{ backgroundColor: primaryBtn }}
+                                        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-white"
+                                        style={{ backgroundColor: primaryBtn, ...haloStyle(primaryBtn) }}
                                     >
                                         <Gift className="h-6 w-6 text-white" />
                                     </div>
@@ -330,11 +377,14 @@ export function ContactSignupDemoSection({ theme, companyName }: SectionProps) {
                                 </p>
                             </div>
 
-                            {/* 2 Action Buttons */}
+                            {/* 2 Action Buttons. The secondary is a neutral
+                                outline, not a second brand-coloured control —
+                                a pink border made it compete with the primary
+                                for attention instead of receding behind it. */}
                             <div className="flex flex-wrap items-center gap-2.5 pt-0.5">
                                 <Button
                                     size="sm"
-                                    className="font-bold text-white shadow-md px-4 py-2 rounded-xl transition-all hover:opacity-95 text-xs border-0"
+                                    className="font-bold text-white shadow-md px-4 py-2 rounded-lg transition-all hover:opacity-95 text-xs border-0"
                                     style={{ backgroundColor: primaryBtn }}
                                 >
                                     {t('login_demo.get_started_free', 'Get Started Free')}
@@ -342,8 +392,7 @@ export function ContactSignupDemoSection({ theme, companyName }: SectionProps) {
                                 <Button
                                     size="sm"
                                     variant="outline"
-                                    className="font-bold px-4 py-2 rounded-xl bg-white/90 shadow-xs transition-all hover:bg-white border border-primary/50 text-xs text-slate-800"
-                                    style={{ borderColor: primaryBtn }}
+                                    className="font-bold px-4 py-2 rounded-lg bg-white shadow-xs transition-all hover:bg-slate-50 border border-slate-300 text-xs text-slate-900"
                                 >
                                     {t('login_demo.book_demo', 'Book a Demo')}
                                 </Button>
@@ -389,11 +438,11 @@ export function SignupDemoSection({ theme, companyName }: SectionProps) {
     return (
         <section className="w-full py-8 px-4 sm:px-6 lg:px-8">
             <div className="mx-auto w-full max-w-[1280px]">
-                <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
+                <div className="relative overflow-hidden rounded-2xl border p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm" style={bannerStyle(primaryBtn)}>
                     <div className="flex items-center gap-4 sm:gap-5 w-full md:w-auto">
                         <div
-                            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-white shadow-md ring-4 ring-primary/20"
-                            style={{ backgroundColor: primaryBtn }}
+                            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-white"
+                            style={{ backgroundColor: primaryBtn, ...haloStyle(primaryBtn) }}
                         >
                             <Gift className="h-7 w-7 text-white" />
                         </div>
@@ -418,7 +467,7 @@ export function SignupDemoSection({ theme, companyName }: SectionProps) {
                         <Button
                             size="lg"
                             variant="outline"
-                            className="font-bold px-6 py-2.5 rounded-xl bg-background/80 shadow-xs transition-all hover:bg-primary/10 border-2"
+                            className="font-bold px-6 py-2.5 rounded-xl bg-white/80 shadow-xs transition-all hover:bg-white border-2"
                             style={{ borderColor: primaryBtn, color: primaryBtn }}
                         >
                             {t('login_demo.view_demo_app', 'View Demo App')}
@@ -438,14 +487,22 @@ export function ChatSignupDemoSection({ theme, companyName }: SectionProps) {
     return (
         <section className="w-full py-8 px-4 sm:px-6 lg:px-8">
             <div className="mx-auto w-full max-w-[1280px]">
-                <div className="relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-r from-primary/10 via-primary/5 to-purple-500/10 p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
+                <div
+                    className="relative overflow-hidden rounded-3xl border p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm"
+                    style={{
+                        borderColor: alpha(primaryBtn, 22),
+                        backgroundColor: '#FFFFFF',
+                        backgroundImage: `linear-gradient(90deg, ${alpha(primaryBtn, 15)}, ${alpha(primaryBtn, 6)}, rgba(168, 85, 247, 0.10))`,
+                    }}
+                >
                     {/* Left: Support / Mail Envelope Image & Title/Subtitle */}
                     <div className="flex items-center gap-5 w-full md:w-auto">
                         <div className="relative shrink-0 flex items-center justify-center">
                             <img
                                 src="https://images.unsplash.com/photo-1596526131083-e8c633c948d2?q=80&w=400&auto=format&fit=crop"
                                 alt="Support Chat Contact"
-                                className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl object-cover shadow-lg border-2 border-white ring-4 ring-primary/20"
+                                className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl object-cover shadow-lg border-2 border-white"
+                                style={haloStyle(primaryBtn)}
                             />
                         </div>
 
@@ -473,7 +530,7 @@ export function ChatSignupDemoSection({ theme, companyName }: SectionProps) {
                         <Button
                             size="lg"
                             variant="outline"
-                            className="font-bold px-6 py-3 rounded-xl bg-background/90 shadow-xs transition-all hover:bg-primary/10 border-2 gap-2 text-xs sm:text-sm flex items-center"
+                            className="font-bold px-6 py-3 rounded-xl bg-white/90 shadow-xs transition-all hover:bg-white border-2 gap-2 text-xs sm:text-sm flex items-center"
                             style={{ borderColor: primaryBtn, color: primaryBtn }}
                         >
                             <Calendar className="h-4 w-4 shrink-0" style={{ color: primaryBtn }} />
@@ -494,11 +551,17 @@ export function TemplateDemoSection({ theme, companyName }: SectionProps) {
     return (
         <section className="w-full py-8 px-4 sm:px-6 lg:px-8">
             <div className="mx-auto w-full max-w-[1280px]">
-                <div className="relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 p-6 sm:p-8 shadow-sm">
+                <div className="relative overflow-hidden rounded-3xl border p-6 sm:p-8 shadow-sm" style={bannerStyle(primaryBtn)}>
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
                         {/* Left: Mobile App Showcase Graphic (3 cols) */}
                         <div className="lg:col-span-3 flex items-center justify-center">
-                            <div className="relative w-full max-w-[170px] rounded-2xl bg-gradient-to-br from-primary/15 via-primary/5 to-purple-500/10 border border-primary/20 p-3 flex items-center justify-center min-h-[140px] overflow-hidden group">
+                            <div
+                                className="relative w-full max-w-[170px] rounded-2xl border p-3 flex items-center justify-center min-h-[140px] overflow-hidden group"
+                                style={{
+                                    borderColor: alpha(primaryBtn, 22),
+                                    backgroundImage: `linear-gradient(135deg, ${alpha(primaryBtn, 18)}, ${alpha(primaryBtn, 6)}, rgba(168, 85, 247, 0.10))`,
+                                }}
+                            >
                                 <div
                                     className="absolute -right-6 -top-6 h-28 w-28 rounded-full blur-2xl opacity-30 pointer-events-none"
                                     style={{ backgroundColor: primaryBtn }}

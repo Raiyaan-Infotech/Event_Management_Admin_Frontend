@@ -68,7 +68,11 @@ function TestimonialsSectionBase({ testimonials, theme }: { testimonials: Testim
                 // Reading order matches the reference design: rating, then the
                 // quote, then who said it. Left-aligned — centred text is hard
                 // to scan once a testimonial runs past a line or two.
-                <article key={`${item.id}-${position}`} className={cn('relative flex flex-col items-start text-left rounded-xl border border-slate-200 bg-white px-6 py-6 shadow-sm transition-all duration-300', isActive ? 'z-10 min-h-[300px] md:-translate-y-2 md:px-7 md:py-7 md:shadow-lg' : 'min-h-[280px] md:scale-[0.94] md:opacity-90', canSlide && !isActive && 'hidden md:flex')}>
+                // No min-height here: the grid is items-stretch, so the longest
+                // quote already sets the row's height. A fixed floor on top of
+                // that inflates every card past its content, and the flex-1
+                // below turns the surplus into a gap above the author row.
+                <article key={`${item.id}-${position}`} className={cn('relative flex flex-col items-start text-left rounded-xl border border-slate-200 bg-white px-6 py-6 shadow-sm transition-all duration-300', isActive ? 'z-10 md:-translate-y-2 md:px-7 md:py-7 md:shadow-lg' : 'md:scale-[0.94] md:opacity-90', canSlide && !isActive && 'hidden md:flex')}>
                   {item.showRating ? (
                     <div className="flex items-center gap-0.5">
                       {Array.from({ length: 5 }).map((_, i) => (

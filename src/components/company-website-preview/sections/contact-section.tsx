@@ -84,27 +84,28 @@ function ContactSectionBase({ contact, theme }: { contact: ContactData; theme: T
                 />
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1.5 block text-[12px] font-bold text-slate-700">{t('contact.email_address', 'Email Address')}</label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData((p) => ({ ...p, email: e.target.value }))}
-                    placeholder={t('contact.email_placeholder', 'Enter your email address')}
-                    className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[13px] text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-900/5"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-[12px] font-bold text-slate-700">{t('contact.phone_number', 'Phone Number')}</label>
-                  <input
-                    value={formData.phone}
-                    onChange={(e) => setFormData((p) => ({ ...p, phone: e.target.value }))}
-                    placeholder={t('contact.phone_placeholder', 'Enter your phone number')}
-                    className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[13px] text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-900/5"
-                  />
-                </div>
+              {/* One field per row. Email and phone shared a 2-column grid,
+                  which read as a broken row rather than two fields. */}
+              <div>
+                <label className="mb-1.5 block text-[12px] font-bold text-slate-700">{t('contact.email_address', 'Email Address')}</label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData((p) => ({ ...p, email: e.target.value }))}
+                  placeholder={t('contact.email_placeholder', 'Enter your email address')}
+                  className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[13px] text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-900/5"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-[12px] font-bold text-slate-700">{t('contact.phone_number', 'Phone Number')}</label>
+                <input
+                  value={formData.phone}
+                  onChange={(e) => setFormData((p) => ({ ...p, phone: e.target.value }))}
+                  placeholder={t('contact.phone_placeholder', 'Enter your phone number')}
+                  className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[13px] text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-900/5"
+                />
               </div>
 
               {contact.categories && contact.categories.length ? (
@@ -150,13 +151,19 @@ function ContactSectionBase({ contact, theme }: { contact: ContactData; theme: T
           {/* ── Contact Information + map (one card) ────────────────────── */}
           <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div className="grid h-full sm:grid-cols-[1.3fr_1fr]">
-              <div className="p-6 sm:p-7">
-                <h3 className="text-[17px] font-black" style={{ color: theme.primaryText }}>
-                  {t('contact.info_title', 'Contact Information')}
-                </h3>
-                <div className="mt-2 h-[3px] w-10 rounded-full" style={{ backgroundColor: theme.primaryButton }} />
+              {/* The card is stretched to the form's height, so the details
+                  used to end well short of the bottom edge and leave a dead
+                  block under the social icons. The rows take the slack and
+                  centre in it; the icons stay pinned to the bottom. */}
+              <div className="flex flex-col p-6 sm:p-7">
+                <div>
+                  <h3 className="text-[17px] font-black" style={{ color: theme.primaryText }}>
+                    {t('contact.info_title', 'Contact Information')}
+                  </h3>
+                  <div className="mt-2 h-[3px] w-10 rounded-full" style={{ backgroundColor: theme.primaryButton }} />
+                </div>
 
-                <div className="mt-6 space-y-5">
+                <div className="mt-6 flex flex-1 flex-col justify-center gap-5">
                   {contact.email ? (
                     <div className="flex items-start gap-3">
                       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: `${theme.primaryButton}1A`, color: theme.primaryButton }}>

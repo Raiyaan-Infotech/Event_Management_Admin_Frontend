@@ -349,6 +349,11 @@ export function buildHero(rawHeroSection: AnyRecord, theme: ReturnType<typeof pa
     badgeText: stringValue(heroSection.badge_text, 'Best Event Management'),
     title: stringValue(heroSection.title, 'Creating Unforgettable Moments'),
     description: stringValue(heroSection.description, 'We create beautiful, memorable and perfect events that stay with you forever.'),
+    // Text colour is admin-picked per page: the hero image can be dark or
+    // light, and white text disappears on a light one. Defaulting to white
+    // keeps every hero saved before the picker existed looking as it did.
+    titleColor: stringValue(heroSection.title_color, '#FFFFFF'),
+    descriptionColor: stringValue(heroSection.description_color, '#FFFFFF'),
     height: stringValue(heroSection.hero_height, 'medium'),
     overlayEnabled: boolValue(heroSection.overlay_enabled, true),
     overlayColor: stringValue(heroSection.overlay_color, '#050505'),
