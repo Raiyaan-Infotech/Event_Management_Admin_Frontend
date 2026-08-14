@@ -12,6 +12,30 @@ interface SelectContextValue {
     setOpen: (open: boolean) => void;
     onValueChange?: (value: any) => void;
     triggerRef: React.RefObject<HTMLButtonElement | null>;
+    /** value -> the SelectItem's label, so the trigger can show text not the raw value. */
+    labels: Map<string, React.ReactNode>;
+}
+
+/**
+ * Walk the JSX tree for SelectItem elements and record value -> label.
+ *
+ * Done by inspecting children rather than having each item register itself on
+ * mount, because SelectContent renders nothing while the menu is closed — the
+ * items do not exist to register, and the trigger still has to show a label.
+ */
+function collectItemLabels(children: React.ReactNode, map: Map<string, React.ReactNode>) {
+    React.Children.forEach(children, (child) => {
+        if (!React.isValidElement(child)) return;
+
+        if (child.type === SelectItem) {
+            const { value, children: label } = child.props as { value: string; children: React.ReactNode };
+            if (value !== undefined) map.set(String(value), label);
+            return;
+        }
+
+        const nested = (child.props as { children?: React.ReactNode })?.children;
+        if (nested) collectItemLabels(nested, map);
+    });
 }
 
 const SelectContext = React.createContext<SelectContextValue | null>(null);
@@ -40,6 +64,12 @@ export function Select({ value: valueProp, defaultValue, disabled, onValueChange
 
     const triggerRef = React.useRef<HTMLButtonElement | null>(null);
 
+    const labels = React.useMemo(() => {
+        const map = new Map<string, React.ReactNode>();
+        collectItemLabels(children, map);
+        return map;
+    }, [children]);
+
     const handleValueChange = React.useCallback(
         (val: any) => {
             if (!isControlled) {
@@ -51,7 +81,7 @@ export function Select({ value: valueProp, defaultValue, disabled, onValueChange
     );
 
     return (
-        <SelectContext.Provider value={{ value: activeValue, disabled, open, setOpen, onValueChange: handleValueChange, triggerRef }}>
+        <SelectContext.Provider value={{ value: activeValue, disabled, open, setOpen, onValueChange: handleValueChange, triggerRef, labels }}>
             <div className="relative flex w-full">{children}</div>
         </SelectContext.Provider>
     );
@@ -84,13 +114,25 @@ export function SelectTrigger({
 }
 
 export function SelectValue({ placeholder, children }: { placeholder?: string; children?: React.ReactNode }) {
-    const { value } = useSelect();
+    const { value, labels } = useSelect();
 
+    // An explicit label always wins.
     if (children !== undefined && children !== null) {
         return <span className="line-clamp-1 font-medium">{children}</span>;
     }
 
-    return <span className="line-clamp-1 font-medium">{value || placeholder}</span>;
+    // Show the matching item's label rather than the raw value: `value` is
+    // usually an id or a slug ("1", "pending"), and printing it was showing
+    // users "1" where the option reads "Active".
+    const label = value !== undefined && value !== '' ? labels.get(String(value)) : undefined;
+    if (label !== undefined && label !== null && label !== '') {
+        return <span className="line-clamp-1 font-medium">{label}</span>;
+    }
+
+    // No match — options may still be loading, or the value is stale. The
+    // placeholder is a better answer than a bare id. Falling back to `value`
+    // only when there is no placeholder keeps something visible.
+    return <span className="line-clamp-1 font-medium">{placeholder ?? value}</span>;
 }
 
 export function SelectContent({
