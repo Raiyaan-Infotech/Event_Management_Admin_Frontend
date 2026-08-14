@@ -33,19 +33,22 @@ export default function EventTypesPage() {
             entityLabel="Event Type"
             entityPlural="Event Types"
             description="Create and manage the event types that sit under each event category."
-            breadcrumb={['Dashboard', 'Menu Management', 'Event Type']}
             nameLabel="Event Type Name"
             namePlaceholder="Enter event type name"
             iconLabel="Type Icon"
             colorLabel="Type Color"
             permissionPrefix="event_types"
             defaultColor="#6366F1"
-            categorySelect={{
-                label: 'Event Category',
-                placeholder: 'Select event category',
-                options: categories?.data ?? [],
-                isLoading: categoriesLoading,
-            }}
+            scopeSelects={[
+                {
+                    key: 'event_category_id',
+                    label: 'Event Category',
+                    placeholder: 'Select event category',
+                    options: categories?.data ?? [],
+                    isLoading: categoriesLoading,
+                    emptyHint: 'No event categories yet — create one first.',
+                },
+            ]}
             data={data?.data ?? []}
             pagination={data?.pagination ?? null}
             isLoading={isLoading}

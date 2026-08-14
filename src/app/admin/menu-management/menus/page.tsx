@@ -102,7 +102,14 @@ export default function MenuListPage() {
         is_active: true,
         event_category_id: categoryId === ALL ? undefined : categoryId,
     });
-    const { data: religions } = useReligions({ limit: 200, is_active: true });
+    // Religions are scoped under (category, type) too, so this narrows with the
+    // other two filters rather than listing every religion in the company.
+    const { data: religions } = useReligions({
+        limit: 200,
+        is_active: true,
+        event_category_id: categoryId === ALL ? undefined : categoryId,
+        event_type_id: typeId === ALL ? undefined : typeId,
+    });
 
     const toggleFlag = useToggleEventMenuFlag();
     const updateStatus = useUpdateEventMenuStatus();
@@ -157,13 +164,6 @@ export default function MenuListPage() {
                 {/* Header */}
                 <div className="flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <div className="mb-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <span>Dashboard</span>
-                            <span>›</span>
-                            <span>Menu Management</span>
-                            <span>›</span>
-                            <span className="font-semibold text-foreground">Menu List</span>
-                        </div>
                         <h1 className="text-xl font-extrabold tracking-tight text-foreground">Menu List</h1>
                         <p className="text-xs text-muted-foreground">
                             Menus shown on the website and mobile app, grouped by event category, type and religion.
@@ -230,9 +230,11 @@ export default function MenuListPage() {
                                     value={categoryId}
                                     onValueChange={(v) => {
                                         setCategoryId(v);
-                                        // The chosen type may not belong to the new
-                                        // category, which would filter to nothing.
+                                        // The chosen type and religion may not belong
+                                        // to the new category, which would filter to
+                                        // nothing.
                                         setTypeId(ALL);
+                                        setReligionId(ALL);
                                         setPage(1);
                                     }}
                                 >
@@ -258,6 +260,8 @@ export default function MenuListPage() {
                                     value={typeId}
                                     onValueChange={(v) => {
                                         setTypeId(v);
+                                        // Religion is scoped to the type.
+                                        setReligionId(ALL);
                                         setPage(1);
                                     }}
                                 >

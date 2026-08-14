@@ -41,8 +41,6 @@ import {
     type MenuPlatform,
 } from '@/hooks/use-menu-management';
 
-const NONE = 'none';
-
 interface FormState {
     name: string;
     menu_type: MenuPlatform[];
@@ -86,7 +84,16 @@ export function MenuFormContent() {
 
     const { data: existing, isLoading: loadingMenu, refetch } = useEventMenu(id ?? undefined);
     const { data: categories, isLoading: loadingCategories } = useEventCategories({ limit: 200, is_active: true });
-    const { data: religions } = useReligions({ limit: 200, is_active: true });
+
+    // Religions are scoped under (category, type) as well, so the list narrows
+    // with the cascade. Fetching unscoped would offer religions the backend
+    // rejects for this menu.
+    const { data: religions, isLoading: loadingReligions } = useReligions({
+        limit: 200,
+        is_active: true,
+        event_category_id: form.event_category_id || undefined,
+        event_type_id: form.event_type_id || undefined,
+    });
 
     // Event Types are fetched for the selected category only — a type from
     // another category is rejected by the backend, so it must not be offerable.
@@ -154,6 +161,7 @@ export function MenuFormContent() {
         if (form.menu_type.length === 0) next.menu_type = true;
         if (!form.event_category_id) next.event_category_id = true;
         if (!form.event_type_id) next.event_type_id = true;
+        if (!form.religion_id) next.religion_id = true;
         if (!form.icon.trim()) next.icon = true;
         if (!form.color.trim()) next.color = true;
 
@@ -169,9 +177,7 @@ export function MenuFormContent() {
             menu_type: form.menu_type,
             event_category_id: Number(form.event_category_id),
             event_type_id: Number(form.event_type_id),
-            // Religion is optional — the list legitimately shows "—" for
-            // corporate and other non-religious events.
-            religion_id: form.religion_id ? Number(form.religion_id) : null,
+            religion_id: Number(form.religion_id),
             // A platform the menu does not target has no meaningful status.
             display_website: wantsWebsite ? form.display_website : false,
             display_mobile: wantsMobile ? form.display_mobile : false,
@@ -195,6 +201,7 @@ export function MenuFormContent() {
         if (form.menu_type.length === 0) next.menu_type = true;
         if (!form.event_category_id) next.event_category_id = true;
         if (!form.event_type_id) next.event_type_id = true;
+        if (!form.religion_id) next.religion_id = true;
         if (!form.icon.trim()) next.icon = true;
         if (!form.color.trim()) next.color = true;
 
@@ -211,7 +218,7 @@ export function MenuFormContent() {
                 menu_type: form.menu_type,
                 event_category_id: Number(form.event_category_id),
                 event_type_id: Number(form.event_type_id),
-                religion_id: form.religion_id ? Number(form.religion_id) : null,
+                religion_id: Number(form.religion_id),
                 display_website: wantsWebsite ? form.display_website : false,
                 display_mobile: wantsMobile ? form.display_mobile : false,
                 active_website: wantsWebsite ? form.active_website : false,
@@ -261,15 +268,6 @@ export function MenuFormContent() {
                 {/* Header */}
                 <div className="flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <div className="mb-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <span>Dashboard</span>
-                            <span>›</span>
-                            <span>Menu Management</span>
-                            <span>›</span>
-                            <span className="font-semibold text-foreground">
-                                {isEdit ? 'Edit Menu' : 'Add Menu Name'}
-                            </span>
-                        </div>
                         <h1 className="text-xl font-extrabold tracking-tight text-foreground">
                             {isEdit ? 'Edit Menu' : 'Add Menu Name'}
                         </h1>
@@ -358,9 +356,11 @@ export function MenuFormContent() {
                                     value={form.event_category_id}
                                     onValueChange={(v) => {
                                         setField('event_category_id', v);
-                                        // The current type belongs to the old
-                                        // category; keeping it would fail validation.
+                                        // Type AND religion are scoped under the
+                                        // category; keeping either would fail
+                                        // server validation.
                                         setField('event_type_id', '');
+                                        setField('religion_id', '');
                                     }}
                                 >
                                     <SelectTrigger className={cn('h-10', errors.event_category_id && 'border-destructive')}>
@@ -388,7 +388,11 @@ export function MenuFormContent() {
                                 </Label>
                                 <Select
                                     value={form.event_type_id}
-                                    onValueChange={(v) => setField('event_type_id', v)}
+                                    onValueChange={(v) => {
+                                        setField('event_type_id', v);
+                                        // Religion is scoped to the event type.
+                                        setField('religion_id', '');
+                                    }}
                                     disabled={!form.event_category_id}
                                 >
                                     <SelectTrigger className={cn('h-10', errors.event_type_id && 'border-destructive')}>
@@ -417,25 +421,41 @@ export function MenuFormContent() {
                             </div>
 
                             <div className="space-y-1.5">
-                                <Label className="text-sm font-medium">Religion</Label>
+                                <Label className="text-sm font-medium">
+                                    Religion <span className="text-destructive">*</span>
+                                </Label>
                                 <Select
-                                    value={form.religion_id || NONE}
-                                    onValueChange={(v) => setField('religion_id', v === NONE ? '' : v)}
+                                    value={form.religion_id}
+                                    onValueChange={(v) => setField('religion_id', v)}
+                                    disabled={!form.event_type_id}
                                 >
-                                    <SelectTrigger className="h-10">
-                                        <SelectValue placeholder="Select religion" />
+                                    <SelectTrigger
+                                        className={cn('h-10', errors.religion_id && 'border-destructive')}
+                                    >
+                                        <SelectValue
+                                            placeholder={
+                                                form.event_type_id ? 'Select religion' : 'Select an event type first'
+                                            }
+                                        />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value={NONE}>None</SelectItem>
-                                        {(religions?.data ?? []).map((r) => (
-                                            <SelectItem key={r.id} value={String(r.id)}>
-                                                {r.name}
-                                            </SelectItem>
-                                        ))}
+                                        {(religions?.data ?? []).length === 0 ? (
+                                            <div className="px-2 py-3 text-xs text-muted-foreground">
+                                                {loadingReligions
+                                                    ? 'Loading…'
+                                                    : 'No religions for this event type.'}
+                                            </div>
+                                        ) : (
+                                            (religions?.data ?? []).map((r) => (
+                                                <SelectItem key={r.id} value={String(r.id)}>
+                                                    {r.name}
+                                                </SelectItem>
+                                            ))
+                                        )}
                                     </SelectContent>
                                 </Select>
                                 <p className="text-[11px] text-muted-foreground">
-                                    Optional — leave as None for non-religious events.
+                                    Religions are listed for the selected event category and type.
                                 </p>
                             </div>
                         </div>

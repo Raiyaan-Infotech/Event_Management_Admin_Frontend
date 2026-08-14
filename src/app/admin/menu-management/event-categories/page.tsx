@@ -27,7 +27,6 @@ export default function EventCategoriesPage() {
             entityLabel="Event Category"
             entityPlural="Event Categories"
             description="Create and manage the categories that group your events."
-            breadcrumb={['Dashboard', 'Menu Management', 'Event Category']}
             nameLabel="Category Name"
             namePlaceholder="Enter event category name"
             iconLabel="Category Icon"

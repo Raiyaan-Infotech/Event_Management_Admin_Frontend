@@ -40,7 +40,6 @@ export interface TaxonomyManagerProps<T extends TaxonomyRecord> {
     /** Plural, for the table heading and empty state. */
     entityPlural: string;
     description: string;
-    breadcrumb: string[];
     /** Field label for the name input, e.g. "Category Name". */
     nameLabel: string;
     namePlaceholder: string;
@@ -52,15 +51,34 @@ export interface TaxonomyManagerProps<T extends TaxonomyRecord> {
     defaultColor?: string;
 
     /**
-     * Event Types only: renders the "Event Category *" select and sends
-     * event_category_id with the payload.
+     * Cascading scope selects rendered before the name field.
+     *
+     * Event Types has one (Event Category). Religions has two — Event Category
+     * then its Event Type — matching how the records are actually scoped.
+     * Each entry names the payload key it writes, so the same component serves
+     * both without knowing the domain.
      */
-    categorySelect?: {
+    scopeSelects?: Array<{
+        key: 'event_category_id' | 'event_type_id';
         label: string;
         placeholder: string;
         options: Array<{ id: number; name: string }>;
         isLoading?: boolean;
-    };
+        /** Shown in place of the option list when there is nothing to choose. */
+        emptyHint?: string;
+        /** Locked until an earlier select has a value. */
+        disabledUntil?: 'event_category_id';
+        /** Cleared when this select changes, so a stale child can't survive. */
+        clears?: Array<'event_category_id' | 'event_type_id'>;
+    }>;
+
+    /**
+     * Fired whenever a scope value changes — on selection, on edit, and on
+     * reset. The page needs it to refetch a dependent list (Event Types for the
+     * chosen category); without the edit/reset calls, opening a saved row would
+     * show an empty child dropdown.
+     */
+    onScopeChange?: (key: 'event_category_id' | 'event_type_id', value: string) => void;
 
     data: T[];
     pagination: PaginationMeta | null;
@@ -83,6 +101,7 @@ interface FormState {
     color: string;
     is_active: boolean;
     event_category_id: string;
+    event_type_id: string;
 }
 
 const emptyForm = (defaultColor: string): FormState => ({
@@ -92,6 +111,7 @@ const emptyForm = (defaultColor: string): FormState => ({
     color: defaultColor,
     is_active: true,
     event_category_id: '',
+    event_type_id: '',
 });
 
 export function TaxonomyManager<T extends TaxonomyRecord>(props: TaxonomyManagerProps<T>) {
@@ -99,14 +119,14 @@ export function TaxonomyManager<T extends TaxonomyRecord>(props: TaxonomyManager
         entityLabel,
         entityPlural,
         description,
-        breadcrumb,
         nameLabel,
         namePlaceholder,
         iconLabel,
         colorLabel,
         permissionPrefix,
         defaultColor = '#6E22FE',
-        categorySelect,
+        scopeSelects = [],
+        onScopeChange,
         data,
         pagination,
         isLoading,
@@ -138,6 +158,9 @@ export function TaxonomyManager<T extends TaxonomyRecord>(props: TaxonomyManager
         setEditingId(null);
         setForm(emptyForm(defaultColor));
         setErrors({});
+        // Tell the page the scope is cleared too, or a dependent list stays
+        // filtered to the record that was just being edited.
+        scopeSelects.forEach((s) => onScopeChange?.(s.key, ''));
     };
 
     const handleEdit = (row: T) => {
@@ -151,8 +174,15 @@ export function TaxonomyManager<T extends TaxonomyRecord>(props: TaxonomyManager
             event_category_id: (row as any).event_category_id
                 ? String((row as any).event_category_id)
                 : '',
+            event_type_id: (row as any).event_type_id ? String((row as any).event_type_id) : '',
         });
         setErrors({});
+        // Push the row's scope out so dependent lists load for THIS record —
+        // otherwise the Event Type dropdown opens empty on edit.
+        scopeSelects.forEach((s) => {
+            const raw = (row as any)[s.key];
+            onScopeChange?.(s.key, raw ? String(raw) : '');
+        });
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
@@ -162,7 +192,11 @@ export function TaxonomyManager<T extends TaxonomyRecord>(props: TaxonomyManager
         if (!form.description.trim()) next.description = true;
         if (!form.icon.trim()) next.icon = true;
         if (!form.color.trim()) next.color = true;
-        if (categorySelect && !form.event_category_id) next.event_category_id = true;
+        // Every configured scope select is mandatory — a record with a missing
+        // scope can never be reached by the Menu form's cascade.
+        scopeSelects.forEach((s) => {
+            if (!form[s.key]) next[s.key] = true;
+        });
 
         if (Object.keys(next).length > 0) {
             setErrors(next);
@@ -177,7 +211,10 @@ export function TaxonomyManager<T extends TaxonomyRecord>(props: TaxonomyManager
             icon: form.icon,
             color: form.color,
             is_active: form.is_active,
-            ...(categorySelect ? { event_category_id: Number(form.event_category_id) } : {}),
+            ...scopeSelects.reduce(
+                (acc, s) => ({ ...acc, [s.key]: Number(form[s.key]) }),
+                {} as Record<string, number>
+            ),
         };
 
         if (editingId) {
@@ -214,20 +251,23 @@ export function TaxonomyManager<T extends TaxonomyRecord>(props: TaxonomyManager
             },
         ];
 
-        if (categorySelect) {
+        // One column per configured scope, reading the joined record the API
+        // returns (`category` / `eventType`).
+        scopeSelects.forEach((s) => {
+            const relation = s.key === 'event_category_id' ? 'category' : 'eventType';
             cols.push({
-                key: 'category',
-                header: categorySelect.label,
+                key: relation,
+                header: s.label,
                 render: (row) => {
-                    const category = (row as any).category;
-                    return category ? (
-                        <span className="text-sm">{category.name}</span>
+                    const joined = (row as any)[relation];
+                    return joined ? (
+                        <span className="text-sm">{joined.name}</span>
                     ) : (
                         <span className="text-xs text-muted-foreground">—</span>
                     );
                 },
             });
-        }
+        });
 
         cols.push(
             {
@@ -258,7 +298,7 @@ export function TaxonomyManager<T extends TaxonomyRecord>(props: TaxonomyManager
         );
 
         return cols;
-    }, [nameLabel, categorySelect]);
+    }, [nameLabel, scopeSelects]);
 
     return (
         <PermissionGuard permission={`${permissionPrefix}.view`}>
@@ -268,16 +308,6 @@ export function TaxonomyManager<T extends TaxonomyRecord>(props: TaxonomyManager
                 {/* Header */}
                 <div className="flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <div className="mb-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-                            {breadcrumb.map((crumb, i) => (
-                                <span key={crumb} className="flex items-center gap-1.5">
-                                    {i > 0 && <span>›</span>}
-                                    <span className={i === breadcrumb.length - 1 ? 'font-semibold text-foreground' : ''}>
-                                        {crumb}
-                                    </span>
-                                </span>
-                            ))}
-                        </div>
                         <h1 className="text-xl font-extrabold tracking-tight text-foreground">{entityPlural}</h1>
                         <p className="text-xs text-muted-foreground">{description}</p>
                     </div>
@@ -302,39 +332,52 @@ export function TaxonomyManager<T extends TaxonomyRecord>(props: TaxonomyManager
                     </CardHeader>
                     <CardContent className="space-y-4 p-4">
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                            {/* Category select — Event Types only */}
-                            {categorySelect && (
-                                <div className="space-y-1.5">
-                                    <Label className="text-sm font-medium">
-                                        {categorySelect.label} <span className="text-destructive">*</span>
-                                    </Label>
-                                    <Select
-                                        value={form.event_category_id}
-                                        onValueChange={(v) => setField('event_category_id', v)}
-                                    >
-                                        <SelectTrigger
-                                            className={cn('h-10', errors.event_category_id && 'border-destructive')}
+                            {/* Scope selects — Event Types has one, Religions has two */}
+                            {scopeSelects.map((s) => {
+                                const locked = !!s.disabledUntil && !form[s.disabledUntil];
+                                return (
+                                    <div key={s.key} className="space-y-1.5">
+                                        <Label className="text-sm font-medium">
+                                            {s.label} <span className="text-destructive">*</span>
+                                        </Label>
+                                        <Select
+                                            value={form[s.key]}
+                                            disabled={locked}
+                                            onValueChange={(v) => {
+                                                setField(s.key, v);
+                                                onScopeChange?.(s.key, v);
+                                                // A child select still holding a value from the
+                                                // previous parent would fail server validation.
+                                                s.clears?.forEach((k) => {
+                                                    setField(k, '');
+                                                    onScopeChange?.(k, '');
+                                                });
+                                            }}
                                         >
-                                            <SelectValue placeholder={categorySelect.placeholder} />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {categorySelect.options.length === 0 ? (
-                                                <div className="px-2 py-3 text-xs text-muted-foreground">
-                                                    {categorySelect.isLoading
-                                                        ? 'Loading…'
-                                                        : 'No event categories yet — create one first.'}
-                                                </div>
-                                            ) : (
-                                                categorySelect.options.map((o) => (
-                                                    <SelectItem key={o.id} value={String(o.id)}>
-                                                        {o.name}
-                                                    </SelectItem>
-                                                ))
-                                            )}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            )}
+                                            <SelectTrigger
+                                                className={cn('h-10', errors[s.key] && 'border-destructive')}
+                                            >
+                                                <SelectValue placeholder={s.placeholder} />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {s.options.length === 0 ? (
+                                                    <div className="px-2 py-3 text-xs text-muted-foreground">
+                                                        {s.isLoading
+                                                            ? 'Loading…'
+                                                            : s.emptyHint ?? 'Nothing to choose yet.'}
+                                                    </div>
+                                                ) : (
+                                                    s.options.map((o) => (
+                                                        <SelectItem key={o.id} value={String(o.id)}>
+                                                            {o.name}
+                                                        </SelectItem>
+                                                    ))
+                                                )}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                );
+                            })}
 
                             {/* Name */}
                             <div className="space-y-1.5">

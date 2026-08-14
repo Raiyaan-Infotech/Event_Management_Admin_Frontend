@@ -136,13 +136,6 @@ export default function TemplatesPage() {
             {/* Header Bar */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-4">
                 <div>
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
-                        <span>Dashboard</span>
-                        <span>›</span>
-                        <span>Website Builder</span>
-                        <span>›</span>
-                        <span className="font-semibold text-foreground">Event Templates</span>
-                    </div>
                     <h1 className="text-xl font-extrabold tracking-tight text-foreground">Event Templates</h1>
                     <p className="text-xs text-muted-foreground">
                         Create, organize, and manage promotional event invitation templates for your platform website.

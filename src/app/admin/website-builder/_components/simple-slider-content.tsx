@@ -334,13 +334,6 @@ export function SimpleSliderContent() {
                     <p className="text-xs text-muted-foreground mt-0.5">
                         Manage your website simple slider and Simple Slider settings.
                     </p>
-                    <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mt-1">
-                        <span>Dashboard</span>
-                        <span>›</span>
-                        <span>Website Builder</span>
-                        <span>›</span>
-                        <span className="font-semibold text-slate-800">Simple Slider</span>
-                    </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <Button

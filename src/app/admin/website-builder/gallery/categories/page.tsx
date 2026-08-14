@@ -198,15 +198,6 @@ export default function GalleryCategoriesPage() {
             {/* Header Bar */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b pb-4">
                 <div>
-                    <div className="flex items-center gap-1.5 text-xs text-slate-500 mb-1">
-                        <span>Dashboard</span>
-                        <span>›</span>
-                        <span>Website Builder</span>
-                        <span>›</span>
-                        <span>Gallery</span>
-                        <span>›</span>
-                        <span className="font-semibold text-slate-800">Categories</span>
-                    </div>
                     <h1 className="text-xl font-extrabold tracking-tight text-slate-900">Categories</h1>
                     <p className="text-xs text-slate-500">
                         Create and manage categories that organize your gallery images.

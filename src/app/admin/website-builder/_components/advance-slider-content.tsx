@@ -216,13 +216,6 @@ export function AdvanceSliderContent() {
             {/* Header Bar */}
             <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4 bg-white p-4 rounded-xl shadow-2xs">
                 <div>
-                    <div className="flex items-center gap-1.5 text-xs text-slate-500 mb-1">
-                        <span>Dashboard</span>
-                        <span>›</span>
-                        <span>Website Builder</span>
-                        <span>›</span>
-                        <span className="font-semibold text-slate-800">Advance Slider</span>
-                    </div>
                     <h1 className="text-xl font-extrabold tracking-tight text-slate-900">Advance Slider</h1>
                     <p className="text-xs text-slate-500">
                         Configure slider background effects, overlay opacity, brightness, and blur filters.

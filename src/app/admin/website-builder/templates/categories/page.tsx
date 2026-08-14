@@ -254,15 +254,6 @@ export default function TemplateCategoriesPage() {
             {/* Header Bar */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-4">
                 <div>
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
-                        <span>Dashboard</span>
-                        <span>›</span>
-                        <span>Website Builder</span>
-                        <span>›</span>
-                        <span>Templates</span>
-                        <span>›</span>
-                        <span className="font-semibold text-foreground">Categories</span>
-                    </div>
                     <h1 className="text-xl font-extrabold tracking-tight text-foreground">Template Categories</h1>
                     <p className="text-xs text-muted-foreground">
                         Create and manage categories that organize your invitation and card templates.
