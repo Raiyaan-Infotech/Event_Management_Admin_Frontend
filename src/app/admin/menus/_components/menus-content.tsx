@@ -4,10 +4,9 @@ import { useState, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, HelpCircle, LayoutGrid, X, LayoutList } from 'lucide-react';
-import * as LucideIcons from 'lucide-react';
-import { Icon as IconifyIcon } from '@iconify/react';
+import { Plus, LayoutGrid, X, LayoutList } from 'lucide-react';
 import { IconPickerDialog } from './icon-picker-dialog';
+import { DynamicIcon } from '@/components/common/dynamic-icon';
 import {
     useMenus,
     useCreateMenu,
@@ -39,39 +38,6 @@ const schema = z.object({
 });
 
 type FormData = z.infer<typeof schema>;
-
-// Case-insensitive map: 'airvent' → AirVent component, built once at module load
-// Icons are forwardRef objects (typeof === 'object'), so filter by uppercase first letter
-const lucideIconMap: Record<string, any> = Object.fromEntries(
-    Object.entries(LucideIcons)
-        .filter(([k]) => /^[A-Z]/.test(k))
-        .map(([k, v]) => [k.toLowerCase(), v])
-);
-
-function resolveLucideIcon(name: string) {
-    if (!name) return null;
-    // 1. Exact match (fastest path)
-    if ((LucideIcons as any)[name]) return (LucideIcons as any)[name];
-    // 2. Case-insensitive match (handles 'Airvent' → 'AirVent', 'wifi' → 'Wifi')
-    if (lucideIconMap[name.toLowerCase()]) return lucideIconMap[name.toLowerCase()];
-    // 3. Auto-convert hyphen/underscore input: 'arrow-right' → 'ArrowRight'
-    const converted = name.trim().split(/[-_ ]+/).filter(Boolean)
-        .map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
-    return lucideIconMap[converted.toLowerCase()] || null;
-}
-
-function DynamicIcon({ name, color, size = 'h-5 w-5' }: { name: string; color?: string; size?: string }) {
-    if (!name) return <HelpCircle className={`${size} text-muted-foreground`} />;
-    const style = color ? { color } : undefined;
-
-    if (name.includes(':')) {
-        return <IconifyIcon icon={name} className={size} style={style} />;
-    }
-
-    const LucideIcon = resolveLucideIcon(name);
-    if (!LucideIcon) return <HelpCircle className={`${size} text-muted-foreground`} />;
-    return <LucideIcon className={size} style={style} />;
-}
 
 function normalise(item: Menu) {
     return {

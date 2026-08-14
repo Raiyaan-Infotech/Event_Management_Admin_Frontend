@@ -43,6 +43,9 @@ import {
   Sparkles,
   Lock,
   Languages,
+  LayoutList,
+  Tag,
+  Church,
 } from "lucide-react";
 import {
   Sidebar,
@@ -113,6 +116,16 @@ const menuItems: MenuItem[] = [
     icon: Calendar,
     children: [
       { labelKey: "nav.menus", href: "/admin/menus", icon: Menu, permission: "menus.view" },
+    ],
+  },
+  {
+    labelKey: "nav.menu_management",
+    icon: LayoutList,
+    children: [
+      { labelKey: "nav.event_menus", href: "/admin/menu-management/menus", icon: LayoutList, permission: "event_menus.view" },
+      { labelKey: "nav.event_categories", href: "/admin/menu-management/event-categories", icon: Folder, permission: "event_categories.view" },
+      { labelKey: "nav.event_types", href: "/admin/menu-management/event-types", icon: Tag, permission: "event_types.view" },
+      { labelKey: "nav.religions", href: "/admin/menu-management/religions", icon: Church, permission: "religions.view" },
     ],
   },
   {
