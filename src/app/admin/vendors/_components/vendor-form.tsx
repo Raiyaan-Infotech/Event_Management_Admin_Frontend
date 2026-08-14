@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 import { useCreateVendor, useUpdateVendor, Vendor } from '@/hooks/use-vendors';
-import { useSubscriptions } from '@/hooks/use-subscriptions';
+import { usePlanTypes } from '@/hooks/use-plan-types';
 import { isApprovalRequired } from '@/lib/api-client';
 import { CommonForm, CommonFormSection } from '@/components/common/common-form';
 import { Building2, User, Landmark } from 'lucide-react';
@@ -126,7 +126,7 @@ export function VendorForm({ vendor }: Props) {
     const { data: districts   = [] } = useCities(selStateId || 0);
     const { data: cityOptions = [] } = useLocalities(selDistrictId || 0);
 
-    const { data: plansRes } = useSubscriptions({ page: 1, limit: 100, is_active: 1 });
+    const { data: plansRes } = usePlanTypes({ page: 1, limit: 100, is_active: 1 });
     const plans = useMemo(() => (plansRes?.data ?? []).filter((p: any) => !p.is_custom), [plansRes]);
     const planOptions = useMemo(
         () => plans.map((p: any) => ({

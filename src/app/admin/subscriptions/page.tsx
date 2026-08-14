@@ -1,10 +1,10 @@
-import { SubscriptionsContent } from "./_components/subscriptions-content";
+import { SubscriptionPlansContent } from './_components/subscription-plans-content';
 
 export const metadata = {
-  title: "Subscriptions | Admin Panel",
-  description: "Manage subscription plans",
+    title: 'Subscription Plans | Admin Panel',
+    description: 'Manage subscription plans',
 };
 
-export default function SubscriptionsPage() {
-  return <SubscriptionsContent />;
+export default function SubscriptionPlansPage() {
+    return <SubscriptionPlansContent />;
 }

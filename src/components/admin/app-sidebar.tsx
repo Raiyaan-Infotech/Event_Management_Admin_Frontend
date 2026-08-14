@@ -46,6 +46,7 @@ import {
   LayoutList,
   Tag,
   Church,
+  Repeat,
 } from "lucide-react";
 import {
   Sidebar,
@@ -153,10 +154,12 @@ const menuItems: MenuItem[] = [
     ],
   },
   {
-    labelKey: "nav.subscriptions",
-    href: "/admin/subscriptions",
+    labelKey: "nav.subscription_management",
     icon: Package,
-    permission: "subscriptions.view",
+    children: [
+      { labelKey: "nav.subscription_plans", href: "/admin/subscriptions", icon: Package, permission: "subscription_plans.view" },
+      { labelKey: "nav.plan_types", href: "/admin/plan-types", icon: Repeat, permission: "plan_types.view" },
+    ],
   },
   {
     labelKey: "nav.faqs",
@@ -516,10 +519,13 @@ export function AppSidebar() {
                       >
                         <SidebarMenuItem>
                           <CollapsibleTrigger asChild>
-                            <SidebarMenuButton>
-                              <item.icon className="w-4 h-4" />
-                              <span>{t(item.labelKey)}</span>
-                              <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                            <SidebarMenuButton title={t(item.labelKey)}>
+                              {/* shrink-0 + truncate: a long group label like
+                                  "Subscription Management" otherwise wraps to two
+                                  lines and pushes the chevron out of alignment. */}
+                              <item.icon className="w-4 h-4 shrink-0" />
+                              <span className="truncate">{t(item.labelKey)}</span>
+                              <ChevronDown className="ml-auto h-4 w-4 shrink-0 transition-transform group-data-[state=open]/collapsible:rotate-180" />
                             </SidebarMenuButton>
                           </CollapsibleTrigger>
                           <CollapsibleContent>
