@@ -177,7 +177,7 @@ export function PlanTypesContent() {
 
     return (
         <div className="space-y-6">
-            <PageLoader open={isLoading || isPending || deletePlanType.isPending} />
+            <PageLoader open={isLoading || isPending || deletePlanType.isPending || updateStatus.isPending} />
             <Card>
                 <CardHeader>
                     <div className="flex items-center justify-between flex-wrap gap-3">
@@ -330,8 +330,8 @@ export function PlanTypesContent() {
                         </div>
 
                         <DialogFooter>
-                            <Button type="button" variant="outline" onClick={closeDialog} isLoading={isPending}>{t('common.cancel', 'Cancel')}</Button>
-                            <Button type="submit" isLoading={isPending}>{t('common.save', 'Save')}</Button>
+                            <Button type="button" variant="outline" onClick={closeDialog} disabled={isPending}>{t('common.cancel', 'Cancel')}</Button>
+                            <Button type="submit" disabled={isPending}>{t('common.save', 'Save')}</Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>

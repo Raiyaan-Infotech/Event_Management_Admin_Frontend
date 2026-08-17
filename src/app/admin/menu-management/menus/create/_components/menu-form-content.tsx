@@ -6,7 +6,6 @@ import {
     ArrowLeft,
     Globe,
     LayoutList,
-    Loader2,
     Plus,
     RotateCcw,
     Save,
@@ -541,7 +540,7 @@ export function MenuFormContent() {
 
                     <div className="flex flex-wrap items-center gap-2">
                         <Button type="button" onClick={handleSave} disabled={isSaving} className="h-9 gap-2">
-                            {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                            <Save className="h-4 w-4" />
                             {isEdit ? 'Update Menu' : 'Save Menu'}
                         </Button>
                         {/* Only meaningful when creating — in edit mode there is

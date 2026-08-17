@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ArrowDown, ArrowUp, Loader2, Save } from 'lucide-react';
+import { ArrowDown, ArrowUp, Save } from 'lucide-react';
 import {
     Dialog,
     DialogContent,
@@ -121,7 +121,7 @@ export function MenuReorderDialog({
                         }
                         className="gap-1.5"
                     >
-                        {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                        <Save className="h-3.5 w-3.5" />
                         Save Order
                     </Button>
                 </DialogFooter>

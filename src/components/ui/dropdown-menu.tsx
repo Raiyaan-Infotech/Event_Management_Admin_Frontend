@@ -116,6 +116,9 @@ export function DropdownMenuContent({ className, align = 'end', sideOffset = 4, 
     const { open, setOpen, triggerRef } = useDropdownMenu();
     const contentRef = React.useRef<HTMLDivElement | null>(null);
     const [rect, setRect] = React.useState<DOMRect | null>(null);
+    // Measured after the menu paints. Until it is known the menu stays hidden,
+    // otherwise it would flash at the unflipped position first.
+    const [size, setSize] = React.useState<{ w: number; h: number } | null>(null);
 
     React.useLayoutEffect(() => {
         if (!open) return;
@@ -131,6 +134,22 @@ export function DropdownMenuContent({ className, align = 'end', sideOffset = 4, 
         };
     }, [open, triggerRef]);
 
+    // Reset the measurement each time it opens — the item list can differ
+    // between openings (disabled rows, Activate vs Deactivate).
+    React.useLayoutEffect(() => {
+        if (!open) setSize(null);
+    }, [open]);
+
+    React.useLayoutEffect(() => {
+        if (!open || !contentRef.current) return;
+        const box = contentRef.current.getBoundingClientRect();
+        setSize((prev) =>
+            prev && Math.abs(prev.h - box.height) < 1 && Math.abs(prev.w - box.width) < 1
+                ? prev
+                : { w: box.width, h: box.height }
+        );
+    }, [open, rect, children]);
+
     React.useEffect(() => {
         if (!open) return;
         const onPointerDown = (event: MouseEvent) => {
@@ -143,26 +162,58 @@ export function DropdownMenuContent({ className, align = 'end', sideOffset = 4, 
         return () => document.removeEventListener('mousedown', onPointerDown);
     }, [open, setOpen, triggerRef]);
 
+    // Close on Escape, which a keyboard user expects from any menu.
+    React.useEffect(() => {
+        if (!open) return;
+        const onKey = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') setOpen(false);
+        };
+        document.addEventListener('keydown', onKey);
+        return () => document.removeEventListener('keydown', onKey);
+    }, [open, setOpen]);
+
     if (!open || !rect || typeof document === 'undefined') return null;
 
-    let leftPos = rect.left;
-    if (align === 'end') {
-        leftPos = rect.right - 192;
-    } else if (align === 'center') {
-        leftPos = rect.left + rect.width / 2 - 96;
-    }
+    const viewportH = typeof window !== 'undefined' ? window.innerHeight : 0;
+    const viewportW = typeof window !== 'undefined' ? window.innerWidth : 0;
+    const GUTTER = 8;
+
+    const contentW = size?.w ?? 192;
+    const contentH = size?.h ?? 0;
+
+    // Horizontal: align to the trigger, then clamp so it never leaves the viewport.
+    let left = rect.left;
+    if (align === 'end') left = rect.right - contentW;
+    else if (align === 'center') left = rect.left + rect.width / 2 - contentW / 2;
+    left = Math.min(Math.max(GUTTER, left), Math.max(GUTTER, viewportW - contentW - GUTTER));
+
+    // Vertical: flip above the trigger when there is not enough room below —
+    // this is what was cutting the menu off on the last rows of a table.
+    const spaceBelow = viewportH - rect.bottom - sideOffset;
+    const spaceAbove = rect.top - sideOffset;
+    const flipUp = contentH > 0 && spaceBelow < contentH && spaceAbove > spaceBelow;
+
+    let top = flipUp ? rect.top - sideOffset - contentH : rect.bottom + sideOffset;
+    top = Math.min(Math.max(GUTTER, top), Math.max(GUTTER, viewportH - contentH - GUTTER));
+
+    // Last resort: a menu taller than the viewport scrolls inside itself rather
+    // than overflowing off-screen.
+    const maxHeight = Math.max(120, viewportH - 2 * GUTTER);
 
     return createPortal(
         <div
             ref={contentRef}
             style={{
                 position: 'fixed',
-                top: rect.bottom + sideOffset,
-                left: Math.max(8, leftPos),
+                top,
+                left,
                 zIndex: 1000,
+                maxHeight,
+                overflowY: contentH > maxHeight ? 'auto' : undefined,
+                visibility: size ? 'visible' : 'hidden',
             }}
             className={cn(
-                'min-w-[8rem] overflow-hidden rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-md animate-in fade-in-80 duration-100',
+                'min-w-[8rem] rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-md animate-in fade-in-80 duration-100',
                 className
             )}
             {...props}
@@ -172,6 +223,7 @@ export function DropdownMenuContent({ className, align = 'end', sideOffset = 4, 
         document.body
     );
 }
+
 
 export type DropdownMenuItemProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
     inset?: boolean;

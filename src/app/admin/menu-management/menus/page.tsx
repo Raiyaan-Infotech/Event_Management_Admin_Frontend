@@ -19,7 +19,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
 import { Card, CardContent } from '@/components/ui/card';
 import {
     Select,
@@ -54,13 +53,11 @@ import {
     useEventCategories,
     useEventTypes,
     useReligions,
-    useToggleEventMenuFlag,
     useUpdateEventMenuStatus,
     useDuplicateEventMenu,
     useReorderEventMenus,
     useDeleteEventMenu,
     type EventMenu,
-    type EventMenuToggleField,
 } from '@/hooks/use-menu-management';
 import { MenuViewDialog } from '../_components/menu-view-dialog';
 import { MenuReorderDialog } from '../_components/menu-reorder-dialog';
@@ -111,7 +108,6 @@ export default function MenuListPage() {
         event_type_id: typeId === ALL ? undefined : typeId,
     });
 
-    const toggleFlag = useToggleEventMenuFlag();
     const updateStatus = useUpdateEventMenuStatus();
     const duplicateMenu = useDuplicateEventMenu();
     const reorderMenus = useReorderEventMenus();
@@ -133,28 +129,6 @@ export default function MenuListPage() {
 
     const isBusy =
         duplicateMenu.isPending || deleteMenu.isPending || reorderMenus.isPending;
-
-    const flip = (row: EventMenu, field: EventMenuToggleField) => {
-        toggleFlag.mutate({ id: row.id, field, value: !row[field] });
-    };
-
-    /** A menu not targeting a platform has no toggle to show for it. */
-    const PlatformSwitch = ({
-        enabled,
-        checked,
-        onToggle,
-        disabled,
-    }: {
-        enabled: boolean;
-        checked: boolean;
-        onToggle: () => void;
-        disabled?: boolean;
-    }) =>
-        enabled ? (
-            <Switch checked={checked} onCheckedChange={onToggle} disabled={disabled} />
-        ) : (
-            <span className="text-xs text-muted-foreground">—</span>
-        );
 
     return (
         <PermissionGuard permission="event_menus.view">
@@ -326,49 +300,33 @@ export default function MenuListPage() {
                         <div className="w-full overflow-x-auto">
                             <Table>
                                 <TableHeader>
-                                    {/* Two header rows: Display Status and Active Status each
-                                        span a Website + Mobile pair, as in the mockup. */}
+                                    {/* The four Display/Active toggle columns were removed: with 13
+                                        columns the Menu Name cell collapsed to one character per line.
+                                        Those flags are still set in the Add/Edit form and shown in the
+                                        View dialog. */}
                                     <TableRow className="border-b border-border/60 hover:bg-transparent">
-                                        <TableHead rowSpan={2} className="w-12">#</TableHead>
-                                        <TableHead rowSpan={2}>Menu Name</TableHead>
-                                        <TableHead rowSpan={2}>Menu Type</TableHead>
-                                        <TableHead rowSpan={2}>Event Category</TableHead>
-                                        <TableHead rowSpan={2}>Event Type</TableHead>
-                                        <TableHead rowSpan={2}>Religion</TableHead>
-                                        <TableHead colSpan={2} className="border-l border-border/60 text-center">
-                                            Display Status
-                                        </TableHead>
-                                        <TableHead colSpan={2} className="border-l border-border/60 text-center">
-                                            Active Status
-                                        </TableHead>
-                                        <TableHead rowSpan={2} className="border-l border-border/60 text-center">
-                                            Sort Order
-                                        </TableHead>
-                                        <TableHead rowSpan={2} className="text-center">Status</TableHead>
-                                        <TableHead rowSpan={2} className="text-right">Action</TableHead>
-                                    </TableRow>
-                                    <TableRow className="border-b border-border/60 hover:bg-transparent">
-                                        <TableHead className="border-l border-border/60 text-center text-[11px] font-normal">
-                                            Website
-                                        </TableHead>
-                                        <TableHead className="text-center text-[11px] font-normal">Mobile</TableHead>
-                                        <TableHead className="border-l border-border/60 text-center text-[11px] font-normal">
-                                            Website
-                                        </TableHead>
-                                        <TableHead className="text-center text-[11px] font-normal">Mobile</TableHead>
+                                        <TableHead className="w-12">#</TableHead>
+                                        <TableHead className="min-w-[200px]">Menu Name</TableHead>
+                                        <TableHead className="whitespace-nowrap">Menu Type</TableHead>
+                                        <TableHead className="whitespace-nowrap">Event Category</TableHead>
+                                        <TableHead className="whitespace-nowrap">Event Type</TableHead>
+                                        <TableHead className="whitespace-nowrap">Religion</TableHead>
+                                        <TableHead className="whitespace-nowrap text-center">Sort Order</TableHead>
+                                        <TableHead className="text-center">Status</TableHead>
+                                        <TableHead className="text-right">Action</TableHead>
                                     </TableRow>
                                 </TableHeader>
 
                                 <TableBody>
                                     {isLoading ? (
                                         <TableRow>
-                                            <TableCell colSpan={13} className="py-16 text-center text-muted-foreground">
+                                            <TableCell colSpan={9} className="py-16 text-center text-muted-foreground">
                                                 Loading menus...
                                             </TableCell>
                                         </TableRow>
                                     ) : menus.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={13} className="py-16 text-center text-muted-foreground">
+                                            <TableCell colSpan={9} className="py-16 text-center text-muted-foreground">
                                                 {hasFilters
                                                     ? 'No menus match these filters.'
                                                     : 'No menus yet. Click "Add New Menu" to create your first one.'}
@@ -442,41 +400,7 @@ export default function MenuListPage() {
                                                         )}
                                                     </TableCell>
 
-                                                    <TableCell className="border-l border-border/60 text-center">
-                                                        <PlatformSwitch
-                                                            enabled={!!row.is_website}
-                                                            checked={!!row.display_website}
-                                                            onToggle={() => flip(row, 'display_website')}
-                                                            disabled={locked}
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell className="text-center">
-                                                        <PlatformSwitch
-                                                            enabled={!!row.is_mobile}
-                                                            checked={!!row.display_mobile}
-                                                            onToggle={() => flip(row, 'display_mobile')}
-                                                            disabled={locked}
-                                                        />
-                                                    </TableCell>
-
-                                                    <TableCell className="border-l border-border/60 text-center">
-                                                        <PlatformSwitch
-                                                            enabled={!!row.is_website}
-                                                            checked={!!row.active_website}
-                                                            onToggle={() => flip(row, 'active_website')}
-                                                            disabled={locked}
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell className="text-center">
-                                                        <PlatformSwitch
-                                                            enabled={!!row.is_mobile}
-                                                            checked={!!row.active_mobile}
-                                                            onToggle={() => flip(row, 'active_mobile')}
-                                                            disabled={locked}
-                                                        />
-                                                    </TableCell>
-
-                                                    <TableCell className="border-l border-border/60 text-center text-sm font-semibold tabular-nums">
+                                                    <TableCell className="text-center text-sm font-semibold tabular-nums">
                                                         {row.sort_order}
                                                     </TableCell>
 

@@ -87,12 +87,12 @@ export function useCreatePlanType() {
     return useMutation({
         mutationFn: planTypesApi.create,
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+            queryClient.invalidateQueries({ queryKey: QUERY_KEY, refetchType: 'all' });
             toast.success('Plan type created successfully');
         },
         onError: (error: any) => {
             if (isApprovalRequired(error)) {
-                queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+                queryClient.invalidateQueries({ queryKey: QUERY_KEY, refetchType: 'all' });
                 return;
             }
             toast.error(error.response?.data?.message || 'Failed to create plan type');
@@ -105,13 +105,13 @@ export function useUpdatePlanType() {
     return useMutation({
         mutationFn: planTypesApi.update,
         onSuccess: (_, vars) => {
-            queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+            queryClient.invalidateQueries({ queryKey: QUERY_KEY, refetchType: 'all' });
             queryClient.invalidateQueries({ queryKey: ['plan-types', 'detail', vars.id] });
             toast.success('Plan type updated successfully');
         },
         onError: (error: any) => {
             if (isApprovalRequired(error)) {
-                queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+                queryClient.invalidateQueries({ queryKey: QUERY_KEY, refetchType: 'all' });
                 return;
             }
             toast.error(error.response?.data?.message || 'Failed to update plan type');
@@ -124,7 +124,7 @@ export function useUpdatePlanTypeStatus() {
     return useMutation({
         mutationFn: planTypesApi.updateStatus,
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+            queryClient.invalidateQueries({ queryKey: QUERY_KEY, refetchType: 'all' });
         },
         onError: (error: any) => {
             toast.error(error.response?.data?.message || 'Failed to update status');
@@ -137,12 +137,12 @@ export function useDeletePlanType() {
     return useMutation({
         mutationFn: planTypesApi.delete,
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+            queryClient.invalidateQueries({ queryKey: QUERY_KEY, refetchType: 'all' });
             toast.success('Plan type deleted successfully');
         },
         onError: (error: any) => {
             if (isApprovalRequired(error)) {
-                queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+                queryClient.invalidateQueries({ queryKey: QUERY_KEY, refetchType: 'all' });
                 return;
             }
             toast.error(error.response?.data?.message || 'Failed to delete plan type');

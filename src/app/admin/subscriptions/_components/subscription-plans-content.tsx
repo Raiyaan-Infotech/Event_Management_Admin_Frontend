@@ -11,6 +11,9 @@ import {
     Pencil,
     Copy,
     LayoutList,
+    Award,
+    Tag,
+    CircleSlash,
     Trash2,
     Download,
 } from 'lucide-react';
@@ -51,6 +54,7 @@ import {
     useUpdateSubscriptionPlanStatus,
     useDuplicateSubscriptionPlan,
     useDeleteSubscriptionPlan,
+    useReactivatePlan,
     formatPlanPrice,
     BILLING_CYCLES,
     type SubscriptionPlan,
@@ -115,6 +119,7 @@ export function SubscriptionPlansContent() {
     const updateStatus = useUpdateSubscriptionPlanStatus();
     const duplicatePlan = useDuplicateSubscriptionPlan();
     const deletePlan = useDeleteSubscriptionPlan();
+    const reactivatePlan = useReactivatePlan();
 
     const plans = data?.data ?? [];
     const pagination = data?.pagination ?? null;
@@ -157,7 +162,13 @@ export function SubscriptionPlansContent() {
         URL.revokeObjectURL(url);
     };
 
-    const isBusy = duplicatePlan.isPending || deletePlan.isPending;
+    // Every mutation on this page, so the overlay covers the status switch
+    // and Activate too — both used to fire with no feedback at all.
+    const isBusy =
+        duplicatePlan.isPending ||
+        deletePlan.isPending ||
+        updateStatus.isPending ||
+        reactivatePlan.isPending;
 
     return (
         <PermissionGuard permission="subscription_plans.view">
@@ -452,26 +463,45 @@ export function SubscriptionPlansContent() {
                                                                 <DropdownMenuItem
                                                                     disabled={locked}
                                                                     onClick={() =>
-                                                                        router.push(`/admin/subscriptions/create?id=${row.id}&step=2`)
+                                                                        router.push(`/admin/subscriptions/${row.id}/menus`)
                                                                     }
                                                                 >
                                                                     <LayoutList className="mr-2 h-4 w-4" /> Manage Menus
                                                                 </DropdownMenuItem>
-                                                                <DropdownMenuSeparator />
+                                                                <DropdownMenuItem
+                                                                    onClick={() => router.push('/admin/subscriptions/badges')}
+                                                                >
+                                                                    <Award className="mr-2 h-4 w-4" /> Manage Badges
+                                                                </DropdownMenuItem>
                                                                 <DropdownMenuItem
                                                                     disabled={locked}
                                                                     onClick={() =>
-                                                                        updateStatus.mutate({
-                                                                            id: row.id,
-                                                                            is_active: Number(row.is_active) !== 1,
-                                                                        })
+                                                                        router.push(`/admin/subscriptions/${row.id}/pricing`)
                                                                     }
                                                                 >
+                                                                    <Tag className="mr-2 h-4 w-4" /> View Pricing
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuSeparator />
+                                                                <DropdownMenuItem
+                                                                    disabled={locked}
+                                                                    onClick={() => {
+                                                                        // Deactivating needs a recorded reason, so it goes
+                                                                        // through its own screen. Re-activating does not.
+                                                                        if (Number(row.is_active) === 1) {
+                                                                            router.push(`/admin/subscriptions/${row.id}/deactivate`);
+                                                                        } else {
+                                                                            reactivatePlan.mutate(row.id);
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    <CircleSlash className="mr-2 h-4 w-4" />
                                                                     {Number(row.is_active) === 1 ? 'Deactivate' : 'Activate'}
                                                                 </DropdownMenuItem>
                                                                 <DropdownMenuItem
                                                                     disabled={locked}
-                                                                    onClick={() => setDeleteId(row.id)}
+                                                                    onClick={() =>
+                                                                        router.push(`/admin/subscriptions/${row.id}/delete`)
+                                                                    }
                                                                     className="text-destructive focus:text-destructive"
                                                                 >
                                                                     <Trash2 className="mr-2 h-4 w-4" /> Delete Plan

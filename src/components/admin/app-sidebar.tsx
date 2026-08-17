@@ -159,6 +159,7 @@ const menuItems: MenuItem[] = [
     children: [
       { labelKey: "nav.subscription_plans", href: "/admin/subscriptions", icon: Package, permission: "subscription_plans.view" },
       { labelKey: "nav.plan_types", href: "/admin/plan-types", icon: Repeat, permission: "plan_types.view" },
+      { labelKey: "nav.plan_badges", href: "/admin/subscriptions/badges", icon: Award, permission: "plan_badges.view" },
     ],
   },
   {

@@ -9,9 +9,9 @@ import {
     CheckCircle2,
     ChevronDown,
     FileText,
-    Loader2,
     Search,
     Send,
+    Eye,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -45,6 +45,7 @@ import {
     currencySymbol,
     type BillingCycle,
     type SubscriptionPlanPayload,
+    type SubscriptionPlan,
 } from '@/hooks/use-subscription-plans';
 
 const STEPS = [
@@ -113,7 +114,7 @@ export function PlanWizardContent() {
     const [menuSearch, setMenuSearch] = useState('');
     const [selection, setSelection] = useState<Record<number, MenuSelection>>({});
     const [loadedId, setLoadedId] = useState<string | null>(null);
-    const [savedPlanName, setSavedPlanName] = useState('');
+    const [savedPlan, setSavedPlan] = useState<SubscriptionPlan | null>(null);
 
     const { data: existing, isLoading: loadingPlan } = useSubscriptionPlan(id ?? undefined);
     const { data: planTypes } = usePlanTypes({ limit: 200, is_active: 1 });
@@ -306,11 +307,11 @@ export function PlanWizardContent() {
     });
 
     const createPlan = useCreateSubscriptionPlan((plan) => {
-        setSavedPlanName(plan.name);
+        setSavedPlan(plan);
         setStep(6);
     });
     const updatePlan = useUpdateSubscriptionPlan((plan) => {
-        setSavedPlanName(plan.name);
+        setSavedPlan(plan);
         setStep(6);
     });
 
@@ -797,35 +798,128 @@ export function PlanWizardContent() {
                     </div>
                 )}
 
-                {step === 6 && (
-                    <Card className="border-border bg-card shadow-xs">
-                        <CardContent className="flex flex-col items-center gap-4 py-14 text-center">
-                            <span className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100">
-                                <CheckCircle2 className="h-12 w-12 text-emerald-600" />
-                            </span>
-                            <h2 className="text-xl font-bold text-foreground">
-                                Subscription Plan {isEdit ? 'Updated' : 'Created'} Successfully!
-                            </h2>
-                            <p className="text-sm text-muted-foreground">
-                                {savedPlanName || form.name} is ready to use.
-                            </p>
+                {step === 6 && (() => {
+                    // Everything here comes off the saved record, so it reflects
+                    // what the server stored rather than what the form held.
+                    const done = savedPlan;
+                    const cycle = BILLING_CYCLES.find((c) => c.value === (done?.billing_cycle ?? form.billing_cycle));
+                    const stamp = (value?: string | null) => {
+                        if (!value) return '\u2014';
+                        const d = new Date(value);
+                        if (Number.isNaN(d.getTime())) return '\u2014';
+                        return `${d.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })} ${d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`;
+                    };
+                    const active = done ? Number(done.is_active) === 1 : form.is_active;
 
-                            <div className="mt-2 grid w-full max-w-xl grid-cols-2 gap-3 sm:grid-cols-4">
-                                <SummaryTile label="Plan Name" value={savedPlanName || form.name} />
-                                <SummaryTile label="Plan Code" value={form.plan_code} />
-                                <SummaryTile
-                                    label="Price"
-                                    value={`${currencySymbol(form.currency_code)} ${Number(form.price || 0).toLocaleString()}`}
-                                />
-                                <SummaryTile label="Status" value={form.is_active ? 'Active' : 'Inactive'} />
-                            </div>
+                    return (
+                        <div className="mx-auto max-w-3xl space-y-5">
+                            <h1 className="text-lg font-bold tracking-tight text-foreground">
+                                Plan {isEdit ? 'Updated' : 'Created'} Successfully!
+                            </h1>
 
-                            <Button onClick={() => router.push('/admin/subscriptions')} className="mt-4 h-10 gap-2">
-                                Go to Plan List <ArrowRight className="h-4 w-4" />
-                            </Button>
-                        </CardContent>
-                    </Card>
-                )}
+                            <Card className="border-border bg-card shadow-xs">
+                                <CardContent className="flex flex-col items-center gap-4 px-5 py-12 text-center">
+                                    <span className="inline-flex h-24 w-24 items-center justify-center rounded-full bg-emerald-100">
+                                        <CheckCircle2 className="h-14 w-14 text-emerald-600" />
+                                    </span>
+
+                                    <h2 className="text-xl font-bold text-foreground">
+                                        Your Plan has been {isEdit ? 'updated' : 'created'} successfully!
+                                    </h2>
+                                    <p className="max-w-lg text-sm text-muted-foreground">
+                                        All changes to the{' '}
+                                        <span className="font-semibold text-emerald-600">
+                                            {done?.name ?? form.name}
+                                        </span>{' '}
+                                        have been saved. The updated plan details are shown below.
+                                    </p>
+
+                                    <div className="flex w-full max-w-xl items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-left">
+                                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                                        <p className="text-xs text-emerald-800">
+                                            {active
+                                                ? 'The updated plan is now active and available for new subscriptions.'
+                                                : 'The plan is saved but inactive, so it is not offered for new subscriptions.'}
+                                        </p>
+                                    </div>
+
+                                    <div className="mt-2 w-full max-w-2xl rounded-lg border border-border p-4 text-left">
+                                        <div className="mb-4 flex flex-wrap items-center gap-2">
+                                            <span className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
+                                                <FileText className="h-4 w-4" />
+                                            </span>
+                                            <span className="text-sm font-bold text-foreground">
+                                                {done?.name ?? form.name}
+                                            </span>
+                                            <Badge
+                                                variant="outline"
+                                                className={cn(
+                                                    'text-[11px]',
+                                                    active
+                                                        ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                                                        : 'border-slate-300 bg-slate-50 text-slate-600'
+                                                )}
+                                            >
+                                                {active ? 'Active' : 'Inactive'}
+                                            </Badge>
+                                        </div>
+
+                                        <dl className="grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-2">
+                                            <SuccessRow label="Plan Code" value={done?.plan_code ?? form.plan_code} />
+                                            <SuccessRow
+                                                label={`Price (${cycle?.label ?? ''})`}
+                                                value={`${currencySymbol(done?.currency_code ?? form.currency_code)} ${Number(done?.price ?? form.price ?? 0).toLocaleString()}`}
+                                            />
+                                            <SuccessRow label="Plan Type" value={done?.planType?.name ?? planTypeName} />
+                                            <SuccessRow
+                                                label="Status"
+                                                value={
+                                                    <span className={active ? 'text-emerald-600' : 'text-muted-foreground'}>
+                                                        {active ? 'Active' : 'Inactive'}
+                                                    </span>
+                                                }
+                                            />
+                                            <SuccessRow label="Billing Cycle" value={cycle?.label ?? ''} />
+                                            <SuccessRow label="Updated On" value={stamp(done?.updated_at)} />
+                                            <SuccessRow
+                                                label="Trial Period"
+                                                value={`${done?.trial_days ?? form.trial_days} Days`}
+                                            />
+                                            <SuccessRow
+                                                label="Updated By"
+                                                value={done?.updater?.full_name ?? done?.creator?.full_name ?? '\u2014'}
+                                            />
+                                            <SuccessRow
+                                                label="Trial Price"
+                                                value={Number(done?.trial_days ?? form.trial_days) > 0 ? 'Free' : '\u2014'}
+                                            />
+                                        </dl>
+                                    </div>
+
+                                    <div className="mt-4 flex flex-col items-center gap-2">
+                                        <Button
+                                            onClick={() =>
+                                                router.push(
+                                                    done ? `/admin/subscriptions/${done.id}` : '/admin/subscriptions'
+                                                )
+                                            }
+                                            className="h-10 w-56 gap-2"
+                                        >
+                                            <Eye className="h-4 w-4" /> View Plan Details
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => router.push('/admin/subscriptions')}
+                                            className="h-10 w-56 gap-2"
+                                        >
+                                            <ArrowLeft className="h-4 w-4" /> Back to Plans
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    );
+                })()}
 
                 {/* Footer nav — hidden on the success screen, which has its own CTA */}
                 {step < 6 && (
@@ -846,7 +940,7 @@ export function PlanWizardContent() {
                             </Button>
                         ) : (
                             <Button onClick={submit} disabled={isSaving} className="h-9 gap-2 bg-emerald-600 hover:bg-emerald-700">
-                                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                                <Send className="h-4 w-4" />
                                 {isEdit ? 'Update Plan' : 'Create Plan'}
                             </Button>
                         )}
@@ -1052,11 +1146,13 @@ function ReviewCard({
     );
 }
 
-function SummaryTile({ label, value }: { label: string; value: string }) {
+/** "Label : Value", matching the rest of the subscription screens. */
+function SuccessRow({ label, value }: { label: string; value: React.ReactNode }) {
     return (
-        <div className="rounded-lg border border-border p-3">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
-            <p className="mt-0.5 break-all text-sm font-semibold text-foreground">{value}</p>
+        <div className="flex min-w-0 items-start gap-2">
+            <dt className="w-24 shrink-0 text-xs text-muted-foreground">{label}</dt>
+            <span className="shrink-0 text-xs text-muted-foreground">:</span>
+            <dd className="min-w-0 break-words text-sm font-medium text-foreground">{value}</dd>
         </div>
     );
 }

@@ -42,6 +42,8 @@ export interface EventMenu {
     id: number;
     name: string;
     slug: string;
+    /** Core / Additional / Custom — drives the Manage Plan Menus sections. */
+    menu_group?: 'core' | 'additional' | 'custom';
     event_category_id: number | null;
     event_type_id: number | null;
     religion_id: number | null;
@@ -140,7 +142,7 @@ function createTaxonomyHooks<T extends TaxonomyRecord>(config: {
     const onError = (queryClient: ReturnType<typeof useQueryClient>, verb: string) =>
         (error: any) => {
             if (isApprovalRequired(error)) {
-                queryClient.invalidateQueries({ queryKey: KEY });
+                queryClient.invalidateQueries({ queryKey: KEY, refetchType: 'all' });
                 return;
             }
             toast.error(error?.response?.data?.message || `Failed to ${verb} ${label.toLowerCase()}`);
@@ -165,7 +167,7 @@ function createTaxonomyHooks<T extends TaxonomyRecord>(config: {
             return useMutation({
                 mutationFn: api.create,
                 onSuccess: () => {
-                    queryClient.invalidateQueries({ queryKey: KEY });
+                    queryClient.invalidateQueries({ queryKey: KEY, refetchType: 'all' });
                     toast.success(`${label} created successfully`);
                 },
                 onError: onError(queryClient, 'create'),
@@ -176,7 +178,7 @@ function createTaxonomyHooks<T extends TaxonomyRecord>(config: {
             return useMutation({
                 mutationFn: api.update,
                 onSuccess: (_, vars) => {
-                    queryClient.invalidateQueries({ queryKey: KEY });
+                    queryClient.invalidateQueries({ queryKey: KEY, refetchType: 'all' });
                     queryClient.invalidateQueries({ queryKey: [queryKey, 'detail', vars.id] });
                     toast.success(`${label} updated successfully`);
                 },
@@ -187,7 +189,7 @@ function createTaxonomyHooks<T extends TaxonomyRecord>(config: {
             const queryClient = useQueryClient();
             return useMutation({
                 mutationFn: api.updateStatus,
-                onSuccess: () => queryClient.invalidateQueries({ queryKey: KEY }),
+                onSuccess: () => queryClient.invalidateQueries({ queryKey: KEY, refetchType: 'all' }),
                 onError: onError(queryClient, 'update'),
             });
         },
@@ -196,7 +198,7 @@ function createTaxonomyHooks<T extends TaxonomyRecord>(config: {
             return useMutation({
                 mutationFn: api.remove,
                 onSuccess: () => {
-                    queryClient.invalidateQueries({ queryKey: KEY });
+                    queryClient.invalidateQueries({ queryKey: KEY, refetchType: 'all' });
                     toast.success(`${label} deleted successfully`);
                 },
                 onError: onError(queryClient, 'delete'),
@@ -324,7 +326,7 @@ const eventMenusApi = {
 function menuError(queryClient: ReturnType<typeof useQueryClient>, verb: string) {
     return (error: any) => {
         if (isApprovalRequired(error)) {
-            queryClient.invalidateQueries({ queryKey: MENUS_KEY });
+            queryClient.invalidateQueries({ queryKey: MENUS_KEY, refetchType: 'all' });
             return;
         }
         toast.error(error?.response?.data?.message || `Failed to ${verb} menu`);
@@ -355,7 +357,7 @@ export function useCreateEventMenu(onSuccess?: (menu: EventMenu) => void) {
     return useMutation({
         mutationFn: eventMenusApi.create,
         onSuccess: (menu) => {
-            queryClient.invalidateQueries({ queryKey: MENUS_KEY });
+            queryClient.invalidateQueries({ queryKey: MENUS_KEY, refetchType: 'all' });
             toast.success('Menu created successfully');
             onSuccess?.(menu);
         },
@@ -368,7 +370,7 @@ export function useUpdateEventMenu(onSuccess?: (menu: EventMenu) => void) {
     return useMutation({
         mutationFn: eventMenusApi.update,
         onSuccess: (menu, vars) => {
-            queryClient.invalidateQueries({ queryKey: MENUS_KEY });
+            queryClient.invalidateQueries({ queryKey: MENUS_KEY, refetchType: 'all' });
             queryClient.invalidateQueries({ queryKey: ['event-menus', 'detail', vars.id] });
             toast.success('Menu updated successfully');
             onSuccess?.(menu);
@@ -381,7 +383,7 @@ export function useUpdateEventMenuStatus() {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: eventMenusApi.updateStatus,
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: MENUS_KEY }),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: MENUS_KEY, refetchType: 'all' }),
         onError: menuError(queryClient, 'update'),
     });
 }
@@ -390,7 +392,7 @@ export function useToggleEventMenuFlag() {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: eventMenusApi.toggle,
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: MENUS_KEY }),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: MENUS_KEY, refetchType: 'all' }),
         onError: menuError(queryClient, 'update'),
     });
 }
@@ -400,7 +402,7 @@ export function useDuplicateEventMenu() {
     return useMutation({
         mutationFn: eventMenusApi.duplicate,
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: MENUS_KEY });
+            queryClient.invalidateQueries({ queryKey: MENUS_KEY, refetchType: 'all' });
             toast.success('Menu duplicated successfully');
         },
         onError: menuError(queryClient, 'duplicate'),
@@ -412,7 +414,7 @@ export function useReorderEventMenus() {
     return useMutation({
         mutationFn: eventMenusApi.reorder,
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: MENUS_KEY });
+            queryClient.invalidateQueries({ queryKey: MENUS_KEY, refetchType: 'all' });
             toast.success('Menu order updated');
         },
         onError: menuError(queryClient, 'reorder'),
@@ -424,7 +426,7 @@ export function useDeleteEventMenu() {
     return useMutation({
         mutationFn: eventMenusApi.remove,
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: MENUS_KEY });
+            queryClient.invalidateQueries({ queryKey: MENUS_KEY, refetchType: 'all' });
             toast.success('Menu deleted successfully');
         },
         onError: menuError(queryClient, 'delete'),

@@ -145,6 +145,7 @@ export function SelectContent({
     const { open, setOpen, triggerRef } = useSelect();
     const contentRef = React.useRef<HTMLDivElement | null>(null);
     const [rect, setRect] = React.useState<DOMRect | null>(null);
+    const [height, setHeight] = React.useState(0);
 
     React.useLayoutEffect(() => {
         if (!open) return;
@@ -160,6 +161,13 @@ export function SelectContent({
         };
     }, [open, triggerRef]);
 
+    React.useLayoutEffect(() => {
+        if (!open) { setHeight(0); return; }
+        if (!contentRef.current) return;
+        const h = contentRef.current.getBoundingClientRect().height;
+        setHeight((prev) => (Math.abs(prev - h) < 1 ? prev : h));
+    }, [open, rect, children]);
+
     React.useEffect(() => {
         if (!open) return;
         const onPointerDown = (event: MouseEvent) => {
@@ -172,20 +180,46 @@ export function SelectContent({
         return () => document.removeEventListener('mousedown', onPointerDown);
     }, [open, setOpen, triggerRef]);
 
+    React.useEffect(() => {
+        if (!open) return;
+        const onKey = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') setOpen(false);
+        };
+        document.addEventListener('keydown', onKey);
+        return () => document.removeEventListener('keydown', onKey);
+    }, [open, setOpen]);
+
     if (!open || !rect || typeof document === 'undefined') return null;
+
+    const viewportH = typeof window !== 'undefined' ? window.innerHeight : 0;
+    const GUTTER = 8;
+
+    // Flip above the trigger when there is not enough room below, so a select
+    // near the bottom of a form is not clipped off-screen.
+    const spaceBelow = viewportH - rect.bottom - 4;
+    const spaceAbove = rect.top - 4;
+    const flipUp = height > 0 && spaceBelow < height && spaceAbove > spaceBelow;
+
+    let top = flipUp ? rect.top - 4 - height : rect.bottom + 4;
+    top = Math.min(Math.max(GUTTER, top), Math.max(GUTTER, viewportH - height - GUTTER));
+
+    // Never taller than the side it opened on.
+    const maxHeight = Math.max(160, Math.min(260, (flipUp ? spaceAbove : spaceBelow) - GUTTER));
 
     return createPortal(
         <div
             ref={contentRef}
             style={{
                 position: 'fixed',
-                top: rect.bottom + 4,
+                top,
                 left: rect.left,
                 minWidth: rect.width,
+                maxHeight,
                 zIndex: 1000,
+                visibility: height ? 'visible' : 'hidden',
             }}
             className={cn(
-                'max-h-[260px] overflow-auto rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-md animate-in fade-in-80 duration-100',
+                'overflow-auto rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-md animate-in fade-in-80 duration-100',
                 className
             )}
         >
@@ -194,6 +228,7 @@ export function SelectContent({
         document.body
     );
 }
+
 
 export function SelectItem({
     value,

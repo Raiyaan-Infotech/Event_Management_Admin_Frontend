@@ -43,6 +43,17 @@ export interface SubscriptionPlan {
     eventType?: { id: number; name: string; color: string | null } | null;
     religion?: { id: number; name: string; color: string | null } | null;
     planMenus?: PlanMenuRow[];
+    /** Detail read only — the list does not join these. */
+    creator?: { id: number; full_name: string } | null;
+    updater?: { id: number; full_name: string } | null;
+    deactivator?: { id: number; full_name: string } | null;
+    deleter?: { id: number; full_name: string } | null;
+    deactivation_reason?: string | null;
+    deactivation_comments?: string | null;
+    deactivated_at?: string | null;
+    deletion_reason?: string | null;
+    deletion_comments?: string | null;
+    deleted_at?: string | null;
     has_pending_approval?: boolean;
     created_at: string;
     updated_at?: string;
@@ -136,12 +147,30 @@ const api = {
     remove: async (id: number): Promise<void> => {
         await apiClient.delete(`/subscription-plans/${id}`);
     },
+    getReasons: async (): Promise<{ deactivation: string[]; deletion: string[] }> => {
+        const res = await apiClient.get('/subscription-plans/reasons');
+        return res.data.data?.reasons ?? { deactivation: [], deletion: [] };
+    },
+    deactivate: async ({ id, reason, comments }: { id: number; reason: string; comments?: string }) => {
+        const res = await apiClient.patch(`/subscription-plans/${id}/deactivate`, { reason, comments });
+        return res.data.data?.subscriptionPlan as SubscriptionPlan;
+    },
+    reactivate: async (id: number) => {
+        const res = await apiClient.patch(`/subscription-plans/${id}/reactivate`);
+        return res.data.data?.subscriptionPlan as SubscriptionPlan;
+    },
+    // POST, not DELETE: it carries a body, and the response is the
+    // pre-deletion snapshot the success screen renders.
+    deleteWithReason: async ({ id, reason, comments }: { id: number; reason: string; comments?: string }) => {
+        const res = await apiClient.post(`/subscription-plans/${id}/delete`, { reason, comments });
+        return res.data.data?.subscriptionPlan as SubscriptionPlan;
+    },
 };
 
 function onError(queryClient: ReturnType<typeof useQueryClient>, verb: string) {
     return (error: any) => {
         if (isApprovalRequired(error)) {
-            queryClient.invalidateQueries({ queryKey: KEY });
+            queryClient.invalidateQueries({ queryKey: KEY, refetchType: 'all' });
             return;
         }
         toast.error(error?.response?.data?.message || `Failed to ${verb} subscription plan`);
@@ -177,7 +206,7 @@ export function useCreateSubscriptionPlan(onSuccess?: (plan: SubscriptionPlan) =
     return useMutation({
         mutationFn: api.create,
         onSuccess: (plan) => {
-            queryClient.invalidateQueries({ queryKey: KEY });
+            queryClient.invalidateQueries({ queryKey: KEY, refetchType: 'all' });
             onSuccess?.(plan);
         },
         onError: onError(queryClient, 'create'),
@@ -189,7 +218,7 @@ export function useUpdateSubscriptionPlan(onSuccess?: (plan: SubscriptionPlan) =
     return useMutation({
         mutationFn: api.update,
         onSuccess: (plan, vars) => {
-            queryClient.invalidateQueries({ queryKey: KEY });
+            queryClient.invalidateQueries({ queryKey: KEY, refetchType: 'all' });
             queryClient.invalidateQueries({ queryKey: ['subscription-plans', 'detail', vars.id] });
             onSuccess?.(plan);
         },
@@ -201,7 +230,7 @@ export function useUpdateSubscriptionPlanStatus() {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: api.updateStatus,
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: KEY }),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: KEY, refetchType: 'all' }),
         onError: onError(queryClient, 'update'),
     });
 }
@@ -211,10 +240,58 @@ export function useDuplicateSubscriptionPlan() {
     return useMutation({
         mutationFn: api.duplicate,
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: KEY });
+            queryClient.invalidateQueries({ queryKey: KEY, refetchType: 'all' });
             toast.success('Plan duplicated successfully');
         },
         onError: onError(queryClient, 'duplicate'),
+    });
+}
+
+/** Static config. */
+export function usePlanReasons() {
+    return useQuery({
+        queryKey: ['subscription-plans', 'reasons'],
+        queryFn: api.getReasons,
+        staleTime: 5 * 60 * 1000,
+    });
+}
+
+export function useDeactivatePlan(onSuccess?: (plan: SubscriptionPlan) => void) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: api.deactivate,
+        onSuccess: (plan, vars) => {
+            queryClient.invalidateQueries({ queryKey: KEY, refetchType: 'all' });
+            queryClient.invalidateQueries({ queryKey: ['subscription-plans', 'detail', vars.id] });
+            onSuccess?.(plan);
+        },
+        onError: onError(queryClient, 'deactivate'),
+    });
+}
+
+export function useReactivatePlan(onSuccess?: (plan: SubscriptionPlan) => void) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: api.reactivate,
+        onSuccess: (plan, id) => {
+            queryClient.invalidateQueries({ queryKey: KEY, refetchType: 'all' });
+            queryClient.invalidateQueries({ queryKey: ['subscription-plans', 'detail', id] });
+            toast.success('Plan activated successfully');
+            onSuccess?.(plan);
+        },
+        onError: onError(queryClient, 'activate'),
+    });
+}
+
+export function useDeletePlanWithReason(onSuccess?: (plan: SubscriptionPlan) => void) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: api.deleteWithReason,
+        onSuccess: (plan) => {
+            queryClient.invalidateQueries({ queryKey: KEY, refetchType: 'all' });
+            onSuccess?.(plan);
+        },
+        onError: onError(queryClient, 'delete'),
     });
 }
 
@@ -223,7 +300,7 @@ export function useDeleteSubscriptionPlan() {
     return useMutation({
         mutationFn: api.remove,
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: KEY });
+            queryClient.invalidateQueries({ queryKey: KEY, refetchType: 'all' });
             toast.success('Plan deleted successfully');
         },
         onError: onError(queryClient, 'delete'),

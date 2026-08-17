@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Save, RotateCcw, Loader2 } from 'lucide-react';
+import { Save, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -230,7 +230,16 @@ export function TaxonomyManager<T extends TaxonomyRecord>(props: TaxonomyManager
                 key: 'name',
                 header: nameLabel,
                 sortable: true,
-                render: (row) => <span className="font-medium">{row.name}</span>,
+                // Icon sits inside the name cell rather than in its own column —
+                // it reads as part of the record and saves a column of width.
+                render: (row) => (
+                    <div className="flex items-center gap-2.5">
+                        <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border bg-muted/40">
+                            <DynamicIcon name={row.icon} color={row.color} size="h-4 w-4" />
+                        </span>
+                        <span className="font-medium">{row.name}</span>
+                    </div>
+                ),
             },
             {
                 key: 'description',
@@ -270,15 +279,6 @@ export function TaxonomyManager<T extends TaxonomyRecord>(props: TaxonomyManager
         });
 
         cols.push(
-            {
-                key: 'icon',
-                header: 'Icon',
-                render: (row) => (
-                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-muted/40">
-                        <DynamicIcon name={row.icon} color={row.color} size="h-4 w-4" />
-                    </span>
-                ),
-            },
             {
                 key: 'color',
                 header: 'Color',
@@ -450,11 +450,7 @@ export function TaxonomyManager<T extends TaxonomyRecord>(props: TaxonomyManager
                                 </Button>
                             )}
                             <Button type="button" size="sm" onClick={handleSave} disabled={isSaving} className="h-9 gap-1.5">
-                                {isSaving ? (
-                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                ) : (
-                                    <Save className="h-3.5 w-3.5" />
-                                )}
+                                <Save className="h-3.5 w-3.5" />
                                 {isSaving ? 'Saving...' : editingId ? `Update ${entityLabel}` : `Save ${entityLabel}`}
                             </Button>
                         </div>
