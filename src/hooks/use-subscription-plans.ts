@@ -235,13 +235,15 @@ export function useUpdateSubscriptionPlanStatus() {
     });
 }
 
-export function useDuplicateSubscriptionPlan() {
+/** `onSuccess` receives the NEW plan — the caller needs its id to navigate. */
+export function useDuplicateSubscriptionPlan(onSuccess?: (plan: SubscriptionPlan) => void) {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: api.duplicate,
-        onSuccess: () => {
+        onSuccess: (plan) => {
             queryClient.invalidateQueries({ queryKey: KEY, refetchType: 'all' });
             toast.success('Plan duplicated successfully');
+            onSuccess?.(plan);
         },
         onError: onError(queryClient, 'duplicate'),
     });

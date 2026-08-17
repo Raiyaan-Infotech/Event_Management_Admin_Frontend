@@ -36,6 +36,10 @@ import { formatPlanPrice, BILLING_CYCLES, type SubscriptionPlan } from '@/hooks/
  * panel matches the design. They are NOT real and must be replaced by counts
  * from a plan_subscriptions table before this ships to anyone who might act on
  * them.
+ *
+ * The on-screen "Sample figures" caption that used to say so was removed on
+ * request, so nothing in the UI now marks these as fake. Whoever wires up
+ * plan_subscriptions must come here first.
  */
 const PLACEHOLDER_PLAN_USAGE = { total: 118, active: 96, cancelled: 22 };
 
@@ -482,9 +486,6 @@ export function PlanActionScreen({ variant, plan, reasons, isSubmitting, result,
                             label="Cancelled Subscribers"
                             value={PLACEHOLDER_PLAN_USAGE.cancelled}
                         />
-                        <p className="pt-1 text-[10px] italic text-muted-foreground">
-                            Sample figures — subscriber tracking is not wired up yet.
-                        </p>
                     </div>
                 </CardContent>
             </Card>

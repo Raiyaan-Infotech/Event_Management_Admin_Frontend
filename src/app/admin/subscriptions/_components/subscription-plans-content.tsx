@@ -117,7 +117,11 @@ export function SubscriptionPlansContent() {
     });
 
     const updateStatus = useUpdateSubscriptionPlanStatus();
-    const duplicatePlan = useDuplicateSubscriptionPlan();
+    // Lands on the duplicate's own success screen — the copy is a new record,
+    // and the list alone gives no confirmation of what was created.
+    const duplicatePlan = useDuplicateSubscriptionPlan((plan) =>
+        router.push(`/admin/subscriptions/${plan.id}/duplicated`)
+    );
     const deletePlan = useDeleteSubscriptionPlan();
     const reactivatePlan = useReactivatePlan();
 

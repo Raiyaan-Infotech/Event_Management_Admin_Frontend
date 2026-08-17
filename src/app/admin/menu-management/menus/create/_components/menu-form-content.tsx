@@ -33,6 +33,7 @@ import { cn } from '@/lib/utils';
 import { IconField, ColorField } from '../../../_components/icon-color-fields';
 import {
     useEventMenu,
+    useEventMenus,
     useCreateEventMenu,
     useUpdateEventMenu,
     useEventCategories,
@@ -107,12 +108,37 @@ export function MenuFormContent() {
         event_category_id: form.event_category_id || undefined,
     });
 
-    const createMenu = useCreateEventMenu((menu) => {
-        // Stay on the form and switch to edit mode, so Save doesn't bounce the
-        // user away from a record they may still be editing.
-        router.replace(`/admin/menu-management/menus/create?id=${menu.id}`);
-    });
+    /**
+     * No navigation on the hook: it fires for EVERY create, so a redirect here
+     * also dragged "Save & Add Another" onto the edit form the moment it saved.
+     * Each button now says where it goes at its own call site.
+     */
+    const createMenu = useCreateEventMenu();
     const updateMenu = useUpdateEventMenu();
+
+    const backToList = () => router.push('/admin/menu-management/menus');
+
+    /**
+     * Sort Order seeds to the next free position. It was a literal 1 in
+     * emptyForm(), so every menu created from this form landed on 1 and the
+     * list showed a block of rows all claiming the same position — with no
+     * tiebreak behind it, their order was then arbitrary.
+     */
+    const { data: lastByOrder } = useEventMenus({
+        limit: 1,
+        sort_by: 'sort_order',
+        sort_order: 'DESC',
+    });
+    const nextSortOrder = (Number(lastByOrder?.data?.[0]?.sort_order) || 0) + 1;
+    const [sortSeeded, setSortSeeded] = useState(false);
+
+    // Seeded once, and never in edit mode — the saved row already has its own
+    // position, and re-seeding would silently move it.
+    useEffect(() => {
+        if (isEdit || sortSeeded || !lastByOrder) return;
+        setForm((prev) => ({ ...prev, sort_order: nextSortOrder }));
+        setSortSeeded(true);
+    }, [isEdit, sortSeeded, lastByOrder, nextSortOrder]);
 
     const applyRecord = (record: NonNullable<typeof existing>) => {
         setForm({
@@ -196,10 +222,12 @@ export function MenuFormContent() {
             color: form.color,
         };
 
+        // Both paths land on the Menu List — saving is the end of this task, so
+        // the saved row belongs in front of the user in context.
         if (isEdit && id) {
-            updateMenu.mutate({ id: Number(id), data: payload });
+            updateMenu.mutate({ id: Number(id), data: payload }, { onSuccess: backToList });
         } else {
-            createMenu.mutate(payload);
+            createMenu.mutate(payload, { onSuccess: backToList });
         }
     };
 
@@ -238,15 +266,20 @@ export function MenuFormContent() {
                 color: form.color,
             },
             {
+                // Stays on this form — deliberately no navigation, which is the
+                // whole point of the button. Keeps the taxonomy selections
+                // (consecutive menus almost always belong to the same event)
+                // and clears what is specific to the menu just saved.
                 onSuccess: () => {
-                    // Keep the taxonomy selections — consecutive menus almost
-                    // always belong to the same event — and bump the order.
                     setForm((prev) => ({
                         ...prev,
                         name: '',
                         icon: '',
+                        description: '',
+                        remarks: '',
                         sort_order: (Number(prev.sort_order) || 0) + 1,
                     }));
+                    setErrors({});
                 },
             }
         );
@@ -261,7 +294,9 @@ export function MenuFormContent() {
             const fresh = await refetch();
             if (fresh.data) applyRecord(fresh.data);
         } else {
-            setForm(emptyForm());
+            // Back to a blank form, but keep the seeded position rather than
+            // dropping to emptyForm()'s literal 1.
+            setForm({ ...emptyForm(), sort_order: nextSortOrder });
             setErrors({});
         }
     };
@@ -283,14 +318,24 @@ export function MenuFormContent() {
                         </h1>
                     </div>
 
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => router.push('/admin/menu-management/menus')}
-                        className="h-9 gap-2"
-                    >
-                        <ArrowLeft className="h-4 w-4" /> Back to Menu List
-                    </Button>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setResetOpen(true)}
+                            className="h-9 gap-2 border-rose-200 text-rose-600 hover:bg-rose-50"
+                        >
+                            <RotateCcw className="h-4 w-4" /> Reset
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={backToList}
+                            className="h-9 gap-2"
+                        >
+                            <ArrowLeft className="h-4 w-4" /> Back to Menu List
+                        </Button>
+                    </div>
                 </div>
 
                 <Card className="border-border bg-card shadow-xs">
@@ -508,7 +553,13 @@ export function MenuFormContent() {
                                     type="number"
                                     min={0}
                                     value={form.sort_order}
-                                    onChange={(e) => setField('sort_order', Number(e.target.value))}
+                                    onChange={(e) => {
+                                        // Counts as seeded, so a slow list query
+                                        // landing afterwards cannot overwrite a
+                                        // position typed by hand.
+                                        setSortSeeded(true);
+                                        setField('sort_order', Number(e.target.value));
+                                    }}
                                     className="h-10"
                                 />
                                 <p className="text-[11px] text-muted-foreground">
@@ -566,17 +617,8 @@ export function MenuFormContent() {
                     </CardContent>
                 </Card>
 
-                {/* Footer actions */}
-                <div className="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setResetOpen(true)}
-                        className="h-9 gap-2 border-rose-200 text-rose-600 hover:bg-rose-50"
-                    >
-                        <RotateCcw className="h-4 w-4" /> Reset
-                    </Button>
-
+                {/* Footer actions — Reset now sits in the header beside Back. */}
+                <div className="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-end">
                     <div className="flex flex-wrap items-center gap-2">
                         <Button type="button" onClick={handleSave} disabled={isSaving} className="h-9 gap-2">
                             <Save className="h-4 w-4" />

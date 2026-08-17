@@ -449,6 +449,19 @@ export function PlanWizardContent() {
                                     </span>
                                 </div>
                             </Field>
+
+                            {/* Belongs here per the design, not on the Pricing step —
+                                it is a property of the plan, and step 3 already
+                                reads it back on the Review card. */}
+                            <Field label="Trial Period (Days)" helper="Leave 0 for no trial.">
+                                <Input
+                                    type="number"
+                                    min={0}
+                                    value={form.trial_days}
+                                    onChange={(e) => setField('trial_days', e.target.value)}
+                                    className="h-10"
+                                />
+                            </Field>
                         </div>
                     </WizardCard>
                 )}
@@ -693,16 +706,6 @@ export function PlanWizardContent() {
                                         ))}
                                     </SelectContent>
                                 </Select>
-                            </Field>
-
-                            <Field label="Trial Period (Days)" helper="Leave 0 for no trial.">
-                                <Input
-                                    type="number"
-                                    min={0}
-                                    value={form.trial_days}
-                                    onChange={(e) => setField('trial_days', e.target.value)}
-                                    className="h-10"
-                                />
                             </Field>
                         </div>
                     </WizardCard>

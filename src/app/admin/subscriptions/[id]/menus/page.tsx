@@ -35,7 +35,7 @@ import { PageLoader } from '@/components/common/page-loader';
 import { PermissionGuard } from '@/components/guards/permission-guard';
 import { DynamicIcon } from '@/components/common/dynamic-icon';
 import { cn } from '@/lib/utils';
-import { useEventMenus, useEventCategories } from '@/hooks/use-menu-management';
+import { useEventMenus } from '@/hooks/use-menu-management';
 import {
     useSubscriptionPlan,
     useSubscriptionPlans,
@@ -70,7 +70,6 @@ export default function ManagePlanMenusPage({ params }: { params: Promise<{ id: 
 
     const { data: plan, isLoading } = useSubscriptionPlan(id);
     const { data: allPlans } = useSubscriptionPlans({ limit: 200 });
-    const { data: categories } = useEventCategories({ limit: 200, is_active: true });
 
     // Every menu the plan could offer, scoped the same way the plan is.
     const { data: menusData, isLoading: loadingMenus } = useEventMenus({
@@ -128,6 +127,33 @@ export default function ManagePlanMenusPage({ params }: { params: Promise<{ id: 
             };
             return next;
         });
+    };
+
+    /**
+     * Only the categories this plan's own menus belong to.
+     *
+     * `allMenus` is already fetched scoped to the plan, so listing every
+     * company category let you select one that can only ever match nothing —
+     * and a filter matching nothing is what made "Reset to Default" look
+     * broken: the toggles did revert, behind an empty list.
+     */
+    const categoryOptions = useMemo(() => {
+        const seen = new Map<string, string>();
+        allMenus.forEach((m) => {
+            if (!m.event_category_id) return;
+            const key = String(m.event_category_id);
+            if (!seen.has(key)) seen.set(key, m.category?.name ?? key);
+        });
+        return Array.from(seen, ([value, label]) => ({ value, label }));
+    }, [allMenus]);
+
+    /** Discards unsaved toggles by clearing the load guard, which re-seeds from
+     *  the plan. The filters go with it, so the revert is actually visible. */
+    const resetToSaved = () => {
+        setLoadedId(null);
+        setSearch('');
+        setCategoryId(ALL);
+        toast.success('Reverted to the saved menu selection');
     };
 
     const filtered = useMemo(() => {
@@ -297,19 +323,24 @@ export default function ManagePlanMenusPage({ params }: { params: Promise<{ id: 
                                             className="h-9 pl-9"
                                         />
                                     </div>
-                                    <Select value={categoryId} onValueChange={setCategoryId}>
-                                        <SelectTrigger className="h-9 w-[180px]">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value={ALL}>All Categories</SelectItem>
-                                            {(categories?.data ?? []).map((c) => (
-                                                <SelectItem key={c.id} value={String(c.id)}>
-                                                    {c.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    {/* Hidden when the plan's menus span a single
+                                        category — the filter would have exactly
+                                        one meaningful choice. */}
+                                    {categoryOptions.length > 1 && (
+                                        <Select value={categoryId} onValueChange={setCategoryId}>
+                                            <SelectTrigger className="h-9 w-[180px]">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value={ALL}>All Categories</SelectItem>
+                                                {categoryOptions.map((c) => (
+                                                    <SelectItem key={c.value} value={c.value}>
+                                                        {c.label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    )}
                                     <div className="ml-auto flex items-center gap-2">
                                         <span className="text-sm text-muted-foreground">Select All</span>
                                         <Switch checked={allVisibleOn} onCheckedChange={toggleAll} />
@@ -528,10 +559,7 @@ export default function ManagePlanMenusPage({ params }: { params: Promise<{ id: 
                                 label="Reset to Default"
                                 // Back to what is saved, not "everything on" — reset
                                 // should discard edits, not invent a new state.
-                                onClick={() => {
-                                    setLoadedId(null);
-                                    toast.success('Reverted to the saved menu selection');
-                                }}
+                                onClick={resetToSaved}
                             />
                             <QuickAction
                                 icon={<ShieldCheck className="h-4 w-4" />}
