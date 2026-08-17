@@ -44,6 +44,12 @@ export interface EventMenu {
     slug: string;
     /** Core / Additional / Custom — drives the Manage Plan Menus sections. */
     menu_group?: 'core' | 'additional' | 'custom';
+    description?: string | null;
+    remarks?: string | null;
+    company_id?: number | null;
+    /** Detail read only — the list does not join these. */
+    creator?: { id: number; full_name: string } | null;
+    updater?: { id: number; full_name: string } | null;
     event_category_id: number | null;
     event_type_id: number | null;
     religion_id: number | null;
@@ -259,6 +265,8 @@ export const useDeleteReligion = religionHooks.useDelete;
 
 export type EventMenuPayload = {
     name: string;
+    description?: string | null;
+    remarks?: string | null;
     event_category_id?: number | null;
     event_type_id?: number | null;
     religion_id?: number | null;

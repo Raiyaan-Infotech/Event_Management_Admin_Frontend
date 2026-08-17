@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -42,6 +43,8 @@ import {
 
 interface FormState {
     name: string;
+    description: string;
+    remarks: string;
     menu_type: MenuPlatform[];
     event_category_id: string;
     event_type_id: string;
@@ -57,6 +60,8 @@ interface FormState {
 
 const emptyForm = (): FormState => ({
     name: '',
+    description: '',
+    remarks: '',
     menu_type: ['website', 'mobile'],
     event_category_id: '',
     event_type_id: '',
@@ -112,6 +117,8 @@ export function MenuFormContent() {
     const applyRecord = (record: NonNullable<typeof existing>) => {
         setForm({
             name: record.name ?? '',
+            description: record.description ?? '',
+            remarks: record.remarks ?? '',
             menu_type: record.menu_type?.length ? record.menu_type : ['website'],
             event_category_id: record.event_category_id ? String(record.event_category_id) : '',
             event_type_id: record.event_type_id ? String(record.event_type_id) : '',
@@ -173,6 +180,8 @@ export function MenuFormContent() {
 
         const payload = {
             name: form.name.trim(),
+            description: form.description.trim() || null,
+            remarks: form.remarks.trim() || null,
             menu_type: form.menu_type,
             event_category_id: Number(form.event_category_id),
             event_type_id: Number(form.event_type_id),
@@ -214,6 +223,8 @@ export function MenuFormContent() {
         createMenu.mutate(
             {
                 name: form.name.trim(),
+                description: form.description.trim() || null,
+                remarks: form.remarks.trim() || null,
                 menu_type: form.menu_type,
                 event_category_id: Number(form.event_category_id),
                 event_type_id: Number(form.event_type_id),
@@ -523,6 +534,34 @@ export function MenuFormContent() {
                                 error={errors.color}
                                 helper="Choose a color for the menu icon and highlights."
                             />
+                        </div>
+                        {/* Row 5 — free text. Optional: a menu is usable without either. */}
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <div className="space-y-1.5">
+                                <Label className="text-sm font-medium">Description</Label>
+                                <Textarea
+                                    value={form.description}
+                                    onChange={(e) => setField('description', e.target.value)}
+                                    placeholder="What this menu is for"
+                                    className="min-h-[80px] text-sm"
+                                />
+                                <p className="text-[11px] text-muted-foreground">
+                                    Shown on the menu's view page.
+                                </p>
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <Label className="text-sm font-medium">Remarks</Label>
+                                <Textarea
+                                    value={form.remarks}
+                                    onChange={(e) => setField('remarks', e.target.value.slice(0, 300))}
+                                    placeholder="Internal note"
+                                    className="min-h-[80px] text-sm"
+                                />
+                                <p className="text-right text-[11px] text-muted-foreground">
+                                    {form.remarks.length}/300
+                                </p>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>

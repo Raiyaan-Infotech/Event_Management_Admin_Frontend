@@ -12,7 +12,8 @@ import {
     Eye,
     Pencil,
     Copy,
-    ArrowUpDown,
+    ArrowUp,
+    ArrowDown,
     Trash2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -57,10 +58,7 @@ import {
     useDuplicateEventMenu,
     useReorderEventMenus,
     useDeleteEventMenu,
-    type EventMenu,
 } from '@/hooks/use-menu-management';
-import { MenuViewDialog } from '../_components/menu-view-dialog';
-import { MenuReorderDialog } from '../_components/menu-reorder-dialog';
 
 const ALL = 'all';
 
@@ -76,8 +74,6 @@ export default function MenuListPage() {
     const [religionId, setReligionId] = useState(ALL);
 
     const [deleteId, setDeleteId] = useState<number | null>(null);
-    const [viewMenu, setViewMenu] = useState<EventMenu | null>(null);
-    const [reorderOpen, setReorderOpen] = useState(false);
 
     const { data, isLoading } = useEventMenus({
         page,
@@ -125,6 +121,38 @@ export default function MenuListPage() {
         setTypeId(ALL);
         setReligionId(ALL);
         setPage(1);
+    };
+
+    /**
+     * The Change Order column's arrows — move one row up or down by one position.
+     *
+     * Only the rows on screen are reordered: the arrows reuse the pool of
+     * sort_order values this page already holds, so rows on other pages keep
+     * their positions. That also means the first and last row of a page cannot
+     * step across the page boundary — the neighbour they would swap with is not
+     * loaded — so those two arrows are disabled.
+     *
+     * Ties are renumbered rather than swapped. `parseSort` orders on sort_order
+     * alone with no tiebreak, so swapping two rows that already share a value
+     * writes the same numbers back and the row visibly does not move.
+     */
+    const moveRow = (index: number, direction: -1 | 1) => {
+        const target = index + direction;
+        if (target < 0 || target >= menus.length) return;
+
+        const reordered = [...menus];
+        [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
+
+        const pool = menus.map((m) => Number(m.sort_order) || 0).sort((a, b) => a - b);
+        const hasTies = new Set(pool).size !== pool.length;
+        const base = pool[0] ?? 0;
+
+        reorderMenus.mutate(
+            reordered.map((row, i) => ({
+                id: row.id,
+                sort_order: hasTies ? base + i : pool[i],
+            }))
+        );
     };
 
     const isBusy =
@@ -308,6 +336,7 @@ export default function MenuListPage() {
                                         <TableHead className="w-12">#</TableHead>
                                         <TableHead className="min-w-[200px]">Menu Name</TableHead>
                                         <TableHead className="whitespace-nowrap">Menu Type</TableHead>
+                                        <TableHead className="whitespace-nowrap text-center">Change Order</TableHead>
                                         <TableHead className="whitespace-nowrap">Event Category</TableHead>
                                         <TableHead className="whitespace-nowrap">Event Type</TableHead>
                                         <TableHead className="whitespace-nowrap">Religion</TableHead>
@@ -320,13 +349,13 @@ export default function MenuListPage() {
                                 <TableBody>
                                     {isLoading ? (
                                         <TableRow>
-                                            <TableCell colSpan={9} className="py-16 text-center text-muted-foreground">
+                                            <TableCell colSpan={10} className="py-16 text-center text-muted-foreground">
                                                 Loading menus...
                                             </TableCell>
                                         </TableRow>
                                     ) : menus.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={9} className="py-16 text-center text-muted-foreground">
+                                            <TableCell colSpan={10} className="py-16 text-center text-muted-foreground">
                                                 {hasFilters
                                                     ? 'No menus match these filters.'
                                                     : 'No menus yet. Click "Add New Menu" to create your first one.'}
@@ -381,6 +410,37 @@ export default function MenuListPage() {
                                                                     <Smartphone className="h-3.5 w-3.5" />
                                                                 </span>
                                                             ) : null}
+                                                        </div>
+                                                    </TableCell>
+
+                                                    <TableCell>
+                                                        <div className="flex items-center justify-center gap-1">
+                                                            <Button
+                                                                type="button"
+                                                                variant="outline"
+                                                                size="icon"
+                                                                title="Move up"
+                                                                aria-label={`Move ${row.name} up`}
+                                                                disabled={index === 0 || reorderMenus.isPending}
+                                                                onClick={() => moveRow(index, -1)}
+                                                                className="h-7 w-7 rounded-md"
+                                                            >
+                                                                <ArrowUp className="h-3.5 w-3.5" />
+                                                            </Button>
+                                                            <Button
+                                                                type="button"
+                                                                variant="outline"
+                                                                size="icon"
+                                                                title="Move down"
+                                                                aria-label={`Move ${row.name} down`}
+                                                                disabled={
+                                                                    index === menus.length - 1 || reorderMenus.isPending
+                                                                }
+                                                                onClick={() => moveRow(index, 1)}
+                                                                className="h-7 w-7 rounded-md"
+                                                            >
+                                                                <ArrowDown className="h-3.5 w-3.5" />
+                                                            </Button>
                                                         </div>
                                                     </TableCell>
 
@@ -444,7 +504,11 @@ export default function MenuListPage() {
                                                                 </Button>
                                                             </DropdownMenuTrigger>
                                                             <DropdownMenuContent align="end" className="w-44">
-                                                                <DropdownMenuItem onClick={() => setViewMenu(row)}>
+                                                                <DropdownMenuItem
+                                                                    onClick={() =>
+                                                                        router.push(`/admin/menu-management/menus/${row.id}`)
+                                                                    }
+                                                                >
                                                                     <Eye className="mr-2 h-4 w-4" /> View
                                                                 </DropdownMenuItem>
                                                                 <DropdownMenuItem
@@ -462,9 +526,6 @@ export default function MenuListPage() {
                                                                     onClick={() => duplicateMenu.mutate(row.id)}
                                                                 >
                                                                     <Copy className="mr-2 h-4 w-4" /> Duplicate
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuItem onClick={() => setReorderOpen(true)}>
-                                                                    <ArrowUpDown className="mr-2 h-4 w-4" /> Change Order
                                                                 </DropdownMenuItem>
                                                                 <DropdownMenuSeparator />
                                                                 <DropdownMenuItem
@@ -499,16 +560,6 @@ export default function MenuListPage() {
                         )}
                     </CardContent>
                 </Card>
-
-                <MenuViewDialog menu={viewMenu} open={!!viewMenu} onOpenChange={(o) => !o && setViewMenu(null)} />
-
-                <MenuReorderDialog
-                    open={reorderOpen}
-                    onOpenChange={setReorderOpen}
-                    menus={menus}
-                    isSaving={reorderMenus.isPending}
-                    onSave={(items) => reorderMenus.mutate(items, { onSuccess: () => setReorderOpen(false) })}
-                />
 
                 <DeleteDialog
                     open={deleteId !== null}
