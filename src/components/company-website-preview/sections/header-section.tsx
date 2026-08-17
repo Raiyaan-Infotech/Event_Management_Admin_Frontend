@@ -266,6 +266,7 @@ function HeaderSectionBase({ theme, header, navItems, socialLinks, companyName, 
             {header.showLogin ? (
               <button
                 type="button"
+                onClick={() => onNavigate('/login')}
                 className="h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3.5 sm:px-4 text-[12.5px] font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 active:scale-95 whitespace-nowrap"
               >
                 {t('header.login', 'Login')}
@@ -277,6 +278,7 @@ function HeaderSectionBase({ theme, header, navItems, socialLinks, companyName, 
             {header.showSignIn ? (
               <button
                 type="button"
+                onClick={() => onNavigate('/signup')}
                 className="h-9 items-center justify-center rounded-lg px-3.5 sm:px-4 text-[12.5px] font-bold text-white shadow-xs transition hover:opacity-90 active:scale-95 whitespace-nowrap"
                 style={{ backgroundColor: theme.primaryButton || '#ec4899' }}
               >

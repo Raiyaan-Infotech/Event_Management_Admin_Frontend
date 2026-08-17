@@ -47,6 +47,7 @@ import {
   Tag,
   Church,
   Repeat,
+  UserRound,
 } from "lucide-react";
 import {
   Sidebar,
@@ -111,6 +112,14 @@ const menuItems: MenuItem[] = [
     href: "/admin/platform/users",
     icon: Users,
     permission: "employees.view",
+  },
+  {
+    // People who signed themselves up on the public website (`website_clients`),
+    // NOT the vendor portal's own client list (`vendor_clients`).
+    labelKey: "nav.clients",
+    href: "/admin/clients",
+    icon: UserRound,
+    permission: "website_clients.view",
   },
   {
     labelKey: "nav.events",

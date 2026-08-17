@@ -70,6 +70,8 @@ import {
   ChatSignupDemoSection,
   DynamicLoginDemoSection,
 } from './sections/login-demo-section';
+import { LoginSection } from './sections/login-section';
+import { SignupSection } from './sections/signup-section';
 import { WebsiteLanguageProvider, useWebsiteLanguage } from './website-language-provider';
 
 function CompanyWebsitePreviewInner({ initialPage = 'home' }: { initialPage?: string }) {
@@ -404,6 +406,12 @@ function extractList(raw: unknown): AnyRecord[] {
         <FaqsSection faqs={faqs} theme={theme} />
         <ChatSignupDemoSection theme={theme} />
       </>
+    ),
+    login: (
+      <LoginSection theme={theme} companyName={companyName} onNavigate={handleNavigate} />
+    ),
+    signup: (
+      <SignupSection theme={theme} companyName={companyName} onNavigate={handleNavigate} />
     ),
   };
 

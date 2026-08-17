@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { Card, CardContent } from '@/components/ui/card';
 import {
     Select,
@@ -444,20 +445,23 @@ export default function MenuListPage() {
                                                         </div>
                                                     </TableCell>
 
-                                                    <TableCell className="text-sm">
-                                                        {row.category?.name ?? (
-                                                            <span className="text-muted-foreground">—</span>
-                                                        )}
+                                                    <TableCell>
+                                                        <TaxonomyBadge
+                                                            value={row.category?.name}
+                                                            color={row.category?.color}
+                                                        />
                                                     </TableCell>
-                                                    <TableCell className="text-sm">
-                                                        {row.eventType?.name ?? (
-                                                            <span className="text-muted-foreground">—</span>
-                                                        )}
+                                                    <TableCell>
+                                                        <TaxonomyBadge
+                                                            value={row.eventType?.name}
+                                                            color={row.eventType?.color}
+                                                        />
                                                     </TableCell>
-                                                    <TableCell className="text-sm">
-                                                        {row.religion?.name ?? (
-                                                            <span className="text-muted-foreground">—</span>
-                                                        )}
+                                                    <TableCell>
+                                                        <TaxonomyBadge
+                                                            value={row.religion?.name}
+                                                            color={row.religion?.color}
+                                                        />
                                                     </TableCell>
 
                                                     <TableCell className="text-center text-sm font-semibold tabular-nums">
@@ -465,30 +469,32 @@ export default function MenuListPage() {
                                                     </TableCell>
 
                                                     <TableCell className="text-center">
+                                                        {/* A row awaiting approval keeps the badge: its status is
+                                                            not the admin's to flip until the request is decided. */}
                                                         {Number(row.is_active) === 2 ? (
                                                             <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-700">
                                                                 Pending
                                                             </Badge>
                                                         ) : (
-                                                            <button
-                                                                type="button"
-                                                                disabled={locked}
-                                                                onClick={() =>
-                                                                    updateStatus.mutate({
-                                                                        id: row.id,
-                                                                        is_active: !(Number(row.is_active) === 1),
-                                                                    })
-                                                                }
-                                                                className={cn(
-                                                                    'rounded-full px-2.5 py-1 text-xs font-semibold transition-colors',
-                                                                    Number(row.is_active) === 1
-                                                                        ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                                                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
-                                                                    locked && 'cursor-not-allowed opacity-60'
-                                                                )}
-                                                            >
-                                                                {Number(row.is_active) === 1 ? 'Active' : 'Inactive'}
-                                                            </button>
+                                                            <div className="flex flex-col items-center gap-1">
+                                                                <Switch
+                                                                    checked={Number(row.is_active) === 1}
+                                                                    disabled={locked}
+                                                                    onCheckedChange={(v) =>
+                                                                        updateStatus.mutate({ id: row.id, is_active: v })
+                                                                    }
+                                                                />
+                                                                <span
+                                                                    className={cn(
+                                                                        'text-[10px] font-semibold',
+                                                                        Number(row.is_active) === 1
+                                                                            ? 'text-emerald-600'
+                                                                            : 'text-muted-foreground'
+                                                                    )}
+                                                                >
+                                                                    {Number(row.is_active) === 1 ? 'Active' : 'Inactive'}
+                                                                </span>
+                                                            </div>
                                                         )}
                                                     </TableCell>
 
@@ -575,5 +581,36 @@ export default function MenuListPage() {
                 />
             </div>
         </PermissionGuard>
+    );
+}
+
+/**
+ * A taxonomy value (category / type / religion) as a badge, tinted from the
+ * record's own colour.
+ *
+ * The colour drives the dot, border and background wash only — never the text.
+ * These are admin-picked and some are very pale (#fdefc9 is real data), which
+ * as a text colour would be illegible on a light chip. A record with no colour
+ * degrades to a plain neutral chip rather than losing the badge.
+ */
+function TaxonomyBadge({ value, color }: { value?: string | null; color?: string | null }) {
+    if (!value) return <span className="text-sm text-muted-foreground">—</span>;
+
+    return (
+        <Badge
+            variant="outline"
+            // Wraps rather than truncates — the table is auto-layout, so a
+            // truncate here would collapse the column instead of clipping.
+            className="max-w-[170px] gap-1.5 whitespace-normal break-words border-border bg-muted/40 text-[11px] font-medium leading-tight text-foreground"
+            style={color ? { borderColor: `${color}55`, backgroundColor: `${color}14` } : undefined}
+        >
+            {color ? (
+                <span
+                    className="h-1.5 w-1.5 shrink-0 rounded-full"
+                    style={{ backgroundColor: color }}
+                />
+            ) : null}
+            {value}
+        </Badge>
     );
 }
