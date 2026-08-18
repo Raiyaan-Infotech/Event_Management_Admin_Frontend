@@ -12,6 +12,8 @@
  */
 
 import * as React from 'react';
+import { toast } from 'sonner';
+import { registerWebsiteClient } from '@/lib/website-client-auth';
 import {
     Mail,
     Lock,
@@ -35,7 +37,8 @@ import {
     PasswordRules,
     PASSWORD_RULES,
     SocialButtons,
-    AuthFlowDialog,
+    startSocialAuth,
+    useSocialAuthResult,
     type AuthProvider,
 } from './auth-shared';
 import { useWebsiteLanguage } from '../website-language-provider';
@@ -242,9 +245,54 @@ export function SignupSection({
     const [otp, setOtp] = React.useState('');
     const [activeProvider, setActiveProvider] = React.useState<AuthProvider | null>(null);
 
-    // Deliberately inert until the auth endpoints exist — see login-section.
-    const handleSubmit = (event: React.FormEvent) => {
+    // Shows the result of a provider round trip, which comes back in the URL.
+    useSocialAuthResult();
+
+    const [submitting, setSubmitting] = React.useState(false);
+
+    /**
+     * Creates a real client record, which the admin Clients module lists. The
+     * OTP boxes above are NOT part of this — no SMS provider is configured, so
+     * the mobile number is stored unverified.
+     */
+    const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
+        if (submitting) return;
+
+        // The server validates all of this again; this only saves a round trip.
+        if (!fullName.trim() || !email.trim()) {
+            toast.error('Please fill all mandatory fields.');
+            return;
+        }
+        if (!PASSWORD_RULES.every((rule) => rule.test(password))) {
+            toast.error('Please choose a password that meets all three rules.');
+            return;
+        }
+
+        setSubmitting(true);
+        const result = await registerWebsiteClient({
+            name: fullName.trim(),
+            email: email.trim(),
+            dial_code: dialCode,
+            mobile: mobile || undefined,
+            password,
+        });
+        setSubmitting(false);
+
+        if (!result.ok) {
+            toast.error(result.message);
+            return;
+        }
+
+        // Clear the credentials so a shared screen does not keep them.
+        setPassword('');
+        setOtp('');
+        setOtpSent(false);
+
+        // Signing up is not signing in — the account exists but no session was
+        // issued, so the next step is the login screen.
+        toast.success(result.message || 'Account created successfully');
+        onNavigate?.('/login');
     };
 
     // `/login` exists; the legal pages do not have routes here yet, so those
@@ -464,11 +512,13 @@ export function SignupSection({
 
                                 <button
                                     type="submit"
-                                    disabled={!PASSWORD_RULES.every((rule) => rule.test(password))}
+                                    disabled={submitting || !PASSWORD_RULES.every((rule) => rule.test(password))}
                                     className="flex h-11 w-full items-center justify-center gap-2 rounded-lg text-[13.5px] font-bold text-white shadow-sm transition hover:opacity-90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
                                     style={{ backgroundColor: primary }}
                                 >
-                                    {t('signup.submit', 'Create Account')}
+                                    {submitting
+                                        ? t('signup.submitting', 'Creating account...')
+                                        : t('signup.submit', 'Create Account')}
                                     <ArrowRight className="h-4 w-4" />
                                 </button>
                             </form>
@@ -486,7 +536,10 @@ export function SignupSection({
                             <SocialButtons
                                 primaryText={theme.primaryText}
                                 labelFor={(key, fallback) => t(`signup.continue_with_${key}`, fallback)}
-                                onSelect={setActiveProvider}
+                                onSelect={(provider) => {
+                                    setActiveProvider(provider);
+                                    startSocialAuth(provider);
+                                }}
                             />
 
                             {/* Legal */}
@@ -526,14 +579,6 @@ export function SignupSection({
                 </div>
             </div>
 
-            {/* Provider flow: account choice → validating → mobile → OTP → done. */}
-            <AuthFlowDialog
-                open={activeProvider !== null}
-                provider={activeProvider ?? 'google'}
-                primary={primary}
-                companyName={company}
-                onClose={() => setActiveProvider(null)}
-            />
         </section>
     );
 }

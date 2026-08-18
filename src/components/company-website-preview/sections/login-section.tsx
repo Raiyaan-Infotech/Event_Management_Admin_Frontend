@@ -32,6 +32,8 @@
  */
 
 import * as React from 'react';
+import { toast } from 'sonner';
+import { loginWebsiteClient } from '@/lib/website-client-auth';
 import { Mail, Lock, Eye, EyeOff, Send, ShieldCheck, Star, Sparkles, Users, LineChart } from 'lucide-react';
 import type { ThemeColors } from './preview-shared';
 import {
@@ -39,7 +41,8 @@ import {
     MobileNumberField,
     OtpInput,
     SocialButtons,
-    AuthFlowDialog,
+    startSocialAuth,
+    useSocialAuthResult,
     type AuthProvider,
 } from './auth-shared';
 import { useWebsiteLanguage } from '../website-language-provider';
@@ -260,15 +263,46 @@ export function LoginSection({
     const [mobile, setMobile] = React.useState('');
     const [otpSent, setOtpSent] = React.useState(false);
     const [otp, setOtp] = React.useState('');
-    // Which provider flow is open, or null. Opening it is the only thing the
-    // social buttons do — there is no OAuth round trip behind them yet.
+    // Which provider we are handing the browser off to, or null. Set purely so
+    // the buttons can disable during the moment before the page navigates away.
     const [activeProvider, setActiveProvider] = React.useState<AuthProvider | null>(null);
 
-    // Deliberately inert until the auth endpoints exist. Swallowing the submit
-    // is the honest behaviour — the alternative is a form that looks like it
-    // signed you in and did not.
-    const handleSubmit = (event: React.FormEvent) => {
+    // Shows the result of a provider round trip, which comes back in the URL.
+    useSocialAuthResult();
+
+    // Disables the button while in flight so a double click cannot double post.
+    const [submitting, setSubmitting] = React.useState(false);
+
+    // Verifies the credentials and stops there — no token comes back and there
+    // is nowhere to redirect to, so the toast IS the outcome. Goes through
+    // `website-client-auth`, NOT the shared apiClient, whose 401 handler would
+    // read a wrong password here as the ADMIN's session expiring.
+    const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
+        if (submitting) return;
+
+        if (!email.trim() || !password) {
+            toast.error('Please enter your email and password.');
+            return;
+        }
+
+        setSubmitting(true);
+        const result = await loginWebsiteClient({
+            email: email.trim(),
+            password,
+            dial_code: dialCode,
+            // Only sent when filled in — the server treats a blank as "not
+            // offered" and checks it against the account when it is present.
+            mobile: mobile || undefined,
+        });
+        setSubmitting(false);
+
+        if (result.ok) {
+            toast.success(result.message || 'Login successful');
+            setPassword('');
+        } else {
+            toast.error(result.message);
+        }
     };
 
     // `/signup` is a real route; `/forgot-password` is not built yet, so that
@@ -520,11 +554,14 @@ export function LoginSection({
 
                                 <button
                                     type="submit"
-                                    className="flex h-11 w-full items-center justify-center gap-2 rounded-lg text-[13.5px] font-bold text-white shadow-sm transition hover:opacity-90 active:scale-[0.99]"
+                                    disabled={submitting}
+                                    className="flex h-11 w-full items-center justify-center gap-2 rounded-lg text-[13.5px] font-bold text-white shadow-sm transition hover:opacity-90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70"
                                     style={{ backgroundColor: primary }}
                                 >
                                     <Send className="h-4 w-4" />
-                                    {t('login.submit', 'Log In')}
+                                    {submitting
+                                        ? t('login.submitting', 'Logging in...')
+                                        : t('login.submit', 'Log In')}
                                 </button>
                             </form>
 
@@ -542,7 +579,10 @@ export function LoginSection({
                             <SocialButtons
                                 primaryText={theme.primaryText}
                                 labelFor={(key, fallback) => t(`login.continue_with_${key}`, fallback)}
-                                onSelect={setActiveProvider}
+                                onSelect={(provider) => {
+                                    setActiveProvider(provider);
+                                    startSocialAuth(provider);
+                                }}
                             />
 
                             {/* Privacy note */}
@@ -564,14 +604,6 @@ export function LoginSection({
                 </div>
             </div>
 
-            {/* Provider flow: account choice → validating → mobile → OTP → done. */}
-            <AuthFlowDialog
-                open={activeProvider !== null}
-                provider={activeProvider ?? 'google'}
-                primary={primary}
-                companyName={company}
-                onClose={() => setActiveProvider(null)}
-            />
         </section>
     );
 }

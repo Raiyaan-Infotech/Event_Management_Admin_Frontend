@@ -22,6 +22,7 @@
  */
 
 import * as React from 'react';
+import { toast } from 'sonner';
 import { Check, ChevronDown, Send, ShieldCheck, ArrowRight, ArrowLeft, X, Lock } from 'lucide-react';
 import { useWebsiteLanguage } from '../website-language-provider';
 
@@ -650,4 +651,59 @@ export function SocialButtons({
             ))}
         </div>
     );
+}
+
+// ── Social sign-in ───────────────────────────────────────────────────────────
+
+/**
+ * Where the browser goes when a provider button is pressed.
+ *
+ * A full-page navigation, not a fetch: the visitor has to physically leave for
+ * accounts.google.com and come back, which an XHR cannot do. The backend holds
+ * the client secret and does the code exchange; nothing sensitive is ever here.
+ *
+ * `return_to` is the page they are standing on, so the callback can send them
+ * back to it. The backend re-checks that URL against an allowlist — a signed
+ * state alone would not stop this being an open redirect.
+ */
+export function startSocialAuth(provider: AuthProvider) {
+    const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1').replace(/\/$/, '');
+    const returnTo = `${window.location.origin}${window.location.pathname}`;
+    window.location.href =
+        `${apiBase}/public/website-clients/oauth/${provider}/start` +
+        `?return_to=${encodeURIComponent(returnTo)}`;
+}
+
+/**
+ * Reads the outcome the callback appended to the URL and shows it, then strips
+ * those params so a refresh does not replay the toast.
+ *
+ * The result arrives in the query string rather than in a response body because
+ * the last leg of OAuth is a redirect — there is no fetch whose promise could
+ * carry it.
+ */
+export function useSocialAuthResult() {
+    React.useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const outcome = params.get('auth');
+        if (!outcome) return;
+
+        if (outcome === 'success') {
+            const name = params.get('name');
+            const greeting = name ? `, ${name}` : '';
+            toast.success(
+                params.get('mode') === 'signup'
+                    ? `Account created${greeting}. You are signed in.`
+                    : `Login successful${greeting}`
+            );
+        } else if (outcome === 'cancelled') {
+            toast.message('Sign-in was cancelled.');
+        } else {
+            toast.error(params.get('message') || 'Sign-in failed. Please try again.');
+        }
+
+        ['auth', 'mode', 'provider', 'name', 'message'].forEach((key) => params.delete(key));
+        const query = params.toString();
+        window.history.replaceState({}, '', window.location.pathname + (query ? `?${query}` : ''));
+    }, []);
 }
