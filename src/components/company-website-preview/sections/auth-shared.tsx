@@ -675,6 +675,23 @@ export function startSocialAuth(provider: AuthProvider) {
 }
 
 /**
+ * Raises a toast on the next tick rather than immediately.
+ *
+ * React runs effects bottom-up, so a section's mount effect fires BEFORE the
+ * <Toaster> in the root layout has run its own subscribe effect. A toast raised
+ * synchronously from here is published to no subscriber and silently dropped —
+ * which is exactly why the sign-in confirmation never appeared, despite the
+ * code being correct and deployed. One tick puts it after every mount effect,
+ * Sonner's included.
+ *
+ * Only needed for toasts raised during mount. Anything fired from a click is
+ * already long past this.
+ */
+const announce = (fn: () => void) => {
+    setTimeout(fn, 0);
+};
+
+/**
  * Reads the outcome the callback appended to the URL, shows it, and strips the
  * params so a refresh does not replay it.
  *
@@ -685,27 +702,36 @@ export function startSocialAuth(provider: AuthProvider) {
 export function useSocialAuthResult() {
     const [mobileToken, setMobileToken] = React.useState<string | null>(null);
 
+    // Held back while the mobile step runs, so "Login successful" lands LAST —
+    // after the number and code — instead of before either.
+    const pendingSuccess = React.useRef<string | null>(null);
+
     React.useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const outcome = params.get('auth');
         if (!outcome) return;
 
+        const token = params.get('needs_mobile') === '1' ? params.get('link_token') : null;
+
         if (outcome === 'success') {
             const name = params.get('name');
             const greeting = name ? `, ${name}` : '';
-            toast.success(
+            const message =
                 params.get('mode') === 'signup'
                     ? `Account created${greeting}. You are signed in.`
-                    : `Login successful${greeting}`
-            );
-        } else if (outcome === 'cancelled') {
-            toast.message('Sign-in was cancelled.');
-        } else {
-            toast.error(params.get('message') || 'Sign-in failed. Please try again.');
-        }
+                    : `Login successful${greeting}`;
 
-        if (params.get('needs_mobile') === '1') {
-            setMobileToken(params.get('link_token'));
+            if (token) {
+                pendingSuccess.current = message;
+                setMobileToken(token);
+            } else {
+                announce(() => toast.success(message));
+            }
+        } else if (outcome === 'cancelled') {
+            announce(() => toast.message('Sign-in was cancelled.'));
+        } else {
+            const detail = params.get('message');
+            announce(() => toast.error(detail || 'Sign-in failed. Please try again.'));
         }
 
         // `link_token` in particular must not survive in the address bar: it
@@ -718,7 +744,16 @@ export function useSocialAuthResult() {
         window.history.replaceState({}, '', window.location.pathname + (query ? `?${query}` : ''));
     }, []);
 
-    return { mobileToken, clearMobileToken: () => setMobileToken(null) };
+    // Closing the mobile step — verified or skipped — is what finally confirms
+    // the sign-in. No defer needed: this runs from a click, long after mount.
+    const finishMobileStep = React.useCallback(() => {
+        setMobileToken(null);
+        const message = pendingSuccess.current;
+        pendingSuccess.current = null;
+        if (message) toast.success(message);
+    }, []);
+
+    return { mobileToken, clearMobileToken: finishMobileStep };
 }
 
 // -- Mobile verification after a social sign-in ------------------------------
@@ -792,7 +827,7 @@ export function MobileVerifyDialog({
         setBusy(true);
         try {
             await postMobile('verify', { token, dial_code: dialCode, mobile, otp });
-            toast.success('Mobile number verified.');
+            // `onDone` raises the sign-in confirmation — see finishMobileStep.
             onDone();
         } catch (err) {
             toast.error((err as Error).message);
