@@ -43,6 +43,7 @@ import {
     SocialButtons,
     startSocialAuth,
     useSocialAuthResult,
+    MobileVerifyDialog,
     type AuthProvider,
 } from './auth-shared';
 import { useWebsiteLanguage } from '../website-language-provider';
@@ -267,8 +268,9 @@ export function LoginSection({
     // the buttons can disable during the moment before the page navigates away.
     const [activeProvider, setActiveProvider] = React.useState<AuthProvider | null>(null);
 
-    // Shows the result of a provider round trip, which comes back in the URL.
-    useSocialAuthResult();
+    // Shows the result of a provider round trip, which comes back in the URL,
+    // and hands back a token when the account still needs a phone number.
+    const { mobileToken, clearMobileToken } = useSocialAuthResult();
 
     // Disables the button while in flight so a double click cannot double post.
     const [submitting, setSubmitting] = React.useState(false);
@@ -604,6 +606,16 @@ export function LoginSection({
                 </div>
             </div>
 
+
+            {/* Only after a provider sign-in, and only when the account has no
+                number yet — a provider never tells us one. */}
+            {mobileToken && (
+                <MobileVerifyDialog
+                    token={mobileToken}
+                    primary={primary}
+                    onDone={clearMobileToken}
+                />
+            )}
         </section>
     );
 }

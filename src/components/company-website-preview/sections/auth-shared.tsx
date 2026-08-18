@@ -675,14 +675,16 @@ export function startSocialAuth(provider: AuthProvider) {
 }
 
 /**
- * Reads the outcome the callback appended to the URL and shows it, then strips
- * those params so a refresh does not replay the toast.
+ * Reads the outcome the callback appended to the URL, shows it, and strips the
+ * params so a refresh does not replay it.
  *
- * The result arrives in the query string rather than in a response body because
- * the last leg of OAuth is a redirect — there is no fetch whose promise could
- * carry it.
+ * Returns the mobile-link token when the account still has no phone number, so
+ * the caller can open the verification step. A provider never tells us a phone
+ * number, so that step can only happen after the round trip.
  */
 export function useSocialAuthResult() {
+    const [mobileToken, setMobileToken] = React.useState<string | null>(null);
+
     React.useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const outcome = params.get('auth');
@@ -702,8 +704,167 @@ export function useSocialAuthResult() {
             toast.error(params.get('message') || 'Sign-in failed. Please try again.');
         }
 
-        ['auth', 'mode', 'provider', 'name', 'message'].forEach((key) => params.delete(key));
+        if (params.get('needs_mobile') === '1') {
+            setMobileToken(params.get('link_token'));
+        }
+
+        // `link_token` in particular must not survive in the address bar: it
+        // authorises writing a phone number onto the account, so a pasted or
+        // bookmarked URL would carry that power to whoever gets the link.
+        ['auth', 'mode', 'provider', 'name', 'message', 'needs_mobile', 'link_token'].forEach(
+            (key) => params.delete(key)
+        );
         const query = params.toString();
         window.history.replaceState({}, '', window.location.pathname + (query ? `?${query}` : ''));
     }, []);
+
+    return { mobileToken, clearMobileToken: () => setMobileToken(null) };
+}
+
+// -- Mobile verification after a social sign-in ------------------------------
+
+const mobileApiBase = () =>
+    (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1').replace(/\/$/, '');
+
+async function postMobile(path: string, body: unknown) {
+    const response = await fetch(`${mobileApiBase()}/public/website-clients/mobile/${path}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+    });
+    let data: any = null;
+    try {
+        data = await response.json();
+    } catch {
+        data = null;
+    }
+    if (!response.ok || !data?.success) {
+        throw new Error(data?.message || 'Something went wrong. Please try again.');
+    }
+    return data.data;
+}
+
+/**
+ * Collects and verifies a phone number for an account that just signed in with
+ * a provider.
+ *
+ * Not dismissible by clicking the backdrop: the token lives only in memory, so
+ * closing this by accident loses the only chance to verify without signing in
+ * again. "Skip for now" is an explicit choice, and the account works without a
+ * number.
+ */
+export function MobileVerifyDialog({
+    token,
+    primary,
+    onDone,
+}: {
+    token: string;
+    primary: string;
+    onDone: () => void;
+}) {
+    const [dialCode, setDialCode] = React.useState('+91');
+    const [mobile, setMobile] = React.useState('');
+    const [otp, setOtp] = React.useState('');
+    const [sent, setSent] = React.useState(false);
+    const [busy, setBusy] = React.useState(false);
+
+    const send = async () => {
+        setBusy(true);
+        try {
+            const result = await postMobile('send-otp', { token, dial_code: dialCode, mobile });
+            setSent(true);
+            // Delivery is not wired up — there is no SMS provider in the
+            // backend — so in development the code comes back in the response.
+            if (result?.dev_code) {
+                setOtp(String(result.dev_code));
+                toast.message(`Development code: ${result.dev_code}`);
+            } else {
+                toast.success('Verification code sent.');
+            }
+        } catch (err) {
+            toast.error((err as Error).message);
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const verify = async () => {
+        setBusy(true);
+        try {
+            await postMobile('verify', { token, dial_code: dialCode, mobile, otp });
+            toast.success('Mobile number verified.');
+            onDone();
+        } catch (err) {
+            toast.error((err as Error).message);
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 p-4">
+            <div className="w-full min-w-0 max-w-[420px] rounded-2xl bg-white p-6 shadow-xl">
+                <h2 className="break-words text-[18px] font-black tracking-tight text-slate-900">
+                    Verify your mobile number
+                </h2>
+                <p className="mt-1 break-words text-[12.5px] leading-5 text-slate-500">
+                    You are signed in. Add a mobile number to finish setting up your account.
+                </p>
+
+                <div className="mt-5 flex flex-col gap-4">
+                    <MobileNumberField
+                        primary={primary}
+                        label="Mobile Number"
+                        value={mobile}
+                        onChange={setMobile}
+                        dialCode={dialCode}
+                        onDialCodeChange={setDialCode}
+                        id="social-mobile"
+                    />
+
+                    {sent && (
+                        <div className="min-w-0">
+                            <p className="mb-2 text-[12.5px] font-bold text-slate-700">
+                                Enter the 6-digit code
+                            </p>
+                            <OtpInput primary={primary} value={otp} onChange={setOtp} />
+                        </div>
+                    )}
+
+                    <button
+                        type="button"
+                        onClick={sent ? verify : send}
+                        disabled={busy || (sent ? otp.length !== 6 : mobile.trim().length < 7)}
+                        className="h-11 w-full rounded-lg text-[13.5px] font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                        style={{ backgroundColor: primary }}
+                    >
+                        {busy ? 'Please wait...' : sent ? 'Verify & Continue' : 'Send OTP'}
+                    </button>
+
+                    <div className="flex items-center justify-between">
+                        {sent ? (
+                            <button
+                                type="button"
+                                onClick={send}
+                                disabled={busy}
+                                className="text-[12px] font-semibold hover:underline disabled:opacity-50"
+                                style={{ color: primary }}
+                            >
+                                Resend code
+                            </button>
+                        ) : (
+                            <span />
+                        )}
+                        <button
+                            type="button"
+                            onClick={onDone}
+                            className="text-[12px] font-semibold text-slate-500 hover:underline"
+                        >
+                            Skip for now
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
 }
