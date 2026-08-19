@@ -34,6 +34,7 @@ import { PermissionGuard } from '@/components/guards/permission-guard';
 import { DynamicIcon } from '@/components/common/dynamic-icon';
 import { cn } from '@/lib/utils';
 import { usePlanTypes } from '@/hooks/use-plan-types';
+import { usePlanBadges, badgeStyleProps, type BadgeStyle } from '@/hooks/use-plan-badges';
 import { useEventCategories, useEventTypes, useReligions, useEventMenus } from '@/hooks/use-menu-management';
 import {
     useSubscriptionPlan,
@@ -68,6 +69,7 @@ interface FormState {
     name: string;
     plan_code: string;
     plan_type_id: string;
+    plan_badge_id: string;
     billing_cycle: BillingCycle;
     short_description: string;
     is_active: boolean;
@@ -87,6 +89,7 @@ const emptyForm = (): FormState => ({
     name: '',
     plan_code: '',
     plan_type_id: '',
+    plan_badge_id: '',
     billing_cycle: 'monthly',
     short_description: '',
     is_active: true,
@@ -118,6 +121,7 @@ export function PlanWizardContent() {
 
     const { data: existing, isLoading: loadingPlan } = useSubscriptionPlan(id ?? undefined);
     const { data: planTypes } = usePlanTypes({ limit: 200, is_active: 1 });
+    const { data: planBadges } = usePlanBadges();
     const { data: catalog } = useLimitCatalog();
     const { data: categories } = useEventCategories({ limit: 200, is_active: true });
 
@@ -155,6 +159,7 @@ export function PlanWizardContent() {
             name: existing.name ?? '',
             plan_code: existing.plan_code ?? '',
             plan_type_id: existing.plan_type_id ? String(existing.plan_type_id) : '',
+            plan_badge_id: existing.plan_badge_id ? String(existing.plan_badge_id) : '',
             billing_cycle: existing.billing_cycle ?? 'monthly',
             short_description: existing.short_description ?? '',
             is_active: Number(existing.is_active) === 1,
@@ -273,6 +278,7 @@ export function PlanWizardContent() {
         name: form.name.trim(),
         plan_code: form.plan_code.trim(),
         plan_type_id: form.plan_type_id ? Number(form.plan_type_id) : null,
+        plan_badge_id: form.plan_badge_id ? Number(form.plan_badge_id) : null,
         billing_cycle: form.billing_cycle,
         short_description: form.short_description.trim(),
         for_website: form.for_website,
@@ -324,6 +330,12 @@ export function PlanWizardContent() {
 
     const isSaving = createPlan.isPending || updatePlan.isPending;
     const planTypeName = planTypes?.data?.find((p) => String(p.id) === form.plan_type_id)?.name ?? '—';
+    // Inactive badges are excluded: pinning one would save an id that renders nothing.
+    const activeBadges = useMemo(
+        () => (planBadges ?? []).filter((b) => Boolean(Number(b.is_active))),
+        [planBadges]
+    );
+    const selectedBadge = activeBadges.find((b) => String(b.id) === form.plan_badge_id);
     const cycleLabel = BILLING_CYCLES.find((c) => c.value === form.billing_cycle)?.label ?? form.billing_cycle;
 
     return (
@@ -461,6 +473,45 @@ export function PlanWizardContent() {
                                     onChange={(e) => setField('trial_days', e.target.value)}
                                     className="h-10"
                                 />
+                            </Field>
+
+                            {/* One badge per plan. Inactive badges are filtered out —
+                                assigning one would show nothing on the card. The
+                                'none' sentinel maps to '' because an empty SelectItem
+                                value cannot be selected back once a badge is chosen. */}
+                            <Field
+                                label="Plan Badge"
+                                helper={
+                                    activeBadges.length
+                                        ? 'Shown on this plan card. Manage the list under Plan Badges.'
+                                        : 'No active badges yet — create one under Subscriptions > Plan Badges.'
+                                }
+                            >
+                                <Select
+                                    value={form.plan_badge_id || 'none'}
+                                    onValueChange={(v) => setField('plan_badge_id', v === 'none' ? '' : v)}
+                                    disabled={!activeBadges.length}
+                                >
+                                    <SelectTrigger className="h-10">
+                                        <SelectValue placeholder="No badge" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="none">No badge</SelectItem>
+                                        {activeBadges.map((b) => (
+                                            <SelectItem key={b.id} value={String(b.id)}>
+                                                {b.text}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                {selectedBadge && (
+                                    <div className="mt-2 flex items-center gap-2">
+                                        <span className="text-xs text-muted-foreground">Preview:</span>
+                                        <span {...badgeStyleProps(selectedBadge.style, selectedBadge.color)}>
+                                            {selectedBadge.text}
+                                        </span>
+                                    </div>
+                                )}
                             </Field>
                         </div>
                     </WizardCard>
@@ -746,6 +797,7 @@ export function PlanWizardContent() {
                                     ['Plan Type', planTypeName],
                                     ['Billing Cycle', cycleLabel],
                                     ['Status', form.is_active ? 'Active' : 'Inactive'],
+                                    ['Plan Badge', selectedBadge?.text ?? 'No badge'],
                                     ['Short Description', form.short_description || '—'],
                                 ]} />
                                 <ReviewCard title="Pricing Information" onEdit={() => setStep(3)} rows={[
@@ -805,6 +857,9 @@ export function PlanWizardContent() {
                     // Everything here comes off the saved record, so it reflects
                     // what the server stored rather than what the form held.
                     const done = savedPlan;
+                    // Prefer the badge the server joined back onto the saved row;
+                    // selectedBadge is the fallback before `done` lands.
+                    const savedBadge = done?.planBadge ?? selectedBadge ?? null;
                     const cycle = BILLING_CYCLES.find((c) => c.value === (done?.billing_cycle ?? form.billing_cycle));
                     const stamp = (value?: string | null) => {
                         if (!value) return '\u2014';
@@ -865,6 +920,13 @@ export function PlanWizardContent() {
                                             >
                                                 {active ? 'Active' : 'Inactive'}
                                             </Badge>
+                                            {/* Read back from the saved row where possible, so this
+                                                reflects what was actually persisted. */}
+                                            {savedBadge && (
+                                                <span {...badgeStyleProps(savedBadge.style as BadgeStyle, savedBadge.color)}>
+                                                    {savedBadge.text}
+                                                </span>
+                                            )}
                                         </div>
 
                                         <dl className="grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-2">
@@ -895,6 +957,18 @@ export function PlanWizardContent() {
                                             <SuccessRow
                                                 label="Trial Price"
                                                 value={Number(done?.trial_days ?? form.trial_days) > 0 ? 'Free' : '\u2014'}
+                                            />
+                                            <SuccessRow
+                                                label="Plan Badge"
+                                                value={
+                                                    savedBadge ? (
+                                                        <span {...badgeStyleProps(savedBadge.style as BadgeStyle, savedBadge.color)}>
+                                                            {savedBadge.text}
+                                                        </span>
+                                                    ) : (
+                                                        'No badge'
+                                                    )
+                                                }
                                             />
                                         </dl>
                                     </div>

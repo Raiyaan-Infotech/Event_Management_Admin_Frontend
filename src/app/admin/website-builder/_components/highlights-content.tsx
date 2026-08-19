@@ -96,6 +96,17 @@ interface HighlightsContentProps {
     instance: number;
 }
 
+/**
+ * Which translation slot a highlight card owns.
+ *
+ * The card's own id, NOT its position. Position breaks as soon as anyone
+ * reorders the cards — the text moves and the translations stay put, so every
+ * translated visitor sees the right words on the wrong cards. Must stay
+ * identical to the extractor in websiteBuilderTranslation.service.js.
+ */
+const slotFor = (item: { id?: string | number }, index: number) =>
+    item?.id != null && item.id !== '' ? `i${item.id}` : `p${index + 1}`;
+
 export function HighlightsContent({ pageSlug, instance }: HighlightsContentProps) {
     const { data: fetchedData, isLoading } = useHighlights(pageSlug, instance);
     const saveMutation = useSaveHighlights();
@@ -114,13 +125,13 @@ export function HighlightsContent({ pageSlug, instance }: HighlightsContentProps
         const position = index + 1;
         return [
             {
-                key: `item_${position}_title`,
+                key: `item_${slotFor(item, index)}_title`,
                 label: `Card ${position} Title`,
                 type: 'input' as const,
                 value: item.title || '',
             },
             {
-                key: `item_${position}_description`,
+                key: `item_${slotFor(item, index)}_description`,
                 label: `Card ${position} Description`,
                 type: 'input' as const,
                 value: item.description || '',
@@ -405,20 +416,20 @@ export function HighlightsContent({ pageSlug, instance }: HighlightsContentProps
                                             {/* Title & Description Inputs */}
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 flex-1 w-full">
                                                 <Input
-                                                    value={isTranslationMode ? (translation.values[`item_${index + 1}_title`] ?? '') : item.title}
+                                                    value={isTranslationMode ? (translation.values[`item_${slotFor(item, index)}_title`] ?? '') : item.title}
                                                     onChange={(e) =>
                                                         isTranslationMode
-                                                            ? translation.setValue(`item_${index + 1}_title`, e.target.value)
+                                                            ? translation.setValue(`item_${slotFor(item, index)}_title`, e.target.value)
                                                             : handleItemChange(index, 'title', e.target.value)
                                                     }
                                                     placeholder={isTranslationMode ? item.title : 'Title'}
                                                     className="h-8 text-xs font-semibold"
                                                 />
                                                 <Input
-                                                    value={isTranslationMode ? (translation.values[`item_${index + 1}_description`] ?? '') : item.description}
+                                                    value={isTranslationMode ? (translation.values[`item_${slotFor(item, index)}_description`] ?? '') : item.description}
                                                     onChange={(e) =>
                                                         isTranslationMode
-                                                            ? translation.setValue(`item_${index + 1}_description`, e.target.value)
+                                                            ? translation.setValue(`item_${slotFor(item, index)}_description`, e.target.value)
                                                             : handleItemChange(index, 'description', e.target.value)
                                                     }
                                                     placeholder={isTranslationMode ? item.description : 'Description'}

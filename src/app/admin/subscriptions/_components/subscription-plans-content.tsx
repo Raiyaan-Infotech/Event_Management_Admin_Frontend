@@ -59,6 +59,7 @@ import {
     BILLING_CYCLES,
     type SubscriptionPlan,
 } from '@/hooks/use-subscription-plans';
+import { badgeStyleProps, type BadgeStyle } from '@/hooks/use-plan-badges';
 import { useEventCategories, useEventTypes, useReligions } from '@/hooks/use-menu-management';
 
 const ALL = 'all';
@@ -168,7 +169,10 @@ export function SubscriptionPlansContent() {
 
     // Every mutation on this page, so the overlay covers the status switch
     // and Activate too — both used to fire with no feedback at all.
+    // isLoading (not isFetching) covers the FIRST fetch only, so a background
+    // refetch does not flash the overlay over a table that already has rows.
     const isBusy =
+        isLoading ||
         duplicatePlan.isPending ||
         deletePlan.isPending ||
         updateStatus.isPending ||
@@ -177,7 +181,7 @@ export function SubscriptionPlansContent() {
     return (
         <PermissionGuard permission="subscription_plans.view">
             <div className="space-y-5">
-                <PageLoader open={isBusy} />
+                <PageLoader open={isBusy} text={isLoading ? "Loading plans..." : "Loading..."} />
 
                 {/* Header */}
                 <div className="flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between">
@@ -366,8 +370,21 @@ export function SubscriptionPlansContent() {
 
                                                     <TableCell>
                                                         <div className="min-w-0">
-                                                            <div className="break-all text-sm font-semibold text-foreground">
-                                                                {row.name}
+                                                            <div className="flex flex-wrap items-center gap-2">
+                                                                <span className="break-all text-sm font-semibold text-foreground">
+                                                                    {row.name}
+                                                                </span>
+                                                                {/* The plan's own badge, picked in wizard step 1. */}
+                                                                {row.planBadge && (
+                                                                    <span
+                                                                        {...badgeStyleProps(
+                                                                            row.planBadge.style as BadgeStyle,
+                                                                            row.planBadge.color
+                                                                        )}
+                                                                    >
+                                                                        {row.planBadge.text}
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                             {row.short_description && (
                                                                 <div className="max-w-[220px] break-all line-clamp-1 text-[11px] text-muted-foreground">

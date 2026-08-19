@@ -31,6 +31,7 @@ import {
 } from '@/hooks/useTemplates';
 
 import { DeleteDialog } from '@/components/common/delete-dialog';
+import { PageLoader } from '@/components/common/page-loader';
 import { RowTranslateButton } from '../_components/row-translate-dialog';
 
 export default function TemplatesPage() {
@@ -133,6 +134,8 @@ export default function TemplatesPage() {
 
     return (
         <div className="space-y-5 max-w-7xl mx-auto pb-12">
+            <PageLoader open={isLoading} text="Loading templates..." />
+
             {/* Header Bar */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-4">
                 <div>

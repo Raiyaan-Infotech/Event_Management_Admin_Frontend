@@ -106,18 +106,20 @@ export function HighlightsSection({ pageSlug = 'home', instance = 1, data, theme
     let items = config.items && config.items.length > 0 ? config.items : defaultFallbackItems;
 
     // Highlight cards live inside settings_json, so the backend registers them
-    // as flat item_<n>_title / item_<n>_description keys against this row's id.
-    // Positions are 1-based and must match that extractor. Only the saved rows
+    // as flat item_<slot>_title / item_<slot>_description keys against this
+    // row's id. The slot is the CARD's own id (`i<id>`), not its position —
+    // position breaks the moment anyone reorders the cards. Must stay identical
+    // to the extractor in websiteBuilderTranslation.service.js. Only saved rows
     // have an id — the hardcoded fallback items are never translatable.
     const recordId = (fetchedData as { id?: number } | undefined)?.id;
     if (recordId && translator.active) {
-        items = items.map((item: { title: string; description: string }, index: number) => ({
+        items = items.map((item: { id?: string | number; title: string; description: string }, index: number) => ({
             ...item,
-            title: translator.field('highlights', recordId, `item_${index + 1}_title`, item.title, pageSlug),
+            title: translator.field('highlights', recordId, `item_${item?.id != null && item.id !== '' ? `i${item.id}` : `p${index + 1}`}_title`, item.title, pageSlug),
             description: translator.field(
                 'highlights',
                 recordId,
-                `item_${index + 1}_description`,
+                `item_${item?.id != null && item.id !== '' ? `i${item.id}` : `p${index + 1}`}_description`,
                 item.description,
                 pageSlug
             ),

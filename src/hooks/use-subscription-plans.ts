@@ -21,6 +21,7 @@ export interface SubscriptionPlan {
     name: string;
     plan_code: string;
     plan_type_id: number | null;
+    plan_badge_id: number | null;
     billing_cycle: BillingCycle;
     short_description: string | null;
     for_website: number;
@@ -39,6 +40,8 @@ export interface SubscriptionPlan {
     total_menus: number;
     menu_for: Array<'website' | 'mobile'>;
     planType?: { id: number; name: string } | null;
+    /** The plan's own badge, joined from plan_badges. */
+    planBadge?: { id: number; text: string; style: string; color: string } | null;
     category?: { id: number; name: string; color: string | null } | null;
     eventType?: { id: number; name: string; color: string | null } | null;
     religion?: { id: number; name: string; color: string | null } | null;
@@ -75,6 +78,7 @@ export type SubscriptionPlanPayload = {
     name: string;
     plan_code: string;
     plan_type_id?: number | null;
+    plan_badge_id?: number | null;
     billing_cycle: BillingCycle;
     short_description?: string | null;
     for_website?: number | boolean;

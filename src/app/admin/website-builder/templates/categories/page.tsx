@@ -33,6 +33,7 @@ import {
 } from '@/hooks/useTemplates';
 
 import { DeleteDialog } from '@/components/common/delete-dialog';
+import { PageLoader } from '@/components/common/page-loader';
 import { useTemplates } from '@/hooks/useTemplates';
 
 import { BuilderDataTable, Column } from '../../_components/builder-data-table';
@@ -251,6 +252,8 @@ export default function TemplateCategoriesPage() {
 
     return (
         <div className="space-y-5">
+            <PageLoader open={isLoading} text="Loading template categories..." />
+
             {/* Header Bar */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-4">
                 <div>

@@ -30,6 +30,7 @@ import {
 } from '@/hooks/usePricingPlans';
 
 import { DeleteDialog } from '@/components/common/delete-dialog';
+import { PageLoader } from '@/components/common/page-loader';
 
 export default function PricingPlansPage() {
     const { data: dbPlans, isLoading: isPlansLoading } = usePricingPlansData();
@@ -76,6 +77,8 @@ export default function PricingPlansPage() {
 
     return (
         <div className="space-y-5 max-w-7xl mx-auto pb-12 text-foreground">
+            <PageLoader open={isPlansLoading} text="Loading pricing plans..." />
+
             {/* Top Header Bar */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-4">
                 <div>

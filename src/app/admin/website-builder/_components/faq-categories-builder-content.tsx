@@ -171,7 +171,10 @@ export function FaqCategoriesBuilderContent() {
 
     return (
         <div className="space-y-6 max-w-7xl mx-auto pb-16 text-foreground">
-            <PageLoader open={isSaving} text="Saving FAQ Categories..." />
+            <PageLoader
+                open={isSaving || isLoading}
+                text={isLoading ? "Loading FAQ categories..." : "Saving FAQ Categories..."}
+            />
             {/* Top Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border/80 pb-4">
                 <div>

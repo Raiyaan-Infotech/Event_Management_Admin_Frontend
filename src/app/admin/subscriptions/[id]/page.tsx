@@ -10,6 +10,7 @@ import { PageLoader } from '@/components/common/page-loader';
 import { PermissionGuard } from '@/components/guards/permission-guard';
 import { DynamicIcon } from '@/components/common/dynamic-icon';
 import { cn } from '@/lib/utils';
+import { badgeStyleProps, type BadgeStyle } from '@/hooks/use-plan-badges';
 import {
     useSubscriptionPlan,
     formatPlanPrice,
@@ -126,6 +127,23 @@ export default function ViewSubscriptionPlanPage({ params }: { params: Promise<{
                             <Row label="Plan Type" value={planTypeName} />
                             <Row label="Billing Cycle" value={cycleLabel} />
                             <Row label="Trial Period" value={`${plan.trial_days} Days`} />
+                            <Row
+                                label="Plan Badge"
+                                value={
+                                    plan.planBadge ? (
+                                        <span
+                                            {...badgeStyleProps(
+                                                plan.planBadge.style as BadgeStyle,
+                                                plan.planBadge.color
+                                            )}
+                                        >
+                                            {plan.planBadge.text}
+                                        </span>
+                                    ) : (
+                                        '—'
+                                    )
+                                }
+                            />
                             <Row label="Created On" value={stamp(plan.created_at)} />
 
                             <Row label="Created By" value={plan.creator?.full_name ?? '—'} />

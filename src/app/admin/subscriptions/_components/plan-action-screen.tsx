@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { formatPlanPrice, BILLING_CYCLES, type SubscriptionPlan } from '@/hooks/use-subscription-plans';
+import { badgeStyleProps, type BadgeStyle } from '@/hooks/use-plan-badges';
 
 /**
  * ⚠ PLACEHOLDER — there is no subscriber tracking in the database yet. Nothing
@@ -178,6 +179,18 @@ export function PlanActionScreen({ variant, plan, reasons, isSubmitting, result,
                                 />
                                 <Row label="Plan Type" value={done.planType?.name ?? '—'} />
                                 <Row
+                                    label="Plan Badge"
+                                    value={
+                                        done.planBadge ? (
+                                            <span {...badgeStyleProps(done.planBadge.style as BadgeStyle, done.planBadge.color)}>
+                                                {done.planBadge.text}
+                                            </span>
+                                        ) : (
+                                            'No badge'
+                                        )
+                                    }
+                                />
+                                <Row
                                     label={variant === 'deactivate' ? 'Status' : 'Reason'}
                                     value={
                                         variant === 'deactivate' ? (
@@ -296,6 +309,18 @@ export function PlanActionScreen({ variant, plan, reasons, isSubmitting, result,
                                 <Row label="Plan Code" value={plan.plan_code} />
                                 <Row label={`Price (${cycleLabel})`} value={formatPlanPrice(plan)} />
                                 <Row label="Plan Type" value={plan.planType?.name ?? '—'} />
+                                <Row
+                                    label="Plan Badge"
+                                    value={
+                                        plan.planBadge ? (
+                                            <span {...badgeStyleProps(plan.planBadge.style as BadgeStyle, plan.planBadge.color)}>
+                                                {plan.planBadge.text}
+                                            </span>
+                                        ) : (
+                                            'No badge'
+                                        )
+                                    }
+                                />
                                 <Row
                                     label="Status"
                                     value={
@@ -447,6 +472,18 @@ export function PlanActionScreen({ variant, plan, reasons, isSubmitting, result,
 
                     <div className="space-y-2.5 border-t border-border pt-3">
                         <SummaryRow label="Plan Type" value={plan.planType?.name ?? '—'} />
+                        <SummaryRow
+                            label="Plan Badge"
+                            value={
+                                plan.planBadge ? (
+                                    <span {...badgeStyleProps(plan.planBadge.style as BadgeStyle, plan.planBadge.color)}>
+                                        {plan.planBadge.text}
+                                    </span>
+                                ) : (
+                                    'No badge'
+                                )
+                            }
+                        />
                         <SummaryRow label="Billing Cycle" value={cycleLabel} />
                         <SummaryRow label="Trial Period" value={`${plan.trial_days} Days`} />
                         <SummaryRow label={`Price (${cycleLabel})`} value={formatPlanPrice(plan)} />

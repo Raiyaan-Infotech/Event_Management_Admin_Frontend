@@ -156,13 +156,15 @@ export default function MenuListPage() {
         );
     };
 
+    // isLoading covers the first fetch; a background refetch must not flash
+    // the overlay over a table that already has rows.
     const isBusy =
-        duplicateMenu.isPending || deleteMenu.isPending || reorderMenus.isPending;
+        isLoading || duplicateMenu.isPending || deleteMenu.isPending || reorderMenus.isPending;
 
     return (
         <PermissionGuard permission="event_menus.view">
             <div className="space-y-5">
-                <PageLoader open={isBusy} />
+                <PageLoader open={isBusy} text={isLoading ? "Loading menus..." : "Loading..."} />
 
                 {/* Header */}
                 <div className="flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between">

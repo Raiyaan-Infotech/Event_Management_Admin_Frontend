@@ -31,6 +31,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { DeleteDialog } from '@/components/common/delete-dialog';
+import { PageLoader } from '@/components/common/page-loader';
 import {
     useFeaturesData,
     useToggleFeatureStatus,
@@ -109,6 +110,8 @@ export default function FeaturesPage() {
 
     return (
         <div className="space-y-5 max-w-7xl mx-auto pb-12 text-foreground">
+            <PageLoader open={isFeaturesLoading} text="Loading features..." />
+
             {/* Top Header Bar */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-4">
                 <div>

@@ -39,6 +39,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { DeleteDialog } from '@/components/common/delete-dialog';
 import { TablePagination } from '@/components/common/table-pagination';
+import { PageLoader } from '@/components/common/page-loader';
 import {
     Select,
     SelectContent,
@@ -146,6 +147,8 @@ export function VideoTutorialsListContent() {
 
     return (
         <div className="space-y-6 max-w-7xl mx-auto pb-16 text-foreground">
+            <PageLoader open={isLoading} text="Loading video tutorials..." />
+
             {/* Top Header & Add Tutorial Action */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border/80 pb-4">
                 <div>
