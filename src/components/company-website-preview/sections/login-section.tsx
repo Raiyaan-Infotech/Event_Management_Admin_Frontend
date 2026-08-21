@@ -48,6 +48,17 @@ import {
 } from './auth-shared';
 import { useWebsiteLanguage } from '../website-language-provider';
 
+/**
+ * Where a signed-in client lands. Separate app on its own origin, so this is a
+ * full page navigation rather than a router push.
+ *
+ * Env-driven because the portal's origin differs per environment; the literal
+ * is only the local-dev default.
+ */
+const CLIENT_PORTAL_URL =
+    process.env.NEXT_PUBLIC_CLIENT_PORTAL_URL || 'http://localhost:3005/dashboard';
+
+
 // ── Types ────────────────────────────────────────────────────────────────────
 
 export interface LoginFeature {
@@ -262,6 +273,7 @@ export function LoginSection({
     const [password, setPassword] = React.useState('');
     const [dialCode, setDialCode] = React.useState('+91');
     const [mobile, setMobile] = React.useState('');
+    const [mobileError, setMobileError] = React.useState(false);
     const [otpSent, setOtpSent] = React.useState(false);
     const [otp, setOtp] = React.useState('');
     // Which provider we are handing the browser off to, or null. Set purely so
@@ -274,6 +286,8 @@ export function LoginSection({
 
     // Disables the button while in flight so a double click cannot double post.
     const [submitting, setSubmitting] = React.useState(false);
+    // Held true across the navigation so the overlay does not flash off.
+    const [redirecting, setRedirecting] = React.useState(false);
 
     // Verifies the credentials and stops there — no token comes back and there
     // is nowhere to redirect to, so the toast IS the outcome. Goes through
@@ -288,20 +302,37 @@ export function LoginSection({
             return;
         }
 
+        // Mobile is MANDATORY on this form. The server verifies it against the
+        // account when present, so requiring it here makes it a real second
+        // factor rather than an optional box people skip.
+        if (mobile.trim().length < 6) {
+            setMobileError(true);
+            toast.error('Please enter your mobile number.');
+            return;
+        }
+        setMobileError(false);
+
         setSubmitting(true);
         const result = await loginWebsiteClient({
             email: email.trim(),
             password,
             dial_code: dialCode,
-            // Only sent when filled in — the server treats a blank as "not
-            // offered" and checks it against the account when it is present.
-            mobile: mobile || undefined,
+            // Always sent now — the field is mandatory, so the server always
+            // has a number to verify against the account.
+            mobile: mobile.trim(),
         });
         setSubmitting(false);
 
         if (result.ok) {
             toast.success(result.message || 'Login successful');
             setPassword('');
+
+            // The session cookie is set by now, so hand the visitor to the
+            // portal. A full page assignment, not a router push: the portal is
+            // a separate app on its own origin.
+            setRedirecting(true);
+            window.location.assign(CLIENT_PORTAL_URL);
+            return;
         } else {
             toast.error(result.message);
         }
@@ -517,6 +548,8 @@ export function LoginSection({
                                     onChange={setMobile}
                                     dialCode={dialCode}
                                     onDialCodeChange={setDialCode}
+                                    required
+                                    error={mobileError}
                                 />
 
                                 {otpSent ? (
@@ -556,14 +589,20 @@ export function LoginSection({
 
                                 <button
                                     type="submit"
-                                    disabled={submitting}
+                                    disabled={submitting || redirecting}
                                     className="flex h-11 w-full items-center justify-center gap-2 rounded-lg text-[13.5px] font-bold text-white shadow-sm transition hover:opacity-90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70"
                                     style={{ backgroundColor: primary }}
                                 >
-                                    <Send className="h-4 w-4" />
-                                    {submitting
-                                        ? t('login.submitting', 'Logging in...')
-                                        : t('login.submit', 'Log In')}
+                                    {submitting || redirecting ? (
+                                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                                    ) : (
+                                        <Send className="h-4 w-4" />
+                                    )}
+                                    {redirecting
+                                        ? t('login.redirecting', 'Taking you to your dashboard...')
+                                        : submitting
+                                            ? t('login.submitting', 'Logging in...')
+                                            : t('login.submit', 'Log In')}
                                 </button>
                             </form>
 
@@ -609,6 +648,24 @@ export function LoginSection({
 
             {/* Only after a provider sign-in, and only when the account has no
                 number yet — a provider never tells us one. */}
+            {/* Covers the gap between "logged in" and the portal actually
+                painting. Without it the page sits there looking like nothing
+                happened while the browser loads another origin. */}
+            {redirecting && (
+                <div
+                    role="status"
+                    aria-live="polite"
+                    className="fixed inset-0 z-[9999] flex flex-col items-center justify-center gap-3 bg-white/85 backdrop-blur-sm"
+                >
+                    <span
+                        className="h-10 w-10 animate-spin rounded-full border-[3px] border-slate-200"
+                        style={{ borderTopColor: primary }}
+                    />
+                    <p className="text-[13px] font-semibold text-slate-600">
+                        {t('login.redirecting', 'Taking you to your dashboard...')}
+                    </p>
+                </div>
+            )}
             {mobileToken && (
                 <MobileVerifyDialog
                     token={mobileToken}

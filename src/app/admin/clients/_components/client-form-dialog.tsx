@@ -19,6 +19,10 @@ import {
     useUpdateWebsiteClient,
     type WebsiteClient,
 } from '@/hooks/use-website-clients';
+import { useSubscriptionPlans } from '@/hooks/use-subscription-plans';
+import {
+    Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 
 interface ClientFormDialogProps {
     open: boolean;
@@ -27,13 +31,16 @@ interface ClientFormDialogProps {
     client: WebsiteClient | null;
 }
 
-const EMPTY = { name: '', email: '', dial_code: '+91', mobile: '', password: '' };
+const EMPTY = { name: '', email: '', dial_code: '+91', mobile: '', password: '', subscription_plan_id: '' };
 
 export function ClientFormDialog({ open, onOpenChange, client }: ClientFormDialogProps) {
     const isEdit = !!client;
     const [form, setForm] = useState(EMPTY);
     const [errors, setErrors] = useState<Record<string, boolean>>({});
     const [showPassword, setShowPassword] = useState(false);
+    // Only active plans — assigning an inactive one leaves the client
+    // with a portal that refuses to offer them anything.
+    const { data: plans } = useSubscriptionPlans({ limit: 200, is_active: 1 });
 
     const createClient = useCreateWebsiteClient();
     const updateClient = useUpdateWebsiteClient();
@@ -51,6 +58,7 @@ export function ClientFormDialog({ open, onOpenChange, client }: ClientFormDialo
                       name: client.name || '',
                       email: client.email || '',
                       dial_code: client.dial_code || '+91',
+                      subscription_plan_id: client.subscription_plan_id ? String(client.subscription_plan_id) : '',
                       mobile: client.mobile || '',
                       // Never round-trip a hash into an editable field. Blank
                       // means "leave the password alone".
@@ -83,6 +91,8 @@ export function ClientFormDialog({ open, onOpenChange, client }: ClientFormDialo
             email: form.email.trim(),
             dial_code: form.dial_code || '+91',
             mobile: form.mobile || null,
+            // '' is the "No plan" option; the backend normalises it to NULL.
+            subscription_plan_id: form.subscription_plan_id ? Number(form.subscription_plan_id) : null,
             // Only sent when actually typed — an empty box must not clear or
             // rewrite an existing password.
             ...(form.password ? { password: form.password } : {}),
@@ -155,6 +165,33 @@ export function ClientFormDialog({ open, onOpenChange, client }: ClientFormDialo
                                     placeholder="Enter mobile number"
                                 />
                             </div>
+                        </div>
+
+                        {/* The plan is what the client portal reads to decide what
+                            this client may create: it is scoped to an event
+                            category/type/religion and grants a specific set of
+                            menus. No plan = they can create nothing. */}
+                        <div>
+                            <Label htmlFor="client-plan">Subscription Plan</Label>
+                            <Select
+                                value={form.subscription_plan_id || 'none'}
+                                onValueChange={(v) => set('subscription_plan_id', v === 'none' ? '' : v)}
+                            >
+                                <SelectTrigger id="client-plan">
+                                    <SelectValue placeholder="No plan" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="none">No plan</SelectItem>
+                                    {(plans?.data ?? []).map((p) => (
+                                        <SelectItem key={p.id} value={String(p.id)}>
+                                            {p.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <p className="mt-1 text-[11px] text-muted-foreground">
+                                Decides which event types and menus this client can use in their portal.
+                            </p>
                         </div>
 
                         <div>

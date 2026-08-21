@@ -28,6 +28,12 @@ export interface WebsiteClient {
     mobile_verified: number;
     /** 0 = inactive, 1 = active, 2 = blocked. */
     is_active: number;
+    /**
+     * The plan this client is on. Drives what they may create in the client
+     * portal: the plan is scoped to an event category/type/religion and grants
+     * a specific set of menus. NULL = no plan assigned yet.
+     */
+    subscription_plan_id: number | null;
     last_login_at: string | null;
     vendor?: { id: number; company_name: string } | null;
     has_pending_approval?: boolean;
@@ -63,6 +69,7 @@ export interface WebsiteClientPayload {
     password?: string;
     is_active?: number;
     vendor_id?: number;
+    subscription_plan_id?: number | null;
 }
 
 /* -------------------------------------------------------------------- api -- */

@@ -81,6 +81,8 @@ export function MobileNumberField({
     onDialCodeChange,
     id = 'mobile-number',
     placeholder = 'Enter your mobile number',
+    required = false,
+    error = false,
 }: {
     primary: string;
     label: string;
@@ -90,6 +92,9 @@ export function MobileNumberField({
     onDialCodeChange: (value: string) => void;
     id?: string;
     placeholder?: string;
+    /** Renders the * and lets the caller mark the field invalid. */
+    required?: boolean;
+    error?: boolean;
 }) {
     const tint = tintOf(primary);
     const selected = COUNTRY_CODES.find((entry) => entry.code === dialCode) || COUNTRY_CODES[0];
@@ -97,9 +102,12 @@ export function MobileNumberField({
     return (
         <div className="min-w-0">
             <label htmlFor={id} className="mb-1.5 block text-[12.5px] font-bold text-slate-700">
-                {label}
+                {label} {required && <span className="text-rose-500">*</span>}
             </label>
-            <div className="flex min-w-0 items-stretch overflow-hidden rounded-lg border border-slate-200 bg-white focus-within:ring-2" style={{ ['--tw-ring-color' as string]: tint(30) }}>
+            <div
+                className={`flex min-w-0 items-stretch overflow-hidden rounded-lg border bg-white focus-within:ring-2 ${error ? 'border-rose-400' : 'border-slate-200'}`}
+                style={{ ['--tw-ring-color' as string]: tint(30) }}
+            >
                 {/* Country code. A native select keeps keyboard and mobile
                     behaviour correct without rebuilding a listbox. */}
                 <div className="relative flex shrink-0 items-center gap-1 border-r border-slate-200 pl-3 pr-7">

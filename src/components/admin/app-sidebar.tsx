@@ -44,6 +44,7 @@ import {
   Lock,
   Languages,
   LayoutList,
+  LayoutTemplate,
   Tag,
   Church,
   Repeat,
@@ -137,6 +138,18 @@ const menuItems: MenuItem[] = [
       { labelKey: "nav.event_types", href: "/admin/menu-management/event-types", icon: Tag, permission: "event_types.view" },
       { labelKey: "nav.religions", href: "/admin/menu-management/religions", icon: Church, permission: "religions.view" },
     ],
+  },
+  {
+    // Invitation templates — the design a client's event invitation is rendered
+    // from. NOT the Website Builder's Templates, which are website themes.
+    //
+    // Flat, with no children: "Create Template" is the button at the top of the
+    // list, so a child entry duplicating it would be a second route to the same
+    // place — and a one-child group is a disclosure triangle that reveals nothing.
+    labelKey: "Templates",
+    href: "/admin/templates",
+    icon: LayoutTemplate,
+    permission: "event_templates.view",
   },
   {
     labelKey: "nav.reports",
