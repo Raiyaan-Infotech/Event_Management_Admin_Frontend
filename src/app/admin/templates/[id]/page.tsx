@@ -282,7 +282,14 @@ export default function TemplateDetailPage({ params }: { params: Promise<{ id: s
                         <Card className="border-border bg-card shadow-xs xl:sticky xl:top-4">
                             <CardContent className="p-4">
                                 <TemplatePreview
-                                    template={template}
+                                    template={{
+                                        ...template,
+                                        // Both come joined on the read, so the detail
+                                        // page draws the same artwork the wizard did
+                                        // rather than falling back to the CSS border.
+                                        frameUrl: template.frameStyle?.file_url ?? null,
+                                        decorationItems: template.decorationItems ?? [],
+                                    }}
                                     caption="Sample content — a template has no event of its own."
                                 />
                             </CardContent>

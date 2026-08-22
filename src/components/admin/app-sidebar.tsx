@@ -32,6 +32,7 @@ import {
   LayoutGrid,
   Award,
   Folder,
+  Frame,
   GalleryHorizontal,
   LogIn,
   Monitor,
@@ -143,13 +144,43 @@ const menuItems: MenuItem[] = [
     // Invitation templates — the design a client's event invitation is rendered
     // from. NOT the Website Builder's Templates, which are website themes.
     //
-    // Flat, with no children: "Create Template" is the button at the top of the
-    // list, so a child entry duplicating it would be a second route to the same
-    // place — and a one-child group is a disclosure triangle that reveals nothing.
+    // This WAS flat, deliberately, because a one-child group is a disclosure
+    // triangle that reveals nothing. It is a group now that there are genuinely
+    // three separate things behind it, each with its own permission. "Create
+    // Template" is still only the button at the top of the list, not a child.
     labelKey: "Templates",
-    href: "/admin/templates",
     icon: LayoutTemplate,
-    permission: "event_templates.view",
+    children: [
+      {
+        labelKey: "All Templates",
+        href: "/admin/templates",
+        icon: LayoutTemplate,
+        permission: "event_templates.view",
+      },
+      {
+        // The DESIGN family — Elegant, Floral, Traditional. Not event
+        // categories, and not the Website Builder's template categories.
+        labelKey: "Template Categories",
+        href: "/admin/templates/categories",
+        icon: Folder,
+        permission: "template_categories.view",
+      },
+      {
+        // Uploaded border artwork, classified by a template category.
+        labelKey: "Frame Styles",
+        href: "/admin/templates/frame-styles",
+        icon: Frame,
+        permission: "frame_styles.view",
+      },
+      {
+        // Ornament images placed INSIDE a template — corners, dividers, tops.
+        // A frame surrounds the invitation; a decoration is one part of it.
+        labelKey: "Decorations",
+        href: "/admin/templates/decorations",
+        icon: Sparkles,
+        permission: "decorations.view",
+      },
+    ],
   },
   {
     labelKey: "nav.reports",

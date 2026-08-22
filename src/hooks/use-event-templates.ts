@@ -148,6 +148,54 @@ export const DECORATION_OPTIONS = [
     { value: 'ribbon', label: 'Ribbon' },
 ] as const;
 
+export const GRADIENT_TYPES = [
+    { value: 'linear', label: 'Linear' },
+    { value: 'radial', label: 'Radial' },
+] as const;
+
+/**
+ * Which way a linear gradient runs, and the CSS angle each one means.
+ *
+ * The supplied design showed five arrows (→ ← ↑ ↗ ↖). The downward three are
+ * here too, because the preview's existing default runs DOWN — without them
+ * every gradient template already saved would have a direction no control could
+ * represent, and the picker would show nothing selected.
+ *
+ * MUST stay identical to `GRADIENT_DIRECTIONS` in the backend service.
+ */
+export const GRADIENT_DIRECTIONS = [
+    { value: 'top', label: 'Up', arrow: '↑', deg: 0 },
+    { value: 'top-right', label: 'Up right', arrow: '↗', deg: 45 },
+    { value: 'right', label: 'Right', arrow: '→', deg: 90 },
+    { value: 'bottom-right', label: 'Down right', arrow: '↘', deg: 135 },
+    { value: 'bottom', label: 'Down', arrow: '↓', deg: 180 },
+    { value: 'bottom-left', label: 'Down left', arrow: '↙', deg: 225 },
+    { value: 'left', label: 'Left', arrow: '←', deg: 270 },
+    { value: 'top-left', label: 'Up left', arrow: '↖', deg: 315 },
+] as const;
+
+export const IMAGE_SHAPES = [
+    { value: 'rectangle', label: 'Rectangle' },
+    { value: 'square', label: 'Square' },
+    { value: 'circle', label: 'Circle' },
+    { value: 'heart', label: 'Heart' },
+    { value: 'arch', label: 'Arch' },
+] as const;
+
+/** The Preview Gradient swatch row — one click sets both colours. */
+export const GRADIENT_PRESETS = [
+    { from: '#FCB7F3', to: '#B7C5FF' },
+    { from: '#C7D2FE', to: '#EDE9FE' },
+    { from: '#FBCFE8', to: '#FDE68A' },
+    { from: '#FDE68A', to: '#FCA5A5' },
+    { from: '#A7F3D0', to: '#BFDBFE' },
+    { from: '#FDE2E4', to: '#E2ECE9' },
+] as const;
+
+export type GradientType = 'linear' | 'radial';
+export type GradientDirection = (typeof GRADIENT_DIRECTIONS)[number]['value'];
+export type ImageShape = (typeof IMAGE_SHAPES)[number]['value'];
+
 export type BackgroundType = 'color' | 'image' | 'gradient' | 'custom';
 export type Orientation = 'portrait' | 'landscape';
 export type PlanAvailability = 'all' | 'selected' | 'trial';
@@ -164,6 +212,19 @@ export interface EventTemplate {
     event_category_id: number | null;
     event_type_id: number | null;
     religion_id: number | null;
+    /**
+     * Step 1's "Template Style" — now a real row in `template_categories`.
+     *
+     * That table holds the same vocabulary the old hardcoded enum did, and it is
+     * also what a frame style is filed under — which is what lets step 2 offer
+     * the frames that suit the chosen style.
+     */
+    template_category_id: number | null;
+    /**
+     * The category's slug, kept in step with `template_category_id` by the
+     * backend. Still here so anything already reading `style` keeps working:
+     * send either one and both end up correct.
+     */
     style: string;
     tags: string[];
     description: string | null;
@@ -176,14 +237,27 @@ export interface EventTemplate {
     background_image: string | null;
     gradient_from: string | null;
     gradient_to: string | null;
+    gradient_type: GradientType;
+    gradient_direction: GradientDirection;
+    /** Custom background only — how the uploaded design is masked. */
+    image_shape: ImageShape;
+    /** 0-100 percent. Custom background only, and only for rectangle/square. */
+    corner_radius: number;
+    /** Superseded by Upload Design + Image Shape. Nothing evaluates it. */
     custom_css: string | null;
     overlay_opacity: number;
     orientation: Orientation;
     dimension: string | null;
     primary_font: string | null;
     secondary_font: string | null;
+    /** CSS fallback — used only when no `frame_style_id` is chosen. */
     border_style: string | null;
+    /** Step 2's Border / Frame Style — real uploaded artwork. */
+    frame_style_id: number | null;
+    /** Legacy string list. Superseded by `decoration_ids`. */
     decorations: string[];
+    /** Step 2's Decorations — ids into `decorations`, in display order. */
+    decoration_ids: number[];
 
     // step 3 — WHETHER a component shows, and WHERE. Two fields on purpose:
     // toggling one off and on again must not send it to the bottom of the list.
@@ -205,6 +279,26 @@ export interface EventTemplate {
     thumbnail: string | null;
 
     category?: { id: number; name: string; color: string | null } | null;
+    templateCategory?: { id: number; name: string; slug: string } | null;
+    frameStyle?: {
+        id: number;
+        name: string;
+        file_url: string | null;
+        supported_layouts: string[];
+        template_category_id: number | null;
+    } | null;
+    /**
+     * `decoration_ids` resolved to rows, in the stored order.
+     *
+     * Sent on every read so the preview never has to fetch the decoration list
+     * separately just to draw a template it already has.
+     */
+    decorationItems?: Array<{
+        id: number;
+        name: string;
+        type: string;
+        file_url: string | null;
+    }>;
     eventType?: { id: number; name: string; color: string | null } | null;
     religion?: { id: number; name: string; color: string | null } | null;
     creator?: { id: number; full_name: string } | null;
@@ -238,6 +332,7 @@ export type EventTemplatePayload = Partial<
     Omit<
         EventTemplate,
         'id' | 'company_id' | 'category' | 'eventType' | 'religion' | 'creator' | 'updater'
+        | 'templateCategory' | 'frameStyle' | 'decorationItems'
         | 'has_pending_approval' | 'created_at' | 'updated_at'
     >
 >;

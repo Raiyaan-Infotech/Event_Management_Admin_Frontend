@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
     COMPONENT_LABELS,
+    GRADIENT_DIRECTIONS,
     normaliseOrder,
     type ComponentKey,
     type EventTemplate,
@@ -27,7 +28,25 @@ export type PreviewTemplate = Pick<
     | 'secondary_color' | 'background_image' | 'gradient_from' | 'gradient_to'
     | 'overlay_opacity' | 'orientation' | 'primary_font' | 'secondary_font'
     | 'border_style' | 'components' | 'component_order'
->;
+    | 'gradient_type' | 'gradient_direction' | 'image_shape' | 'corner_radius'
+> & {
+    /**
+     * The chosen Frame Style's artwork, drawn OVER the whole card.
+     *
+     * When present it replaces the CSS `border_style` entirely — a real frame
+     * occupies the margin the CSS border would otherwise sit in, and drawing
+     * both gives a double edge that neither control asked for.
+     */
+    frameUrl?: string | null;
+    /**
+     * The chosen Decorations, resolved. Placed by their `type`.
+     *
+     * Named `decorationItems`, matching the backend, and NOT `decorations` —
+     * that name is already taken on EventTemplate by the legacy string list, so
+     * reusing it would make the whole row unassignable to this type.
+     */
+    decorationItems?: Array<{ id: number; name: string; type: string; file_url: string | null }>;
+};
 
 const SAMPLE = {
     invite_line: 'YOU ARE INVITED TO',
@@ -52,7 +71,16 @@ const hex = (value: string | null | undefined, fallback: string) => {
 function backgroundStyle(t: PreviewTemplate): React.CSSProperties {
     const primary = hex(t.background_color, '#FFF7F0');
 
-    if (t.background_type === 'image' && t.background_image) {
+    /**
+     * `custom` paints the uploaded design too, not just `image`.
+     *
+     * The Custom tab's "Upload Design" writes to the same `background_image`
+     * column — it is the same picture, masked to a shape. Without `custom` here
+     * the upload would succeed, the file would reach S3, and the preview would
+     * show a flat colour: exactly the bug that made the uploader read as broken
+     * the first time round.
+     */
+    if ((t.background_type === 'image' || t.background_type === 'custom') && t.background_image) {
         return {
             backgroundImage: `url(${t.background_image})`,
             backgroundSize: 'cover',
@@ -60,14 +88,62 @@ function backgroundStyle(t: PreviewTemplate): React.CSSProperties {
         };
     }
     if (t.background_type === 'gradient') {
-        return {
-            backgroundImage: `linear-gradient(160deg, ${hex(t.gradient_from, primary)}, ${hex(
-                t.gradient_to,
-                hex(t.secondary_color, '#F3E8DA')
-            )})`,
-        };
+        const from = hex(t.gradient_from, primary);
+        const to = hex(t.gradient_to, hex(t.secondary_color, '#F3E8DA'));
+
+        if (t.gradient_type === 'radial') {
+            // `circle at center` rather than the default ellipse: an ellipse
+            // stretches with the card, so the same template looked like a
+            // different gradient in portrait and landscape.
+            return { backgroundImage: `radial-gradient(circle at center, ${from}, ${to})` };
+        }
+
+        // Falls back to 180deg (straight down), which is what every gradient
+        // template saved before the Direction control existed already looks like.
+        const deg =
+            GRADIENT_DIRECTIONS.find((d) => d.value === t.gradient_direction)?.deg ?? 180;
+        return { backgroundImage: `linear-gradient(${deg}deg, ${from}, ${to})` };
     }
     return { backgroundColor: primary };
+}
+
+/**
+ * The Custom background's Image Shape, as CSS on the card.
+ *
+ * Circle and heart are clip-paths; rectangle and square are a corner radius.
+ * Arch is a border-radius rather than a clip-path so the frame artwork drawn on
+ * top still follows the same silhouette — a clip-path would cut the frame off
+ * at a different curve and the two edges would disagree.
+ *
+ * Only applied for `custom`: the shape control only appears on that tab, and
+ * masking a plain colour background to a heart is not something any other tab
+ * offers.
+ */
+function shapeStyle(t: PreviewTemplate): React.CSSProperties {
+    if (t.background_type !== 'custom') return {};
+
+    const radius = `${Math.min(Math.max(Number(t.corner_radius) || 0, 0), 100) / 2}%`;
+
+    switch (t.image_shape) {
+        case 'circle':
+            return { borderRadius: '50%' };
+        case 'heart':
+            /**
+             * Referenced, not inlined.
+             *
+             * CSS `clip-path: path()` measures in PIXELS, so a heart authored on
+             * a 100-unit box renders as a 100px heart in the corner of a 248px
+             * card. The SVG clipPath below uses `objectBoundingBox` units, which
+             * scale to whatever the card actually is.
+             */
+            return { clipPath: 'url(#tplHeartClip)' };
+        case 'arch':
+            return { borderRadius: `999px 999px ${radius} ${radius}` };
+        case 'square':
+        case 'rectangle':
+        default:
+            return { borderRadius: radius };
+    }
 }
 
 const BORDER_CLASS: Record<string, string> = {
@@ -96,15 +172,38 @@ export function TemplatePreview({
     const ink = '#3A2C22';
     const headingFont = template.primary_font || 'Playfair Display';
     const bodyFont = template.secondary_font || 'Poppins';
-    const borderClass = BORDER_CLASS[template.border_style ?? 'none'] ?? 'border-0';
+    const frameUrl = template.frameUrl || null;
+    // Real artwork wins over the CSS fallback — see the note on PreviewTemplate.
+    const borderClass = frameUrl
+        ? 'border-0'
+        : (BORDER_CLASS[template.border_style ?? 'none'] ?? 'border-0');
+
+    /**
+     * Where each decoration sits.
+     *
+     * `type` is a PLACEMENT, which is exactly what this needs — a corner goes in
+     * a corner, a top spans the top edge. Anything unplaced (`motif`) is centred
+     * behind the content at low opacity rather than dropped, so choosing it still
+     * has a visible consequence.
+     */
+    const decorations = template.decorationItems ?? [];
+    const placed = (type: string) => decorations.filter((d) => d.type === type && d.file_url);
 
     // The overlay is a separate layer rather than a filter on the background:
     // a filter would wash out the text sitting on top of it too.
     const overlay = Math.min(Math.max(Number(template.overlay_opacity) || 0, 0), 100) / 100;
 
     const isLandscape = template.orientation === 'landscape';
-    const frameSize =
-        device === 'web'
+
+    // A "square" or "circle" shape has to make the CARD square, or the mask is
+    // drawn on a 9:16 box and both come out as ovals.
+    const forcedSquare =
+        template.background_type === 'custom' &&
+        (template.image_shape === 'square' || template.image_shape === 'circle');
+
+    const frameSize = forcedSquare
+        ? 'w-[300px] aspect-square'
+        : device === 'web'
             ? 'w-full max-w-[520px] aspect-[16/10]'
             : isLandscape
                 ? 'w-full max-w-[420px] aspect-[16/10]'
@@ -259,6 +358,18 @@ export function TemplatePreview({
                 </div>
             </div>
 
+            {/* Zero-size and aria-hidden: this exists only to be referenced by
+                `clip-path` above, and must never take layout space. */}
+            <svg width="0" height="0" aria-hidden className="absolute">
+                <defs>
+                    <clipPath id="tplHeartClip" clipPathUnits="objectBoundingBox">
+                        <path d="M0.5,0.9 C0.5,0.9 0.04,0.62 0.04,0.33 C0.04,0.14 0.18,0.04 0.31,0.04
+                                 C0.41,0.04 0.47,0.1 0.5,0.17 C0.53,0.1 0.59,0.04 0.69,0.04
+                                 C0.82,0.04 0.96,0.14 0.96,0.33 C0.96,0.62 0.5,0.9 0.5,0.9 Z" />
+                    </clipPath>
+                </defs>
+            </svg>
+
             <div className="flex justify-center">
                 <div
                     className={cn(
@@ -269,6 +380,7 @@ export function TemplatePreview({
                     )}
                     style={{
                         ...backgroundStyle(template),
+                        ...shapeStyle(template),
                         borderColor: accent,
                     }}
                 >
@@ -279,7 +391,53 @@ export function TemplatePreview({
                         />
                     )}
 
-                    <div className="relative flex h-full w-full flex-col items-center justify-center gap-1.5 overflow-hidden p-3">
+                    {/* Decorations sit UNDER the content: an ornament that covers
+                        the couple's names is not a decoration. */}
+                    {placed('motif').slice(0, 1).map((d) => (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img key={d.id} src={d.file_url!} alt=""
+                            className="pointer-events-none absolute left-1/2 top-1/2 w-2/3 -translate-x-1/2 -translate-y-1/2 opacity-20" />
+                    ))}
+                    {placed('top').slice(0, 1).map((d) => (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img key={d.id} src={d.file_url!} alt=""
+                            className="pointer-events-none absolute inset-x-0 top-0 w-full" />
+                    ))}
+                    {placed('bottom').slice(0, 1).map((d) => (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img key={d.id} src={d.file_url!} alt=""
+                            className="pointer-events-none absolute inset-x-0 bottom-0 w-full" />
+                    ))}
+                    {/* Up to four corners, mirrored so one uploaded corner fills
+                        every corner rather than needing four files. */}
+                    {placed('corner').slice(0, 1).map((d) =>
+                        ([
+                            'left-0 top-0',
+                            'right-0 top-0 -scale-x-100',
+                            'left-0 bottom-0 -scale-y-100',
+                            'right-0 bottom-0 -scale-100',
+                        ] as const).map((pos) => (
+                            /* eslint-disable-next-line @next/next/no-img-element */
+                            <img key={`${d.id}-${pos}`} src={d.file_url!} alt=""
+                                className={cn('pointer-events-none absolute w-2/5', pos)} />
+                        ))
+                    )}
+                    {placed('ornament').slice(0, 1).map((d) => (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img key={d.id} src={d.file_url!} alt=""
+                            className="pointer-events-none absolute inset-x-0 top-0 mx-auto w-3/5" />
+                    ))}
+
+                    {/* The frame is drawn LAST, over the content: it occupies the
+                        margin, and a border under the text would be half-hidden by
+                        whatever component happens to reach the edge. */}
+                    {frameUrl ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img src={frameUrl} alt=""
+                            className="pointer-events-none absolute inset-0 z-10 h-full w-full object-fill" />
+                    ) : null}
+
+                    <div className="relative flex h-full w-full flex-col items-center justify-center gap-1.5 overflow-hidden p-5">
                         {visible.length === 0 ? (
                             <div className="px-4 text-center text-[10px] text-muted-foreground">
                                 Every component is switched off, so this invitation would render empty.

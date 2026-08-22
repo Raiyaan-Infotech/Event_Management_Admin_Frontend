@@ -7,8 +7,13 @@ import { toast } from 'sonner';
  *
  * Backed by the `website_clients` table, which is deliberately separate from
  * `vendor_clients` (those are created BY a vendor and given a portal login via
- * the handoff flow). A row here is a self-registration from the website's
- * signup form and does not currently grant a Client Portal login.
+ * the handoff flow).
+ *
+ * A row here IS a client-portal account — it signs in at the portal with the
+ * email and password on this row. That is why `password` is mandatory when an
+ * admin creates one: there is no reset, set-password or invite flow anywhere,
+ * so a row saved without one can never sign in. `has_password` reports whether
+ * an existing row is in that state.
  */
 
 /* ------------------------------------------------------------------ types -- */
@@ -35,6 +40,17 @@ export interface WebsiteClient {
      */
     subscription_plan_id: number | null;
     last_login_at: string | null;
+    /**
+     * Whether a password is set — i.e. whether this client can sign in at all.
+     *
+     * MySQL answers the underlying comparison as 1/0, not a boolean, so read it
+     * for truthiness and never compare it against `false`.
+     *
+     * A `google` / `facebook` client has none by design and signs in through the
+     * provider, so a falsy value only means "broken" for the `website` and
+     * `admin` sources.
+     */
+    has_password?: boolean | number;
     vendor?: { id: number; company_name: string } | null;
     has_pending_approval?: boolean;
     // The model maps its timestamps to snake_case attributes, as every other
@@ -49,6 +65,8 @@ export interface WebsiteClientStats {
     active: number;
     inactive: number;
     blocked: number;
+    /** Password-source accounts with no password — they cannot sign in at all. */
+    cannot_sign_in: number;
 }
 
 export interface WebsiteClientListParams {

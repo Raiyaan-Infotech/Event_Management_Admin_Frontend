@@ -12,7 +12,7 @@
  */
 
 import { useState } from 'react';
-import { Users, UserCheck, UserX, ShieldOff, Plus, Mail, Phone } from 'lucide-react';
+import { Users, UserCheck, UserX, ShieldOff, Plus, Mail, Phone, KeyRound } from 'lucide-react';
 import { PageHeader } from '@/components/common/page-header';
 import { CommonTable, type CommonColumn } from '@/components/common/common-table';
 import { PageLoader } from '@/components/common/page-loader';
@@ -43,6 +43,22 @@ const SOURCE_LABELS: Record<WebsiteClientSource, string> = {
     facebook: 'Facebook',
     admin: 'Admin',
 };
+
+/**
+ * Whether this client is able to sign in to the portal at all.
+ *
+ * A row with no password is locked out permanently — there is no reset,
+ * set-password or invite flow anywhere in the system, so nothing the client
+ * does can fix it. It used to be invisible here: the row looked like any other
+ * active client, and the portal answered "Invalid email or password" forever.
+ *
+ * Google and Facebook clients have no password BY DESIGN and sign in through
+ * the provider, so only the password sources can be broken this way.
+ */
+const PASSWORD_SOURCES: WebsiteClientSource[] = ['website', 'admin'];
+
+const cannotSignIn = (row: WebsiteClient) =>
+    PASSWORD_SOURCES.includes(row.source) && !row.has_password;
 
 export default function ClientsPage() {
     const [page, setPage] = useState(1);
@@ -77,6 +93,12 @@ export default function ClientsPage() {
         { key: 'active', label: 'Active', value: stats?.active ?? 0, icon: UserCheck },
         { key: 'inactive', label: 'Inactive', value: stats?.inactive ?? 0, icon: UserX },
         { key: 'blocked', label: 'Blocked', value: stats?.blocked ?? 0, icon: ShieldOff },
+        {
+            key: 'cannot_sign_in',
+            label: 'Cannot Sign In',
+            value: stats?.cannot_sign_in ?? 0,
+            icon: KeyRound,
+        },
     ];
 
     const columns: CommonColumn<WebsiteClient>[] = [
@@ -93,6 +115,23 @@ export default function ClientsPage() {
                         <p className="break-all line-clamp-1 text-xs text-muted-foreground">
                             {row.vendor.company_name}
                         </p>
+                    ) : null}
+                    {/* Opens the edit dialog, which already writes a password on
+                        update — the repair path existed, it was just impossible
+                        to know it was needed. */}
+                    {cannotSignIn(row) ? (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setEditing(row);
+                                setFormOpen(true);
+                            }}
+                            className="mt-1 inline-flex items-center gap-1 rounded-sm text-left text-[11px] font-semibold text-destructive underline-offset-2 hover:underline"
+                            title="No password is set, so this client cannot sign in. Click to set one."
+                        >
+                            <KeyRound className="h-3 w-3 shrink-0" />
+                            <span className="break-words">Cannot sign in — set a password</span>
+                        </button>
                     ) : null}
                 </div>
             ),

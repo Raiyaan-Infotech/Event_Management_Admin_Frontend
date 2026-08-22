@@ -40,6 +40,10 @@ import { PageLoader } from '@/components/common/page-loader';
 import { PermissionGuard } from '@/components/guards/permission-guard';
 import { cn } from '@/lib/utils';
 import { mediaApi } from '@/hooks/use-media';
+import { useTemplateCategories } from '@/hooks/use-template-categories';
+import { useFrameStyles } from '@/hooks/use-frame-styles';
+import { useDecorations } from '@/hooks/use-decorations';
+import { ArtworkPicker } from './artwork-picker';
 import { useEventCategories, useEventTypes, useReligions } from '@/hooks/use-menu-management';
 import { useSubscriptionPlans } from '@/hooks/use-subscription-plans';
 import {
@@ -57,6 +61,13 @@ import {
     TEMPLATE_STYLES,
     LAYOUT_STYLES,
     BACKGROUND_TYPES,
+    GRADIENT_TYPES,
+    GRADIENT_DIRECTIONS,
+    GRADIENT_PRESETS,
+    IMAGE_SHAPES,
+    type GradientType,
+    type GradientDirection,
+    type ImageShape,
     DIMENSIONS,
     FONT_OPTIONS,
     BORDER_STYLES,
@@ -88,6 +99,7 @@ interface FormState {
     event_category_id: string;
     event_type_id: string;
     religion_id: string;
+    template_category_id: string;
     style: string;
     tags: string[];
     description: string;
@@ -99,6 +111,10 @@ interface FormState {
     background_image: string;
     gradient_from: string;
     gradient_to: string;
+    gradient_type: GradientType;
+    gradient_direction: GradientDirection;
+    image_shape: ImageShape;
+    corner_radius: number;
     custom_css: string;
     overlay_opacity: number;
     orientation: Orientation;
@@ -106,7 +122,9 @@ interface FormState {
     primary_font: string;
     secondary_font: string;
     border_style: string;
+    frame_style_id: number | null;
     decorations: string[];
+    decoration_ids: number[];
     // step 3
     components: Record<ComponentKey, number>;
     component_order: ComponentKey[];
@@ -129,6 +147,7 @@ const emptyForm = (): FormState => ({
     event_category_id: '',
     event_type_id: '',
     religion_id: '',
+    template_category_id: '',
     style: 'classic',
     tags: [],
     description: '',
@@ -139,6 +158,12 @@ const emptyForm = (): FormState => ({
     background_image: '',
     gradient_from: '#FFF7F0',
     gradient_to: '#F3E8DA',
+    // 'bottom' matches how every gradient template saved before the Direction
+    // control existed already renders.
+    gradient_type: 'linear',
+    gradient_direction: 'bottom',
+    image_shape: 'rectangle',
+    corner_radius: 0,
     custom_css: '',
     overlay_opacity: 25,
     orientation: 'portrait',
@@ -146,7 +171,9 @@ const emptyForm = (): FormState => ({
     primary_font: 'Playfair Display',
     secondary_font: 'Poppins',
     border_style: 'ornate',
+    frame_style_id: null,
     decorations: [],
+    decoration_ids: [],
     components: defaultComponents(),
     component_order: [...COMPONENT_KEYS],
     permissions: defaultPermissions(),
@@ -190,6 +217,38 @@ export function TemplateWizardContent() {
         event_type_id: form.event_type_id || undefined,
     });
     const { data: plansData } = useSubscriptionPlans({ limit: 200 });
+
+    /**
+     * The three catalogues step 1 and step 2 now read from.
+     *
+     * Only usable rows: offering a deactivated category or an unpublished frame
+     * would let someone pick something the backend then refuses on save.
+     */
+    const { data: categoriesData, isLoading: categoriesLoading } = useTemplateCategories({
+        limit: 200,
+        is_active: 1,
+    });
+    const { data: framesData, isLoading: framesLoading } = useFrameStyles({
+        limit: 200,
+        status: 'active',
+        publish_status: 'published',
+    });
+    const { data: decorationsData, isLoading: decorationsLoading } = useDecorations({
+        limit: 200,
+        is_active: 1,
+    });
+
+    const styleOptions = useMemo(
+        () =>
+            (categoriesData?.data ?? []).map((c) => ({
+                // `value` is the id, because that is what saves; `slug` keeps the
+                // legacy `style` column truthful alongside it.
+                value: String(c.id),
+                slug: c.slug,
+                label: c.name,
+            })),
+        [categoriesData]
+    );
     const plans = plansData?.data ?? [];
 
     // Both land back on the list. The wizard is a task, and the list is where you
@@ -212,6 +271,9 @@ export function TemplateWizardContent() {
             event_category_id: existing.event_category_id ? String(existing.event_category_id) : '',
             event_type_id: existing.event_type_id ? String(existing.event_type_id) : '',
             religion_id: existing.religion_id ? String(existing.religion_id) : '',
+            template_category_id: existing.template_category_id
+                ? String(existing.template_category_id)
+                : '',
             style: existing.style ?? 'classic',
             tags: existing.tags ?? [],
             description: existing.description ?? '',
@@ -222,6 +284,10 @@ export function TemplateWizardContent() {
             background_image: existing.background_image ?? '',
             gradient_from: existing.gradient_from ?? '#FFF7F0',
             gradient_to: existing.gradient_to ?? '#F3E8DA',
+            gradient_type: existing.gradient_type ?? 'linear',
+            gradient_direction: existing.gradient_direction ?? 'bottom',
+            image_shape: existing.image_shape ?? 'rectangle',
+            corner_radius: existing.corner_radius ?? 0,
             custom_css: existing.custom_css ?? '',
             overlay_opacity: Number(existing.overlay_opacity ?? 0),
             orientation: existing.orientation ?? 'portrait',
@@ -229,7 +295,9 @@ export function TemplateWizardContent() {
             primary_font: existing.primary_font ?? 'Playfair Display',
             secondary_font: existing.secondary_font ?? 'Poppins',
             border_style: existing.border_style ?? 'ornate',
+            frame_style_id: existing.frame_style_id ?? null,
             decorations: existing.decorations ?? [],
+            decoration_ids: existing.decoration_ids ?? [],
             components: { ...defaultComponents(), ...(existing.components ?? {}) },
             component_order: normaliseOrder(existing.component_order),
             permissions: { ...defaultPermissions(), ...(existing.permissions ?? {}) },
@@ -354,6 +422,9 @@ export function TemplateWizardContent() {
         event_category_id: form.event_category_id ? Number(form.event_category_id) : null,
         event_type_id: form.event_type_id ? Number(form.event_type_id) : null,
         religion_id: form.religion_id ? Number(form.religion_id) : null,
+        // Sending the id is what sets the Style; the backend rewrites `style`
+        // from the category's slug, so the two can never drift apart.
+        template_category_id: form.template_category_id ? Number(form.template_category_id) : null,
         style: form.style,
         tags: form.tags,
         description: form.description.trim() || null,
@@ -365,6 +436,10 @@ export function TemplateWizardContent() {
         background_image: form.background_image || null,
         gradient_from: form.gradient_from || null,
         gradient_to: form.gradient_to || null,
+        gradient_type: form.gradient_type,
+        gradient_direction: form.gradient_direction,
+        image_shape: form.image_shape,
+        corner_radius: form.corner_radius,
         custom_css: form.custom_css.trim() || null,
         overlay_opacity: form.overlay_opacity,
         orientation: form.orientation,
@@ -372,7 +447,9 @@ export function TemplateWizardContent() {
         primary_font: form.primary_font || null,
         secondary_font: form.secondary_font || null,
         border_style: form.border_style || null,
+        frame_style_id: form.frame_style_id,
         decorations: form.decorations,
+        decoration_ids: form.decoration_ids,
 
         components: form.components,
         component_order: form.component_order,
@@ -415,15 +492,37 @@ export function TemplateWizardContent() {
             background_image: form.background_image,
             gradient_from: form.gradient_from,
             gradient_to: form.gradient_to,
+            gradient_type: form.gradient_type,
+            gradient_direction: form.gradient_direction,
+            image_shape: form.image_shape,
+            corner_radius: form.corner_radius,
             overlay_opacity: form.overlay_opacity,
             orientation: form.orientation,
             primary_font: form.primary_font,
             secondary_font: form.secondary_font,
             border_style: form.border_style,
+            // Resolved from the live catalogues, not from the saved row: the
+            // preview has to move the moment a tile is clicked, and the row does
+            // not exist yet on create.
+            frameUrl:
+                (framesData?.data ?? []).find((f) => f.id === form.frame_style_id)?.file_url ??
+                null,
+            decorationItems: form.decoration_ids
+                .map((id) => (decorationsData?.data ?? []).find((d) => d.id === id))
+                .filter(Boolean)
+                .map((d) => ({
+                    id: d!.id,
+                    name: d!.name,
+                    type: d!.type,
+                    file_url: d!.file_url,
+                })),
             components: form.components,
             component_order: form.component_order,
         }),
-        [form]
+        // The catalogues belong in here too: without them the preview keeps the
+        // frame it resolved on first render and never picks one up once the
+        // frame/decoration queries settle.
+        [form, framesData, decorationsData]
     );
 
     const activeCategory = (categories?.data ?? []).find(
@@ -599,19 +698,38 @@ export function TemplateWizardContent() {
                                     </Field>
                                 </div>
 
+                                {/*
+                                  Template Style / Theme — the reason
+                                  `template_categories` exists.
+
+                                  This was a hardcoded list of six adjectives that
+                                  referenced nothing. It is now the real category
+                                  table, which is also what a frame style is filed
+                                  under — so picking a style here is what makes
+                                  step 2 offer the frames that suit it.
+                                */}
                                 <div className="mt-4 space-y-1.5">
                                     <Label className="text-xs font-semibold text-foreground">
                                         Template Style / Theme <span className="text-destructive">*</span>
                                     </Label>
                                     <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-                                        {TEMPLATE_STYLES.map((s) => (
+                                        {styleOptions.map((s) => (
                                             <button
                                                 key={s.value}
                                                 type="button"
-                                                onClick={() => setField('style', s.value)}
+                                                onClick={() => {
+                                                    // The id is what saves; the slug
+                                                    // is kept so the preview and any
+                                                    // older reader still see a style.
+                                                    setForm((prev) => ({
+                                                        ...prev,
+                                                        template_category_id: s.value,
+                                                        style: s.slug,
+                                                    }));
+                                                }}
                                                 className={cn(
                                                     'flex flex-col items-center gap-1.5 rounded-lg border p-2 text-xs transition-colors',
-                                                    form.style === s.value
+                                                    form.template_category_id === s.value
                                                         ? 'border-primary bg-primary/5 font-semibold text-primary'
                                                         : 'border-border text-muted-foreground hover:border-primary/40'
                                                 )}
@@ -620,7 +738,7 @@ export function TemplateWizardContent() {
                                                     className="h-12 w-full rounded-md border border-border/60"
                                                     style={{
                                                         background:
-                                                            form.style === s.value
+                                                            form.template_category_id === s.value
                                                                 ? `linear-gradient(140deg, ${form.background_color}, ${form.secondary_color})`
                                                                 : undefined,
                                                     }}
@@ -743,7 +861,9 @@ export function TemplateWizardContent() {
                                     non-image type — that is how the first one was saved.
                                     Said out loud, with the one-click fix, rather than
                                     leaving the preview silently ignoring the picture. */}
-                                {form.background_image && form.background_type !== 'image' && (
+                                {form.background_image
+                                    && form.background_type !== 'image'
+                                    && form.background_type !== 'custom' && (
                                     <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 dark:bg-amber-500/10">
                                         <span className="text-xs text-amber-800 dark:text-amber-300">
                                             This template has a background image, but its Background Type is
@@ -764,7 +884,11 @@ export function TemplateWizardContent() {
 
                                 <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
                                     <ColorField
-                                        label="Background Color"
+                                        label={
+                                            form.background_type === 'custom'
+                                                ? 'Primary Color'
+                                                : 'Background Color'
+                                        }
                                         value={form.background_color}
                                         onChange={(v) => setField('background_color', v)}
                                     />
@@ -777,41 +901,202 @@ export function TemplateWizardContent() {
                                 </div>
 
                                 {form.background_type === 'gradient' && (
-                                    <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                        <ColorField
-                                            label="Gradient From"
-                                            value={form.gradient_from}
-                                            onChange={(v) => setField('gradient_from', v)}
-                                        />
-                                        <ColorField
-                                            label="Gradient To"
-                                            value={form.gradient_to}
-                                            onChange={(v) => setField('gradient_to', v)}
-                                        />
+                                    <div className="mt-4 space-y-4">
+                                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                            <div className="space-y-1.5">
+                                                <Label className="text-xs font-semibold text-foreground">
+                                                    Gradient Type
+                                                </Label>
+                                                <div className="flex gap-2">
+                                                    {GRADIENT_TYPES.map((g) => (
+                                                        <button
+                                                            key={g.value}
+                                                            type="button"
+                                                            onClick={() => setField('gradient_type', g.value)}
+                                                            className={cn(
+                                                                'flex flex-1 items-center gap-2 rounded-md border px-3 py-2 text-xs transition-colors',
+                                                                form.gradient_type === g.value
+                                                                    ? 'border-primary bg-primary/5 font-semibold text-primary'
+                                                                    : 'border-border text-muted-foreground hover:border-primary/40'
+                                                            )}
+                                                        >
+                                                            <span
+                                                                className={cn(
+                                                                    'grid h-3.5 w-3.5 shrink-0 place-items-center rounded-full border',
+                                                                    form.gradient_type === g.value
+                                                                        ? 'border-primary'
+                                                                        : 'border-muted-foreground/50'
+                                                                )}
+                                                            >
+                                                                {form.gradient_type === g.value ? (
+                                                                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                                                                ) : null}
+                                                            </span>
+                                                            {g.label}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* Direction is meaningless for a radial gradient,
+                                                so it is hidden rather than shown doing nothing. */}
+                                            {form.gradient_type === 'linear' ? (
+                                                <div className="space-y-1.5">
+                                                    <Label className="text-xs font-semibold text-foreground">
+                                                        Direction
+                                                    </Label>
+                                                    <div className="flex flex-wrap gap-1.5">
+                                                        {GRADIENT_DIRECTIONS.map((d) => (
+                                                            <button
+                                                                key={d.value}
+                                                                type="button"
+                                                                title={d.label}
+                                                                onClick={() => setField('gradient_direction', d.value)}
+                                                                className={cn(
+                                                                    'grid h-9 w-9 place-items-center rounded-md border text-sm transition-colors',
+                                                                    form.gradient_direction === d.value
+                                                                        ? 'border-primary bg-primary/5 text-primary'
+                                                                        : 'border-border text-muted-foreground hover:border-primary/40'
+                                                                )}
+                                                            >
+                                                                {d.arrow}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            ) : null}
+                                        </div>
+
+                                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                            <ColorField
+                                                label="Color 1"
+                                                value={form.gradient_from}
+                                                onChange={(v) => setField('gradient_from', v)}
+                                            />
+                                            <ColorField
+                                                label="Color 2"
+                                                value={form.gradient_to}
+                                                onChange={(v) => setField('gradient_to', v)}
+                                            />
+                                        </div>
+
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs font-semibold text-foreground">
+                                                Preview Gradient
+                                            </Label>
+                                            <div className="flex flex-wrap gap-2">
+                                                {GRADIENT_PRESETS.map((preset) => {
+                                                    const on =
+                                                        form.gradient_from.toUpperCase() === preset.from &&
+                                                        form.gradient_to.toUpperCase() === preset.to;
+                                                    return (
+                                                        <button
+                                                            key={preset.from + preset.to}
+                                                            type="button"
+                                                            title={preset.from + ' to ' + preset.to}
+                                                            onClick={() =>
+                                                                // One click sets BOTH colours. Setting one and
+                                                                // leaving the other is how a preset ends up
+                                                                // looking like neither swatch.
+                                                                setForm((prev) => ({
+                                                                    ...prev,
+                                                                    gradient_from: preset.from,
+                                                                    gradient_to: preset.to,
+                                                                }))
+                                                            }
+                                                            className={cn(
+                                                                'h-12 w-14 rounded-md border transition-colors',
+                                                                on
+                                                                    ? 'border-primary ring-1 ring-primary'
+                                                                    : 'border-border hover:border-primary/40'
+                                                            )}
+                                                            style={{
+                                                                backgroundImage: `linear-gradient(160deg, ${preset.from}, ${preset.to})`,
+                                                            }}
+                                                        />
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
 
                                 {form.background_type === 'custom' && (
-                                    <div className="mt-4 space-y-1.5">
-                                        <Label className="text-xs font-semibold text-foreground">Custom CSS</Label>
-                                        <Textarea
-                                            value={form.custom_css}
-                                            onChange={(e) => setField('custom_css', e.target.value)}
-                                            placeholder="background: radial-gradient(...);"
-                                            rows={3}
-                                            className="font-mono text-xs"
-                                        />
-                                        <p className="text-[11px] text-muted-foreground">
-                                            Applied by the invitation renderer. The preview on the right shows the
-                                            base colour instead, because it does not evaluate custom CSS.
-                                        </p>
+                                    <div className="mt-4 space-y-4">
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs font-semibold text-foreground">
+                                                Image Shape
+                                            </Label>
+                                            <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+                                                {IMAGE_SHAPES.map((sh) => (
+                                                    <button
+                                                        key={sh.value}
+                                                        type="button"
+                                                        onClick={() => setField('image_shape', sh.value)}
+                                                        className={cn(
+                                                            'flex flex-col items-center gap-1.5 rounded-lg border p-2 text-xs transition-colors',
+                                                            form.image_shape === sh.value
+                                                                ? 'border-primary bg-primary/5 font-semibold text-primary'
+                                                                : 'border-border text-muted-foreground hover:border-primary/40'
+                                                        )}
+                                                    >
+                                                        {/* The tile shows the shape itself, so the control
+                                                            is legible without reading the label. */}
+                                                        <span
+                                                            className={cn(
+                                                                'h-7 w-7 border-2 border-current',
+                                                                sh.value === 'circle' && 'rounded-full',
+                                                                sh.value === 'rectangle' && 'h-5 w-8 rounded-sm',
+                                                                sh.value === 'square' && 'rounded-sm',
+                                                                sh.value === 'arch' && 'rounded-t-full rounded-b-sm',
+                                                                sh.value === 'heart' &&
+                                                                    'rotate-45 rounded-bl-full border-l-0 border-b-0'
+                                                            )}
+                                                        />
+                                                        {sh.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Only rectangle, square and arch have corners to round.
+                                            Disabled rather than hidden, so the control does not
+                                            appear and vanish as the shape changes. */}
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs font-semibold text-foreground">
+                                                Corner Radius
+                                            </Label>
+                                            <div className="flex items-center gap-3">
+                                                <Slider
+                                                    value={[form.corner_radius]}
+                                                    min={0}
+                                                    max={100}
+                                                    step={1}
+                                                    disabled={
+                                                        form.image_shape === 'circle' ||
+                                                        form.image_shape === 'heart'
+                                                    }
+                                                    onValueChange={([v]) => setField('corner_radius', v)}
+                                                />
+                                                <div className="flex h-9 w-20 shrink-0 items-center justify-center rounded-md border border-border text-xs font-semibold">
+                                                    {form.corner_radius} %
+                                                </div>
+                                            </div>
+                                            {form.image_shape === 'circle' || form.image_shape === 'heart' ? (
+                                                <p className="text-[11px] text-muted-foreground">
+                                                    A {form.image_shape} has no corners to round.
+                                                </p>
+                                            ) : null}
+                                        </div>
                                     </div>
                                 )}
 
                                 <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
                                     <div className="space-y-1.5">
                                         <Label className="text-xs font-semibold text-foreground">
-                                            Background Image{' '}
+                                            {form.background_type === 'custom'
+                                                ? 'Upload Design'
+                                                : 'Background Image'}{' '}
                                             <span className="font-normal text-muted-foreground">(Optional)</span>
                                         </Label>
                                         <div className="flex items-center gap-3">
@@ -865,7 +1150,9 @@ export function TemplateWizardContent() {
                                                     </Button>
                                                 )}
                                                 <p className="text-[11px] text-muted-foreground">
-                                                    JPG, PNG. Recommended 1080 x 1920 px.
+                                                    {form.background_type === 'custom'
+                                                        ? 'JPG, PNG, SVG. Recommended 1080 x 1920 px.'
+                                                        : 'JPG, PNG. Recommended 1080 x 1920 px.'}
                                                 </p>
                                             </div>
                                         </div>
@@ -969,9 +1256,74 @@ export function TemplateWizardContent() {
                                 </div>
 
                                 <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                    <div className="space-y-1.5">
+                                    {/*
+                                      Border / Frame Style and Decorations now read
+                                      the Frame Styles and Decorations modules.
+
+                                      Both used to be hardcoded adjectives that
+                                      referenced nothing: `border_style` mapped to a
+                                      CSS class (a double line, never an "ornate
+                                      frame") and `decorations` drew nothing at all.
+                                      What is picked here is now the actual artwork.
+                                    */}
+                                    <ArtworkPicker
+                                        label="Border / Frame Style"
+                                        optional
+                                        items={(framesData?.data ?? []).map((f) => ({
+                                            id: f.id,
+                                            name: f.name,
+                                            file_url: f.file_url,
+                                            template_category_id: f.template_category_id,
+                                        }))}
+                                        isLoading={framesLoading}
+                                        selectedId={form.frame_style_id}
+                                        onSelect={(id) => setField('frame_style_id', id)}
+                                        suggestCategoryId={
+                                            form.template_category_id
+                                                ? Number(form.template_category_id)
+                                                : null
+                                        }
+                                        manageHref="/admin/templates/frame-styles"
+                                        manageLabel="Manage frame styles"
+                                        emptyHint="No frame styles have been uploaded yet."
+                                    />
+
+                                    <ArtworkPicker
+                                        label="Decorations"
+                                        optional
+                                        multiple
+                                        items={(decorationsData?.data ?? []).map((d) => ({
+                                            id: d.id,
+                                            name: d.name,
+                                            file_url: d.file_url,
+                                            type_label: d.type_label,
+                                        }))}
+                                        isLoading={decorationsLoading}
+                                        selectedIds={form.decoration_ids}
+                                        onToggle={(id) =>
+                                            setForm((prev) => ({
+                                                ...prev,
+                                                decoration_ids: prev.decoration_ids.includes(id)
+                                                    ? prev.decoration_ids.filter((x) => x !== id)
+                                                    : [...prev.decoration_ids, id],
+                                            }))
+                                        }
+                                        manageHref="/admin/templates/decorations"
+                                        manageLabel="Manage decorations"
+                                        emptyHint="No decorations have been uploaded yet."
+                                    />
+                                </div>
+
+                                {/* The CSS fallback, kept and demoted. It is what
+                                    draws when no frame artwork is chosen, which is
+                                    every template made before frame styles existed. */}
+                                {!form.frame_style_id ? (
+                                    <div className="mt-4 space-y-1.5">
                                         <Label className="text-xs font-semibold text-foreground">
-                                            Border / Frame Style
+                                            Fallback Border{' '}
+                                            <span className="font-normal text-muted-foreground">
+                                                (used when no frame artwork is chosen)
+                                            </span>
                                         </Label>
                                         <div className="flex flex-wrap gap-2">
                                             {BORDER_STYLES.map((b) => (
@@ -991,41 +1343,7 @@ export function TemplateWizardContent() {
                                             ))}
                                         </div>
                                     </div>
-
-                                    <div className="space-y-1.5">
-                                        <Label className="text-xs font-semibold text-foreground">
-                                            Decorations{' '}
-                                            <span className="font-normal text-muted-foreground">(Optional)</span>
-                                        </Label>
-                                        <div className="flex flex-wrap gap-2">
-                                            {DECORATION_OPTIONS.map((d) => {
-                                                const on = form.decorations.includes(d.value);
-                                                return (
-                                                    <button
-                                                        key={d.value}
-                                                        type="button"
-                                                        onClick={() =>
-                                                            setForm((prev) => ({
-                                                                ...prev,
-                                                                decorations: on
-                                                                    ? prev.decorations.filter((x) => x !== d.value)
-                                                                    : [...prev.decorations, d.value],
-                                                            }))
-                                                        }
-                                                        className={cn(
-                                                            'rounded-md border px-3 py-2 text-xs transition-colors',
-                                                            on
-                                                                ? 'border-primary bg-primary/5 font-semibold text-primary'
-                                                                : 'border-border text-muted-foreground hover:border-primary/40'
-                                                        )}
-                                                    >
-                                                        {d.label}
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                </div>
+                                ) : null}
                             </WizardCard>
                         )}
 
