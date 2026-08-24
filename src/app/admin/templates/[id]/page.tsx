@@ -176,10 +176,18 @@ export default function TemplateDetailPage({ params }: { params: Promise<{ id: s
                                     ],
                                     ['Primary Font', template.primary_font ?? '—'],
                                     ['Secondary Font', template.secondary_font ?? '—'],
-                                    ['Border / Frame', template.border_style ?? '—'],
+                                    // The real artwork, falling back to the CSS border only
+                                    // when no frame is chosen — showing `border_style` while
+                                    // a frame is set would name the thing that ISN'T drawn.
+                                    [
+                                        'Border / Frame',
+                                        template.frameStyle?.name ?? template.border_style ?? '—',
+                                    ],
                                     [
                                         'Decorations',
-                                        template.decorations.length ? template.decorations.join(', ') : '—',
+                                        template.decorationItems?.length
+                                            ? template.decorationItems.map((d) => d.name).join(', ')
+                                            : '—',
                                     ],
                                 ]}
                             />

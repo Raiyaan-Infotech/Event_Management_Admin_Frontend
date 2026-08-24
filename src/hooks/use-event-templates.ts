@@ -131,14 +131,6 @@ export const FONT_OPTIONS = [
     'Inter',
 ] as const;
 
-export const BORDER_STYLES = [
-    { value: 'ornate', label: 'Ornate Frame' },
-    { value: 'corners', label: 'Corner Flourish' },
-    { value: 'arch', label: 'Arched' },
-    { value: 'floral-top', label: 'Floral Top' },
-    { value: 'none', label: 'No Border' },
-] as const;
-
 export const DECORATION_OPTIONS = [
     { value: 'roses', label: 'Roses' },
     { value: 'gold-leaf', label: 'Gold Leaf' },
@@ -192,6 +184,171 @@ export const GRADIENT_PRESETS = [
     { from: '#FDE2E4', to: '#E2ECE9' },
 ] as const;
 
+/**
+ * The nine-way placement grid, shared by `image_position` (Image backgrounds)
+ * and `background_position` (Custom backgrounds).
+ *
+ * One list for both because they mean the same thing. Some layout styles draw
+ * it as a 3x3 grid of arrows and others as a dropdown — that is a rendering
+ * choice per style, not two different vocabularies.
+ *
+ * MUST stay identical to `POSITIONS` in the backend service.
+ */
+export const POSITIONS = [
+    { value: 'top-left', label: 'Top left', arrow: '↖' },
+    { value: 'top', label: 'Top', arrow: '↑' },
+    { value: 'top-right', label: 'Top right', arrow: '↗' },
+    { value: 'left', label: 'Left', arrow: '←' },
+    { value: 'center', label: 'Center', arrow: '•' },
+    { value: 'right', label: 'Right', arrow: '→' },
+    { value: 'bottom-left', label: 'Bottom left', arrow: '↙' },
+    { value: 'bottom', label: 'Bottom', arrow: '↓' },
+    { value: 'bottom-right', label: 'Bottom right', arrow: '↘' },
+] as const;
+
+/** Maps 1:1 to CSS `object-fit` / `background-size`. */
+export const IMAGE_SCALES = [
+    { value: 'cover', label: 'Cover (Fill)', hint: 'Crops image to cover the entire area.' },
+    { value: 'contain', label: 'Contain (Fit)', hint: 'Shows the whole image, may leave bars.' },
+    { value: 'fill', label: 'Stretch', hint: 'Distorts the image to fill exactly.' },
+    { value: 'auto', label: 'Original Size', hint: 'Uses the file’s own dimensions.' },
+] as const;
+
+/** Traditional custom backgrounds only. */
+export const ARTWORK_STYLES = [
+    { value: 'full-bleed', label: 'Full Bleed' },
+    { value: 'patterned', label: 'Patterned' },
+    { value: 'illustration', label: 'Illustration' },
+    { value: 'textured', label: 'Textured' },
+] as const;
+
+export type Position = (typeof POSITIONS)[number]['value'];
+export type ImageScale = (typeof IMAGE_SCALES)[number]['value'];
+export type ArtworkStyle = (typeof ARTWORK_STYLES)[number]['value'];
+export type LayoutStyle = (typeof LAYOUT_STYLES)[number]['value'];
+
+/**
+ * ── Which controls step 2 offers, per layout style and background type ──
+ *
+ * A matrix rather than JSX branches. Five layout styles x four background types
+ * is twenty combinations; written as nested conditionals that is unreadable and
+ * impossible to check against the mockups. Here each cell is a list you can
+ * read straight across and compare to the design.
+ *
+ * ORDER MATTERS — the wizard renders the keys in the order they appear here, so
+ * this list is also the layout.
+ *
+ * What is NOT in here, deliberately: Orientation, Dimension, Primary Font,
+ * Secondary Font, Border / Frame Style and Decorations. Those are identical in
+ * every mockup, so they are rendered once outside the matrix and cannot drift
+ * between styles.
+ */
+export type Step2Field =
+    | 'bg_colors'            // Background Color + Secondary Color
+    | 'primary_colors'       // Primary Color + Secondary Color (Custom tabs)
+    | 'accent_color'         // Secondary Color alone, named for the trim it paints
+    | 'overlay'              // Overlay / Shade
+    | 'image_overlay'        // the same slider, labelled "Image Overlay"
+    | 'image_upload'         // Background Image / Upload Design
+    | 'image_position_grid'  // 3x3 arrows
+    | 'image_position_menu'  // dropdown
+    | 'image_scale'
+    | 'gradient_type'
+    | 'gradient_direction'
+    | 'gradient_2'           // Color 1 + Color 2
+    | 'gradient_3'           // Color 1 + Color 2 + Color 3 (optional)
+    | 'gradient_presets'
+    | 'shape'
+    | 'corner_radius'
+    | 'artwork_style'
+    | 'bg_position_grid'
+    | 'bg_position_menu'
+    | 'image_size_slider'
+    | 'image_size_menu'      // Traditional draws this as a cover/contain menu
+    | 'overlay_toggle';      // switch + Overlay Color + Opacity
+
+export const STEP2_FIELDS: Record<LayoutStyle, Record<BackgroundType, Step2Field[]>> = {
+    classic: {
+        color: ['bg_colors', 'overlay'],
+        image: ['image_upload', 'overlay', 'bg_colors'],
+        gradient: ['gradient_type', 'gradient_direction', 'gradient_2', 'accent_color', 'overlay', 'gradient_presets'],
+        custom: ['image_upload', 'shape', 'corner_radius', 'overlay', 'primary_colors'],
+    },
+    elegant: {
+        color: ['bg_colors', 'overlay'],
+        image: ['image_upload', 'image_position_menu', 'image_scale', 'image_overlay'],
+        gradient: ['gradient_type', 'gradient_direction', 'gradient_3', 'gradient_presets', 'overlay'],
+        custom: ['image_upload', 'shape', 'bg_position_grid', 'image_size_slider', 'overlay_toggle'],
+    },
+    minimal: {
+        color: ['bg_colors', 'overlay'],
+        image: ['image_upload', 'image_position_menu', 'image_scale', 'image_overlay'],
+        gradient: ['gradient_type', 'gradient_direction', 'gradient_3', 'gradient_presets', 'overlay'],
+        custom: ['image_upload', 'bg_position_menu', 'image_size_slider', 'overlay_toggle', 'shape'],
+    },
+    traditional: {
+        color: ['bg_colors', 'overlay'],
+        image: ['image_upload', 'image_position_grid', 'image_scale', 'image_overlay'],
+        gradient: ['gradient_type', 'gradient_direction', 'gradient_3', 'gradient_presets', 'overlay'],
+        custom: ['image_upload', 'artwork_style', 'bg_position_grid', 'image_size_menu', 'overlay_toggle'],
+    },
+    /**
+     * ⚠ NO MOCKUP SUPPLIED FOR MODERN — this mirrors Elegant.
+     *
+     * Elegant rather than Classic because Image Position, Image Scale and the
+     * third gradient stop appear in every style that HAS been supplied, so
+     * Classic is the outlier, not the norm. Replace this row when the Modern
+     * screens arrive; nothing else has to change.
+     */
+    modern: {
+        color: ['bg_colors', 'overlay'],
+        image: ['image_upload', 'image_position_menu', 'image_scale', 'image_overlay'],
+        gradient: ['gradient_type', 'gradient_direction', 'gradient_3', 'gradient_presets', 'overlay'],
+        custom: ['image_upload', 'shape', 'bg_position_grid', 'image_size_slider', 'overlay_toggle'],
+    },
+};
+
+/**
+ * Preset swatch rows, per layout style.
+ *
+ * Each mockup shows a palette that suits its style — Minimal's are pale,
+ * Traditional's are deep reds and golds. One shared list would make the
+ * presets useless for at least two styles.
+ */
+export const GRADIENT_PRESETS_BY_STYLE: Record<LayoutStyle, readonly { from: string; to: string }[]> = {
+    classic: GRADIENT_PRESETS,
+    modern: GRADIENT_PRESETS,
+    elegant: [
+        { from: '#4B1D6D', to: '#8E2DE2' },
+        { from: '#0F2027', to: '#2C5364' },
+        { from: '#7B4397', to: '#DC2430' },
+        { from: '#F7971E', to: '#FFD200' },
+        { from: '#1A2A6C', to: '#B21F1F' },
+        { from: '#11998E', to: '#38EF7D' },
+        { from: '#0B0B14', to: '#3A1C71' },
+        { from: '#5B247A', to: '#1BCEDF' },
+        { from: '#FCB7F3', to: '#B7C5FF' },
+        { from: '#C7D2FE', to: '#EDE9FE' },
+    ],
+    minimal: [
+        { from: '#FFF3F8', to: '#F3E8FF' },
+        { from: '#E8F5E9', to: '#D7F5E3' },
+        { from: '#FFF7E8', to: '#FDE8D7' },
+        { from: '#F5F5F4', to: '#E7E5E4' },
+        { from: '#E8F0FE', to: '#D7E3FC' },
+        { from: '#EDE9FE', to: '#DDD6FE' },
+    ],
+    traditional: [
+        { from: '#8B1E3F', to: '#F7C873' },
+        { from: '#6D1B3E', to: '#B8336A' },
+        { from: '#2D5016', to: '#D4AF37' },
+        { from: '#1A1A2E', to: '#D4AF37' },
+        { from: '#7B2D8E', to: '#E94E77' },
+        { from: '#0F4C5C', to: '#5F9EA0' },
+        { from: '#FFF4D6', to: '#F0C674' },
+    ],
+};
+
 export type GradientType = 'linear' | 'radial';
 export type GradientDirection = (typeof GRADIENT_DIRECTIONS)[number]['value'];
 export type ImageShape = (typeof IMAGE_SHAPES)[number]['value'];
@@ -243,8 +400,22 @@ export interface EventTemplate {
     image_shape: ImageShape;
     /** 0-100 percent. Custom background only, and only for rectangle/square. */
     corner_radius: number;
-    /** Superseded by Upload Design + Image Shape. Nothing evaluates it. */
-    custom_css: string | null;
+    /** Optional third gradient stop. Null = a two-stop gradient. */
+    gradient_via: string | null;
+    /** Image background: which part of the picture stays in frame. */
+    image_position: Position;
+    /** Image background: how the picture fills its box. */
+    image_scale: ImageScale;
+    /** Custom background: where the uploaded design sits. */
+    background_position: Position;
+    /** Custom background: percent scale of the uploaded design, 10-400. */
+    image_size: number;
+    /** Whether the tint is drawn at all — separate from its opacity. */
+    overlay_enabled: boolean;
+    /** Overlay tint. Null = the black the preview has always used. */
+    overlay_color: string | null;
+    /** Traditional custom backgrounds only. */
+    artwork_style: ArtworkStyle | null;
     overlay_opacity: number;
     orientation: Orientation;
     dimension: string | null;
@@ -254,8 +425,6 @@ export interface EventTemplate {
     border_style: string | null;
     /** Step 2's Border / Frame Style — real uploaded artwork. */
     frame_style_id: number | null;
-    /** Legacy string list. Superseded by `decoration_ids`. */
-    decorations: string[];
     /** Step 2's Decorations — ids into `decorations`, in display order. */
     decoration_ids: number[];
 
