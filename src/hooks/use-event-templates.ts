@@ -174,6 +174,24 @@ export const IMAGE_SHAPES = [
     { value: 'arch', label: 'Arch' },
 ] as const;
 
+/**
+ * The swatch row on Modern's Colour tab.
+ *
+ * A shortcut, not a constraint — the hex field beside it still accepts anything,
+ * and the last tile opens the OS colour picker. These are just the eight starting
+ * points somebody reaches for most often.
+ */
+export const COLOR_PRESETS = [
+    '#F9F4E7',
+    '#F8D9B0',
+    '#F5C6C6',
+    '#D9D2F9',
+    '#BFD7F2',
+    '#C6EBD9',
+    '#E4E4E7',
+    '#1F2937',
+] as const;
+
 /** The Preview Gradient swatch row — one click sets both colours. */
 export const GRADIENT_PRESETS = [
     { from: '#FCB7F3', to: '#B7C5FF' },
@@ -245,6 +263,7 @@ export type LayoutStyle = (typeof LAYOUT_STYLES)[number]['value'];
  */
 export type Step2Field =
     | 'bg_colors'            // Background Color + Secondary Color
+    | 'bg_color_presets'     // "Choose Background Color" — hex + swatch row
     | 'primary_colors'       // Primary Color + Secondary Color (Custom tabs)
     | 'accent_color'         // Secondary Color alone, named for the trim it paints
     | 'overlay'              // Overlay / Shade
@@ -293,16 +312,20 @@ export const STEP2_FIELDS: Record<LayoutStyle, Record<BackgroundType, Step2Field
         custom: ['image_upload', 'artwork_style', 'bg_position_grid', 'image_size_menu', 'overlay_toggle'],
     },
     /**
-     * ⚠ NO MOCKUP SUPPLIED FOR MODERN — this mirrors Elegant.
+     * Built from the supplied Modern screens — all four tabs.
      *
-     * Elegant rather than Classic because Image Position, Image Scale and the
-     * third gradient stop appear in every style that HAS been supplied, so
-     * Classic is the outlier, not the norm. Replace this row when the Modern
-     * screens arrive; nothing else has to change.
+     * It is the least like the others: the only Colour tab with a swatch row and
+     * a position control, and the only style using the position GRID on its
+     * Image tab while Elegant and Minimal use the dropdown.
      */
     modern: {
-        color: ['bg_colors', 'overlay'],
-        image: ['image_upload', 'image_position_menu', 'image_scale', 'image_overlay'],
+        // Modern's Colour tab is its own thing: a swatch row instead of a plain
+        // hex pair, a position control, and the overlay as a switch rather than
+        // a bare slider. It is the only Colour tab that differs from the others.
+        color: ['bg_color_presets', 'bg_position_grid', 'overlay_toggle'],
+        // Grid, not the dropdown the other styles use — Modern's screens put the
+        // compass beside the thumbnail on both the Image and Custom tabs.
+        image: ['image_upload', 'image_position_grid', 'image_scale', 'image_overlay'],
         gradient: ['gradient_type', 'gradient_direction', 'gradient_3', 'gradient_presets', 'overlay'],
         custom: ['image_upload', 'shape', 'bg_position_grid', 'image_size_slider', 'overlay_toggle'],
     },

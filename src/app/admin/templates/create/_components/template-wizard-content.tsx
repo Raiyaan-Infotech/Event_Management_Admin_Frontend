@@ -18,6 +18,7 @@ import {
     UploadCloud,
     Image as ImageIcon,
     Trash2,
+    Pipette,
     X,
     Info,
     Loader2,
@@ -67,6 +68,7 @@ import {
     GRADIENT_DIRECTIONS,
     GRADIENT_PRESETS,
     IMAGE_SHAPES,
+    COLOR_PRESETS,
     POSITIONS,
     IMAGE_SCALES,
     ARTWORK_STYLES,
@@ -109,6 +111,27 @@ const STEP2_FULL_SPAN = new Set<Step2Field>([
     'artwork_style',
     'overlay_toggle',
 ]);
+
+/**
+ * Is this swatch light enough to need dark ink on top of it?
+ *
+ * Same gamma-corrected luminance the preview uses, kept simple here because it
+ * only decides the colour of a tick mark.
+ */
+const isLightHex = (value: string) => {
+    const m = /^#([0-9a-fA-F]{6})$/.exec(value);
+    if (!m) return true;
+    const n = parseInt(m[1], 16);
+    const channel = (c: number) => {
+        const v = c / 255;
+        return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+    };
+    const lum =
+        0.2126 * channel((n >> 16) & 255) +
+        0.7152 * channel((n >> 8) & 255) +
+        0.0722 * channel(n & 255);
+    return lum > 0.4;
+};
 
 /** Matches the "Max. 5MB" printed on both uploaders. */
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
@@ -687,6 +710,70 @@ export function TemplateWizardContent() {
                     </div>
                 );
 
+            /**
+             * Modern's "Choose Background Color": the same hex field as
+             * everywhere else, plus a row of one-click swatches.
+             *
+             * The swatches SET the field rather than replacing it — the hex input
+             * stays editable and the last tile is the OS picker, so a brand
+             * colour that is not on the row is still one paste away. A palette
+             * that forbade anything else would be a downgrade from the plain
+             * colour field this tab used to have.
+             */
+            case 'bg_color_presets':
+                return (
+                    <div className="space-y-2">
+                        <ColorField
+                            label="Choose Background Color"
+                            value={form.background_color}
+                            onChange={(v) => setField('background_color', v)}
+                        />
+                        <div className="flex flex-wrap items-center gap-2">
+                            {COLOR_PRESETS.map((swatch) => {
+                                const on = form.background_color.toUpperCase() === swatch.toUpperCase();
+                                return (
+                                    <button
+                                        key={swatch}
+                                        type="button"
+                                        title={swatch}
+                                        aria-label={`Background ${swatch}`}
+                                        aria-pressed={on}
+                                        onClick={() => setField('background_color', swatch)}
+                                        className={cn(
+                                            'grid h-7 w-7 place-items-center rounded-full border transition-colors',
+                                            on
+                                                ? 'border-primary ring-2 ring-primary/40'
+                                                : 'border-border hover:border-primary/40'
+                                        )}
+                                        style={{ backgroundColor: swatch }}
+                                    >
+                                        {on ? (
+                                            <Check
+                                                className="h-3.5 w-3.5"
+                                                // Tick contrasts against the swatch it sits on,
+                                                // or it vanishes on the pale half of the row.
+                                                style={{ color: isLightHex(swatch) ? '#1F2937' : '#FFFFFF' }}
+                                            />
+                                        ) : null}
+                                    </button>
+                                );
+                            })}
+                            <label
+                                title="Pick any colour"
+                                className="grid h-7 w-7 cursor-pointer place-items-center rounded-full border border-border text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
+                            >
+                                <Pipette className="h-3.5 w-3.5" />
+                                <input
+                                    type="color"
+                                    value={/^#[0-9a-fA-F]{6}$/.test(form.background_color) ? form.background_color : '#FFFFFF'}
+                                    onChange={(e) => setField('background_color', e.target.value.toUpperCase())}
+                                    className="sr-only"
+                                />
+                            </label>
+                        </div>
+                    </div>
+                );
+
             case 'primary_colors':
                 return (
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -766,6 +853,8 @@ export function TemplateWizardContent() {
                         label="Image Position"
                         value={form.image_position}
                         onChange={(v) => setField('image_position', v)}
+                        previewSrc={form.background_image || undefined}
+                        previewColor={form.background_color}
                     />
                 );
 
@@ -784,6 +873,8 @@ export function TemplateWizardContent() {
                         label="Background Position"
                         value={form.background_position}
                         onChange={(v) => setField('background_position', v)}
+                        previewSrc={form.background_image || undefined}
+                        previewColor={form.background_color}
                     />
                 );
 
@@ -2575,14 +2666,34 @@ function PositionGrid({
     label,
     value,
     onChange,
+    previewSrc,
+    previewColor,
 }: {
     label: string;
     value: Position;
     onChange: (value: Position) => void;
+    /** The picture being positioned, when there is one. */
+    previewSrc?: string;
+    /** Falls back to the flat colour, so the tile is never an empty box. */
+    previewColor?: string;
 }) {
     return (
         <div className="space-y-1.5">
             <Label className="text-xs font-semibold text-foreground">{label}</Label>
+            <div className="flex items-start gap-3">
+                {/* A live thumbnail beside the arrows: `background-position` is
+                    hard to picture from a compass alone, and the preview panel
+                    is far enough away that the two are not seen together. */}
+                <span
+                    className="hidden h-[86px] w-[62px] shrink-0 overflow-hidden rounded-md border border-border sm:block"
+                    style={{
+                        backgroundColor: previewColor || 'var(--muted)',
+                        backgroundImage: previewSrc ? `url(${previewSrc})` : undefined,
+                        backgroundSize: 'cover',
+                        backgroundPosition: value.replace(/-/g, ' '),
+                        backgroundRepeat: 'no-repeat',
+                    }}
+                />
             <div className="grid w-fit grid-cols-3 gap-1.5">
                 {POSITIONS.map((p) => (
                     <button
@@ -2602,6 +2713,7 @@ function PositionGrid({
                         {p.arrow}
                     </button>
                 ))}
+            </div>
             </div>
         </div>
     );
