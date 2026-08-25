@@ -95,6 +95,15 @@ export const TEMPLATE_STYLES = [
     { value: 'traditional', label: 'Traditional' },
 ] as const;
 
+/**
+ * The styles with a bespoke Step 2 field arrangement / gradient palette below
+ * — NOT the list shown to the admin. The Layout Style buttons in the wizard
+ * render from the live `template_categories` table (`styleOptions`), so a
+ * category added there needs no change here to work: `layoutStyle` below
+ * falls back to `classic`'s fields and presets for any slug not listed in
+ * this set. Add an entry here only when a category is getting its own
+ * dedicated Step 2 design, not just to make it "exist".
+ */
 export const LAYOUT_STYLES = [
     { value: 'classic', label: 'Classic' },
     { value: 'modern', label: 'Modern' },

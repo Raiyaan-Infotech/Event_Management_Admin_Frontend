@@ -44,6 +44,24 @@ export const DECORATION_TYPE_CLASSES: Record<DecorationType, string> = {
     motif: 'bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200',
 };
 
+/**
+ * What each placement actually does on a rendered invitation — mirrors the
+ * render rules in `template-preview.tsx` exactly, so this text can never say
+ * something the card doesn't do.
+ *
+ * Several of these land in nearly the same spot (`ornament` vs `top`, `motif`
+ * vs `divider`) — spelled out here since the badge colour alone doesn't make
+ * that obvious, and it's the exact confusion this text exists to prevent.
+ */
+export const DECORATION_TYPE_HELP: Record<DecorationType, string> = {
+    corner: 'One image, auto-mirrored into all 4 corners — you only upload one.',
+    divider: 'Small centred accent, layered above the Motif spot.',
+    ornament: 'Centred strip near the top — same area as Top, just narrower.',
+    top: 'Full-width strip across the top edge.',
+    bottom: 'Full-width strip across the bottom edge.',
+    motif: 'Centred watermark behind the text, very low opacity.',
+};
+
 export interface Decoration {
     id: number;
     company_id: number | null;

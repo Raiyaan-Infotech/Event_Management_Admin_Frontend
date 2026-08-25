@@ -21,7 +21,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
     Save, RotateCcw, Pencil, Trash2, Loader2, UploadCloud, X, Info, ImageOff,
-    Minus, Plus,
+    Minus, Plus, Eye,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -30,6 +30,7 @@ import { Switch } from '@/components/ui/switch';
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { BuilderCountedInput } from '../../website-builder/_components/builder-field';
 import { BuilderDataTable, type Column } from '../../website-builder/_components/builder-data-table';
 import { ConfirmResetDialog } from '@/components/common/confirm-reset-dialog';
@@ -47,11 +48,50 @@ import {
     DECORATION_TYPES,
     DECORATION_TYPE_LABELS,
     DECORATION_TYPE_CLASSES,
+    DECORATION_TYPE_HELP,
     formatBytes,
     formatUploadedOn,
     type Decoration,
     type DecorationType,
 } from '@/hooks/use-decorations';
+
+/**
+ * Where a decoration lands on a real invitation, per `type` — copied exactly
+ * from the render rules in `templates/_components/template-preview.tsx` so
+ * this preview can never show a spot the actual card wouldn't use.
+ */
+function DecorationOnCard({ type, url }: { type: DecorationType; url: string }) {
+    // eslint-disable-next-line @next/next/no-img-element
+    const img = (className: string, key?: string) => (
+        <img key={key} src={url} alt="" className={cn('pointer-events-none absolute', className)} />
+    );
+
+    switch (type) {
+        case 'motif':
+            return img('left-1/2 top-1/2 w-2/3 -translate-x-1/2 -translate-y-1/2 opacity-20');
+        case 'top':
+            return img('inset-x-0 top-0 w-full');
+        case 'bottom':
+            return img('inset-x-0 bottom-0 w-full');
+        case 'ornament':
+            return img('inset-x-0 top-0 mx-auto w-3/5');
+        case 'divider':
+            return img('left-1/2 top-1/2 w-2/5 -translate-x-1/2 -translate-y-1/2 opacity-70');
+        case 'corner':
+            return (
+                <>
+                    {([
+                        'left-0 top-0',
+                        'right-0 top-0 -scale-x-100',
+                        'left-0 bottom-0 -scale-y-100',
+                        'right-0 bottom-0 -scale-100',
+                    ] as const).map((pos) => img(cn('w-2/5', pos), pos))}
+                </>
+            );
+        default:
+            return null;
+    }
+}
 
 const ACCEPT = 'image/png,image/jpeg,image/webp,image/svg+xml';
 const MAX_BYTES = 10 * 1024 * 1024; // matches multer's limit in media.routes.js
@@ -102,6 +142,7 @@ export default function DecorationsPage() {
     const [dragging, setDragging] = useState(false);
     const [zoom, setZoom] = useState(100);
     const [resetDialogOpen, setResetDialogOpen] = useState(false);
+    const [positionPreviewOpen, setPositionPreviewOpen] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<Decoration | null>(null);
     const fileInput = useRef<HTMLInputElement>(null);
 
@@ -492,9 +533,19 @@ export default function DecorationsPage() {
                                 />
 
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-black uppercase tracking-wide text-muted-foreground">
-                                        Category
-                                    </label>
+                                    <div className="flex items-center justify-between gap-2">
+                                        <label className="text-[10px] font-black uppercase tracking-wide text-muted-foreground">
+                                            Category
+                                        </label>
+                                        <button
+                                            type="button"
+                                            onClick={() => setPositionPreviewOpen(true)}
+                                            disabled={!fileUrl}
+                                            className="flex items-center gap-1 text-[10px] font-semibold text-primary transition-colors hover:text-primary/80 disabled:cursor-not-allowed disabled:text-muted-foreground"
+                                        >
+                                            <Eye className="h-3 w-3" /> Preview Position
+                                        </button>
+                                    </div>
                                     <Select value={type} onValueChange={(v) => setType(v as DecorationType)}>
                                         <SelectTrigger className="!h-9 border-border bg-card text-xs">
                                             <SelectValue />
@@ -508,7 +559,7 @@ export default function DecorationsPage() {
                                         </SelectContent>
                                     </Select>
                                     <p className="text-[10px] text-muted-foreground">
-                                        Where it is placed on the invitation.
+                                        {DECORATION_TYPE_HELP[type]}
                                     </p>
                                 </div>
                             </div>
@@ -682,6 +733,43 @@ export default function DecorationsPage() {
                 onOpenChange={setResetDialogOpen}
                 onConfirm={handleCancel}
             />
+
+            {/* Where this decoration actually lands on an invitation — the exact
+                same placement rules `template-preview.tsx` renders with, on a
+                sample card, so nobody has to build a template just to find out
+                that "Ornament" and "Top" land in almost the same spot. */}
+            <Dialog open={positionPreviewOpen} onOpenChange={setPositionPreviewOpen}>
+                <DialogContent className="sm:max-w-[420px]">
+                    <DialogHeader>
+                        <DialogTitle>Position Preview — {DECORATION_TYPE_LABELS[type]}</DialogTitle>
+                    </DialogHeader>
+
+                    <p className="text-xs text-muted-foreground">{DECORATION_TYPE_HELP[type]}</p>
+
+                    <div
+                        className="relative mx-auto aspect-[3/4] w-full max-w-[260px] overflow-hidden rounded-lg border border-border shadow-sm"
+                        style={{ backgroundColor: '#FFF7F0' }}
+                    >
+                        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-1 px-8 text-center">
+                            <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">
+                                You are invited to
+                            </p>
+                            <p className="font-serif text-lg font-semibold text-foreground/80">
+                                Rahul &amp; Priya
+                            </p>
+                            <p className="text-[9px] uppercase tracking-widest text-muted-foreground/70">
+                                24 · Dec · 2025
+                            </p>
+                        </div>
+
+                        {fileUrl ? <DecorationOnCard type={type} url={fileUrl} /> : null}
+                    </div>
+
+                    <p className="text-center text-[11px] text-muted-foreground">
+                        Sample invitation text shown for scale only — it isn&apos;t saved.
+                    </p>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

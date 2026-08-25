@@ -1431,39 +1431,58 @@ export function TemplateWizardContent() {
                                         Template Style / Theme <span className="text-destructive">*</span>
                                     </Label>
                                     <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-                                        {styleOptions.map((s) => (
-                                            <button
-                                                key={s.value}
-                                                type="button"
-                                                onClick={() => {
-                                                    // The id is what saves; the slug
-                                                    // is kept so the preview and any
-                                                    // older reader still see a style.
-                                                    setForm((prev) => ({
-                                                        ...prev,
-                                                        template_category_id: s.value,
-                                                        style: s.slug,
-                                                    }));
-                                                }}
-                                                className={cn(
-                                                    'flex flex-col items-center gap-1.5 rounded-lg border p-2 text-xs transition-colors',
-                                                    form.template_category_id === s.value
-                                                        ? 'border-primary bg-primary/5 font-semibold text-primary'
-                                                        : 'border-border text-muted-foreground hover:border-primary/40'
-                                                )}
-                                            >
-                                                <span
-                                                    className="h-12 w-full rounded-md border border-border/60"
-                                                    style={{
-                                                        background:
-                                                            form.template_category_id === s.value
-                                                                ? `linear-gradient(140deg, ${form.background_color}, ${form.secondary_color})`
-                                                                : undefined,
+                                        {styleOptions.map((s) => {
+                                            const selected = form.template_category_id === s.value;
+                                            return (
+                                                <button
+                                                    key={s.value}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        // The id is what saves; the slug
+                                                        // is kept so the preview and any
+                                                        // older reader still see a style.
+                                                        setForm((prev) => ({
+                                                            ...prev,
+                                                            template_category_id: s.value,
+                                                            style: s.slug,
+                                                        }));
                                                     }}
-                                                />
-                                                {s.label}
-                                            </button>
-                                        ))}
+                                                    className={cn(
+                                                        'flex flex-col items-center gap-1.5 rounded-lg border p-2 text-xs transition-colors',
+                                                        selected
+                                                            ? 'border-primary bg-primary/5 font-semibold text-primary'
+                                                            : 'border-border text-muted-foreground hover:border-primary/40'
+                                                    )}
+                                                >
+                                                    {/*
+                                                      A plain tinted swatch, not a gradient —
+                                                      this used to paint every tile with
+                                                      `linear-gradient(background_color,
+                                                      secondary_color)`, which are Step 2's
+                                                      colour fields and unrelated to which
+                                                      category this tile represents. Every
+                                                      tile rendered the identical (and, at
+                                                      the defaults, olive-green) gradient
+                                                      regardless of which one was selected.
+                                                    */}
+                                                    <span
+                                                        className={cn(
+                                                            'relative flex h-12 w-full items-center justify-center rounded-md border',
+                                                            selected
+                                                                ? 'border-primary/40 bg-primary/10'
+                                                                : 'border-border/60 bg-muted/30'
+                                                        )}
+                                                    >
+                                                        {selected ? (
+                                                            <span className="grid h-5 w-5 place-items-center rounded-full bg-primary">
+                                                                <Check className="h-3 w-3 text-primary-foreground" />
+                                                            </span>
+                                                        ) : null}
+                                                    </span>
+                                                    {s.label}
+                                                </button>
+                                            );
+                                        })}
                                     </div>
                                 </div>
 
@@ -1535,20 +1554,37 @@ export function TemplateWizardContent() {
                             >
                                 <div className="space-y-1.5">
                                     <Label className="text-xs font-semibold text-foreground">Layout Style</Label>
+                                    {/*
+                                      Reads the same live `styleOptions` (the
+                                      Template Categories table) as Step 1's
+                                      Template Style / Theme tiles — NOT the
+                                      hardcoded LAYOUT_STYLES array. The two used
+                                      to be independent lists (5 hardcoded here vs
+                                      however many categories exist there), so a
+                                      category like Royal or Floral was pickable
+                                      in Step 1 but absent here. Adding a category
+                                      in Template Categories now shows up here
+                                      immediately, no code change needed.
+
+                                      A category with no bespoke STEP2_FIELDS /
+                                      GRADIENT_PRESETS_BY_STYLE entry just falls
+                                      back to Classic's (see `layoutStyle` above)
+                                      until one is added for it.
+                                    */}
                                     <div className="flex flex-wrap gap-2">
-                                        {LAYOUT_STYLES.map((l) => (
+                                        {styleOptions.map((s) => (
                                             <button
-                                                key={l.value}
+                                                key={s.value}
                                                 type="button"
-                                                onClick={() => setField('layout_style', l.value)}
+                                                onClick={() => setField('layout_style', s.slug)}
                                                 className={cn(
                                                     'rounded-md border px-4 py-2 text-xs transition-colors',
-                                                    form.layout_style === l.value
+                                                    form.layout_style === s.slug
                                                         ? 'border-primary bg-primary/5 font-semibold text-primary'
                                                         : 'border-border text-muted-foreground hover:border-primary/40'
                                                 )}
                                             >
-                                                {l.label}
+                                                {s.label}
                                             </button>
                                         ))}
                                     </div>
