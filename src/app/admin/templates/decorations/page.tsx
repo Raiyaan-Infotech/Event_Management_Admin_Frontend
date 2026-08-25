@@ -19,9 +19,10 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
     Save, RotateCcw, Pencil, Trash2, Loader2, UploadCloud, X, Info, ImageOff,
-    Minus, Plus, Eye,
+    Minus, Plus, Eye, Palette, Undo2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -45,6 +46,12 @@ import {
     useUpdateDecorationStatus,
     useReorderDecorations,
     useDeleteDecoration,
+    useDecorationSvgSource,
+    useRecolorDecoration,
+    decorationSvgSourceKey,
+    recolorSvg,
+    svgToDataUri,
+    normaliseHex,
     DECORATION_TYPES,
     DECORATION_TYPE_LABELS,
     DECORATION_TYPE_CLASSES,
@@ -101,6 +108,7 @@ const ZOOM_STEPS = [50, 75, 100, 150, 200];
 const isActive = (val?: boolean | number | string) => val !== false && val !== 0 && val !== '0';
 
 export default function DecorationsPage() {
+    const queryClient = useQueryClient();
     const [searchQuery, setSearchQuery] = useState('');
     const [typeFilter, setTypeFilter] = useState<string>('all');
 
@@ -148,6 +156,74 @@ export default function DecorationsPage() {
 
     const isSaving = createDecoration.isPending || updateDecoration.isPending;
 
+    /* ── recolouring ─────────────────────────────────────────────────────── */
+
+    /**
+     * Pending colour swaps, `{ originalHex: newHex }`. Local until Apply, so
+     * dragging a picker repaints instantly instead of writing a file per nudge.
+     */
+    const [colorMap, setColorMap] = useState<Record<string, string>>({});
+
+    // Only SVG has an editable palette. A PNG is pixels — there is no list of
+    // fills to swap, and the server refuses it rather than returning an empty one.
+    const isSvg =
+        (fileFormat ?? '').toLowerCase().includes('svg') ||
+        fileName.toLowerCase().endsWith('.svg') ||
+        fileUrl.toLowerCase().endsWith('.svg');
+
+    const { data: svgSource, isLoading: svgLoading } = useDecorationSvgSource(fileUrl, isSvg);
+
+    const pendingCount = Object.keys(colorMap).length;
+
+    /**
+     * What the preview panels actually draw.
+     *
+     * With edits pending this is the locally-recoloured markup as a data URI,
+     * so the checkerboard AND the position modal both show the new colours
+     * before anything is saved. With none, it is the stored file untouched.
+     */
+    const previewUrl =
+        pendingCount > 0 && svgSource?.svg
+            ? svgToDataUri(recolorSvg(svgSource.svg, colorMap))
+            : fileUrl;
+
+    const recolorDecoration = useRecolorDecoration((result) => {
+        /**
+         * Prime the cache for the new URL before pointing the form at it.
+         *
+         * The client ran the SAME single-pass rewrite for its live preview, so
+         * the markup is already known — without this, changing `fileUrl` starts
+         * a fresh fetch and the palette blanks to "Reading colours…" straight
+         * after the button spinner, which reads as a second, unexplained load.
+         */
+        if (svgSource?.svg) {
+            queryClient.setQueryData(decorationSvgSourceKey(result.url), {
+                svg: recolorSvg(svgSource.svg, colorMap),
+                colors: result.colors,
+            });
+        }
+
+        // The recolour wrote a NEW file; point the form at it and drop the
+        // pending map, since those swaps are now baked into the artwork.
+        setFileUrl(result.url);
+        setFileName(result.file_name);
+        setFileFormat(result.file_format);
+        setFileSize(result.file_size);
+        setColorMap({});
+    });
+
+    const applyColors = () => {
+        if (pendingCount === 0) return;
+        recolorDecoration.mutate({
+            file_url: fileUrl,
+            // Sent as a LIST of {from,to}, not an object keyed by hex — the
+            // backend's bodyTransform snake_cases every key, which mangles
+            // `#4A7A42` into `#4_a7_a42`. See RecolorPayload.
+            color_map: Object.entries(colorMap).map(([from, to]) => ({ from, to })),
+            file_name: fileName || 'decoration',
+        });
+    };
+
     const handleCancel = () => {
         setEditingId(null);
         setName('');
@@ -159,6 +235,7 @@ export default function DecorationsPage() {
         setFileSize(null);
         setErrors({});
         setZoom(100);
+        setColorMap({});
     };
 
     const handleFile = async (file: File) => {
@@ -188,6 +265,8 @@ export default function DecorationsPage() {
             // always what you would have typed, and it is still editable.
             setName((prev) => prev || file.name.replace(/\.[^.]+$/, ''));
             setErrors((prev) => ({ ...prev, file: false }));
+            // The old file's swaps mean nothing against new artwork.
+            setColorMap({});
             toast.success('Decoration uploaded');
         } catch (error: any) {
             toast.error(error?.response?.data?.message || 'Upload failed');
@@ -234,6 +313,7 @@ export default function DecorationsPage() {
         setFileSize(item.file_size);
         setErrors({});
         setZoom(100);
+        setColorMap({});
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
@@ -377,7 +457,30 @@ export default function DecorationsPage() {
 
     return (
         <div className="space-y-5">
-            <PageLoader open={isLoading || uploading} text={uploading ? 'Uploading…' : 'Loading decorations...'} />
+            {/*
+              `solid` while applying colours: this action REPLACES the artwork,
+              and the default translucent overlay leaves the old decoration
+              legible underneath, so the loader and a stale result appear
+              together. Opaque is the honest answer — there is nothing worth
+              looking at until the new file exists.
+
+              The list load stays gated on having NOTHING on screen. This is a
+              `fixed inset-0` overlay, so without that gate any background
+              refetch — and the surrounding mutations all invalidate with
+              `refetchType: 'all'` — blacks out the whole page long after the
+              first paint.
+            */}
+            <PageLoader
+                open={(isLoading && items.length === 0) || uploading || recolorDecoration.isPending}
+                solid={recolorDecoration.isPending}
+                text={
+                    recolorDecoration.isPending
+                        ? 'Applying colours…'
+                        : uploading
+                            ? 'Uploading…'
+                            : 'Loading decorations...'
+                }
+            />
 
             <div className="flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -468,6 +571,7 @@ export default function DecorationsPage() {
                                                     setFileName('');
                                                     setFileFormat(null);
                                                     setFileSize(null);
+                                                    setColorMap({});
                                                 }}
                                             >
                                                 <X className="h-3.5 w-3.5" /> Remove
@@ -629,7 +733,7 @@ export default function DecorationsPage() {
                                 {fileUrl ? (
                                     // eslint-disable-next-line @next/next/no-img-element
                                     <img
-                                        src={fileUrl}
+                                        src={previewUrl}
                                         alt=""
                                         style={{ width: `${zoom}%` }}
                                         className="max-w-none object-contain"
@@ -639,7 +743,122 @@ export default function DecorationsPage() {
                                         Upload an image to see how it will look.
                                     </p>
                                 )}
+
                             </div>
+
+                            {/* ── colours ─────────────────────────────────────
+                                An SVG decoration is a handful of solid fills, so
+                                its palette IS editable — pick a swatch, get a
+                                different flower. Nothing is written until Apply:
+                                the preview above recolours a local copy of the
+                                markup, so dragging a picker costs no requests.
+
+                                Raster uploads get no editor at all. A PNG has no
+                                list of fills to swap, and offering a control that
+                                silently does nothing is worse than not offering it.
+                            */}
+                            {fileUrl && isSvg ? (
+                                <div className="mt-3 rounded-md border border-border bg-card p-3">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <p className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+                                            <Palette className="h-3.5 w-3.5 text-primary" />
+                                            Colours
+                                        </p>
+                                        {pendingCount > 0 ? (
+                                            <button
+                                                type="button"
+                                                onClick={() => setColorMap({})}
+                                                className="flex items-center gap-1 text-[10px] font-semibold text-muted-foreground hover:text-destructive"
+                                            >
+                                                <Undo2 className="h-3 w-3" /> Revert {pendingCount}
+                                            </button>
+                                        ) : null}
+                                    </div>
+
+                                    {svgLoading ? (
+                                        <p className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                                            <Loader2 className="h-3 w-3 animate-spin" /> Reading colours…
+                                        </p>
+                                    ) : svgSource?.colors?.length ? (
+                                        <>
+                                            <div className="mt-2 flex flex-wrap gap-2">
+                                                {svgSource.colors.map((entry) => {
+                                                    const current = colorMap[entry.color] ?? entry.color;
+                                                    const changed = current !== entry.color;
+                                                    return (
+                                                        <label
+                                                            key={entry.color}
+                                                            title={`${entry.color}${changed ? ` → ${current}` : ''}`}
+                                                            className={cn(
+                                                                'relative flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border transition-colors',
+                                                                changed
+                                                                    ? 'border-primary ring-1 ring-primary'
+                                                                    : 'border-border hover:border-primary/50'
+                                                            )}
+                                                            style={{ backgroundColor: current }}
+                                                        >
+                                                            {/* The native picker — no library, and it is
+                                                                the same control ColorField already uses
+                                                                elsewhere in the admin. */}
+                                                            <input
+                                                                type="color"
+                                                                value={
+                                                                    /^#[0-9a-fA-F]{6}$/.test(current)
+                                                                        ? current
+                                                                        : (normaliseHex(current) ?? '#000000').slice(0, 7)
+                                                                }
+                                                                onChange={(e) => {
+                                                                    const next = e.target.value.toUpperCase();
+                                                                    setColorMap((prev) => {
+                                                                        // Setting a swatch back to its
+                                                                        // original is not a change — drop
+                                                                        // it, so "Revert 2" never counts
+                                                                        // a no-op edit.
+                                                                        const copy = { ...prev };
+                                                                        if (next === entry.color) delete copy[entry.color];
+                                                                        else copy[entry.color] = next;
+                                                                        return copy;
+                                                                    });
+                                                                }}
+                                                                className="absolute inset-0 cursor-pointer opacity-0"
+                                                                aria-label={`Change ${entry.color}`}
+                                                            />
+                                                        </label>
+                                                    );
+                                                })}
+                                            </div>
+
+                                            <p className="mt-2 text-[10px] leading-snug text-muted-foreground">
+                                                {pendingCount > 0
+                                                    ? 'Preview updated. Apply writes a recoloured copy — the original file is left alone.'
+                                                    : 'Click a swatch to recolour that part of the artwork.'}
+                                            </p>
+
+                                            {pendingCount > 0 ? (
+                                                <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={applyColors}
+                                                    disabled={recolorDecoration.isPending}
+                                                    className="mt-2 h-8 w-full gap-1.5 border-primary/40 text-xs font-bold text-primary hover:bg-primary/5"
+                                                >
+                                                    {recolorDecoration.isPending ? (
+                                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                    ) : (
+                                                        <Palette className="h-3.5 w-3.5" />
+                                                    )}
+                                                    {recolorDecoration.isPending ? 'Applying…' : 'Apply Colours'}
+                                                </Button>
+                                            ) : null}
+                                        </>
+                                    ) : (
+                                        <p className="mt-2 text-[11px] text-muted-foreground">
+                                            This SVG has no solid colour fills to edit.
+                                        </p>
+                                    )}
+                                </div>
+                            ) : null}
 
                             <div className="mt-3 flex items-center justify-center gap-0 rounded-md border border-border">
                                 <Button
@@ -762,7 +981,9 @@ export default function DecorationsPage() {
                             </p>
                         </div>
 
-                        {fileUrl ? <DecorationOnCard type={type} url={fileUrl} /> : null}
+                        {/* `previewUrl`, not `fileUrl` — pending colour edits show
+                            here too, so position and colour are checked together. */}
+                        {fileUrl ? <DecorationOnCard type={type} url={previewUrl} /> : null}
                     </div>
 
                     <p className="text-center text-[11px] text-muted-foreground">

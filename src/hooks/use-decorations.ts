@@ -107,6 +107,50 @@ export interface Paginated<T> {
     } | null;
 }
 
+/** One swatch in the recolour editor. `count` drives the most-used-first order. */
+export interface PaletteEntry {
+    color: string;
+    count: number;
+}
+
+export interface SvgSource {
+    svg: string;
+    colors: PaletteEntry[];
+}
+
+/** One swap. See the warning on `RecolorPayload` for why this is not a map. */
+export interface ColorSwap {
+    from: string;
+    to: string;
+}
+
+export type RecolorPayload = {
+    file_url: string;
+    /**
+     * `[{ from: '#E4738F', to: '#3366FF' }]` — a LIST, never an object keyed
+     * by hex.
+     *
+     * ⚠ The backend's `bodyTransform` middleware rewrites every request-body
+     * KEY from camelCase to snake_case and cannot tell a colour from a field
+     * name: `#4A7A42` arrives as `#4_a7_a42` and the swap is rejected as
+     * malformed. Only keys are rewritten, so the colours ride safely as
+     * VALUES under the fixed `from` / `to` keys.
+     */
+    color_map: ColorSwap[];
+    file_name?: string | null;
+};
+
+export interface RecolorResult {
+    url: string;
+    file_name: string;
+    file_format: string;
+    file_size: number;
+    file_size_label: string | null;
+    /** How many hex values were rewritten — 0 is rejected by the server. */
+    replaced: number;
+    colors: PaletteEntry[];
+}
+
 export type DecorationPayload = {
     name?: string;
     type?: DecorationType;
@@ -160,6 +204,25 @@ const api = {
     },
     reorder: async (items: Array<{ id: number; sort_order: number }>): Promise<{ updated: number }> => {
         const response = await apiClient.patch(`${PATH}/reorder`, { items });
+        return response.data.data;
+    },
+    /**
+     * The SVG markup + its palette, read through the server.
+     *
+     * The bucket sends no `Access-Control-Allow-Origin`, so the browser cannot
+     * fetch the decoration it is already displaying in order to read the
+     * colours out of it. One round trip here hands the markup over, and the
+     * editor recolours that local string for its live preview — so dragging a
+     * colour picker costs nothing instead of a request per nudge.
+     */
+    svgSource: async (fileUrl: string): Promise<SvgSource> => {
+        const response = await apiClient.get(`${PATH}/svg-source`, {
+            params: { file_url: fileUrl },
+        });
+        return response.data.data;
+    },
+    recolor: async (payload: RecolorPayload): Promise<RecolorResult> => {
+        const response = await apiClient.post(`${PATH}/recolor`, payload);
         return response.data.data;
     },
     remove: async (id: number): Promise<void> => {
@@ -268,7 +331,90 @@ export function useDeleteDecoration() {
     });
 }
 
+/**
+ * Loads the SVG markup + palette for the file currently in the form.
+ *
+ * `enabled` keeps it off for raster uploads — a PNG has no editable palette,
+ * and the server rejects it rather than returning an empty one.
+ */
+/**
+ * Exported so a caller can prime this cache after a recolour instead of
+ * triggering a second round trip for markup it already has. Hardcoding the
+ * key at the call site is how the two silently stop matching.
+ */
+export const decorationSvgSourceKey = (fileUrl: string) => [...KEY, 'svg-source', fileUrl];
+
+export function useDecorationSvgSource(fileUrl: string | null | undefined, isSvg: boolean) {
+    return useQuery({
+        queryKey: decorationSvgSourceKey(fileUrl ?? ''),
+        queryFn: () => api.svgSource(fileUrl!),
+        enabled: !!fileUrl && isSvg,
+        // The markup for a given URL cannot change — a recolour writes a NEW
+        // file rather than overwriting one, so this never goes stale.
+        staleTime: Infinity,
+    });
+}
+
+export function useRecolorDecoration(onSuccess?: (result: RecolorResult) => void) {
+    return useMutation({
+        mutationFn: api.recolor,
+        onSuccess: (result) => {
+            toast.success('Colours applied');
+            onSuccess?.(result);
+        },
+        onError: (error: any) =>
+            toast.error(error?.response?.data?.message || 'Failed to recolour decoration'),
+    });
+}
+
 /* ----------------------------------------------------------------- helpers -- */
+
+/** `#abc` → `#AABBCC`. Mirrors `normaliseHex` in the backend service. */
+export const normaliseHex = (raw: string): string | null => {
+    const value = String(raw || '').trim();
+    const body = value.startsWith('#') ? value.slice(1) : value;
+    if (!/^[0-9a-fA-F]+$/.test(body)) return null;
+    if (body.length === 3 || body.length === 4) {
+        return `#${body.split('').map((ch) => ch + ch).join('').toUpperCase()}`;
+    }
+    if (body.length === 6 || body.length === 8) return `#${body.toUpperCase()}`;
+    return null;
+};
+
+const HEX_TOKEN = /#[0-9a-fA-F]{3,8}\b/g;
+
+/**
+ * The live preview's recolour — the SAME single-pass rewrite the server does
+ * on save, so what the panel shows is what gets written.
+ *
+ * ⚠ ONE pass, from the original map. Chained `.replace()` calls re-read their
+ * own output: mapping red→blue then blue→green turns every originally-red
+ * shape green. The mapping in this editor is user-supplied and routinely
+ * contains exactly that kind of cycle (swapping two colours over).
+ */
+export const recolorSvg = (svg: string, map: Record<string, string>): string => {
+    const lookup = new Map<string, string>();
+    for (const [from, to] of Object.entries(map)) {
+        const source = normaliseHex(from);
+        const target = normaliseHex(to);
+        if (source && target && source !== target) lookup.set(source, target);
+    }
+    if (lookup.size === 0) return svg;
+
+    return svg.replace(HEX_TOKEN, (token) => {
+        const hex = normaliseHex(token);
+        return (hex && lookup.get(hex)) || token;
+    });
+};
+
+/**
+ * An `<img>`-safe source for a raw SVG string.
+ *
+ * `encodeURIComponent` rather than base64: it survives the non-ASCII a
+ * decoration's `<title>` can carry, which `btoa` throws on outright.
+ */
+export const svgToDataUri = (svg: string): string =>
+    `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 
 /**
  * Mirrors `formatSize` in the backend service, for the rare row that predates
