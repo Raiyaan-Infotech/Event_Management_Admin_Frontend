@@ -71,7 +71,18 @@ export default function Breadcrumb() {
     .slice(1) // skip 'admin'
     .filter(segment => isNaN(Number(segment))); // remove numeric IDs
 
-  const getLabel = (segment: string): string => {
+  const getLabel = (segment: string, index: number): string => {
+    /**
+     * "templates" is ambiguous on its own: `/admin/settings/templates`
+     * (notification/email templates) and `/admin/templates` (the invitation
+     * Templates module) both end in this literal segment, and the map below
+     * is keyed by segment name alone. Without this check the second one
+     * always read as "Email Templates" — the label the FIRST one owns.
+     */
+    if (segment === "templates" && segments[index - 1] !== "settings") {
+      return t("nav.templates", "Templates");
+    }
+
     const translationKey = segmentTranslationMap[segment];
 
     if (translationKey) {
@@ -94,7 +105,7 @@ export default function Breadcrumb() {
   const items = [
     { label: t("nav.dashboard", "Dashboard"), href: "/admin" },
     ...segments.map((segment, index) => ({
-      label: getLabel(segment),
+      label: getLabel(segment, index),
       href: `/admin/${segments.slice(0, index + 1).join("/")}`,
     })),
   ];

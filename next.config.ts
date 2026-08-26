@@ -16,6 +16,21 @@ const nextConfig: NextConfig = {
     }
     return config;
   },
+  /**
+   * The SAME axios alias as `webpack()` above, for Turbopack.
+   *
+   * `next dev --turbo` (the `dev` script) does not run the `webpack()`
+   * function at all — that key only applies to `next build`/`next start`.
+   * Without this, every dev session was shipping the Node-targeted axios
+   * build to the browser, dragging in polyfills for `http`/`https`/`zlib`/
+   * `stream` that `api-client.ts` (imported by nearly every page and hook)
+   * never needed — extra bytes parsed on EVERY route, not just one.
+   */
+  turbopack: {
+    resolveAlias: {
+      axios: 'axios/dist/browser/axios.cjs',
+    },
+  },
   images: {
     remotePatterns: [
       {

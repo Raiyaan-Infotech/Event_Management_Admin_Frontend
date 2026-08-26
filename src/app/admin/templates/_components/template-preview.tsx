@@ -738,6 +738,9 @@ export function TemplatePreview({
 
             <div className="flex justify-center">
                 <div
+                    // Selected by the templates detail page's PNG export — the
+                    // card ONLY, not the device toggle or caption around it.
+                    data-invitation-card
                     className={cn(
                         'relative overflow-hidden shadow-md',
                         frameSize,

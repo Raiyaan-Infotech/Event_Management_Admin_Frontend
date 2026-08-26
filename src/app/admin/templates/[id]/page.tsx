@@ -1,7 +1,8 @@
 'use client';
 
-import { use } from 'react';
+import { use, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import {
     ArrowLeft,
     Pencil,
@@ -14,13 +15,22 @@ import {
     LayoutList,
     ShieldCheck,
     Globe,
+    Download,
+    Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { PageLoader } from '@/components/common/page-loader';
 import { PermissionGuard } from '@/components/guards/permission-guard';
 import { cn } from '@/lib/utils';
+import { downloadNodeAsImage, type ExportFormat } from '@/lib/export-invitation-png';
 import {
     useEventTemplate,
     useDuplicateEventTemplate,
@@ -40,6 +50,31 @@ export default function TemplateDetailPage({ params }: { params: Promise<{ id: s
     const { data: template, isLoading } = useEventTemplate(id);
     const duplicateTemplate = useDuplicateEventTemplate();
     const updateFeatured = useUpdateEventTemplateFeatured();
+
+    const previewWrapRef = useRef<HTMLDivElement>(null);
+    const [downloadFormat, setDownloadFormat] = useState<ExportFormat | null>(null);
+
+    const handleDownload = async (format: ExportFormat) => {
+        // The card carries `data-invitation-card` (see template-preview.tsx) —
+        // captured on its own, not the device toggle or caption around it.
+        const card = previewWrapRef.current?.querySelector<HTMLElement>('[data-invitation-card]');
+        if (!card) return;
+
+        setDownloadFormat(format);
+        try {
+            // The template's NAME, not its `code` — "EVT2025..." means nothing
+            // to whoever opens the downloads folder; the title does.
+            const readableName =
+                template?.name?.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+                || template?.code
+                || 'invitation';
+            await downloadNodeAsImage(card, readableName, format);
+        } catch (error: any) {
+            toast.error(error?.message || 'Failed to download the invitation');
+        } finally {
+            setDownloadFormat(null);
+        }
+    };
 
     if (isLoading || !template) {
         return (
@@ -122,6 +157,26 @@ export default function TemplateDetailPage({ params }: { params: Promise<{ id: s
                         >
                             <Copy className="h-4 w-4" /> Duplicate
                         </Button>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" disabled={!!downloadFormat} className="h-9 gap-2">
+                                    {downloadFormat ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <Download className="h-4 w-4" />
+                                    )}
+                                    {downloadFormat ? 'Downloading…' : 'Download'}
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleDownload('png')}>
+                                    Download as PNG
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleDownload('svg')}>
+                                    Download as SVG
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                         <Button
                             onClick={() => router.push(`/admin/templates/create?id=${template.id}`)}
                             className="h-9 gap-2"
@@ -289,17 +344,19 @@ export default function TemplateDetailPage({ params }: { params: Promise<{ id: s
                     <div className="min-w-0">
                         <Card className="border-border bg-card shadow-xs xl:sticky xl:top-4">
                             <CardContent className="p-4">
-                                <TemplatePreview
-                                    template={{
-                                        ...template,
-                                        // Both come joined on the read, so the detail
-                                        // page draws the same artwork the wizard did
-                                        // rather than falling back to the CSS border.
-                                        frameUrl: template.frameStyle?.file_url ?? null,
-                                        decorationItems: template.decorationItems ?? [],
-                                    }}
-                                    caption="Sample content — a template has no event of its own."
-                                />
+                                <div ref={previewWrapRef}>
+                                    <TemplatePreview
+                                        template={{
+                                            ...template,
+                                            // Both come joined on the read, so the detail
+                                            // page draws the same artwork the wizard did
+                                            // rather than falling back to the CSS border.
+                                            frameUrl: template.frameStyle?.file_url ?? null,
+                                            decorationItems: template.decorationItems ?? [],
+                                        }}
+                                        caption="Sample content — a template has no event of its own."
+                                    />
+                                </div>
                             </CardContent>
                         </Card>
                     </div>

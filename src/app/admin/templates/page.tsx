@@ -26,6 +26,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { Card, CardContent } from '@/components/ui/card';
 import {
     Select,
@@ -502,23 +503,19 @@ export default function TemplateListPage() {
                                                     </TableCell>
 
                                                     <TableCell className="text-center">
-                                                        <Badge
-                                                            variant="outline"
-                                                            className={cn(
-                                                                'gap-1.5 whitespace-nowrap border-transparent text-[11px] font-semibold',
-                                                                active
-                                                                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
-                                                                    : 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400'
-                                                            )}
-                                                        >
-                                                            <span
-                                                                className={cn(
-                                                                    'inline-block h-1.5 w-1.5 rounded-full',
-                                                                    active ? 'bg-emerald-500' : 'bg-rose-500'
-                                                                )}
-                                                            />
-                                                            {active ? 'Active' : 'Inactive'}
-                                                        </Badge>
+                                                        {/* A real toggle, not a read-only Badge — the row
+                                                            below (Featured) stays a Badge because there is
+                                                            no quick-toggle affordance for it in the design,
+                                                            but Status has always had one in every other
+                                                            module's list (frame styles, decorations). */}
+                                                        <Switch
+                                                            checked={active}
+                                                            disabled={locked || updateStatus.isPending}
+                                                            onCheckedChange={(value) =>
+                                                                updateStatus.mutate({ id: row.id, is_active: value })
+                                                            }
+                                                            className="mx-auto"
+                                                        />
                                                     </TableCell>
 
                                                     <TableCell className="text-center">
