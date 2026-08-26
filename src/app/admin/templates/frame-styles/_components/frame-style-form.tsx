@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { UploadCloud, Loader2, X, FileImage } from 'lucide-react';
+import { UploadCloud, Loader2, X, FileImage, Palette, Undo2 } from 'lucide-react';
 import { PageHeader } from '@/components/common/page-header';
 import { PageLoader } from '@/components/common/page-loader';
 import { Button } from '@/components/ui/button';
@@ -23,6 +24,12 @@ import {
     useFrameStyle,
     useCreateFrameStyle,
     useUpdateFrameStyle,
+    useFrameStyleSvgSource,
+    useRecolorFrameStyle,
+    frameStyleSvgSourceKey,
+    recolorSvg,
+    normaliseHex,
+    svgToDataUri,
     FRAME_LAYOUTS,
     FRAME_LAYOUT_LABELS,
     normaliseLayouts,
@@ -70,6 +77,7 @@ const EMPTY: FormState = {
 export function FrameStyleForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const queryClient = useQueryClient();
     const editId = searchParams.get('id');
     const isEdit = !!editId;
 
@@ -78,6 +86,70 @@ export function FrameStyleForm() {
     const [uploading, setUploading] = useState(false);
     const [dragging, setDragging] = useState(false);
     const fileInput = useRef<HTMLInputElement>(null);
+
+    /* ── recolouring ─────────────────────────────────────────────────────── */
+
+    /**
+     * Pending colour swaps, `{ originalHex: newHex }`. Local until Apply, so
+     * dragging a picker repaints instantly instead of writing a file per nudge.
+     */
+    const [colorMap, setColorMap] = useState<Record<string, string>>({});
+
+    // Only SVG has an editable palette. A PNG is pixels — there is no list of
+    // fills to swap, and the server refuses it rather than returning an empty one.
+    const isSvg =
+        form.file_name.toLowerCase().endsWith('.svg') ||
+        form.file_url.toLowerCase().endsWith('.svg');
+
+    const { data: svgSource, isLoading: svgLoading } = useFrameStyleSvgSource(form.file_url, isSvg);
+
+    const pendingCount = Object.keys(colorMap).length;
+
+    /**
+     * What the preview panel actually draws.
+     *
+     * With edits pending this is the locally-recoloured markup as a data URI,
+     * so the sample invitation shows the new colours before anything is saved.
+     * With none, it is the stored file untouched.
+     */
+    const previewUrl =
+        pendingCount > 0 && svgSource?.svg
+            ? svgToDataUri(recolorSvg(svgSource.svg, colorMap))
+            : form.file_url || null;
+
+    const recolorFrame = useRecolorFrameStyle((result) => {
+        /**
+         * Prime the cache for the new URL before pointing the form at it.
+         *
+         * The client ran the SAME single-pass rewrite for its live preview, so
+         * the markup is already known — without this, changing `file_url` starts
+         * a fresh fetch and the palette blanks to "Reading colours…" straight
+         * after the button spinner, which reads as a second, unexplained load.
+         */
+        if (svgSource?.svg) {
+            queryClient.setQueryData(frameStyleSvgSourceKey(result.url), {
+                svg: recolorSvg(svgSource.svg, colorMap),
+                colors: result.colors,
+            });
+        }
+
+        // The recolour wrote a NEW file; point the form at it and drop the
+        // pending map, since those swaps are now baked into the artwork.
+        setForm((prev) => ({ ...prev, file_url: result.url, file_name: result.file_name }));
+        setColorMap({});
+    });
+
+    const applyColors = () => {
+        if (pendingCount === 0) return;
+        recolorFrame.mutate({
+            file_url: form.file_url,
+            // Sent as a LIST of {from,to}, not an object keyed by hex — the
+            // backend's bodyTransform snake_cases every key, which mangles
+            // `#4A7A42` into `#4_a7_a42`. See RecolorPayload.
+            color_map: Object.entries(colorMap).map(([from, to]) => ({ from, to })),
+            file_name: form.file_name || 'frame-style',
+        });
+    };
 
     // Only active categories — offering a disabled one would let someone file a
     // frame under a category the list filter cannot select.
@@ -113,6 +185,7 @@ export function FrameStyleForm() {
             file_name: existing.file_name || '',
             supported_layouts: normaliseLayouts(existing.supported_layouts),
         });
+        setColorMap({});
     }, [existing]);
 
     // Functional updater: a `{ ...form }` spread writes back a stale snapshot
@@ -149,6 +222,8 @@ export function FrameStyleForm() {
             const result = await mediaApi.upload(file, 'frame-styles');
             setForm((prev) => ({ ...prev, file_url: result.url, file_name: file.name }));
             setErrors((prev) => ({ ...prev, file_url: false }));
+            // The old file's swaps mean nothing against new artwork.
+            setColorMap({});
             toast.success('Frame file uploaded');
         } catch (error: any) {
             toast.error(error?.response?.data?.message || 'Upload failed');
@@ -199,7 +274,7 @@ export function FrameStyleForm() {
 
     return (
         <>
-            <PageLoader open={busy || uploading} />
+            <PageLoader open={busy || uploading || recolorFrame.isPending} />
 
             <PageHeader
                 title={isEdit ? 'Edit Frame Style' : 'Upload Frame Style'}
@@ -333,7 +408,10 @@ export function FrameStyleForm() {
                                         variant="ghost"
                                         size="sm"
                                         className="h-8 gap-1.5 text-xs text-destructive"
-                                        onClick={() => setForm((prev) => ({ ...prev, file_url: '', file_name: '' }))}
+                                        onClick={() => {
+                                            setForm((prev) => ({ ...prev, file_url: '', file_name: '' }));
+                                            setColorMap({});
+                                        }}
                                     >
                                         <X className="h-3.5 w-3.5" /> Remove
                                     </Button>
@@ -364,6 +442,120 @@ export function FrameStyleForm() {
                             </div>
                         )}
                     </div>
+
+                    {/* ── colours ─────────────────────────────────────────────
+                        An SVG frame is a handful of solid fills, so its palette
+                        IS editable — pick a swatch, get a different gold.
+                        Nothing is written until Apply: the preview panel
+                        recolours a local copy of the markup, so dragging a
+                        colour picker costs no requests.
+
+                        Raster uploads get no editor at all. A PNG has no list
+                        of fills to swap, and offering a control that silently
+                        does nothing is worse than not offering it.
+                    */}
+                    {form.file_url && isSvg ? (
+                        <div className="mt-4 rounded-md border border-border bg-card p-3">
+                            <div className="flex items-center justify-between gap-2">
+                                <p className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+                                    <Palette className="h-3.5 w-3.5 text-primary" />
+                                    Colours
+                                </p>
+                                {pendingCount > 0 ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => setColorMap({})}
+                                        className="flex items-center gap-1 text-[10px] font-semibold text-muted-foreground hover:text-destructive"
+                                    >
+                                        <Undo2 className="h-3 w-3" /> Revert {pendingCount}
+                                    </button>
+                                ) : null}
+                            </div>
+
+                            {svgLoading ? (
+                                <p className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                                    <Loader2 className="h-3 w-3 animate-spin" /> Reading colours…
+                                </p>
+                            ) : svgSource?.colors?.length ? (
+                                <>
+                                    <div className="mt-2 flex flex-wrap gap-2">
+                                        {svgSource.colors.map((entry) => {
+                                            const current = colorMap[entry.color] ?? entry.color;
+                                            const changed = current !== entry.color;
+                                            return (
+                                                <label
+                                                    key={entry.color}
+                                                    title={`${entry.color}${changed ? ` → ${current}` : ''}`}
+                                                    className={cn(
+                                                        'relative flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border transition-colors',
+                                                        changed
+                                                            ? 'border-primary ring-1 ring-primary'
+                                                            : 'border-border hover:border-primary/50'
+                                                    )}
+                                                    style={{ backgroundColor: current }}
+                                                >
+                                                    {/* The native picker — no library, and it is
+                                                        the same control ColorField already uses
+                                                        elsewhere in the admin. */}
+                                                    <input
+                                                        type="color"
+                                                        value={
+                                                            /^#[0-9a-fA-F]{6}$/.test(current)
+                                                                ? current
+                                                                : (normaliseHex(current) ?? '#000000').slice(0, 7)
+                                                        }
+                                                        onChange={(e) => {
+                                                            const next = e.target.value.toUpperCase();
+                                                            setColorMap((prev) => {
+                                                                // Setting a swatch back to its
+                                                                // original is not a change — drop
+                                                                // it, so "Revert 2" never counts
+                                                                // a no-op edit.
+                                                                const copy = { ...prev };
+                                                                if (next === entry.color) delete copy[entry.color];
+                                                                else copy[entry.color] = next;
+                                                                return copy;
+                                                            });
+                                                        }}
+                                                        className="absolute inset-0 cursor-pointer opacity-0"
+                                                        aria-label={`Change ${entry.color}`}
+                                                    />
+                                                </label>
+                                            );
+                                        })}
+                                    </div>
+
+                                    <p className="mt-2 text-[10px] leading-snug text-muted-foreground">
+                                        {pendingCount > 0
+                                            ? 'Preview updated. Apply writes a recoloured copy — the original file is left alone.'
+                                            : 'Click a swatch to recolour that part of the artwork.'}
+                                    </p>
+
+                                    {pendingCount > 0 ? (
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={applyColors}
+                                            disabled={recolorFrame.isPending}
+                                            className="mt-2 h-8 w-full gap-1.5 border-primary/40 text-xs font-bold text-primary hover:bg-primary/5"
+                                        >
+                                            {recolorFrame.isPending ? (
+                                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                            ) : (
+                                                <Palette className="h-3.5 w-3.5" />
+                                            )}
+                                            {recolorFrame.isPending ? 'Applying…' : 'Apply Colours'}
+                                        </Button>
+                                    ) : null}
+                                </>
+                            ) : (
+                                <p className="mt-2 text-[11px] text-muted-foreground">
+                                    This SVG has no solid colour fills to edit.
+                                </p>
+                            )}
+                        </div>
+                    ) : null}
 
                     {/* ── supported layouts (added — see the header note) ─── */}
                     <div className="mt-4">
@@ -405,7 +597,7 @@ export function FrameStyleForm() {
                 {/* ── right: the preview ─────────────────────────────────── */}
                 <Card className="p-5">
                     <FramePreview
-                        fileUrl={form.file_url || null}
+                        fileUrl={previewUrl}
                         layouts={
                             form.supported_layouts.length
                                 ? form.supported_layouts
