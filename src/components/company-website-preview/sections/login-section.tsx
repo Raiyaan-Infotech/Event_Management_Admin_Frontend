@@ -485,7 +485,7 @@ export function LoginSection({
                                         className="mb-1.5 block text-[12.5px] font-bold"
                                         style={{ color: theme.primaryText }}
                                     >
-                                        {t('login.email_label', 'Email Address')}
+                                        {t('login.email_label', 'Email Address')} <span className="text-rose-500">*</span>
                                     </label>
                                     <div className="relative">
                                         <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -509,7 +509,7 @@ export function LoginSection({
                                         className="mb-1.5 block text-[12.5px] font-bold"
                                         style={{ color: theme.primaryText }}
                                     >
-                                        {t('login.password_label', 'Password')}
+                                        {t('login.password_label', 'Password')} <span className="text-rose-500">*</span>
                                     </label>
                                     {/* The eye toggle is positioned against THIS wrapper only. Anything
                                         else inside it (a hint line) shifts what -translate-y-1/2 centres on. */}
