@@ -200,6 +200,7 @@ const menuItems: MenuItem[] = [
     icon: MessageSquare,
     children: [
       { labelKey: "nav.notifications", href: "/admin/notifications", icon: Bell, permission: "notifications.view" },
+      { labelKey: "Push Notifications", href: "/admin/settings/push-notifications", icon: Bell, permission: "settings.view" },
       { labelKey: "nav.mail", href: "/admin/mail", icon: Mail, permission: "mail.view" },
       { labelKey: "Chat", href: "/admin/communication/chat", icon: MessageCircle },
       { labelKey: "nav.support", href: "/admin/support", icon: MessageCircle, permission: "support.view" },

@@ -4,6 +4,7 @@ import Link from "next/link";
 import {
   Settings,
   Mail,
+  Bell,
   FileText,
   Phone,
   Globe,
@@ -130,6 +131,13 @@ const settingGroups: SettingGroup[] = [
         href: "/admin/settings/templates",
         icon: FileText,
         permission: "email_templates.view",
+      },
+      {
+        labelKey: "Push Notifications",
+        descriptionKey: "Configure Firebase Cloud Messaging and app push notification credentials",
+        href: "/admin/settings/push-notifications",
+        icon: Bell,
+        permission: "settings.view",
       },
       {
         labelKey: "settings.email_campaigns",
