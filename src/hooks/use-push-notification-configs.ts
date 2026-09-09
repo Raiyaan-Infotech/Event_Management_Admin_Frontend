@@ -39,6 +39,29 @@ export interface SavePushNotificationConfigDto {
   vapid_key?: string;
 }
 
+/**
+ * Pull the saved row out of a write response.
+ *
+ * ── ⚠ THE SERVER'S KEY IS `pushNotificationConfig`, NOT `config` ────────────
+ * Every write endpoint answers `{ data: { pushNotificationConfig } }`. Three
+ * of the calls here read `data.config`, which is always undefined — the save
+ * itself succeeded, so the toast said "saved successfully" and then the
+ * `onSuccess` handler crashed on `saved.id`, making a working save look like
+ * a broken one.
+ *
+ * Both keys are accepted rather than just correcting the name, because the
+ * read endpoints already tolerate both and a response shape that differs
+ * between reads and writes is the kind of thing that gets re-broken later.
+ */
+const unwrapConfig = (response: any): PushNotificationConfig => {
+  const body = response?.data?.data;
+  const config = body?.pushNotificationConfig ?? body?.config ?? body;
+  if (!config?.id) {
+    throw new Error('The server saved the configuration but did not return it.');
+  }
+  return config as PushNotificationConfig;
+};
+
 const pushNotificationConfigsApi = {
   getAll: async (): Promise<PushNotificationConfig[]> => {
     const response = await apiClient.get("/push-notification-configs");
@@ -66,7 +89,7 @@ const pushNotificationConfigsApi = {
     });
 
     const response = await apiClient.post("/push-notification-configs", formData);
-    return response.data.data.config;
+    return unwrapConfig(response);
   },
 
   update: async ({
@@ -86,12 +109,12 @@ const pushNotificationConfigsApi = {
     });
 
     const response = await apiClient.put(`/push-notification-configs/${id}`, formData);
-    return response.data.data.config;
+    return unwrapConfig(response);
   },
 
   setActive: async (id: number): Promise<PushNotificationConfig> => {
     const response = await apiClient.patch(`/push-notification-configs/${id}/active`);
-    return response.data.data.config;
+    return unwrapConfig(response);
   },
 
   testConnection: async (id: number): Promise<{ connected: boolean; status: string; message: string }> => {

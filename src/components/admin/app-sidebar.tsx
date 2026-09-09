@@ -50,6 +50,8 @@ import {
   Church,
   Repeat,
   UserRound,
+  UtensilsCrossed,
+  FileEdit,
 } from "lucide-react";
 import {
   Sidebar,
@@ -138,6 +140,11 @@ const menuItems: MenuItem[] = [
       { labelKey: "nav.event_categories", href: "/admin/menu-management/event-categories", icon: Folder, permission: "event_categories.view" },
       { labelKey: "nav.event_types", href: "/admin/menu-management/event-types", icon: Tag, permission: "event_types.view" },
       { labelKey: "nav.religions", href: "/admin/menu-management/religions", icon: Church, permission: "religions.view" },
+      // The two dropdowns the MOBILE APP's guest registration form offers.
+      // Filed here because they are category-scoped taxonomies exactly like the
+      // three above, and are edited the same way.
+      { labelKey: "nav.guest_relationships", href: "/admin/menu-management/guest-relationships", icon: Users, permission: "guest_relationship_options.view" },
+      { labelKey: "nav.guest_food_preferences", href: "/admin/menu-management/guest-food-preferences", icon: UtensilsCrossed, permission: "guest_food_preference_options.view" },
     ],
   },
   {
@@ -205,6 +212,28 @@ const menuItems: MenuItem[] = [
       { labelKey: "Chat", href: "/admin/communication/chat", icon: MessageCircle },
       { labelKey: "nav.support", href: "/admin/support", icon: MessageCircle, permission: "support.view" },
       { labelKey: "nav.contact", href: "/admin/contact", icon: Phone, permission: "contact.view" },
+    ],
+  },
+  {
+    // Admin-authored message BLUEPRINTS (RSVP Confirmation, Event Reminder, ...),
+    // scoped by notification/event category. Distinct from nav.communication's
+    // "Push Notifications", which is the FCM connection config, and from
+    // "nav.notifications", which is the admin's own mail-notification inbox.
+    labelKey: "Notification Templates",
+    icon: FileEdit,
+    children: [
+      {
+        labelKey: "Transactional Templates",
+        href: "/admin/notifications/templates",
+        icon: FileEdit,
+        permission: "notification_templates.view",
+      },
+      {
+        labelKey: "Notification Categories",
+        href: "/admin/notifications/categories",
+        icon: Tag,
+        permission: "notification_categories.view",
+      },
     ],
   },
   {

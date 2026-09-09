@@ -36,6 +36,18 @@ export interface EventType extends TaxonomyRecord {
 
 export interface Religion extends TaxonomyRecord {}
 
+/**
+ * One value in a guest-registration dropdown on the mobile app.
+ *
+ * `event_category_id` is NULLABLE where Event Type's is not: a null row is the
+ * fallback list, offered when an event has no category or its category has no
+ * list of its own. Without it the form could open with an empty dropdown.
+ */
+export interface GuestOption extends TaxonomyRecord {
+    event_category_id: number | null;
+    category?: { id: number; name: string; color: string | null } | null;
+}
+
 export type MenuPlatform = 'website' | 'mobile';
 
 export interface EventMenu {
@@ -103,7 +115,7 @@ export type TaxonomyPayload = {
  * ({ eventCategory: {...} }); the `?? response.data.data` fallbacks keep this
  * working if a route is ever changed to return the record bare.
  */
-function createTaxonomyHooks<T extends TaxonomyRecord>(config: {
+export function createTaxonomyHooks<T extends TaxonomyRecord>(config: {
     path: string;
     queryKey: string;
     resourceKey: string;
@@ -260,6 +272,44 @@ export const useCreateReligion = religionHooks.useCreate;
 export const useUpdateReligion = religionHooks.useUpdate;
 export const useUpdateReligionStatus = religionHooks.useUpdateStatus;
 export const useDeleteReligion = religionHooks.useDelete;
+
+/* ----------------------------------------------- guest registration lists -- */
+
+/**
+ * The two dropdowns on the mobile app's guest registration form.
+ *
+ * Same resource shape as the taxonomies above, so they reuse the same factory.
+ * They are admin-managed rather than hardcoded because the dropdowns render in
+ * a FLUTTER build — a hardcoded list changes only by shipping through app-store
+ * review, which is days to add one food option.
+ */
+const guestRelationshipHooks = createTaxonomyHooks<GuestOption>({
+    path: '/guest-relationship-options',
+    queryKey: 'guest-relationship-options',
+    resourceKey: 'relationshipOption',
+    label: 'Relationship',
+});
+
+export const useGuestRelationshipOptions = guestRelationshipHooks.useList;
+export const useGuestRelationshipOption = guestRelationshipHooks.useOne;
+export const useCreateGuestRelationshipOption = guestRelationshipHooks.useCreate;
+export const useUpdateGuestRelationshipOption = guestRelationshipHooks.useUpdate;
+export const useUpdateGuestRelationshipOptionStatus = guestRelationshipHooks.useUpdateStatus;
+export const useDeleteGuestRelationshipOption = guestRelationshipHooks.useDelete;
+
+const guestFoodHooks = createTaxonomyHooks<GuestOption>({
+    path: '/guest-food-preference-options',
+    queryKey: 'guest-food-preference-options',
+    resourceKey: 'foodPreferenceOption',
+    label: 'Food preference',
+});
+
+export const useGuestFoodPreferenceOptions = guestFoodHooks.useList;
+export const useGuestFoodPreferenceOption = guestFoodHooks.useOne;
+export const useCreateGuestFoodPreferenceOption = guestFoodHooks.useCreate;
+export const useUpdateGuestFoodPreferenceOption = guestFoodHooks.useUpdate;
+export const useUpdateGuestFoodPreferenceOptionStatus = guestFoodHooks.useUpdateStatus;
+export const useDeleteGuestFoodPreferenceOption = guestFoodHooks.useDelete;
 
 /* ------------------------------------------------------------- event menus -- */
 

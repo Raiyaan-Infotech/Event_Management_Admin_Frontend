@@ -70,7 +70,31 @@ export interface TaxonomyManagerProps<T extends TaxonomyRecord> {
         disabledUntil?: 'event_category_id';
         /** Cleared when this select changes, so a stale child can't survive. */
         clears?: Array<'event_category_id' | 'event_type_id'>;
+        /**
+         * Allow the scope to be left empty, sending `null` instead of an id.
+         *
+         * Off by default, so Event Types and Religions keep demanding a scope —
+         * a record of theirs with none can never be reached by the Menu form's
+         * cascade. The guest-registration lists are the opposite case: their
+         * NULL-scope rows ARE the fallback list every uncategorised event
+         * falls back to, and without this there is no way to author one.
+         */
+        optional?: boolean;
+        /** Wording for the empty choice, e.g. "All categories (general)". */
+        optionalLabel?: string;
     }>;
+
+    /**
+     * Fields to leave out entirely — hidden from the form, skipped by
+     * validation, omitted from the payload and dropped from the table.
+     *
+     * Defaults to showing everything, so the three existing taxonomy screens
+     * are unaffected. The guest-registration lists hide all three: they are
+     * hundreds of plain labels ("Vegetarian", "Bride's Father") and demanding
+     * an icon, a colour and a description for each would be busywork that
+     * nothing ever reads.
+     */
+    hiddenFields?: Array<'description' | 'icon' | 'color'>;
 
     /**
      * Fired whenever a scope value changes — on selection, on edit, and on
@@ -104,6 +128,15 @@ interface FormState {
     event_type_id: string;
 }
 
+/**
+ * Stand-in value for "no scope chosen" on an optional select.
+ *
+ * Radix Select cannot hold an empty string as an item value — it reserves it
+ * for the placeholder — so the empty choice needs a sentinel that is mapped
+ * back to `null` on save and never leaves this component.
+ */
+const NO_SCOPE = '__none__';
+
 const emptyForm = (defaultColor: string): FormState => ({
     name: '',
     description: '',
@@ -126,6 +159,7 @@ export function TaxonomyManager<T extends TaxonomyRecord>(props: TaxonomyManager
         permissionPrefix,
         defaultColor = '#6E22FE',
         scopeSelects = [],
+        hiddenFields = [],
         onScopeChange,
         data,
         pagination,
@@ -186,15 +220,21 @@ export function TaxonomyManager<T extends TaxonomyRecord>(props: TaxonomyManager
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
+    const isHidden = (field: 'description' | 'icon' | 'color') => hiddenFields.includes(field);
+
     const handleSave = () => {
         const next: Record<string, boolean> = {};
         if (!form.name.trim()) next.name = true;
-        if (!form.description.trim()) next.description = true;
-        if (!form.icon.trim()) next.icon = true;
-        if (!form.color.trim()) next.color = true;
-        // Every configured scope select is mandatory — a record with a missing
-        // scope can never be reached by the Menu form's cascade.
+        // A hidden field is never filled in, so requiring it would make the
+        // form unsubmittable rather than merely strict.
+        if (!isHidden('description') && !form.description.trim()) next.description = true;
+        if (!isHidden('icon') && !form.icon.trim()) next.icon = true;
+        if (!isHidden('color') && !form.color.trim()) next.color = true;
+        // A configured scope select is mandatory unless it opts out — a record
+        // with a missing scope can never be reached by the Menu form's cascade,
+        // which is exactly why the guest lists, having no cascade, may opt out.
         scopeSelects.forEach((s) => {
+            if (s.optional) return;
             if (!form[s.key]) next[s.key] = true;
         });
 
@@ -207,14 +247,18 @@ export function TaxonomyManager<T extends TaxonomyRecord>(props: TaxonomyManager
 
         const payload: TaxonomyPayload = {
             name: form.name.trim(),
-            description: form.description.trim(),
-            icon: form.icon,
-            color: form.color,
             is_active: form.is_active,
-            ...scopeSelects.reduce(
-                (acc, s) => ({ ...acc, [s.key]: Number(form[s.key]) }),
-                {} as Record<string, number>
-            ),
+            ...(isHidden('description') ? {} : { description: form.description.trim() }),
+            ...(isHidden('icon') ? {} : { icon: form.icon }),
+            ...(isHidden('color') ? {} : { color: form.color }),
+            ...scopeSelects.reduce((acc, s) => {
+                const raw = form[s.key];
+                // The sentinel and a genuinely empty optional select both mean
+                // "no scope", and the API expects null for that, not 0 —
+                // Number('') is 0, which would point at a category id of zero.
+                const value = !raw || raw === NO_SCOPE ? null : Number(raw);
+                return { ...acc, [s.key]: value };
+            }, {} as Record<string, number | null>),
         };
 
         if (editingId) {
@@ -234,14 +278,21 @@ export function TaxonomyManager<T extends TaxonomyRecord>(props: TaxonomyManager
                 // it reads as part of the record and saves a column of width.
                 render: (row) => (
                     <div className="flex items-center gap-2.5">
-                        <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border bg-muted/40">
-                            <DynamicIcon name={row.icon} color={row.color} size="h-4 w-4" />
-                        </span>
+                        {/* An empty icon tile against every row would read as a
+                            missing image rather than a deliberate absence. */}
+                        {!hiddenFields.includes('icon') && (
+                            <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border bg-muted/40">
+                                <DynamicIcon name={row.icon} color={row.color} size="h-4 w-4" />
+                            </span>
+                        )}
                         <span className="font-medium">{row.name}</span>
                     </div>
                 ),
             },
-            {
+        ];
+
+        if (!hiddenFields.includes('description')) {
+            cols.push({
                 key: 'description',
                 header: 'Description',
                 render: (row) =>
@@ -257,8 +308,8 @@ export function TaxonomyManager<T extends TaxonomyRecord>(props: TaxonomyManager
                     ) : (
                         <span className="text-xs text-muted-foreground">—</span>
                     ),
-            },
-        ];
+            });
+        }
 
         // One column per configured scope, reading the joined record the API
         // returns (`category` / `eventType`).
@@ -269,8 +320,13 @@ export function TaxonomyManager<T extends TaxonomyRecord>(props: TaxonomyManager
                 header: s.label,
                 render: (row) => {
                     const joined = (row as any)[relation];
-                    return joined ? (
-                        <span className="text-sm">{joined.name}</span>
+                    if (joined) return <span className="text-sm">{joined.name}</span>;
+                    // On an optional scope, no category is a MEANING — this is the
+                    // fallback row — so it is named rather than dashed out.
+                    return s.optional ? (
+                        <span className="text-xs font-medium text-muted-foreground">
+                            {s.optionalLabel ?? 'None'}
+                        </span>
                     ) : (
                         <span className="text-xs text-muted-foreground">—</span>
                     );
@@ -278,8 +334,8 @@ export function TaxonomyManager<T extends TaxonomyRecord>(props: TaxonomyManager
             });
         });
 
-        cols.push(
-            {
+        if (!hiddenFields.includes('color')) {
+            cols.push({
                 key: 'color',
                 header: 'Color',
                 render: (row) =>
@@ -294,11 +350,11 @@ export function TaxonomyManager<T extends TaxonomyRecord>(props: TaxonomyManager
                     ) : (
                         <span className="text-xs text-muted-foreground">—</span>
                     ),
-            }
-        );
+            });
+        }
 
         return cols;
-    }, [nameLabel, scopeSelects]);
+    }, [nameLabel, scopeSelects, hiddenFields]);
 
     return (
         <PermissionGuard permission={`${permissionPrefix}.view`}>
@@ -338,14 +394,24 @@ export function TaxonomyManager<T extends TaxonomyRecord>(props: TaxonomyManager
                                 return (
                                     <div key={s.key} className="space-y-1.5">
                                         <Label className="text-sm font-medium">
-                                            {s.label} <span className="text-destructive">*</span>
+                                            {s.label}{' '}
+                                            {s.optional ? (
+                                                <span className="text-xs font-normal text-muted-foreground">
+                                                    (optional)
+                                                </span>
+                                            ) : (
+                                                <span className="text-destructive">*</span>
+                                            )}
                                         </Label>
                                         <Select
                                             value={form[s.key]}
                                             disabled={locked}
                                             onValueChange={(v) => {
-                                                setField(s.key, v);
-                                                onScopeChange?.(s.key, v);
+                                                // The sentinel is this component's own; the page
+                                                // and the payload only ever see an id or nothing.
+                                                const next = v === NO_SCOPE ? '' : v;
+                                                setField(s.key, next);
+                                                onScopeChange?.(s.key, next);
                                                 // A child select still holding a value from the
                                                 // previous parent would fail server validation.
                                                 s.clears?.forEach((k) => {
@@ -360,12 +426,22 @@ export function TaxonomyManager<T extends TaxonomyRecord>(props: TaxonomyManager
                                                 <SelectValue placeholder={s.placeholder} />
                                             </SelectTrigger>
                                             <SelectContent>
+                                                {/* The empty choice stays available even while the
+                                                    option list is loading or empty — it is a real
+                                                    answer here, not the absence of one. */}
+                                                {s.optional && (
+                                                    <SelectItem value={NO_SCOPE}>
+                                                        {s.optionalLabel ?? 'None'}
+                                                    </SelectItem>
+                                                )}
                                                 {s.options.length === 0 ? (
-                                                    <div className="px-2 py-3 text-xs text-muted-foreground">
-                                                        {s.isLoading
-                                                            ? 'Loading…'
-                                                            : s.emptyHint ?? 'Nothing to choose yet.'}
-                                                    </div>
+                                                    !s.optional && (
+                                                        <div className="px-2 py-3 text-xs text-muted-foreground">
+                                                            {s.isLoading
+                                                                ? 'Loading…'
+                                                                : s.emptyHint ?? 'Nothing to choose yet.'}
+                                                        </div>
+                                                    )
                                                 ) : (
                                                     s.options.map((o) => (
                                                         <SelectItem key={o.id} value={String(o.id)}>
@@ -410,37 +486,43 @@ export function TaxonomyManager<T extends TaxonomyRecord>(props: TaxonomyManager
                             </div>
 
                             {/* Description */}
-                            <div className="space-y-1.5 md:col-span-2 lg:col-span-1">
-                                <Label className="text-sm font-medium">
-                                    Description <span className="text-destructive">*</span>
-                                </Label>
-                                <Textarea
-                                    value={form.description}
-                                    onChange={(e) => setField('description', e.target.value)}
-                                    placeholder="Enter description"
-                                    maxLength={255}
-                                    className={cn('min-h-[80px] text-sm', errors.description && 'border-destructive')}
+                            {!isHidden('description') && (
+                                <div className="space-y-1.5 md:col-span-2 lg:col-span-1">
+                                    <Label className="text-sm font-medium">
+                                        Description <span className="text-destructive">*</span>
+                                    </Label>
+                                    <Textarea
+                                        value={form.description}
+                                        onChange={(e) => setField('description', e.target.value)}
+                                        placeholder="Enter description"
+                                        maxLength={255}
+                                        className={cn('min-h-[80px] text-sm', errors.description && 'border-destructive')}
+                                    />
+                                </div>
+                            )}
+
+                            {!isHidden('icon') && (
+                                <IconField
+                                    label={iconLabel}
+                                    required
+                                    value={form.icon}
+                                    onChange={(v) => setField('icon', v)}
+                                    color={form.color}
+                                    error={errors.icon}
+                                    helper={`Select an icon to represent this ${entityLabel.toLowerCase()}.`}
                                 />
-                            </div>
+                            )}
 
-                            <IconField
-                                label={iconLabel}
-                                required
-                                value={form.icon}
-                                onChange={(v) => setField('icon', v)}
-                                color={form.color}
-                                error={errors.icon}
-                                helper={`Select an icon to represent this ${entityLabel.toLowerCase()}.`}
-                            />
-
-                            <ColorField
-                                label={colorLabel}
-                                required
-                                value={form.color}
-                                onChange={(v) => setField('color', v)}
-                                error={errors.color}
-                                helper={`Choose a color for this ${entityLabel.toLowerCase()}.`}
-                            />
+                            {!isHidden('color') && (
+                                <ColorField
+                                    label={colorLabel}
+                                    required
+                                    value={form.color}
+                                    onChange={(v) => setField('color', v)}
+                                    error={errors.color}
+                                    helper={`Choose a color for this ${entityLabel.toLowerCase()}.`}
+                                />
+                            )}
                         </div>
 
                         <div className="flex items-center justify-end gap-2 border-t border-border pt-4">
