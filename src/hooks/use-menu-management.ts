@@ -55,7 +55,8 @@ export interface EventMenu {
     name: string;
     slug: string;
     /** Core / Additional / Custom — drives the Manage Plan Menus sections. */
-    menu_group?: 'core' | 'additional' | 'custom';
+    /** 'portal' = a client-portal sidebar section; 'app' = a mobile app feature. Neither is an event feature. */
+    menu_group?: 'core' | 'additional' | 'custom' | 'portal' | 'app';
     description?: string | null;
     remarks?: string | null;
     company_id?: number | null;

@@ -44,11 +44,21 @@ import {
 
 const ALL = 'all';
 
-/** Section order and labels for the Core / Additional / Custom grouping. */
+/**
+ * Section order and labels for the Core / Additional / Custom grouping.
+ *
+ * `portal` holds the client-portal SIDEBAR sections (Guests, Messages, Splash
+ * Screens, Analytics, Notification Templates). Granting one on Website is what
+ * shows that section in the client's sidebar; they are not event features.
+ */
 const GROUPS = [
     { key: 'core', label: 'Core Menus' },
     { key: 'additional', label: 'Additional Menus' },
     { key: 'custom', label: 'Custom Menus' },
+    { key: 'portal', label: 'Client Portal Sections' },
+    // Mobile app features (Chat, Wishes, Invite & Share, …): granted by the plan
+    // alone, not chosen per event — every event of a subscriber shows them.
+    { key: 'app', label: 'Mobile App Features' },
 ] as const;
 
 interface Selected {
@@ -78,7 +88,28 @@ export default function ManagePlanMenusPage({ params }: { params: Promise<{ id: 
         event_category_id: plan?.event_category_id ?? undefined,
         event_type_id: plan?.event_type_id ?? undefined,
     });
-    const allMenus = menusData?.data ?? [];
+
+    /*
+      Client Portal Sections are NOT scoped by event category/type — Guests or
+      Messages is the same section whatever event a plan is for — so the scoped
+      query above never returns them (their category is NULL). Fetched on their
+      own and merged, otherwise the group renders empty and the admin cannot
+      grant or remove a section.
+    */
+    const { data: portalData } = useEventMenus({ limit: 200, is_active: true, menu_group: 'portal' });
+    // Same reason for Mobile App Features: no category/type scope.
+    const { data: appData } = useEventMenus({ limit: 200, is_active: true, menu_group: 'app' });
+
+    const allMenus = useMemo(() => {
+        const scoped = menusData?.data ?? [];
+        const seen = new Set(scoped.map((m) => m.id));
+        const extra = [...(portalData?.data ?? []), ...(appData?.data ?? [])].filter((m) => {
+            if (seen.has(m.id)) return false;
+            seen.add(m.id);
+            return true;
+        });
+        return [...scoped, ...extra];
+    }, [menusData, portalData, appData]);
 
     const updatePlan = useUpdateSubscriptionPlan(() => {
         toast.success('Menus updated for this plan');
