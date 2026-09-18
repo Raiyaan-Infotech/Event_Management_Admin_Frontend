@@ -35,6 +35,7 @@ import { DynamicIcon } from '@/components/common/dynamic-icon';
 import { cn } from '@/lib/utils';
 import { usePlanTypes } from '@/hooks/use-plan-types';
 import { usePlanBadges, badgeStyleProps, type BadgeStyle } from '@/hooks/use-plan-badges';
+import { menuScopeLabel } from '@/lib/menu-scope';
 import { useEventCategories, useEventTypes, useReligions, useEventMenus } from '@/hooks/use-menu-management';
 import {
     useSubscriptionPlan,
@@ -672,7 +673,14 @@ export function PlanWizardContent() {
                                                                     <span className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-muted/40">
                                                                         <DynamicIcon name={m.icon} color={m.color} size="h-3.5 w-3.5" />
                                                                     </span>
-                                                                    <span className="break-all font-medium">{m.name}</span>
+                                                                    <span className="min-w-0">
+                                                                        <span className="block break-all font-medium">{m.name}</span>
+                                                                        {menuScopeLabel(m) && (
+                                                                            <span className="block text-[11px] text-muted-foreground">
+                                                                                {menuScopeLabel(m)}
+                                                                            </span>
+                                                                        )}
+                                                                    </span>
                                                                 </div>
                                                             </td>
                                                             <td className="px-3 py-2 text-center">
@@ -840,6 +848,11 @@ export function PlanWizardContent() {
                                                         <DynamicIcon name={m.icon} color={m.color} size="h-4 w-4" />
                                                     </span>
                                                     <span className="break-all text-xs font-medium">{m.name}</span>
+                                                    {menuScopeLabel(m) && (
+                                                        <span className="text-[10px] leading-tight text-muted-foreground">
+                                                            {menuScopeLabel(m)}
+                                                        </span>
+                                                    )}
                                                     <Badge variant="secondary" className="text-[10px]">
                                                         {limitCount} Limit{limitCount === 1 ? '' : 's'}
                                                     </Badge>

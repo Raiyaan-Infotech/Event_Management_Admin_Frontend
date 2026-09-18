@@ -35,6 +35,7 @@ import { PageLoader } from '@/components/common/page-loader';
 import { PermissionGuard } from '@/components/guards/permission-guard';
 import { DynamicIcon } from '@/components/common/dynamic-icon';
 import { cn } from '@/lib/utils';
+import { menuScopeLabel } from '@/lib/menu-scope';
 import { useEventMenus } from '@/hooks/use-menu-management';
 import {
     useSubscriptionPlan,
@@ -405,6 +406,11 @@ export default function ManagePlanMenusPage({ params }: { params: Promise<{ id: 
                                                         <span className="min-w-0 flex-1">
                                                             <span className="block break-words text-sm font-semibold text-foreground">
                                                                 {m.name}
+                                                                {menuScopeLabel(m) && (
+                                                                    <span className="ml-1.5 font-normal text-muted-foreground">
+                                                                        · {menuScopeLabel(m)}
+                                                                    </span>
+                                                                )}
                                                             </span>
                                                             <span className="block break-all font-mono text-[11px] text-muted-foreground">
                                                                 /{m.slug}

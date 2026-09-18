@@ -13,7 +13,16 @@ export interface PlanMenuRow {
     for_mobile: number | boolean;
     limits_json?: Record<string, string | number | null> | null;
     sort_order?: number;
-    menu?: { id: number; name: string; slug: string; icon: string | null; color: string | null } | null;
+    menu?: {
+        id: number;
+        name: string;
+        slug: string;
+        icon: string | null;
+        color: string | null;
+        /** Which type / religion this copy of the menu belongs to — see menuScopeLabel. */
+        eventType?: { id: number; name: string } | null;
+        religion?: { id: number; name: string } | null;
+    } | null;
 }
 
 export interface SubscriptionPlan {

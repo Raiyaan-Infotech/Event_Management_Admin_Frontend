@@ -10,6 +10,7 @@ import { PageLoader } from '@/components/common/page-loader';
 import { PermissionGuard } from '@/components/guards/permission-guard';
 import { DynamicIcon } from '@/components/common/dynamic-icon';
 import { cn } from '@/lib/utils';
+import { menuScopeLabel } from '@/lib/menu-scope';
 import { badgeStyleProps, type BadgeStyle } from '@/hooks/use-plan-badges';
 import {
     useSubscriptionPlan,
@@ -234,6 +235,11 @@ export default function ViewSubscriptionPlanPage({ params }: { params: Promise<{
                                                 <span className="break-words text-[11px] font-medium leading-tight">
                                                     {pm.menu?.name ?? `Menu #${pm.menu_id}`}
                                                 </span>
+                                                {menuScopeLabel(pm.menu) && (
+                                                    <span className="break-words text-[10px] leading-tight text-muted-foreground">
+                                                        {menuScopeLabel(pm.menu)}
+                                                    </span>
+                                                )}
                                             </div>
                                         );
                                     })}
