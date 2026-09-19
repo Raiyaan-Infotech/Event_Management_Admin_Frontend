@@ -23,7 +23,7 @@ import { PageLoader } from '@/components/common/page-loader';
 import { PermissionGuard } from '@/components/guards/permission-guard';
 import { DynamicIcon } from '@/components/common/dynamic-icon';
 import { cn } from '@/lib/utils';
-import { useEventCategories, useEventTypes } from '@/hooks/use-menu-management';
+import { useEventCategories } from '@/hooks/use-menu-management';
 import { useNotificationCategories } from '@/hooks/use-notification-categories';
 import {
     useNotificationTemplate,
@@ -44,7 +44,6 @@ interface FormState {
     trigger_key: string;
     notification_category_id: string;
     event_category_id: string;
-    event_type_id: string;
     title: string;
     content: string;
     image_url: string;
@@ -56,7 +55,6 @@ const emptyForm = (): FormState => ({
     trigger_key: '',
     notification_category_id: '',
     event_category_id: '',
-    event_type_id: '',
     title: '',
     content: '',
     image_url: '',
@@ -95,11 +93,6 @@ export function TemplateWizardContent() {
     const { data: existing, isLoading: loadingExisting } = useNotificationTemplate(id ?? undefined);
     const { data: notificationCategories } = useNotificationCategories({ limit: 200, is_active: true });
     const { data: eventCategories } = useEventCategories({ limit: 200, is_active: true });
-    const { data: eventTypes } = useEventTypes({
-        limit: 200,
-        is_active: true,
-        event_category_id: form.event_category_id || undefined,
-    });
     const { data: variables } = useNotificationVariables();
     const { data: systemTriggers } = useSystemTriggers();
 
@@ -116,7 +109,6 @@ export function TemplateWizardContent() {
             trigger_key: existing.trigger_key ?? '',
             notification_category_id: existing.notification_category_id ? String(existing.notification_category_id) : '',
             event_category_id: existing.event_category_id ? String(existing.event_category_id) : '',
-            event_type_id: existing.event_type_id ? String(existing.event_type_id) : '',
             title: existing.title ?? '',
             content: existing.content ?? '',
             image_url: existing.image_url ?? '',
@@ -182,7 +174,6 @@ export function TemplateWizardContent() {
         trigger_key: form.trigger_key || null,
         notification_category_id: Number(form.notification_category_id),
         event_category_id: form.event_category_id ? Number(form.event_category_id) : null,
-        event_type_id: form.event_type_id ? Number(form.event_type_id) : null,
         title: form.title.trim(),
         content: form.content.trim(),
         image_url: form.image_url || null,
@@ -209,7 +200,6 @@ export function TemplateWizardContent() {
         notificationCategories?.data?.find((c) => String(c.id) === form.notification_category_id)?.name ?? '—';
     const eventCategoryName =
         eventCategories?.data?.find((c) => String(c.id) === form.event_category_id)?.name ?? 'All Categories';
-    const eventTypeName = eventTypes?.data?.find((t) => String(t.id) === form.event_type_id)?.name ?? 'All Types';
 
     const checklist = [
         { label: 'Template details are complete', ok: !!form.name.trim() && !!form.notification_category_id, hint: 'Name and notification category are set.' },
@@ -311,10 +301,7 @@ export function TemplateWizardContent() {
                                         <Field label="Event Category" helper="Leave empty to apply to all categories.">
                                             <Select
                                                 value={form.event_category_id}
-                                                onValueChange={(v) => {
-                                                    setField('event_category_id', v);
-                                                    setField('event_type_id', '');
-                                                }}
+                                                onValueChange={(v) => setField('event_category_id', v)}
                                             >
                                                 <SelectTrigger className="h-10">
                                                     <SelectValue placeholder="Select event category" />
@@ -323,34 +310,6 @@ export function TemplateWizardContent() {
                                                     {(eventCategories?.data ?? []).map((c) => (
                                                         <SelectItem key={c.id} value={String(c.id)}>
                                                             {c.name}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </Field>
-
-                                        <Field
-                                            label="Event Type"
-                                            helper={
-                                                form.event_category_id
-                                                    ? 'Leave empty to apply to all types.'
-                                                    : 'Event type depends on event category — select one first.'
-                                            }
-                                        >
-                                            <Select
-                                                value={form.event_type_id}
-                                                onValueChange={(v) => setField('event_type_id', v)}
-                                                disabled={!form.event_category_id}
-                                            >
-                                                <SelectTrigger className="h-10">
-                                                    <SelectValue
-                                                        placeholder={form.event_category_id ? 'Select event type' : 'Select a category first'}
-                                                    />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {(eventTypes?.data ?? []).map((t) => (
-                                                        <SelectItem key={t.id} value={String(t.id)}>
-                                                            {t.name}
                                                         </SelectItem>
                                                     ))}
                                                 </SelectContent>
@@ -434,7 +393,6 @@ export function TemplateWizardContent() {
                                     />
                                     <ReviewRow label="Notification Category" value={notificationCategoryName} />
                                     <ReviewRow label="Event Category" value={eventCategoryName} />
-                                    <ReviewRow label="Event Type" value={eventTypeName} />
                                     <ReviewRow label="Title" value={form.title || '—'} />
                                     <ReviewRow label="Message Content" value={form.content || '—'} multiline />
                                     <ReviewRow

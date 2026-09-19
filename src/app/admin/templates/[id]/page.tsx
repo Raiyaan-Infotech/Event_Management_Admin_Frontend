@@ -192,8 +192,6 @@ export default function TemplateDetailPage({ params }: { params: Promise<{ id: s
                             <Rows
                                 rows={[
                                     ['Event Category', template.category?.name ?? '—'],
-                                    ['Event Type', template.eventType?.name ?? '—'],
-                                    ['Religion', template.religion?.name ?? '—'],
                                     ['Style', template.style],
                                     [
                                         'Tags',

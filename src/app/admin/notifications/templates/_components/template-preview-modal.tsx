@@ -115,8 +115,8 @@ export function TemplatePreviewModal({
                                 <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2.5 py-1 text-xs text-muted-foreground">
                                     <Tag className="h-3 w-3 text-muted-foreground" />
                                     {template.category?.name
-                                        ? `${template.category.name}${template.eventType?.name ? ` • ${template.eventType.name}` : ''}`
-                                        : 'Global (All Event Types)'}
+                                        ? template.category.name
+                                        : 'Global (All Event Categories)'}
                                 </span>
 
                                 {Array.isArray(template.channels) && template.channels.length > 0 && (

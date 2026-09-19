@@ -399,8 +399,6 @@ export interface EventTemplate {
     name: string;
     code: string;
     event_category_id: number | null;
-    event_type_id: number | null;
-    religion_id: number | null;
     /**
      * Step 1's "Template Style" — now a real row in `template_categories`.
      *
@@ -500,8 +498,6 @@ export interface EventTemplate {
         type: string;
         file_url: string | null;
     }>;
-    eventType?: { id: number; name: string; color: string | null } | null;
-    religion?: { id: number; name: string; color: string | null } | null;
     creator?: { id: number; full_name: string } | null;
     updater?: { id: number; full_name: string } | null;
 
@@ -532,7 +528,7 @@ export interface Paginated<T> {
 export type EventTemplatePayload = Partial<
     Omit<
         EventTemplate,
-        'id' | 'company_id' | 'category' | 'eventType' | 'religion' | 'creator' | 'updater'
+        'id' | 'company_id' | 'category' | 'creator' | 'updater'
         | 'templateCategory' | 'frameStyle' | 'decorationItems'
         | 'has_pending_approval' | 'created_at' | 'updated_at'
     >

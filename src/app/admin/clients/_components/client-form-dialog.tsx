@@ -223,7 +223,7 @@ export function ClientFormDialog({ open, onOpenChange, client }: ClientFormDialo
                                 </SelectContent>
                             </Select>
                             <p className="mt-1 text-[11px] text-muted-foreground">
-                                Decides which event types and menus this client can use in their portal.
+                                Decides which event categories and menus this client can use in their portal.
                             </p>
                         </div>
 

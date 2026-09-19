@@ -19,7 +19,7 @@ import {
  * only change by shipping through app-store review, which is days to add one
  * value. Rows here reach every installed app immediately.
  *
- * Unlike Religions, the category is OPTIONAL. A row with no category is the
+ * The category is OPTIONAL. A row with no category is the
  * fallback list, used when an event has no category, or its category has no
  * list of its own — without it a guest could open the form to an empty
  * dropdown.

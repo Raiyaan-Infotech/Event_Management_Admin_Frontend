@@ -48,7 +48,7 @@ import { useTemplateCategories } from '@/hooks/use-template-categories';
 import { useFrameStyles } from '@/hooks/use-frame-styles';
 import { useDecorations } from '@/hooks/use-decorations';
 import { ArtworkPicker } from './artwork-picker';
-import { useEventCategories, useEventTypes, useReligions } from '@/hooks/use-menu-management';
+import { useEventCategories } from '@/hooks/use-menu-management';
 import { useSubscriptionPlans } from '@/hooks/use-subscription-plans';
 import {
     useEventTemplate,
@@ -155,8 +155,6 @@ interface FormState {
     name: string;
     code: string;
     event_category_id: string;
-    event_type_id: string;
-    religion_id: string;
     template_category_id: string;
     style: string;
     tags: string[];
@@ -209,8 +207,6 @@ const emptyForm = (): FormState => ({
     name: '',
     code: '',
     event_category_id: '',
-    event_type_id: '',
-    religion_id: '',
     template_category_id: '',
     style: 'classic',
     tags: [],
@@ -290,17 +286,6 @@ export function TemplateWizardContent() {
 
     const { data: existing, isLoading: loadingTemplate } = useEventTemplate(id ?? undefined);
     const { data: categories } = useEventCategories({ limit: 200, is_active: true });
-    const { data: eventTypes } = useEventTypes({
-        limit: 200,
-        is_active: true,
-        event_category_id: form.event_category_id || undefined,
-    });
-    const { data: religions } = useReligions({
-        limit: 200,
-        is_active: true,
-        event_category_id: form.event_category_id || undefined,
-        event_type_id: form.event_type_id || undefined,
-    });
     const { data: plansData } = useSubscriptionPlans({ limit: 200 });
 
     /**
@@ -354,8 +339,6 @@ export function TemplateWizardContent() {
             name: existing.name ?? '',
             code: existing.code ?? '',
             event_category_id: existing.event_category_id ? String(existing.event_category_id) : '',
-            event_type_id: existing.event_type_id ? String(existing.event_type_id) : '',
-            religion_id: existing.religion_id ? String(existing.religion_id) : '',
             template_category_id: existing.template_category_id
                 ? String(existing.template_category_id)
                 : '',
@@ -514,7 +497,6 @@ export function TemplateWizardContent() {
             name: !form.name.trim(),
             code: !form.code.trim(),
             event_category_id: !form.event_category_id,
-            event_type_id: !form.event_type_id,
         };
         setErrors(next);
 
@@ -536,8 +518,6 @@ export function TemplateWizardContent() {
         name: form.name.trim(),
         code: form.code.trim(),
         event_category_id: form.event_category_id ? Number(form.event_category_id) : null,
-        event_type_id: form.event_type_id ? Number(form.event_type_id) : null,
-        religion_id: form.religion_id ? Number(form.religion_id) : null,
         // Sending the id is what sets the Style; the backend rewrites `style`
         // from the category's slug, so the two can never drift apart.
         template_category_id: form.template_category_id ? Number(form.template_category_id) : null,
@@ -658,8 +638,6 @@ export function TemplateWizardContent() {
     const activeCategory = (categories?.data ?? []).find(
         (c) => String(c.id) === form.event_category_id
     );
-    const activeType = (eventTypes?.data ?? []).find((t) => String(t.id) === form.event_type_id);
-    const activeReligion = (religions?.data ?? []).find((r) => String(r.id) === form.religion_id);
 
     /* ─────────────────────────── step 2, driven by STEP2_FIELDS ────────── */
 
@@ -1342,14 +1320,7 @@ export function TemplateWizardContent() {
                                     <Field label="Event Category" required error={errors.event_category_id}>
                                         <Select
                                             value={form.event_category_id}
-                                            onValueChange={(v) => {
-                                                setField('event_category_id', v);
-                                                // The chosen type and religion may not belong
-                                                // to the new category — the API rejects that
-                                                // pairing, so clear rather than send it.
-                                                setField('event_type_id', '');
-                                                setField('religion_id', '');
-                                            }}
+                                            onValueChange={(v) => setField('event_category_id', v)}
                                         >
                                             <SelectTrigger
                                                 className={cn('h-10', errors.event_category_id && 'border-destructive')}
@@ -1360,55 +1331,6 @@ export function TemplateWizardContent() {
                                                 {(categories?.data ?? []).map((c) => (
                                                     <SelectItem key={c.id} value={String(c.id)}>
                                                         {c.name}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </Field>
-
-                                    <Field label="Event Type" required error={errors.event_type_id}>
-                                        <Select
-                                            value={form.event_type_id}
-                                            onValueChange={(v) => {
-                                                setField('event_type_id', v);
-                                                setField('religion_id', '');
-                                            }}
-                                            disabled={!form.event_category_id}
-                                        >
-                                            <SelectTrigger
-                                                className={cn('h-10', errors.event_type_id && 'border-destructive')}
-                                            >
-                                                <SelectValue
-                                                    placeholder={
-                                                        form.event_category_id
-                                                            ? 'Select event type'
-                                                            : 'Choose a category first'
-                                                    }
-                                                />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {(eventTypes?.data ?? []).map((t) => (
-                                                    <SelectItem key={t.id} value={String(t.id)}>
-                                                        {t.name}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </Field>
-
-                                    <Field label="Religion" hint="Optional — not every event is religious.">
-                                        <Select
-                                            value={form.religion_id || 'none'}
-                                            onValueChange={(v) => setField('religion_id', v === 'none' ? '' : v)}
-                                        >
-                                            <SelectTrigger className="h-10">
-                                                <SelectValue placeholder="Select religion" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="none">No religion</SelectItem>
-                                                {(religions?.data ?? []).map((r) => (
-                                                    <SelectItem key={r.id} value={String(r.id)}>
-                                                        {r.name}
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>
@@ -2221,8 +2143,6 @@ export function TemplateWizardContent() {
                                             ['Template Name', form.name || '—'],
                                             ['Template Code', form.code || '—'],
                                             ['Event Category', activeCategory?.name ?? '—'],
-                                            ['Event Type', activeType?.name ?? '—'],
-                                            ['Religion', activeReligion?.name ?? '—'],
                                             ['Style', form.style],
                                         ]}
                                     />

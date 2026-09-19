@@ -3,10 +3,10 @@ import { apiClient, isApprovalRequired } from '@/lib/api-client';
 import { toast } from 'sonner';
 
 /**
- * Menu Management — event menus and their three taxonomies.
+ * Menu Management — event menus and the taxonomies around them.
  *
- * Event Categories, Event Types and Religions are the same resource shape, so
- * they share one hook factory instead of three near-identical files. Event
+ * Event Categories and the guest-registration lists are the same resource
+ * shape, so they share one hook factory instead of near-identical files. Event
  * Menus has its own set below because of its filters, per-platform toggles,
  * duplicate and reorder actions.
  */
@@ -29,17 +29,10 @@ export interface TaxonomyRecord {
 
 export interface EventCategory extends TaxonomyRecord {}
 
-export interface EventType extends TaxonomyRecord {
-    event_category_id: number;
-    category?: { id: number; name: string; color: string | null } | null;
-}
-
-export interface Religion extends TaxonomyRecord {}
-
 /**
  * One value in a guest-registration dropdown on the mobile app.
  *
- * `event_category_id` is NULLABLE where Event Type's is not: a null row is the
+ * `event_category_id` is NULLABLE: a null row is the
  * fallback list, offered when an event has no category or its category has no
  * list of its own. Without it the form could open with an empty dropdown.
  */
@@ -97,7 +90,7 @@ export type TaxonomyPayload = {
     color?: string | null;
     sort_order?: number;
     is_active?: boolean | number;
-    /** Event Types only. */
+    /** Scoped lists only (guest-registration options). */
     event_category_id?: number | null;
 };
 
@@ -233,38 +226,6 @@ export const useCreateEventCategory = eventCategoryHooks.useCreate;
 export const useUpdateEventCategory = eventCategoryHooks.useUpdate;
 export const useUpdateEventCategoryStatus = eventCategoryHooks.useUpdateStatus;
 export const useDeleteEventCategory = eventCategoryHooks.useDelete;
-
-/* ------------------------------------------------------------- event types -- */
-
-const eventTypeHooks = createTaxonomyHooks<EventType>({
-    path: '/event-types',
-    queryKey: 'event-types',
-    resourceKey: 'eventType',
-    label: 'Event type',
-});
-
-export const useEventTypes = eventTypeHooks.useList;
-export const useEventType = eventTypeHooks.useOne;
-export const useCreateEventType = eventTypeHooks.useCreate;
-export const useUpdateEventType = eventTypeHooks.useUpdate;
-export const useUpdateEventTypeStatus = eventTypeHooks.useUpdateStatus;
-export const useDeleteEventType = eventTypeHooks.useDelete;
-
-/* --------------------------------------------------------------- religions -- */
-
-const religionHooks = createTaxonomyHooks<Religion>({
-    path: '/religions',
-    queryKey: 'religions',
-    resourceKey: 'religion',
-    label: 'Religion',
-});
-
-export const useReligions = religionHooks.useList;
-export const useReligion = religionHooks.useOne;
-export const useCreateReligion = religionHooks.useCreate;
-export const useUpdateReligion = religionHooks.useUpdate;
-export const useUpdateReligionStatus = religionHooks.useUpdateStatus;
-export const useDeleteReligion = religionHooks.useDelete;
 
 /* ----------------------------------------------- guest registration lists -- */
 

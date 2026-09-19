@@ -11,7 +11,6 @@ export interface NotificationTemplate {
     trigger_key: string | null;
     notification_category_id: number;
     event_category_id: number | null;
-    event_type_id: number | null;
     title: string;
     content: string;
     variables_used: string[] | null;
@@ -22,7 +21,6 @@ export interface NotificationTemplate {
     has_pending_approval?: boolean;
     notificationCategory?: { id: number; name: string; icon: string | null; color: string | null } | null;
     category?: { id: number; name: string } | null;
-    eventType?: { id: number; name: string } | null;
     created_at: string;
     updated_at?: string;
 }
@@ -42,7 +40,6 @@ export type NotificationTemplatePayload = {
     trigger_key?: string | null;
     notification_category_id: number;
     event_category_id?: number | null;
-    event_type_id?: number | null;
     title: string;
     content: string;
     image_url?: string | null;

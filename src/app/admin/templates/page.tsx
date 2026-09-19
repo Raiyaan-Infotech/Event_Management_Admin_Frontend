@@ -55,11 +55,7 @@ import { DeleteDialog } from '@/components/common/delete-dialog';
 import { PageLoader } from '@/components/common/page-loader';
 import { PermissionGuard } from '@/components/guards/permission-guard';
 import { cn } from '@/lib/utils';
-import {
-    useEventCategories,
-    useEventTypes,
-    useReligions,
-} from '@/hooks/use-menu-management';
+import { useEventCategories } from '@/hooks/use-menu-management';
 import {
     useEventTemplates,
     useEventTemplateStats,
@@ -90,8 +86,6 @@ export default function TemplateListPage() {
     const [limit, setLimit] = useState(10);
     const [search, setSearch] = useState('');
     const [categoryId, setCategoryId] = useState(ALL);
-    const [typeId, setTypeId] = useState(ALL);
-    const [religionId, setReligionId] = useState(ALL);
     const [status, setStatus] = useState(ALL);
 
     const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -101,8 +95,6 @@ export default function TemplateListPage() {
         limit,
         search: search || undefined,
         event_category_id: categoryId === ALL ? undefined : categoryId,
-        event_type_id: typeId === ALL ? undefined : typeId,
-        religion_id: religionId === ALL ? undefined : religionId,
         status: status === ALL ? undefined : status,
     });
 
@@ -113,20 +105,6 @@ export default function TemplateListPage() {
     // Filter dropdowns. limit:200 because a filter that only lists the first
     // page of options silently hides the rest.
     const { data: categories } = useEventCategories({ limit: 200, is_active: true });
-    // Event Type options narrow to the chosen category, so the two filters
-    // cannot contradict each other.
-    const { data: eventTypes } = useEventTypes({
-        limit: 200,
-        is_active: true,
-        event_category_id: categoryId === ALL ? undefined : categoryId,
-    });
-    const { data: religions } = useReligions({
-        limit: 200,
-        is_active: true,
-        event_category_id: categoryId === ALL ? undefined : categoryId,
-        event_type_id: typeId === ALL ? undefined : typeId,
-    });
-
     const updateStatus = useUpdateEventTemplateStatus();
     const updateFeatured = useUpdateEventTemplateFeatured();
     const duplicateTemplate = useDuplicateEventTemplate();
@@ -135,13 +113,11 @@ export default function TemplateListPage() {
     const templates = data?.data ?? [];
     const pagination = data?.pagination ?? null;
     const hasFilters =
-        !!search || categoryId !== ALL || typeId !== ALL || religionId !== ALL || status !== ALL;
+        !!search || categoryId !== ALL || status !== ALL;
 
     const clearFilters = () => {
         setSearch('');
         setCategoryId(ALL);
-        setTypeId(ALL);
-        setReligionId(ALL);
         setStatus(ALL);
         setPage(1);
     };
@@ -250,7 +226,7 @@ export default function TemplateListPage() {
                 {/* Filters */}
                 <Card className="border-border bg-card shadow-xs">
                     <CardContent className="space-y-3 p-4">
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                             <div className="space-y-1.5">
                                 <Label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                                     Search
@@ -277,10 +253,6 @@ export default function TemplateListPage() {
                                     value={categoryId}
                                     onValueChange={(v) => {
                                         setCategoryId(v);
-                                        // The chosen type and religion may not belong to
-                                        // the new category, which would filter to nothing.
-                                        setTypeId(ALL);
-                                        setReligionId(ALL);
                                         setPage(1);
                                     }}
                                 >
@@ -292,57 +264,6 @@ export default function TemplateListPage() {
                                         {(categories?.data ?? []).map((c) => (
                                             <SelectItem key={c.id} value={String(c.id)}>
                                                 {c.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <Label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                                    Event Type
-                                </Label>
-                                <Select
-                                    value={typeId}
-                                    onValueChange={(v) => {
-                                        setTypeId(v);
-                                        setReligionId(ALL);
-                                        setPage(1);
-                                    }}
-                                >
-                                    <SelectTrigger className="h-10">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value={ALL}>All Types</SelectItem>
-                                        {(eventTypes?.data ?? []).map((t) => (
-                                            <SelectItem key={t.id} value={String(t.id)}>
-                                                {t.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <Label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                                    Religion
-                                </Label>
-                                <Select
-                                    value={religionId}
-                                    onValueChange={(v) => {
-                                        setReligionId(v);
-                                        setPage(1);
-                                    }}
-                                >
-                                    <SelectTrigger className="h-10">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value={ALL}>All Religions</SelectItem>
-                                        {(religions?.data ?? []).map((r) => (
-                                            <SelectItem key={r.id} value={String(r.id)}>
-                                                {r.name}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -409,8 +330,6 @@ export default function TemplateListPage() {
                                         <TableHead className="w-12">#</TableHead>
                                         <TableHead className="min-w-[220px]">Template</TableHead>
                                         <TableHead className="whitespace-nowrap">Category</TableHead>
-                                        <TableHead className="whitespace-nowrap">Event Type</TableHead>
-                                        <TableHead className="whitespace-nowrap">Religion</TableHead>
                                         <TableHead className="whitespace-nowrap text-center">Status</TableHead>
                                         <TableHead className="whitespace-nowrap text-center">Featured</TableHead>
                                         <TableHead className="whitespace-nowrap">Created On</TableHead>
@@ -421,13 +340,13 @@ export default function TemplateListPage() {
                                 <TableBody>
                                     {isLoading ? (
                                         <TableRow>
-                                            <TableCell colSpan={9} className="py-16 text-center text-muted-foreground">
+                                            <TableCell colSpan={7} className="py-16 text-center text-muted-foreground">
                                                 Loading templates...
                                             </TableCell>
                                         </TableRow>
                                     ) : templates.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={9} className="py-16 text-center text-muted-foreground">
+                                            <TableCell colSpan={7} className="py-16 text-center text-muted-foreground">
                                                 {hasFilters
                                                     ? 'No templates match these filters.'
                                                     : 'No templates yet. Click "Create Template" to design your first one.'}
@@ -494,12 +413,6 @@ export default function TemplateListPage() {
 
                                                     <TableCell className="text-sm text-foreground">
                                                         {row.category?.name ?? '—'}
-                                                    </TableCell>
-                                                    <TableCell className="text-sm text-foreground">
-                                                        {row.eventType?.name ?? '—'}
-                                                    </TableCell>
-                                                    <TableCell className="text-sm text-foreground">
-                                                        {row.religion?.name ?? '—'}
                                                     </TableCell>
 
                                                     <TableCell className="text-center">

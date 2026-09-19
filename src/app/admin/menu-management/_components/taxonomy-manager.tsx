@@ -27,8 +27,8 @@ import { cn } from '@/lib/utils';
 import type { TaxonomyRecord, TaxonomyPayload } from '@/hooks/use-menu-management';
 
 /**
- * Event Category, Event Type and Religion are the same screen with different
- * labels, so they share this component rather than being three copies.
+ * Event Categories, the guest-registration lists and Notification Categories
+ * are the same screen with different labels, so they share this component.
  *
  * Layout follows the Template Categories page (form card on top, searchable
  * table below); the field set follows the Menu Management mockup.
@@ -51,15 +51,12 @@ export interface TaxonomyManagerProps<T extends TaxonomyRecord> {
     defaultColor?: string;
 
     /**
-     * Cascading scope selects rendered before the name field.
-     *
-     * Event Types has one (Event Category). Religions has two — Event Category
-     * then its Event Type — matching how the records are actually scoped.
-     * Each entry names the payload key it writes, so the same component serves
-     * both without knowing the domain.
+     * Scope selects rendered before the name field — the guest-registration
+     * lists have one (Event Category). Each entry names the payload key it
+     * writes, so the component does not need to know the domain.
      */
     scopeSelects?: Array<{
-        key: 'event_category_id' | 'event_type_id';
+        key: 'event_category_id';
         label: string;
         placeholder: string;
         options: Array<{ id: number; name: string }>;
@@ -69,15 +66,13 @@ export interface TaxonomyManagerProps<T extends TaxonomyRecord> {
         /** Locked until an earlier select has a value. */
         disabledUntil?: 'event_category_id';
         /** Cleared when this select changes, so a stale child can't survive. */
-        clears?: Array<'event_category_id' | 'event_type_id'>;
+        clears?: Array<'event_category_id'>;
         /**
          * Allow the scope to be left empty, sending `null` instead of an id.
          *
-         * Off by default, so Event Types and Religions keep demanding a scope —
-         * a record of theirs with none can never be reached by the Menu form's
-         * cascade. The guest-registration lists are the opposite case: their
-         * NULL-scope rows ARE the fallback list every uncategorised event
-         * falls back to, and without this there is no way to author one.
+         * The guest-registration lists use it: their NULL-scope rows ARE the
+         * fallback list every uncategorised event falls back to, and without
+         * this there is no way to author one.
          */
         optional?: boolean;
         /** Wording for the empty choice, e.g. "All categories (general)". */
@@ -98,11 +93,9 @@ export interface TaxonomyManagerProps<T extends TaxonomyRecord> {
 
     /**
      * Fired whenever a scope value changes — on selection, on edit, and on
-     * reset. The page needs it to refetch a dependent list (Event Types for the
-     * chosen category); without the edit/reset calls, opening a saved row would
-     * show an empty child dropdown.
+     * reset, for a page that needs to refetch a dependent list.
      */
-    onScopeChange?: (key: 'event_category_id' | 'event_type_id', value: string) => void;
+    onScopeChange?: (key: 'event_category_id', value: string) => void;
 
     data: T[];
     pagination: PaginationMeta | null;
@@ -125,7 +118,6 @@ interface FormState {
     color: string;
     is_active: boolean;
     event_category_id: string;
-    event_type_id: string;
 }
 
 /**
@@ -144,7 +136,6 @@ const emptyForm = (defaultColor: string): FormState => ({
     color: defaultColor,
     is_active: true,
     event_category_id: '',
-    event_type_id: '',
 });
 
 export function TaxonomyManager<T extends TaxonomyRecord>(props: TaxonomyManagerProps<T>) {
@@ -208,11 +199,10 @@ export function TaxonomyManager<T extends TaxonomyRecord>(props: TaxonomyManager
             event_category_id: (row as any).event_category_id
                 ? String((row as any).event_category_id)
                 : '',
-            event_type_id: (row as any).event_type_id ? String((row as any).event_type_id) : '',
         });
         setErrors({});
         // Push the row's scope out so dependent lists load for THIS record —
-        // otherwise the Event Type dropdown opens empty on edit.
+        // otherwise a dependent dropdown opens empty on edit.
         scopeSelects.forEach((s) => {
             const raw = (row as any)[s.key];
             onScopeChange?.(s.key, raw ? String(raw) : '');
@@ -312,9 +302,9 @@ export function TaxonomyManager<T extends TaxonomyRecord>(props: TaxonomyManager
         }
 
         // One column per configured scope, reading the joined record the API
-        // returns (`category` / `eventType`).
+        // returns (`category`).
         scopeSelects.forEach((s) => {
-            const relation = s.key === 'event_category_id' ? 'category' : 'eventType';
+            const relation = 'category';
             cols.push({
                 key: relation,
                 header: s.label,
@@ -388,7 +378,7 @@ export function TaxonomyManager<T extends TaxonomyRecord>(props: TaxonomyManager
                     </CardHeader>
                     <CardContent className="space-y-4 p-4">
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                            {/* Scope selects — Event Types has one, Religions has two */}
+                            {/* Scope selects */}
                             {scopeSelects.map((s) => {
                                 const locked = !!s.disabledUntil && !form[s.disabledUntil];
                                 return (

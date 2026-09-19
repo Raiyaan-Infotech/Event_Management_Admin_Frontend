@@ -47,7 +47,7 @@ import { PermissionGuard } from '@/components/guards/permission-guard';
 import { DynamicIcon } from '@/components/common/dynamic-icon';
 import { TemplatePreviewModal } from './_components/template-preview-modal';
 import { cn } from '@/lib/utils';
-import { useEventCategories, useEventTypes } from '@/hooks/use-menu-management';
+import { useEventCategories } from '@/hooks/use-menu-management';
 import { useNotificationCategories } from '@/hooks/use-notification-categories';
 import {
     useNotificationTemplates,
@@ -66,7 +66,6 @@ export default function NotificationTemplatesPage() {
     const [search, setSearch] = useState('');
     const [categoryTab, setCategoryTab] = useState<string>(ALL);
     const [eventCategoryId, setEventCategoryId] = useState(ALL);
-    const [eventTypeId, setEventTypeId] = useState(ALL);
     const [status, setStatus] = useState(ALL);
     const [deleteId, setDeleteId] = useState<number | null>(null);
     const [previewId, setPreviewId] = useState<number | null>(null);
@@ -86,11 +85,6 @@ export default function NotificationTemplatesPage() {
 
     const { data: notificationCategories } = useNotificationCategories({ limit: 200, is_active: true });
     const { data: eventCategories } = useEventCategories({ limit: 200, is_active: true });
-    const { data: eventTypes } = useEventTypes({
-        limit: 200,
-        is_active: true,
-        event_category_id: eventCategoryId === ALL ? undefined : eventCategoryId,
-    });
 
     // Counts per tab — a single wide fetch, counted client-side. Template
     // volume here is tens, not thousands, so this stays cheap.
@@ -110,7 +104,6 @@ export default function NotificationTemplatesPage() {
         search: search || undefined,
         notification_category_id: categoryTab === ALL ? undefined : categoryTab,
         event_category_id: eventCategoryId === ALL ? undefined : eventCategoryId,
-        event_type_id: eventTypeId === ALL ? undefined : eventTypeId,
         is_active: status === ALL ? undefined : status === 'active',
     });
 
@@ -121,13 +114,12 @@ export default function NotificationTemplatesPage() {
     const templates = data?.data ?? [];
     const pagination = data?.pagination ?? null;
     const hasFilters =
-        !!search || categoryTab !== ALL || eventCategoryId !== ALL || eventTypeId !== ALL || status !== ALL;
+        !!search || categoryTab !== ALL || eventCategoryId !== ALL || status !== ALL;
 
     const clearFilters = () => {
         setSearch('');
         setCategoryTab(ALL);
         setEventCategoryId(ALL);
-        setEventTypeId(ALL);
         setStatus(ALL);
         setPage(1);
     };
@@ -247,7 +239,6 @@ export default function NotificationTemplatesPage() {
                                     value={eventCategoryId}
                                     onValueChange={(v) => {
                                         setEventCategoryId(v);
-                                        setEventTypeId(ALL);
                                         setPage(1);
                                     }}
                                 >
@@ -259,31 +250,6 @@ export default function NotificationTemplatesPage() {
                                         {(eventCategories?.data ?? []).map((c) => (
                                             <SelectItem key={c.id} value={String(c.id)}>
                                                 {c.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <Label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                                    Event Type
-                                </Label>
-                                <Select
-                                    value={eventTypeId}
-                                    onValueChange={(v) => {
-                                        setEventTypeId(v);
-                                        setPage(1);
-                                    }}
-                                >
-                                    <SelectTrigger className="h-10">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value={ALL}>All Event Types</SelectItem>
-                                        {(eventTypes?.data ?? []).map((t) => (
-                                            <SelectItem key={t.id} value={String(t.id)}>
-                                                {t.name}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -334,7 +300,6 @@ export default function NotificationTemplatesPage() {
                                         <TableHead className="min-w-[200px]">Template Name</TableHead>
                                         <TableHead className="whitespace-nowrap">Notification Category</TableHead>
                                         <TableHead className="whitespace-nowrap">Event Category</TableHead>
-                                        <TableHead className="whitespace-nowrap">Event Type</TableHead>
                                         <TableHead className="min-w-[160px]">Title</TableHead>
                                         <TableHead className="min-w-[220px]">Content Preview</TableHead>
                                         <TableHead className="whitespace-nowrap text-center">Status</TableHead>
@@ -345,13 +310,13 @@ export default function NotificationTemplatesPage() {
                                 <TableBody>
                                     {isLoading ? (
                                         <TableRow>
-                                            <TableCell colSpan={9} className="py-16 text-center text-muted-foreground">
+                                            <TableCell colSpan={8} className="py-16 text-center text-muted-foreground">
                                                 Loading templates...
                                             </TableCell>
                                         </TableRow>
                                     ) : templates.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={9} className="py-16 text-center text-muted-foreground">
+                                            <TableCell colSpan={8} className="py-16 text-center text-muted-foreground">
                                                 {hasFilters
                                                     ? 'No templates match these filters.'
                                                     : 'No templates yet. Click "Add Template" to create your first one.'}
@@ -412,9 +377,6 @@ export default function NotificationTemplatesPage() {
                                                     </TableCell>
                                                     <TableCell className="text-sm text-foreground">
                                                         {row.category?.name ?? '—'}
-                                                    </TableCell>
-                                                    <TableCell className="text-sm text-foreground">
-                                                        {row.eventType?.name ?? '—'}
                                                     </TableCell>
                                                     <TableCell className="max-w-[180px] break-all text-sm text-foreground">
                                                         {row.title}

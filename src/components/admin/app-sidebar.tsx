@@ -47,7 +47,6 @@ import {
   LayoutList,
   LayoutTemplate,
   Tag,
-  Church,
   Repeat,
   UserRound,
   UtensilsCrossed,
@@ -138,8 +137,6 @@ const menuItems: MenuItem[] = [
     children: [
       { labelKey: "nav.event_menus", href: "/admin/menu-management/menus", icon: LayoutList, permission: "event_menus.view" },
       { labelKey: "nav.event_categories", href: "/admin/menu-management/event-categories", icon: Folder, permission: "event_categories.view" },
-      { labelKey: "nav.event_types", href: "/admin/menu-management/event-types", icon: Tag, permission: "event_types.view" },
-      { labelKey: "nav.religions", href: "/admin/menu-management/religions", icon: Church, permission: "religions.view" },
       // The two dropdowns the MOBILE APP's guest registration form offers.
       // Filed here because they are category-scoped taxonomies exactly like the
       // three above, and are edited the same way.
