@@ -101,24 +101,9 @@ export default function ViewMenuPage({ params }: { params: Promise<{ id: string 
                             </div>
                         </SectionCard>
 
-                        <SectionCard icon={<Monitor className="h-4 w-4" />} title="Display Configuration">
-                            <div className="grid grid-cols-1 gap-x-10 gap-y-5 md:grid-cols-2 md:divide-x md:divide-border">
+                        <SectionCard icon={<Monitor className="h-4 w-4" />} title="Platform Status">
+                            <div className="grid grid-cols-1 gap-x-10 gap-y-5 md:grid-cols-2">
                                 <div className="space-y-4">
-                                    <p className="text-sm font-semibold text-foreground">Display Status</p>
-                                    <StateRow
-                                        label="Website"
-                                        on={!!menu.display_website}
-                                        onText="Visible"
-                                        offText="Hidden"
-                                    />
-                                    <StateRow
-                                        label="Mobile App"
-                                        on={!!menu.display_mobile}
-                                        onText="Visible"
-                                        offText="Hidden"
-                                    />
-                                </div>
-                                <div className="space-y-4 md:pl-10">
                                     <p className="text-sm font-semibold text-foreground">Active Status</p>
                                     <StateRow
                                         label="Website"

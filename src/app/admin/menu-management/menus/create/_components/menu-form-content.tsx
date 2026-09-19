@@ -43,8 +43,6 @@ interface FormState {
     description: string;
     remarks: string;
     event_category_id: string;
-    display_website: boolean;
-    display_mobile: boolean;
     active_website: boolean;
     active_mobile: boolean;
     sort_order: number;
@@ -57,8 +55,6 @@ const emptyForm = (): FormState => ({
     description: '',
     remarks: '',
     event_category_id: '',
-    display_website: true,
-    display_mobile: true,
     active_website: true,
     active_mobile: true,
     sort_order: 1,
@@ -120,8 +116,6 @@ export function MenuFormContent() {
             description: record.description ?? '',
             remarks: record.remarks ?? '',
             event_category_id: record.event_category_id ? String(record.event_category_id) : '',
-            display_website: !!record.display_website,
-            display_mobile: !!record.display_mobile,
             active_website: !!record.active_website,
             active_mobile: !!record.active_mobile,
             sort_order: record.sort_order ?? 1,
@@ -164,8 +158,6 @@ export function MenuFormContent() {
             description: form.description.trim() || null,
             remarks: form.remarks.trim() || null,
             event_category_id: Number(form.event_category_id),
-            display_website: form.display_website,
-            display_mobile: form.display_mobile,
             active_website: form.active_website,
             active_mobile: form.active_mobile,
             sort_order: Number(form.sort_order) || 0,
@@ -202,8 +194,6 @@ export function MenuFormContent() {
                 description: form.description.trim() || null,
                 remarks: form.remarks.trim() || null,
                 event_category_id: Number(form.event_category_id),
-                display_website: form.display_website,
-                display_mobile: form.display_mobile,
                 active_website: form.active_website,
                 active_mobile: form.active_mobile,
                 sort_order: Number(form.sort_order) || 0,
@@ -347,18 +337,9 @@ export function MenuFormContent() {
                             </div>
                         </div>
 
-                        {/* Row 2 — the two status panels */}
+                        {/* Row 2 — where the menu is active. Switching a platform
+                            off hides the menu there for every plan. */}
                         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                            <StatusPanel
-                                title="Display / Hide Status"
-                                subtitle="Show or hide this menu in website and mobile app."
-                                websiteLabel="Show menu in website"
-                                mobileLabel="Show menu in mobile app"
-                                websiteValue={form.display_website}
-                                mobileValue={form.display_mobile}
-                                onWebsiteChange={(v) => setField('display_website', v)}
-                                onMobileChange={(v) => setField('display_mobile', v)}
-                            />
                             <StatusPanel
                                 title="Active / Inactive Status"
                                 subtitle="Activate or deactivate this menu in website and mobile app."

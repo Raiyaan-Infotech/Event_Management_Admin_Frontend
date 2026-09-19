@@ -57,8 +57,6 @@ export interface EventMenu {
     updater?: { id: number; full_name: string } | null;
     /** A menu is scoped by category only (no event type / religion / menu type). */
     event_category_id: number | null;
-    display_website: number;
-    display_mobile: number;
     active_website: number;
     active_mobile: number;
     icon: string | null;
@@ -272,8 +270,6 @@ export type EventMenuPayload = {
     description?: string | null;
     remarks?: string | null;
     event_category_id?: number | null;
-    display_website?: boolean | number;
-    display_mobile?: boolean | number;
     active_website?: boolean | number;
     active_mobile?: boolean | number;
     icon?: string | null;
@@ -282,11 +278,7 @@ export type EventMenuPayload = {
     is_active?: boolean | number;
 };
 
-export type EventMenuToggleField =
-    | 'display_website'
-    | 'display_mobile'
-    | 'active_website'
-    | 'active_mobile';
+export type EventMenuToggleField = 'active_website' | 'active_mobile';
 
 const MENUS_KEY = ['event-menus'];
 
