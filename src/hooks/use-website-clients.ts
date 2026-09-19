@@ -35,7 +35,7 @@ export interface WebsiteClient {
     is_active: number;
     /**
      * The plan this client is on. Drives what they may create in the client
-     * portal: the plan is scoped to an event category/type/religion and grants
+     * portal: the plan is scoped to an event category and grants
      * a specific set of menus. NULL = no plan assigned yet.
      */
     subscription_plan_id: number | null;

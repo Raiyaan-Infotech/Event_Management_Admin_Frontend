@@ -202,7 +202,7 @@ export function ClientFormDialog({ open, onOpenChange, client }: ClientFormDialo
 
                         {/* The plan is what the client portal reads to decide what
                             this client may create: it is scoped to an event
-                            category/type/religion and grants a specific set of
+                            category and grants a specific set of
                             menus. No plan = they can create nothing. */}
                         <div>
                             <Label htmlFor="client-plan">Subscription Plan</Label>
