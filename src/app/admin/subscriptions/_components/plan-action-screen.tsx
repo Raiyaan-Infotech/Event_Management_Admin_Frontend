@@ -500,8 +500,6 @@ export function PlanActionScreen({ variant, plan, reasons, isSubmitting, result,
                     <div className="space-y-2.5 border-t border-border pt-3">
                         <p className="text-xs font-bold text-foreground">Applies To</p>
                         <SummaryRow label="Event Category" value={plan.category?.name ?? 'All Categories'} />
-                        <SummaryRow label="Event Type" value={plan.eventType?.name ?? 'All Types'} />
-                        <SummaryRow label="Religion" value={plan.religion?.name ?? 'All Religions'} />
                         <SummaryRow label="Total Menus" value={String(plan.total_menus)} />
                     </div>
 

@@ -48,7 +48,6 @@ export interface GuestOption extends TaxonomyRecord {
     category?: { id: number; name: string; color: string | null } | null;
 }
 
-export type MenuPlatform = 'website' | 'mobile';
 
 export interface EventMenu {
     id: number;
@@ -63,11 +62,8 @@ export interface EventMenu {
     /** Detail read only — the list does not join these. */
     creator?: { id: number; full_name: string } | null;
     updater?: { id: number; full_name: string } | null;
+    /** A menu is scoped by category only (no event type / religion / menu type). */
     event_category_id: number | null;
-    event_type_id: number | null;
-    religion_id: number | null;
-    is_website: number;
-    is_mobile: number;
     display_website: number;
     display_mobile: number;
     active_website: number;
@@ -76,11 +72,7 @@ export interface EventMenu {
     color: string | null;
     sort_order: number;
     is_active: boolean | number;
-    /** Derived by the backend from is_website / is_mobile. */
-    menu_type: MenuPlatform[];
     category?: { id: number; name: string; color: string | null } | null;
-    eventType?: { id: number; name: string; color: string | null } | null;
-    religion?: { id: number; name: string; color: string | null } | null;
     has_pending_approval?: boolean;
     created_at: string;
     updated_at?: string;
@@ -319,9 +311,6 @@ export type EventMenuPayload = {
     description?: string | null;
     remarks?: string | null;
     event_category_id?: number | null;
-    event_type_id?: number | null;
-    religion_id?: number | null;
-    menu_type?: MenuPlatform[];
     display_website?: boolean | number;
     display_mobile?: boolean | number;
     active_website?: boolean | number;

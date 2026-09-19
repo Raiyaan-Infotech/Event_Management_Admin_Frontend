@@ -41,16 +41,6 @@ export default function ViewMenuPage({ params }: { params: Promise<{ id: string 
         return `${d.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })} ${d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`;
     };
 
-    // "Website & Mobile" reads better than the raw array the API returns.
-    const menuTypeLabel =
-        menu.is_website && menu.is_mobile
-            ? 'Website & Mobile'
-            : menu.is_website
-                ? 'Website'
-                : menu.is_mobile
-                    ? 'Mobile App'
-                    : '—';
-
     const statusBadge = (
         <Badge
             variant="outline"
@@ -98,10 +88,7 @@ export default function ViewMenuPage({ params }: { params: Promise<{ id: string 
                                 <div className="space-y-4">
                                     <Row label="Menu Name" value={menu.name} />
                                     <Row label="Slug" value={menu.slug} mono />
-                                    <Row label="Menu Type" value={menuTypeLabel} />
                                     <Row label="Menu Category" value={menu.category?.name ?? '—'} />
-                                    <Row label="Event Type" value={menu.eventType?.name ?? '—'} />
-                                    <Row label="Religion" value={menu.religion?.name ?? '—'} />
                                     <Row label="Sort Order" value={String(menu.sort_order)} />
                                     <Row label="Status" value={statusBadge} />
                                 </div>
@@ -121,14 +108,12 @@ export default function ViewMenuPage({ params }: { params: Promise<{ id: string 
                                     <StateRow
                                         label="Website"
                                         on={!!menu.display_website}
-                                        applies={!!menu.is_website}
                                         onText="Visible"
                                         offText="Hidden"
                                     />
                                     <StateRow
                                         label="Mobile App"
                                         on={!!menu.display_mobile}
-                                        applies={!!menu.is_mobile}
                                         onText="Visible"
                                         offText="Hidden"
                                     />
@@ -138,14 +123,12 @@ export default function ViewMenuPage({ params }: { params: Promise<{ id: string 
                                     <StateRow
                                         label="Website"
                                         on={!!menu.active_website}
-                                        applies={!!menu.is_website}
                                         onText="Active"
                                         offText="Inactive"
                                     />
                                     <StateRow
                                         label="Mobile App"
                                         on={!!menu.active_mobile}
-                                        applies={!!menu.is_mobile}
                                         onText="Active"
                                         offText="Inactive"
                                     />
@@ -258,18 +241,15 @@ function Row({
 /**
  * A read-only switch. `pointer-events-none` rather than `disabled` so it keeps
  * its filled colour — a disabled switch greys out and would read as "off".
- * A platform the menu does not target shows a dash instead.
  */
 function StateRow({
     label,
     on,
-    applies,
     onText,
     offText,
 }: {
     label: string;
     on: boolean;
-    applies: boolean;
     onText: string;
     offText: string;
 }) {
@@ -277,16 +257,10 @@ function StateRow({
         <div className="flex items-center gap-2">
             <span className="w-24 shrink-0 text-xs text-muted-foreground">{label}</span>
             <span className="shrink-0 text-xs text-muted-foreground">:</span>
-            {applies ? (
-                <>
-                    <span className="pointer-events-none" aria-hidden="true">
-                        <Switch checked={on} />
-                    </span>
-                    <span className="text-sm font-medium text-foreground">{on ? onText : offText}</span>
-                </>
-            ) : (
-                <span className="text-sm text-muted-foreground">Not applicable</span>
-            )}
+            <span className="pointer-events-none" aria-hidden="true">
+                <Switch checked={on} />
+            </span>
+            <span className="text-sm font-medium text-foreground">{on ? onText : offText}</span>
         </div>
     );
 }

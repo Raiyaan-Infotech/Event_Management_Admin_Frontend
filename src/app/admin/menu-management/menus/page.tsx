@@ -6,8 +6,6 @@ import {
     Plus,
     Search,
     RotateCcw,
-    Globe,
-    Smartphone,
     MoreVertical,
     Eye,
     Pencil,
@@ -53,8 +51,6 @@ import { cn } from '@/lib/utils';
 import {
     useEventMenus,
     useEventCategories,
-    useEventTypes,
-    useReligions,
     useUpdateEventMenuStatus,
     useDuplicateEventMenu,
     useReorderEventMenus,
@@ -69,10 +65,7 @@ export default function MenuListPage() {
     const [page, setPage] = useState(1);
     const [limit, setLimit] = useState(10);
     const [search, setSearch] = useState('');
-    const [menuType, setMenuType] = useState(ALL);
     const [categoryId, setCategoryId] = useState(ALL);
-    const [typeId, setTypeId] = useState(ALL);
-    const [religionId, setReligionId] = useState(ALL);
 
     const [deleteId, setDeleteId] = useState<number | null>(null);
 
@@ -80,31 +73,12 @@ export default function MenuListPage() {
         page,
         limit,
         search: search || undefined,
-        menu_type: menuType === ALL ? undefined : menuType,
         event_category_id: categoryId === ALL ? undefined : categoryId,
-        event_type_id: typeId === ALL ? undefined : typeId,
-        religion_id: religionId === ALL ? undefined : religionId,
     });
 
     // Filter dropdowns. limit:200 because a filter that only lists the first
     // page of options silently hides the rest.
     const { data: categories } = useEventCategories({ limit: 200, is_active: true });
-    // Event Type options narrow to the chosen category, so the two filters
-    // cannot contradict each other.
-    const { data: eventTypes } = useEventTypes({
-        limit: 200,
-        is_active: true,
-        event_category_id: categoryId === ALL ? undefined : categoryId,
-    });
-    // Religions are scoped under (category, type) too, so this narrows with the
-    // other two filters rather than listing every religion in the company.
-    const { data: religions } = useReligions({
-        limit: 200,
-        is_active: true,
-        event_category_id: categoryId === ALL ? undefined : categoryId,
-        event_type_id: typeId === ALL ? undefined : typeId,
-    });
-
     const updateStatus = useUpdateEventMenuStatus();
     const duplicateMenu = useDuplicateEventMenu();
     const reorderMenus = useReorderEventMenus();
@@ -112,15 +86,11 @@ export default function MenuListPage() {
 
     const menus = data?.data ?? [];
     const pagination = data?.pagination ?? null;
-    const hasFilters =
-        !!search || menuType !== ALL || categoryId !== ALL || typeId !== ALL || religionId !== ALL;
+    const hasFilters = !!search || categoryId !== ALL;
 
     const clearFilters = () => {
         setSearch('');
-        setMenuType(ALL);
         setCategoryId(ALL);
-        setTypeId(ALL);
-        setReligionId(ALL);
         setPage(1);
     };
 
@@ -171,7 +141,7 @@ export default function MenuListPage() {
                     <div>
                         <h1 className="text-xl font-extrabold tracking-tight text-foreground">Menu List</h1>
                         <p className="text-xs text-muted-foreground">
-                            Menus shown on the website and mobile app, grouped by event category, type and religion.
+                            Menus shown on the website and mobile app, grouped by event category.
                         </p>
                     </div>
 
@@ -186,7 +156,7 @@ export default function MenuListPage() {
                 {/* Filters */}
                 <Card className="border-border bg-card shadow-xs">
                     <CardContent className="space-y-3 p-4">
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-2">
                             <div className="space-y-1.5">
                                 <Label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                                     Search
@@ -207,39 +177,12 @@ export default function MenuListPage() {
 
                             <div className="space-y-1.5">
                                 <Label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                                    Menu Type
-                                </Label>
-                                <Select
-                                    value={menuType}
-                                    onValueChange={(v) => {
-                                        setMenuType(v);
-                                        setPage(1);
-                                    }}
-                                >
-                                    <SelectTrigger className="h-10">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value={ALL}>All</SelectItem>
-                                        <SelectItem value="website">Website</SelectItem>
-                                        <SelectItem value="mobile">Mobile App</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <Label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                                     Event Category
                                 </Label>
                                 <Select
                                     value={categoryId}
                                     onValueChange={(v) => {
                                         setCategoryId(v);
-                                        // The chosen type and religion may not belong
-                                        // to the new category, which would filter to
-                                        // nothing.
-                                        setTypeId(ALL);
-                                        setReligionId(ALL);
                                         setPage(1);
                                     }}
                                 >
@@ -257,57 +200,6 @@ export default function MenuListPage() {
                                 </Select>
                             </div>
 
-                            <div className="space-y-1.5">
-                                <Label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                                    Event Type
-                                </Label>
-                                <Select
-                                    value={typeId}
-                                    onValueChange={(v) => {
-                                        setTypeId(v);
-                                        // Religion is scoped to the type.
-                                        setReligionId(ALL);
-                                        setPage(1);
-                                    }}
-                                >
-                                    <SelectTrigger className="h-10">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value={ALL}>All</SelectItem>
-                                        {(eventTypes?.data ?? []).map((t) => (
-                                            <SelectItem key={t.id} value={String(t.id)}>
-                                                {t.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <Label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                                    Religion
-                                </Label>
-                                <Select
-                                    value={religionId}
-                                    onValueChange={(v) => {
-                                        setReligionId(v);
-                                        setPage(1);
-                                    }}
-                                >
-                                    <SelectTrigger className="h-10">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value={ALL}>All</SelectItem>
-                                        {(religions?.data ?? []).map((r) => (
-                                            <SelectItem key={r.id} value={String(r.id)}>
-                                                {r.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
                         </div>
 
                         <div className="flex justify-end">
@@ -338,11 +230,8 @@ export default function MenuListPage() {
                                     <TableRow className="border-b border-border/60 hover:bg-transparent">
                                         <TableHead className="w-12">#</TableHead>
                                         <TableHead className="min-w-[200px]">Menu Name</TableHead>
-                                        <TableHead className="whitespace-nowrap">Menu Type</TableHead>
                                         <TableHead className="whitespace-nowrap text-center">Change Order</TableHead>
                                         <TableHead className="whitespace-nowrap">Event Category</TableHead>
-                                        <TableHead className="whitespace-nowrap">Event Type</TableHead>
-                                        <TableHead className="whitespace-nowrap">Religion</TableHead>
                                         <TableHead className="whitespace-nowrap text-center">Sort Order</TableHead>
                                         <TableHead className="text-center">Status</TableHead>
                                         <TableHead className="text-right">Action</TableHead>
@@ -352,13 +241,13 @@ export default function MenuListPage() {
                                 <TableBody>
                                     {isLoading ? (
                                         <TableRow>
-                                            <TableCell colSpan={10} className="py-16 text-center text-muted-foreground">
+                                            <TableCell colSpan={7} className="py-16 text-center text-muted-foreground">
                                                 Loading menus...
                                             </TableCell>
                                         </TableRow>
                                     ) : menus.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={10} className="py-16 text-center text-muted-foreground">
+                                            <TableCell colSpan={7} className="py-16 text-center text-muted-foreground">
                                                 {hasFilters
                                                     ? 'No menus match these filters.'
                                                     : 'No menus yet. Click "Add New Menu" to create your first one.'}
@@ -392,27 +281,6 @@ export default function MenuListPage() {
                                                                     /{row.slug}
                                                                 </div>
                                                             </div>
-                                                        </div>
-                                                    </TableCell>
-
-                                                    <TableCell>
-                                                        <div className="flex items-center gap-1.5">
-                                                            {row.is_website ? (
-                                                                <span
-                                                                    title="Website"
-                                                                    className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-primary/30 bg-primary/5 text-primary"
-                                                                >
-                                                                    <Globe className="h-3.5 w-3.5" />
-                                                                </span>
-                                                            ) : null}
-                                                            {row.is_mobile ? (
-                                                                <span
-                                                                    title="Mobile App"
-                                                                    className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-primary/30 bg-primary/5 text-primary"
-                                                                >
-                                                                    <Smartphone className="h-3.5 w-3.5" />
-                                                                </span>
-                                                            ) : null}
                                                         </div>
                                                     </TableCell>
 
@@ -451,18 +319,6 @@ export default function MenuListPage() {
                                                         <TaxonomyBadge
                                                             value={row.category?.name}
                                                             color={row.category?.color}
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <TaxonomyBadge
-                                                            value={row.eventType?.name}
-                                                            color={row.eventType?.color}
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <TaxonomyBadge
-                                                            value={row.religion?.name}
-                                                            color={row.religion?.color}
                                                         />
                                                     </TableCell>
 
@@ -587,7 +443,7 @@ export default function MenuListPage() {
 }
 
 /**
- * A taxonomy value (category / type / religion) as a badge, tinted from the
+ * A taxonomy value (the event category) as a badge, tinted from the
  * record's own colour.
  *
  * The colour drives the dot, border and background wash only — never the text.

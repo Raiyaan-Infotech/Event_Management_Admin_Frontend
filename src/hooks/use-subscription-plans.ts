@@ -19,9 +19,6 @@ export interface PlanMenuRow {
         slug: string;
         icon: string | null;
         color: string | null;
-        /** Which type / religion this copy of the menu belongs to — see menuScopeLabel. */
-        eventType?: { id: number; name: string } | null;
-        religion?: { id: number; name: string } | null;
     } | null;
 }
 
@@ -36,8 +33,6 @@ export interface SubscriptionPlan {
     for_website: number;
     for_mobile: number;
     event_category_id: number | null;
-    event_type_id: number | null;
-    religion_id: number | null;
     currency_code: string;
     price: string | number;
     trial_days: number;
@@ -52,8 +47,6 @@ export interface SubscriptionPlan {
     /** The plan's own badge, joined from plan_badges. */
     planBadge?: { id: number; text: string; style: string; color: string } | null;
     category?: { id: number; name: string; color: string | null } | null;
-    eventType?: { id: number; name: string; color: string | null } | null;
-    religion?: { id: number; name: string; color: string | null } | null;
     planMenus?: PlanMenuRow[];
     /** Detail read only — the list does not join these. */
     creator?: { id: number; full_name: string } | null;
@@ -93,8 +86,6 @@ export type SubscriptionPlanPayload = {
     for_website?: number | boolean;
     for_mobile?: number | boolean;
     event_category_id?: number | null;
-    event_type_id?: number | null;
-    religion_id?: number | null;
     currency_code?: string;
     price?: number;
     trial_days?: number;

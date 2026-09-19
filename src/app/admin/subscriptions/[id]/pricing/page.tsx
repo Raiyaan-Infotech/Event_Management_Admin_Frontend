@@ -254,8 +254,6 @@ export default function ViewPricingPage({ params }: { params: Promise<{ id: stri
                             <p className="text-xs font-bold text-foreground">Applies To</p>
                             {/* A null scope means the plan is not restricted. */}
                             <SummaryRow label="Event Category" value={plan.category?.name ?? 'All Categories'} />
-                            <SummaryRow label="Event Type" value={plan.eventType?.name ?? 'All Types'} />
-                            <SummaryRow label="Religion" value={plan.religion?.name ?? 'All Religions'} />
                         </div>
 
                         <div className="space-y-2 border-t border-border pt-4">

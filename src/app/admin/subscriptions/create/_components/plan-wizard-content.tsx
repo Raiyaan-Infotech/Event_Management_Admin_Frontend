@@ -35,8 +35,7 @@ import { DynamicIcon } from '@/components/common/dynamic-icon';
 import { cn } from '@/lib/utils';
 import { usePlanTypes } from '@/hooks/use-plan-types';
 import { usePlanBadges, badgeStyleProps, type BadgeStyle } from '@/hooks/use-plan-badges';
-import { menuScopeLabel } from '@/lib/menu-scope';
-import { useEventCategories, useEventTypes, useReligions, useEventMenus } from '@/hooks/use-menu-management';
+import { useEventCategories, useEventMenus } from '@/hooks/use-menu-management';
 import {
     useSubscriptionPlan,
     useCreateSubscriptionPlan,
@@ -78,8 +77,6 @@ interface FormState {
     for_website: boolean;
     for_mobile: boolean;
     event_category_id: string;
-    event_type_id: string;
-    religion_id: string;
     // Step 3
     currency_code: string;
     price: string;
@@ -97,8 +94,6 @@ const emptyForm = (): FormState => ({
     for_website: true,
     for_mobile: true,
     event_category_id: '',
-    event_type_id: '',
-    religion_id: '',
     currency_code: 'INR',
     price: '',
     trial_days: '0',
@@ -126,25 +121,13 @@ export function PlanWizardContent() {
     const { data: catalog } = useLimitCatalog();
     const { data: categories } = useEventCategories({ limit: 200, is_active: true });
 
-    const { data: eventTypes } = useEventTypes({
-        limit: 200,
-        is_active: true,
-        event_category_id: form.event_category_id || undefined,
-    });
-    const { data: religions } = useReligions({
-        limit: 200,
-        is_active: true,
-        event_category_id: form.event_category_id || undefined,
-        event_type_id: form.event_type_id || undefined,
-    });
-
-    // The menus offered are the ones matching the plan's scope — a menu outside
-    // it could never apply to a subscriber on this plan.
+    // The menus offered are the ones in the plan's category — a menu outside it
+    // could never apply to a subscriber on this plan. A plan (like a menu) is
+    // scoped by category only: no event type, no religion.
     const { data: menusData, isLoading: loadingMenus } = useEventMenus({
         limit: 200,
         is_active: true,
         event_category_id: form.event_category_id || undefined,
-        event_type_id: form.event_type_id || undefined,
     });
     const menus = menusData?.data ?? [];
 
@@ -167,8 +150,6 @@ export function PlanWizardContent() {
             for_website: !!existing.for_website,
             for_mobile: !!existing.for_mobile,
             event_category_id: existing.event_category_id ? String(existing.event_category_id) : '',
-            event_type_id: existing.event_type_id ? String(existing.event_type_id) : '',
-            religion_id: existing.religion_id ? String(existing.religion_id) : '',
             currency_code: existing.currency_code ?? 'INR',
             price: String(Number(existing.price ?? 0)),
             trial_days: String(existing.trial_days ?? 0),
@@ -284,10 +265,8 @@ export function PlanWizardContent() {
         short_description: form.short_description.trim(),
         for_website: form.for_website,
         for_mobile: form.for_mobile,
-        // Empty = "applies to all", which is what the list renders as All Categories/Types/Religions.
+        // Empty = "applies to all", which the list renders as All Categories.
         event_category_id: form.event_category_id ? Number(form.event_category_id) : null,
-        event_type_id: form.event_type_id ? Number(form.event_type_id) : null,
-        religion_id: form.religion_id ? Number(form.religion_id) : null,
         currency_code: form.currency_code,
         price: Number(form.price || 0),
         trial_days: Number(form.trial_days || 0),
@@ -551,9 +530,7 @@ export function PlanWizardContent() {
                                         value={form.event_category_id}
                                         onValueChange={(v) => {
                                             setField('event_category_id', v);
-                                            // Type and religion belong to the old category.
-                                            setField('event_type_id', '');
-                                            setField('religion_id', '');
+                                            // The picked menus belong to the old category.
                                             setSelection({});
                                         }}
                                     >
@@ -570,51 +547,6 @@ export function PlanWizardContent() {
                                     </Select>
                                 </Field>
 
-                                <Field label="Event Type" helper="Leave empty to apply to all types.">
-                                    <Select
-                                        value={form.event_type_id}
-                                        onValueChange={(v) => {
-                                            setField('event_type_id', v);
-                                            setField('religion_id', '');
-                                            setSelection({});
-                                        }}
-                                        disabled={!form.event_category_id}
-                                    >
-                                        <SelectTrigger className="h-10">
-                                            <SelectValue
-                                                placeholder={form.event_category_id ? 'All types' : 'Select a category first'}
-                                            />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {(eventTypes?.data ?? []).map((t) => (
-                                                <SelectItem key={t.id} value={String(t.id)}>
-                                                    {t.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </Field>
-
-                                <Field label="Religion" helper="Leave empty to apply to all religions.">
-                                    <Select
-                                        value={form.religion_id}
-                                        onValueChange={(v) => setField('religion_id', v)}
-                                        disabled={!form.event_type_id}
-                                    >
-                                        <SelectTrigger className="h-10">
-                                            <SelectValue
-                                                placeholder={form.event_type_id ? 'All religions' : 'Select an event type first'}
-                                            />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {(religions?.data ?? []).map((r) => (
-                                                <SelectItem key={r.id} value={String(r.id)}>
-                                                    {r.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </Field>
                             </div>
 
                             {/* Menu picker */}
@@ -675,11 +607,6 @@ export function PlanWizardContent() {
                                                                     </span>
                                                                     <span className="min-w-0">
                                                                         <span className="block break-all font-medium">{m.name}</span>
-                                                                        {menuScopeLabel(m) && (
-                                                                            <span className="block text-[11px] text-muted-foreground">
-                                                                                {menuScopeLabel(m)}
-                                                                            </span>
-                                                                        )}
                                                                     </span>
                                                                 </div>
                                                             </td>
@@ -817,8 +744,6 @@ export function PlanWizardContent() {
                                 <ReviewCard title="Menu Selection" onEdit={() => setStep(2)} rows={[
                                     ['Menu For', [form.for_website && 'Website', form.for_mobile && 'Mobile App'].filter(Boolean).join(', ') || '—'],
                                     ['Event Category', categories?.data?.find((c) => String(c.id) === form.event_category_id)?.name ?? 'All Categories'],
-                                    ['Event Type', eventTypes?.data?.find((t) => String(t.id) === form.event_type_id)?.name ?? 'All Types'],
-                                    ['Religion', religions?.data?.find((r) => String(r.id) === form.religion_id)?.name ?? 'All Religions'],
                                     ['Total Menus', String(selectedIds.length)],
                                 ]} />
                             </div>
@@ -848,11 +773,6 @@ export function PlanWizardContent() {
                                                         <DynamicIcon name={m.icon} color={m.color} size="h-4 w-4" />
                                                     </span>
                                                     <span className="break-all text-xs font-medium">{m.name}</span>
-                                                    {menuScopeLabel(m) && (
-                                                        <span className="text-[10px] leading-tight text-muted-foreground">
-                                                            {menuScopeLabel(m)}
-                                                        </span>
-                                                    )}
                                                     <Badge variant="secondary" className="text-[10px]">
                                                         {limitCount} Limit{limitCount === 1 ? '' : 's'}
                                                     </Badge>

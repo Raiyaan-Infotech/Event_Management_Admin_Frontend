@@ -10,7 +10,6 @@ import { PageLoader } from '@/components/common/page-loader';
 import { PermissionGuard } from '@/components/guards/permission-guard';
 import { DynamicIcon } from '@/components/common/dynamic-icon';
 import { cn } from '@/lib/utils';
-import { menuScopeLabel } from '@/lib/menu-scope';
 import { badgeStyleProps, type BadgeStyle } from '@/hooks/use-plan-badges';
 import {
     useSubscriptionPlan,
@@ -161,8 +160,6 @@ export default function ViewSubscriptionPlanPage({ params }: { params: Promise<{
                                 <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
                                     {/* A null scope means the plan is not restricted. */}
                                     <Row label="Event Category" value={plan.category?.name ?? 'All Categories'} />
-                                    <Row label="Event Type" value={plan.eventType?.name ?? 'All Types'} />
-                                    <Row label="Religion" value={plan.religion?.name ?? 'All Religions'} />
                                 </div>
                                 <p className="mt-3 text-xs text-muted-foreground">
                                     Menus will be available based on the above selection.
@@ -235,11 +232,6 @@ export default function ViewSubscriptionPlanPage({ params }: { params: Promise<{
                                                 <span className="break-words text-[11px] font-medium leading-tight">
                                                     {pm.menu?.name ?? `Menu #${pm.menu_id}`}
                                                 </span>
-                                                {menuScopeLabel(pm.menu) && (
-                                                    <span className="break-words text-[10px] leading-tight text-muted-foreground">
-                                                        {menuScopeLabel(pm.menu)}
-                                                    </span>
-                                                )}
                                             </div>
                                         );
                                     })}
@@ -298,8 +290,6 @@ export default function ViewSubscriptionPlanPage({ params }: { params: Promise<{
                             <div className="space-y-3 border-t border-border pt-4">
                                 <p className="text-xs font-bold text-foreground">Applies To</p>
                                 <SummaryRow label="Event Category" value={plan.category?.name ?? 'All Categories'} />
-                                <SummaryRow label="Event Type" value={plan.eventType?.name ?? 'All Types'} />
-                                <SummaryRow label="Religion" value={plan.religion?.name ?? 'All Religions'} />
                                 <SummaryRow label="Total Menus" value={String(plan.total_menus)} />
                             </div>
 

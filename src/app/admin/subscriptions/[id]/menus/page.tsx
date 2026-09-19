@@ -35,7 +35,6 @@ import { PageLoader } from '@/components/common/page-loader';
 import { PermissionGuard } from '@/components/guards/permission-guard';
 import { DynamicIcon } from '@/components/common/dynamic-icon';
 import { cn } from '@/lib/utils';
-import { menuScopeLabel } from '@/lib/menu-scope';
 import { useEventMenus } from '@/hooks/use-menu-management';
 import {
     useSubscriptionPlan,
@@ -82,16 +81,16 @@ export default function ManagePlanMenusPage({ params }: { params: Promise<{ id: 
     const { data: plan, isLoading } = useSubscriptionPlan(id);
     const { data: allPlans } = useSubscriptionPlans({ limit: 200 });
 
-    // Every menu the plan could offer, scoped the same way the plan is.
+    // Every menu the plan could offer: those in the plan's category. Menus carry
+    // no event type or religion, so each one is listed once.
     const { data: menusData, isLoading: loadingMenus } = useEventMenus({
         limit: 200,
         is_active: true,
         event_category_id: plan?.event_category_id ?? undefined,
-        event_type_id: plan?.event_type_id ?? undefined,
     });
 
     /*
-      Client Portal Sections are NOT scoped by event category/type — Guests or
+      Client Portal Sections are NOT scoped by event category — Guests or
       Messages is the same section whatever event a plan is for — so the scoped
       query above never returns them (their category is NULL). Fetched on their
       own and merged, otherwise the group renders empty and the admin cannot
@@ -406,11 +405,6 @@ export default function ManagePlanMenusPage({ params }: { params: Promise<{ id: 
                                                         <span className="min-w-0 flex-1">
                                                             <span className="block break-words text-sm font-semibold text-foreground">
                                                                 {m.name}
-                                                                {menuScopeLabel(m) && (
-                                                                    <span className="ml-1.5 font-normal text-muted-foreground">
-                                                                        · {menuScopeLabel(m)}
-                                                                    </span>
-                                                                )}
                                                             </span>
                                                             <span className="block break-all font-mono text-[11px] text-muted-foreground">
                                                                 /{m.slug}

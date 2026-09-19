@@ -60,7 +60,7 @@ import {
     type SubscriptionPlan,
 } from '@/hooks/use-subscription-plans';
 import { badgeStyleProps, type BadgeStyle } from '@/hooks/use-plan-badges';
-import { useEventCategories, useEventTypes, useReligions } from '@/hooks/use-menu-management';
+import { useEventCategories } from '@/hooks/use-menu-management';
 
 const ALL = 'all';
 
@@ -85,8 +85,6 @@ export function SubscriptionPlansContent() {
     const [limit, setLimit] = useState(10);
     const [search, setSearch] = useState('');
     const [categoryId, setCategoryId] = useState(ALL);
-    const [typeId, setTypeId] = useState(ALL);
-    const [religionId, setReligionId] = useState(ALL);
     const [status, setStatus] = useState(ALL);
     const [cycle, setCycle] = useState(ALL);
 
@@ -97,26 +95,12 @@ export function SubscriptionPlansContent() {
         limit,
         search: search || undefined,
         event_category_id: categoryId === ALL ? undefined : categoryId,
-        event_type_id: typeId === ALL ? undefined : typeId,
-        religion_id: religionId === ALL ? undefined : religionId,
         is_active: status === ALL ? undefined : status,
         billing_cycle: cycle === ALL ? undefined : cycle,
     });
 
     // limit:200 — a filter listing only the first page of options hides the rest.
     const { data: categories } = useEventCategories({ limit: 200, is_active: true });
-    const { data: eventTypes } = useEventTypes({
-        limit: 200,
-        is_active: true,
-        event_category_id: categoryId === ALL ? undefined : categoryId,
-    });
-    const { data: religions } = useReligions({
-        limit: 200,
-        is_active: true,
-        event_category_id: categoryId === ALL ? undefined : categoryId,
-        event_type_id: typeId === ALL ? undefined : typeId,
-    });
-
     const updateStatus = useUpdateSubscriptionPlanStatus();
     // Lands on the duplicate's own success screen — the copy is a new record,
     // and the list alone gives no confirmation of what was created.
@@ -129,13 +113,11 @@ export function SubscriptionPlansContent() {
     const plans = data?.data ?? [];
     const pagination = data?.pagination ?? null;
     const hasFilters =
-        !!search || categoryId !== ALL || typeId !== ALL || religionId !== ALL || status !== ALL || cycle !== ALL;
+        !!search || categoryId !== ALL || status !== ALL || cycle !== ALL;
 
     const resetFilters = () => {
         setSearch('');
         setCategoryId(ALL);
-        setTypeId(ALL);
-        setReligionId(ALL);
         setStatus(ALL);
         setCycle(ALL);
         setPage(1);
@@ -143,13 +125,11 @@ export function SubscriptionPlansContent() {
 
     /** Client-side CSV of the current page — no export endpoint exists yet. */
     const exportCsv = () => {
-        const header = ['Plan Name', 'Plan Code', 'Event Category', 'Event Type', 'Religion', 'Billing Cycle', 'Price', 'Status', 'Total Menus', 'Created On'];
+        const header = ['Plan Name', 'Plan Code', 'Event Category', 'Billing Cycle', 'Price', 'Status', 'Total Menus', 'Created On'];
         const rows = plans.map((p) => [
             p.name,
             p.plan_code,
             p.category?.name ?? 'All Categories',
-            p.eventType?.name ?? 'All Types',
-            p.religion?.name ?? 'All Religions',
             p.billing_cycle,
             formatPlanPrice(p),
             Number(p.is_active) === 1 ? 'Active' : 'Inactive',
@@ -188,7 +168,7 @@ export function SubscriptionPlansContent() {
                     <div>
                         <h1 className="text-xl font-extrabold tracking-tight text-foreground">Subscription Plans</h1>
                         <p className="text-xs text-muted-foreground">
-                            Plans customers can subscribe to, scoped by event category, type and religion.
+                            Plans customers can subscribe to, scoped by event category.
                         </p>
                     </div>
 
@@ -205,7 +185,7 @@ export function SubscriptionPlansContent() {
                 {/* Filters */}
                 <Card className="border-border bg-card shadow-xs">
                     <CardContent className="space-y-3 p-4">
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-6">
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                             <div className="space-y-1.5 lg:col-span-1">
                                 <Label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                                     Search
@@ -231,34 +211,9 @@ export function SubscriptionPlansContent() {
                                 options={categories?.data ?? []}
                                 onChange={(v) => {
                                     setCategoryId(v);
-                                    // A type/religion from the old category would filter to nothing.
-                                    setTypeId(ALL);
-                                    setReligionId(ALL);
                                     setPage(1);
                                 }}
                             />
-                            <FilterSelect
-                                label="Event Type"
-                                value={typeId}
-                                allLabel="All Types"
-                                options={eventTypes?.data ?? []}
-                                onChange={(v) => {
-                                    setTypeId(v);
-                                    setReligionId(ALL);
-                                    setPage(1);
-                                }}
-                            />
-                            <FilterSelect
-                                label="Religion"
-                                value={religionId}
-                                allLabel="All Religions"
-                                options={religions?.data ?? []}
-                                onChange={(v) => {
-                                    setReligionId(v);
-                                    setPage(1);
-                                }}
-                            />
-
                             <div className="space-y-1.5">
                                 <Label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                                     Status
@@ -332,8 +287,6 @@ export function SubscriptionPlansContent() {
                                         <TableHead>Plan Name</TableHead>
                                         <TableHead>Plan Code</TableHead>
                                         <TableHead>Event Category</TableHead>
-                                        <TableHead>Event Type</TableHead>
-                                        <TableHead>Religion</TableHead>
                                         <TableHead>Billing Cycle</TableHead>
                                         <TableHead>Price</TableHead>
                                         <TableHead className="text-center">Status</TableHead>
@@ -346,13 +299,13 @@ export function SubscriptionPlansContent() {
                                 <TableBody>
                                     {isLoading ? (
                                         <TableRow>
-                                            <TableCell colSpan={12} className="py-16 text-center text-muted-foreground">
+                                            <TableCell colSpan={10} className="py-16 text-center text-muted-foreground">
                                                 Loading plans...
                                             </TableCell>
                                         </TableRow>
                                     ) : plans.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={12} className="py-16 text-center text-muted-foreground">
+                                            <TableCell colSpan={10} className="py-16 text-center text-muted-foreground">
                                                 {hasFilters
                                                     ? 'No plans match these filters.'
                                                     : 'No plans yet. Click "Add Plan" to create your first one.'}
@@ -402,16 +355,6 @@ export function SubscriptionPlansContent() {
                                                     <TableCell className="text-sm">
                                                         {row.category?.name ?? (
                                                             <span className="text-muted-foreground">All Categories</span>
-                                                        )}
-                                                    </TableCell>
-                                                    <TableCell className="text-sm">
-                                                        {row.eventType?.name ?? (
-                                                            <span className="text-muted-foreground">All Types</span>
-                                                        )}
-                                                    </TableCell>
-                                                    <TableCell className="text-sm">
-                                                        {row.religion?.name ?? (
-                                                            <span className="text-muted-foreground">All Religions</span>
                                                         )}
                                                     </TableCell>
 

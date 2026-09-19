@@ -17,7 +17,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     Select,
@@ -37,19 +36,13 @@ import {
     useCreateEventMenu,
     useUpdateEventMenu,
     useEventCategories,
-    useEventTypes,
-    useReligions,
-    type MenuPlatform,
 } from '@/hooks/use-menu-management';
 
 interface FormState {
     name: string;
     description: string;
     remarks: string;
-    menu_type: MenuPlatform[];
     event_category_id: string;
-    event_type_id: string;
-    religion_id: string;
     display_website: boolean;
     display_mobile: boolean;
     active_website: boolean;
@@ -63,10 +56,7 @@ const emptyForm = (): FormState => ({
     name: '',
     description: '',
     remarks: '',
-    menu_type: ['website', 'mobile'],
     event_category_id: '',
-    event_type_id: '',
-    religion_id: '',
     display_website: true,
     display_mobile: true,
     active_website: true,
@@ -88,25 +78,9 @@ export function MenuFormContent() {
     const [loadedId, setLoadedId] = useState<string | null>(null);
 
     const { data: existing, isLoading: loadingMenu, refetch } = useEventMenu(id ?? undefined);
+    // A menu is scoped by category only — no event type, religion or
+    // Website/Mobile type. Which platform it shows on is the PLAN's W/M switch.
     const { data: categories, isLoading: loadingCategories } = useEventCategories({ limit: 200, is_active: true });
-
-    // Religions are scoped under (category, type) as well, so the list narrows
-    // with the cascade. Fetching unscoped would offer religions the backend
-    // rejects for this menu.
-    const { data: religions, isLoading: loadingReligions } = useReligions({
-        limit: 200,
-        is_active: true,
-        event_category_id: form.event_category_id || undefined,
-        event_type_id: form.event_type_id || undefined,
-    });
-
-    // Event Types are fetched for the selected category only — a type from
-    // another category is rejected by the backend, so it must not be offerable.
-    const { data: eventTypes, isLoading: loadingTypes } = useEventTypes({
-        limit: 200,
-        is_active: true,
-        event_category_id: form.event_category_id || undefined,
-    });
 
     /**
      * No navigation on the hook: it fires for EVERY create, so a redirect here
@@ -145,10 +119,7 @@ export function MenuFormContent() {
             name: record.name ?? '',
             description: record.description ?? '',
             remarks: record.remarks ?? '',
-            menu_type: record.menu_type?.length ? record.menu_type : ['website'],
             event_category_id: record.event_category_id ? String(record.event_category_id) : '',
-            event_type_id: record.event_type_id ? String(record.event_type_id) : '',
-            religion_id: record.religion_id ? String(record.religion_id) : '',
             display_website: !!record.display_website,
             display_mobile: !!record.display_mobile,
             active_website: !!record.active_website,
@@ -174,26 +145,10 @@ export function MenuFormContent() {
         setErrors((prev) => (prev[key as string] ? { ...prev, [key as string]: false } : prev));
     };
 
-    const toggleMenuType = (platform: MenuPlatform, checked: boolean) => {
-        setForm((prev) => ({
-            ...prev,
-            menu_type: checked
-                ? Array.from(new Set([...prev.menu_type, platform]))
-                : prev.menu_type.filter((p) => p !== platform),
-        }));
-        setErrors((prev) => (prev.menu_type ? { ...prev, menu_type: false } : prev));
-    };
-
-    const wantsWebsite = form.menu_type.includes('website');
-    const wantsMobile = form.menu_type.includes('mobile');
-
     const handleSave = () => {
         const next: Record<string, boolean> = {};
         if (!form.name.trim()) next.name = true;
-        if (form.menu_type.length === 0) next.menu_type = true;
         if (!form.event_category_id) next.event_category_id = true;
-        if (!form.event_type_id) next.event_type_id = true;
-        if (!form.religion_id) next.religion_id = true;
         if (!form.icon.trim()) next.icon = true;
         if (!form.color.trim()) next.color = true;
 
@@ -208,15 +163,11 @@ export function MenuFormContent() {
             name: form.name.trim(),
             description: form.description.trim() || null,
             remarks: form.remarks.trim() || null,
-            menu_type: form.menu_type,
             event_category_id: Number(form.event_category_id),
-            event_type_id: Number(form.event_type_id),
-            religion_id: Number(form.religion_id),
-            // A platform the menu does not target has no meaningful status.
-            display_website: wantsWebsite ? form.display_website : false,
-            display_mobile: wantsMobile ? form.display_mobile : false,
-            active_website: wantsWebsite ? form.active_website : false,
-            active_mobile: wantsMobile ? form.active_mobile : false,
+            display_website: form.display_website,
+            display_mobile: form.display_mobile,
+            active_website: form.active_website,
+            active_mobile: form.active_mobile,
             sort_order: Number(form.sort_order) || 0,
             icon: form.icon,
             color: form.color,
@@ -234,10 +185,7 @@ export function MenuFormContent() {
     const handleSaveAndAddAnother = () => {
         const next: Record<string, boolean> = {};
         if (!form.name.trim()) next.name = true;
-        if (form.menu_type.length === 0) next.menu_type = true;
         if (!form.event_category_id) next.event_category_id = true;
-        if (!form.event_type_id) next.event_type_id = true;
-        if (!form.religion_id) next.religion_id = true;
         if (!form.icon.trim()) next.icon = true;
         if (!form.color.trim()) next.color = true;
 
@@ -253,22 +201,19 @@ export function MenuFormContent() {
                 name: form.name.trim(),
                 description: form.description.trim() || null,
                 remarks: form.remarks.trim() || null,
-                menu_type: form.menu_type,
                 event_category_id: Number(form.event_category_id),
-                event_type_id: Number(form.event_type_id),
-                religion_id: Number(form.religion_id),
-                display_website: wantsWebsite ? form.display_website : false,
-                display_mobile: wantsMobile ? form.display_mobile : false,
-                active_website: wantsWebsite ? form.active_website : false,
-                active_mobile: wantsMobile ? form.active_mobile : false,
+                display_website: form.display_website,
+                display_mobile: form.display_mobile,
+                active_website: form.active_website,
+                active_mobile: form.active_mobile,
                 sort_order: Number(form.sort_order) || 0,
                 icon: form.icon,
                 color: form.color,
             },
             {
                 // Stays on this form — deliberately no navigation, which is the
-                // whole point of the button. Keeps the taxonomy selections
-                // (consecutive menus almost always belong to the same event)
+                // whole point of the button. Keeps the category (consecutive
+                // menus almost always belong to the same event)
                 // and clears what is specific to the menu just saved.
                 onSuccess: () => {
                     setForm((prev) => ({
@@ -303,7 +248,6 @@ export function MenuFormContent() {
 
     const isSaving = createMenu.isPending || updateMenu.isPending;
     const categoryOptions = categories?.data ?? [];
-    const typeOptions = eventTypes?.data ?? [];
 
     return (
         <PermissionGuard permission={isEdit ? 'event_menus.edit' : 'event_menus.create'}>
@@ -354,7 +298,7 @@ export function MenuFormContent() {
                     </CardHeader>
 
                     <CardContent className="space-y-5 p-4">
-                        {/* Row 1 — name + menu type */}
+                        {/* Row 1 — name + category */}
                         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                             <div className="space-y-1.5">
                                 <Label className="text-sm font-medium">
@@ -374,49 +318,11 @@ export function MenuFormContent() {
 
                             <div className="space-y-1.5">
                                 <Label className="text-sm font-medium">
-                                    Menu Type (Select Multiple) <span className="text-destructive">*</span>
-                                </Label>
-                                <div
-                                    className={cn(
-                                        'flex h-10 items-center gap-6 rounded-md border border-border bg-card px-3',
-                                        errors.menu_type && 'border-destructive'
-                                    )}
-                                >
-                                    <label className="flex cursor-pointer items-center gap-2 text-sm">
-                                        <Checkbox
-                                            checked={wantsWebsite}
-                                            onCheckedChange={(c) => toggleMenuType('website', c === true)}
-                                        />
-                                        Website
-                                    </label>
-                                    <label className="flex cursor-pointer items-center gap-2 text-sm">
-                                        <Checkbox
-                                            checked={wantsMobile}
-                                            onCheckedChange={(c) => toggleMenuType('mobile', c === true)}
-                                        />
-                                        Mobile App
-                                    </label>
-                                </div>
-                                <p className="text-[11px] text-muted-foreground">Select one or more menu types.</p>
-                            </div>
-                        </div>
-
-                        {/* Row 2 — taxonomy */}
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                            <div className="space-y-1.5">
-                                <Label className="text-sm font-medium">
                                     Event Category <span className="text-destructive">*</span>
                                 </Label>
                                 <Select
                                     value={form.event_category_id}
-                                    onValueChange={(v) => {
-                                        setField('event_category_id', v);
-                                        // Type AND religion are scoped under the
-                                        // category; keeping either would fail
-                                        // server validation.
-                                        setField('event_type_id', '');
-                                        setField('religion_id', '');
-                                    }}
+                                    onValueChange={(v) => setField('event_category_id', v)}
                                 >
                                     <SelectTrigger className={cn('h-10', errors.event_category_id && 'border-destructive')}>
                                         <SelectValue placeholder="Select event category" />
@@ -435,95 +341,19 @@ export function MenuFormContent() {
                                         )}
                                     </SelectContent>
                                 </Select>
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <Label className="text-sm font-medium">
-                                    Event Type <span className="text-destructive">*</span>
-                                </Label>
-                                <Select
-                                    value={form.event_type_id}
-                                    onValueChange={(v) => {
-                                        setField('event_type_id', v);
-                                        // Religion is scoped to the event type.
-                                        setField('religion_id', '');
-                                    }}
-                                    disabled={!form.event_category_id}
-                                >
-                                    <SelectTrigger className={cn('h-10', errors.event_type_id && 'border-destructive')}>
-                                        <SelectValue
-                                            placeholder={
-                                                form.event_category_id
-                                                    ? 'Select event type'
-                                                    : 'Select a category first'
-                                            }
-                                        />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {typeOptions.length === 0 ? (
-                                            <div className="px-2 py-3 text-xs text-muted-foreground">
-                                                {loadingTypes ? 'Loading…' : 'No event types in this category.'}
-                                            </div>
-                                        ) : (
-                                            typeOptions.map((t) => (
-                                                <SelectItem key={t.id} value={String(t.id)}>
-                                                    {t.name}
-                                                </SelectItem>
-                                            ))
-                                        )}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <Label className="text-sm font-medium">
-                                    Religion <span className="text-destructive">*</span>
-                                </Label>
-                                <Select
-                                    value={form.religion_id}
-                                    onValueChange={(v) => setField('religion_id', v)}
-                                    disabled={!form.event_type_id}
-                                >
-                                    <SelectTrigger
-                                        className={cn('h-10', errors.religion_id && 'border-destructive')}
-                                    >
-                                        <SelectValue
-                                            placeholder={
-                                                form.event_type_id ? 'Select religion' : 'Select an event type first'
-                                            }
-                                        />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {(religions?.data ?? []).length === 0 ? (
-                                            <div className="px-2 py-3 text-xs text-muted-foreground">
-                                                {loadingReligions
-                                                    ? 'Loading…'
-                                                    : 'No religions for this event type.'}
-                                            </div>
-                                        ) : (
-                                            (religions?.data ?? []).map((r) => (
-                                                <SelectItem key={r.id} value={String(r.id)}>
-                                                    {r.name}
-                                                </SelectItem>
-                                            ))
-                                        )}
-                                    </SelectContent>
-                                </Select>
                                 <p className="text-[11px] text-muted-foreground">
-                                    Religions are listed for the selected event category and type.
+                                    The menu is offered for every event in this category.
                                 </p>
                             </div>
                         </div>
 
-                        {/* Row 3 — the two status panels */}
+                        {/* Row 2 — the two status panels */}
                         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                             <StatusPanel
                                 title="Display / Hide Status"
                                 subtitle="Show or hide this menu in website and mobile app."
                                 websiteLabel="Show menu in website"
                                 mobileLabel="Show menu in mobile app"
-                                showWebsite={wantsWebsite}
-                                showMobile={wantsMobile}
                                 websiteValue={form.display_website}
                                 mobileValue={form.display_mobile}
                                 onWebsiteChange={(v) => setField('display_website', v)}
@@ -534,8 +364,6 @@ export function MenuFormContent() {
                                 subtitle="Activate or deactivate this menu in website and mobile app."
                                 websiteLabel="Menu will be active in website"
                                 mobileLabel="Menu will be active in mobile app"
-                                showWebsite={wantsWebsite}
-                                showMobile={wantsMobile}
                                 websiteValue={form.active_website}
                                 mobileValue={form.active_mobile}
                                 onWebsiteChange={(v) => setField('active_website', v)}
@@ -543,7 +371,7 @@ export function MenuFormContent() {
                             />
                         </div>
 
-                        {/* Row 4 — order, icon, colour */}
+                        {/* Row 3 — order, icon, colour */}
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                             <div className="space-y-1.5">
                                 <Label className="text-sm font-medium">
@@ -586,7 +414,7 @@ export function MenuFormContent() {
                                 helper="Choose a color for the menu icon and highlights."
                             />
                         </div>
-                        {/* Row 5 — free text. Optional: a menu is usable without either. */}
+                        {/* Row 4 — free text. Optional: a menu is usable without either. */}
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <div className="space-y-1.5">
                                 <Label className="text-sm font-medium">Description</Label>
@@ -651,8 +479,6 @@ function StatusPanel({
     subtitle,
     websiteLabel,
     mobileLabel,
-    showWebsite,
-    showMobile,
     websiteValue,
     mobileValue,
     onWebsiteChange,
@@ -662,8 +488,6 @@ function StatusPanel({
     subtitle: string;
     websiteLabel: string;
     mobileLabel: string;
-    showWebsite: boolean;
-    showMobile: boolean;
     websiteValue: boolean;
     mobileValue: boolean;
     onWebsiteChange: (value: boolean) => void;
@@ -677,29 +501,20 @@ function StatusPanel({
             <p className="mb-3 text-xs text-muted-foreground">{subtitle}</p>
 
             <div className="divide-y divide-border">
-                {showWebsite && (
-                    <StatusRow
-                        icon={<Globe className="h-4 w-4" />}
-                        title="Website"
-                        subtitle={websiteLabel}
-                        checked={websiteValue}
-                        onChange={onWebsiteChange}
-                    />
-                )}
-                {showMobile && (
-                    <StatusRow
-                        icon={<Smartphone className="h-4 w-4" />}
-                        title="Mobile App"
-                        subtitle={mobileLabel}
-                        checked={mobileValue}
-                        onChange={onMobileChange}
-                    />
-                )}
-                {!showWebsite && !showMobile && (
-                    <p className="py-3 text-xs text-muted-foreground">
-                        Select a menu type above to configure this.
-                    </p>
-                )}
+                <StatusRow
+                    icon={<Globe className="h-4 w-4" />}
+                    title="Website"
+                    subtitle={websiteLabel}
+                    checked={websiteValue}
+                    onChange={onWebsiteChange}
+                />
+                <StatusRow
+                    icon={<Smartphone className="h-4 w-4" />}
+                    title="Mobile App"
+                    subtitle={mobileLabel}
+                    checked={mobileValue}
+                    onChange={onMobileChange}
+                />
             </div>
         </div>
     );

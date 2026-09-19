@@ -101,7 +101,6 @@ export default function PlanDuplicatedPage({ params }: { params: Promise<{ id: s
                                 <Row label="Trial Period" value={`${plan.trial_days ?? 0} Days`} />
                                 <Row label="Total Menus" value={String(plan.total_menus ?? 0)} />
                                 <Row label="Event Category" value={plan.category?.name ?? 'All Categories'} />
-                                <Row label="Event Type" value={plan.eventType?.name ?? 'All Types'} />
                             </dl>
                         </div>
 
