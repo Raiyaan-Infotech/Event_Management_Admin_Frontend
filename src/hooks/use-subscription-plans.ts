@@ -28,8 +28,6 @@ export interface SubscriptionPlan {
     plan_badge_id: number | null;
     billing_cycle: BillingCycle;
     short_description: string | null;
-    for_website: number;
-    for_mobile: number;
     event_category_id: number | null;
     currency_code: string;
     price: string | number;
@@ -40,7 +38,6 @@ export interface SubscriptionPlan {
     /** Derived by the backend: price 0 + a trial period shows the Trial badge. */
     is_trial: boolean;
     total_menus: number;
-    menu_for: Array<'website' | 'mobile'>;
     planType?: { id: number; name: string } | null;
     /** The plan's own badge, joined from plan_badges. */
     planBadge?: { id: number; text: string; style: string; color: string } | null;
@@ -81,8 +78,6 @@ export type SubscriptionPlanPayload = {
     plan_badge_id?: number | null;
     billing_cycle: BillingCycle;
     short_description?: string | null;
-    for_website?: number | boolean;
-    for_mobile?: number | boolean;
     event_category_id?: number | null;
     currency_code?: string;
     price?: number;
@@ -90,10 +85,7 @@ export type SubscriptionPlanPayload = {
     is_visible?: number | boolean;
     is_active?: number | boolean;
     sort_order?: number;
-    /**
-     * Omit entirely to leave the plan's menu selection untouched. A menu has no
-     * platform of its own — it is granted on every platform the plan targets.
-     */
+    /** Omit entirely to leave the plan's menu selection untouched. */
     menus?: Array<{
         menu_id: number;
         limits_json?: Record<string, string | number | null> | null;

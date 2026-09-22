@@ -59,9 +59,10 @@ const STEPS = [
 ] as const;
 
 /**
- * A menu is in the plan or not — no platform of its own; it is granted on
- * every platform the plan targets ("Menu For"). `included: false` keeps the
- * row so un-ticking and re-ticking a menu does not lose its step-4 limits.
+ * A menu is in the plan or not — no website/app choice here; the menu's own
+ * Active switch in Menu Management decides where it shows. `included: false`
+ * keeps the row so un-ticking and re-ticking a menu does not lose its step-4
+ * limits.
  */
 interface MenuSelection {
     included: boolean;
@@ -80,8 +81,6 @@ interface FormState {
     short_description: string;
     is_active: boolean;
     // Step 2
-    for_website: boolean;
-    for_mobile: boolean;
     event_category_id: string;
     // Step 3
     currency_code: string;
@@ -97,8 +96,6 @@ const emptyForm = (): FormState => ({
     billing_cycle: 'monthly',
     short_description: '',
     is_active: true,
-    for_website: true,
-    for_mobile: true,
     event_category_id: '',
     currency_code: 'INR',
     price: '',
@@ -153,8 +150,6 @@ export function PlanWizardContent() {
             billing_cycle: existing.billing_cycle ?? 'monthly',
             short_description: existing.short_description ?? '',
             is_active: Number(existing.is_active) === 1,
-            for_website: !!existing.for_website,
-            for_mobile: !!existing.for_mobile,
             event_category_id: existing.event_category_id ? String(existing.event_category_id) : '',
             currency_code: existing.currency_code ?? 'INR',
             price: String(Number(existing.price ?? 0)),
@@ -227,7 +222,6 @@ export function PlanWizardContent() {
             if (!form.short_description.trim()) next.short_description = true;
         }
         if (target >= 2) {
-            if (!form.for_website && !form.for_mobile) next.menu_for = true;
             if (selectedIds.length === 0) next.menus = true;
         }
         if (target >= 3) {
@@ -258,8 +252,6 @@ export function PlanWizardContent() {
         plan_badge_id: form.plan_badge_id ? Number(form.plan_badge_id) : null,
         billing_cycle: form.billing_cycle,
         short_description: form.short_description.trim(),
-        for_website: form.for_website,
-        for_mobile: form.for_mobile,
         // Empty = "applies to all", which the list renders as All Categories.
         event_category_id: form.event_category_id ? Number(form.event_category_id) : null,
         currency_code: form.currency_code,
@@ -493,30 +485,6 @@ export function PlanWizardContent() {
                 {step === 2 && (
                     <WizardCard title="Menu Selection" subtitle="Select the event menus you want to include in this plan.">
                         <div className="space-y-4">
-                            <Field label="Menu For" required error={errors.menu_for}>
-                                <div
-                                    className={cn(
-                                        'flex h-10 items-center gap-6 rounded-md border border-border bg-card px-3',
-                                        errors.menu_for && 'border-destructive'
-                                    )}
-                                >
-                                    <label className="flex cursor-pointer items-center gap-2 text-sm">
-                                        <Checkbox
-                                            checked={form.for_website}
-                                            onCheckedChange={(c) => setField('for_website', c === true)}
-                                        />
-                                        Website
-                                    </label>
-                                    <label className="flex cursor-pointer items-center gap-2 text-sm">
-                                        <Checkbox
-                                            checked={form.for_mobile}
-                                            onCheckedChange={(c) => setField('for_mobile', c === true)}
-                                        />
-                                        Mobile App
-                                    </label>
-                                </div>
-                            </Field>
-
                             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                                 <Field label="Event Category" helper="Leave empty to apply to all categories.">
                                     <Select
@@ -723,7 +691,6 @@ export function PlanWizardContent() {
                                     ['Currency', form.currency_code],
                                 ]} />
                                 <ReviewCard title="Menu Selection" onEdit={() => setStep(2)} rows={[
-                                    ['Menu For', [form.for_website && 'Website', form.for_mobile && 'Mobile App'].filter(Boolean).join(', ') || '—'],
                                     ['Event Category', categories?.data?.find((c) => String(c.id) === form.event_category_id)?.name ?? 'All Categories'],
                                     ['Total Menus', String(selectedIds.length)],
                                 ]} />
