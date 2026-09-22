@@ -61,9 +61,8 @@ const GROUPS = [
     { key: 'app', label: 'Mobile App Features' },
 ] as const;
 
+/** Present = the menu is in the plan. No platform of its own — see `toggle`. */
 interface Selected {
-    for_website: boolean;
-    for_mobile: boolean;
     limits_json: Record<string, string | number | null> | null;
     sort_order: number;
 }
@@ -122,8 +121,6 @@ export default function ManagePlanMenusPage({ params }: { params: Promise<{ id: 
         const next: Record<number, Selected> = {};
         (plan.planMenus ?? []).forEach((pm, i) => {
             next[pm.menu_id] = {
-                for_website: !!pm.for_website,
-                for_mobile: !!pm.for_mobile,
                 limits_json: pm.limits_json ?? null,
                 sort_order: pm.sort_order ?? i,
             };
@@ -132,14 +129,11 @@ export default function ManagePlanMenusPage({ params }: { params: Promise<{ id: 
         setLoadedId(id);
     }, [plan, id, loadedId]);
 
-    const isOn = (menuId: number) => {
-        const s = selection[menuId];
-        return !!s && (s.for_website || s.for_mobile);
-    };
+    const isOn = (menuId: number) => !!selection[menuId];
 
     /**
      * One switch per menu, not per platform: this screen is "is this menu in the
-     * plan", and the plan itself already decides which platforms it targets.
+     * plan", and the plan itself decides which platforms it targets.
      */
     const toggle = (menuId: number, on: boolean) => {
         setSelection((prev) => {
@@ -150,8 +144,6 @@ export default function ManagePlanMenusPage({ params }: { params: Promise<{ id: 
             }
             const existing = prev[menuId];
             next[menuId] = {
-                for_website: !!plan?.for_website,
-                for_mobile: !!plan?.for_mobile,
                 // Keep any limits already configured for this menu.
                 limits_json: existing?.limits_json ?? null,
                 sort_order: existing?.sort_order ?? Object.keys(prev).length,
@@ -216,8 +208,6 @@ export default function ManagePlanMenusPage({ params }: { params: Promise<{ id: 
             .sort(([, a], [, b]) => a.sort_order - b.sort_order)
             .map(([menuId, s], i) => ({
                 menu_id: Number(menuId),
-                for_website: s.for_website,
-                for_mobile: s.for_mobile,
                 limits_json: s.limits_json,
                 sort_order: i,
             }));

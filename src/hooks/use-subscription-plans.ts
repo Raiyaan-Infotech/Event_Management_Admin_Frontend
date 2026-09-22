@@ -9,8 +9,6 @@ export type BillingCycle = 'monthly' | 'quarterly' | 'yearly' | 'lifetime';
 export interface PlanMenuRow {
     id?: number;
     menu_id: number;
-    for_website: number | boolean;
-    for_mobile: number | boolean;
     limits_json?: Record<string, string | number | null> | null;
     sort_order?: number;
     menu?: {
@@ -92,11 +90,12 @@ export type SubscriptionPlanPayload = {
     is_visible?: number | boolean;
     is_active?: number | boolean;
     sort_order?: number;
-    /** Omit entirely to leave the plan's menu selection untouched. */
+    /**
+     * Omit entirely to leave the plan's menu selection untouched. A menu has no
+     * platform of its own — it is granted on every platform the plan targets.
+     */
     menus?: Array<{
         menu_id: number;
-        for_website: number | boolean;
-        for_mobile: number | boolean;
         limits_json?: Record<string, string | number | null> | null;
         sort_order?: number;
     }>;

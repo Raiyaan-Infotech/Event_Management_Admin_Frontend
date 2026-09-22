@@ -58,11 +58,17 @@ const STEPS = [
     'Success',
 ] as const;
 
+/**
+ * A menu is in the plan or not — no platform of its own; it is granted on
+ * every platform the plan targets ("Menu For"). `included: false` keeps the
+ * row so un-ticking and re-ticking a menu does not lose its step-4 limits.
+ */
 interface MenuSelection {
-    for_website: boolean;
-    for_mobile: boolean;
+    included: boolean;
     limits: Record<string, string>;
 }
+
+const EMPTY_SELECTION: MenuSelection = { included: false, limits: {} };
 
 interface FormState {
     // Step 1
@@ -160,18 +166,14 @@ export function PlanWizardContent() {
             Object.entries(pm.limits_json ?? {}).forEach(([k, v]) => {
                 limits[k] = v === null || v === undefined ? '' : String(v);
             });
-            next[pm.menu_id] = {
-                for_website: !!pm.for_website,
-                for_mobile: !!pm.for_mobile,
-                limits,
-            };
+            next[pm.menu_id] = { included: true, limits };
         });
         setSelection(next);
         setLoadedId(id);
     }, [existing, id, loadedId]);
 
     const selectedIds = useMemo(
-        () => Object.keys(selection).map(Number).filter((k) => selection[k]?.for_website || selection[k]?.for_mobile),
+        () => Object.keys(selection).map(Number).filter((k) => selection[k]?.included),
         [selection]
     );
     const selectedMenus = useMemo(
@@ -185,28 +187,21 @@ export function PlanWizardContent() {
         return menus.filter((m) => m.name.toLowerCase().includes(q) || m.slug.toLowerCase().includes(q));
     }, [menus, menuSearch]);
 
-    const toggleMenu = (menuId: number, platform: 'for_website' | 'for_mobile', checked: boolean) => {
-        setSelection((prev) => {
-            const current = prev[menuId] ?? { for_website: false, for_mobile: false, limits: {} };
-            return { ...prev, [menuId]: { ...current, [platform]: checked } };
-        });
+    const toggleMenuIncluded = (menuId: number, checked: boolean) => {
+        setSelection((prev) => ({
+            ...prev,
+            [menuId]: { ...(prev[menuId] ?? EMPTY_SELECTION), included: checked },
+        }));
     };
 
     const allSelected =
-        filteredMenus.length > 0 &&
-        filteredMenus.every((m) => selection[m.id]?.for_website || selection[m.id]?.for_mobile);
+        filteredMenus.length > 0 && filteredMenus.every((m) => selection[m.id]?.included);
 
     const toggleAll = (checked: boolean) => {
         setSelection((prev) => {
             const next = { ...prev };
             filteredMenus.forEach((m) => {
-                const current = next[m.id] ?? { for_website: false, for_mobile: false, limits: {} };
-                next[m.id] = {
-                    ...current,
-                    // Only offer a platform the plan itself targets.
-                    for_website: checked && form.for_website,
-                    for_mobile: checked && form.for_mobile,
-                };
+                next[m.id] = { ...(next[m.id] ?? EMPTY_SELECTION), included: checked };
             });
             return next;
         });
@@ -214,7 +209,7 @@ export function PlanWizardContent() {
 
     const setLimit = (menuId: number, key: string, value: string) => {
         setSelection((prev) => {
-            const current = prev[menuId] ?? { for_website: false, for_mobile: false, limits: {} };
+            const current = prev[menuId] ?? EMPTY_SELECTION;
             return { ...prev, [menuId]: { ...current, limits: { ...current.limits, [key]: value } } };
         });
     };
@@ -284,8 +279,6 @@ export function PlanWizardContent() {
             );
             return {
                 menu_id: menuId,
-                for_website: sel.for_website,
-                for_mobile: sel.for_mobile,
                 limits_json: Object.keys(limits).length > 0 ? limits : null,
                 sort_order: index,
             };
@@ -575,23 +568,20 @@ export function PlanWizardContent() {
                                                     Menu Name
                                                 </th>
                                                 <th className="w-24 px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                                                    Website
-                                                </th>
-                                                <th className="w-24 px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                                                    Mobile App
+                                                    Included
                                                 </th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {loadingMenus ? (
                                                 <tr>
-                                                    <td colSpan={3} className="py-10 text-center text-muted-foreground">
+                                                    <td colSpan={2} className="py-10 text-center text-muted-foreground">
                                                         Loading menus...
                                                     </td>
                                                 </tr>
                                             ) : filteredMenus.length === 0 ? (
                                                 <tr>
-                                                    <td colSpan={3} className="py-10 text-center text-muted-foreground">
+                                                    <td colSpan={2} className="py-10 text-center text-muted-foreground">
                                                         No menus match this scope.
                                                     </td>
                                                 </tr>
@@ -611,18 +601,9 @@ export function PlanWizardContent() {
                                                                 </div>
                                                             </td>
                                                             <td className="px-3 py-2 text-center">
-                                                                {/* Disabled when the plan does not target that platform. */}
                                                                 <Checkbox
-                                                                    checked={!!sel?.for_website}
-                                                                    disabled={!form.for_website}
-                                                                    onCheckedChange={(c) => toggleMenu(m.id, 'for_website', c === true)}
-                                                                />
-                                                            </td>
-                                                            <td className="px-3 py-2 text-center">
-                                                                <Checkbox
-                                                                    checked={!!sel?.for_mobile}
-                                                                    disabled={!form.for_mobile}
-                                                                    onCheckedChange={(c) => toggleMenu(m.id, 'for_mobile', c === true)}
+                                                                    checked={!!sel?.included}
+                                                                    onCheckedChange={(c) => toggleMenuIncluded(m.id, c === true)}
                                                                 />
                                                             </td>
                                                         </tr>
