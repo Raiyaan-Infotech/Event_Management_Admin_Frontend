@@ -749,7 +749,10 @@ export function PlanWizardContent() {
                                 helper={`1 to ${STORAGE_MAX}, in MB or GB. Total storage for this client's uploads.`}
                                 error={errors.storage_limit}
                             >
-                                <div className="flex gap-2">
+                                <div className="flex flex-wrap gap-2">
+                                    {/* Fixed width, not flex-1 — in the wizard's 3-column grid this
+                                        field's column is narrow enough that a shrinking input collapsed
+                                        to just the spinner arrows, with no room left for the digits. */}
                                     <Input
                                         type="number"
                                         min={1}
@@ -762,7 +765,7 @@ export function PlanWizardContent() {
                                             setField('storage_limit', e.target.value.replace(/[^\d]/g, '').slice(0, 3))
                                         }
                                         placeholder={form.storage_unit ? `1-${STORAGE_MAX}` : 'Unlimited'}
-                                        className={cn('h-10 min-w-0 flex-1', errors.storage_limit && 'border-destructive')}
+                                        className={cn('h-10 w-24 shrink-0', errors.storage_limit && 'border-destructive')}
                                     />
                                     <Select
                                         value={form.storage_unit || UNLIMITED}
