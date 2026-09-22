@@ -63,7 +63,6 @@ const GROUPS = [
 
 /** Present = the menu is in the plan. No platform of its own — see `toggle`. */
 interface Selected {
-    limits_json: Record<string, string | number | null> | null;
     sort_order: number;
 }
 
@@ -121,7 +120,6 @@ export default function ManagePlanMenusPage({ params }: { params: Promise<{ id: 
         const next: Record<number, Selected> = {};
         (plan.planMenus ?? []).forEach((pm, i) => {
             next[pm.menu_id] = {
-                limits_json: pm.limits_json ?? null,
                 sort_order: pm.sort_order ?? i,
             };
         });
@@ -133,7 +131,7 @@ export default function ManagePlanMenusPage({ params }: { params: Promise<{ id: 
 
     /**
      * One switch per menu, not per platform: this screen is "is this menu in the
-     * plan", and the plan itself decides which platforms it targets.
+     * plan". Where it shows is the menu's own Active switch in Menu Management.
      */
     const toggle = (menuId: number, on: boolean) => {
         setSelection((prev) => {
@@ -144,8 +142,6 @@ export default function ManagePlanMenusPage({ params }: { params: Promise<{ id: 
             }
             const existing = prev[menuId];
             next[menuId] = {
-                // Keep any limits already configured for this menu.
-                limits_json: existing?.limits_json ?? null,
                 sort_order: existing?.sort_order ?? Object.keys(prev).length,
             };
             return next;
@@ -208,7 +204,6 @@ export default function ManagePlanMenusPage({ params }: { params: Promise<{ id: 
             .sort(([, a], [, b]) => a.sort_order - b.sort_order)
             .map(([menuId, s], i) => ({
                 menu_id: Number(menuId),
-                limits_json: s.limits_json,
                 sort_order: i,
             }));
         updatePlan.mutate({ id: Number(id), data: { menus } });

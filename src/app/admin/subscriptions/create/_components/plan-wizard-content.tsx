@@ -7,7 +7,6 @@ import {
     ArrowRight,
     Check,
     CheckCircle2,
-    ChevronDown,
     FileText,
     Search,
     Send,
@@ -40,7 +39,6 @@ import {
     useSubscriptionPlan,
     useCreateSubscriptionPlan,
     useUpdateSubscriptionPlan,
-    useLimitCatalog,
     BILLING_CYCLES,
     CURRENCIES,
     currencySymbol,
@@ -60,16 +58,29 @@ const STEPS = [
 
 /**
  * A menu is in the plan or not — no website/app choice here; the menu's own
- * Active switch in Menu Management decides where it shows. `included: false`
- * keeps the row so un-ticking and re-ticking a menu does not lose its step-4
- * limits.
+ * Active switch in Menu Management decides where it shows.
  */
 interface MenuSelection {
     included: boolean;
-    limits: Record<string, string>;
 }
 
-const EMPTY_SELECTION: MenuSelection = { included: false, limits: {} };
+const EMPTY_SELECTION: MenuSelection = { included: false };
+
+/**
+ * Step 4 — the plan's usage limits, one set per plan. Blank = unlimited.
+ * No RSVP field: each guest answers once, so the guest limit caps RSVPs too.
+ */
+const LIMIT_FIELDS = [
+    { key: 'max_events', label: 'Max Events', helper: 'Events a client can create on this plan.' },
+    { key: 'max_guests_per_event', label: 'Max Guests per Event', helper: 'Also the RSVP limit — one answer per guest.' },
+    { key: 'max_photos', label: 'Max Images', helper: 'Images per event gallery.' },
+    { key: 'max_videos', label: 'Max Videos', helper: 'Videos per event gallery.' },
+] as const;
+
+const STORAGE_OPTIONS = [1, 10, 50, 100, 500];
+const UNLIMITED = 'unlimited';
+
+const limitValue = (v: string): number | null => (v === '' ? null : Number(v));
 
 interface FormState {
     // Step 1
@@ -86,6 +97,12 @@ interface FormState {
     currency_code: string;
     price: string;
     trial_days: string;
+    // Step 4 — '' = unlimited
+    max_events: string;
+    max_guests_per_event: string;
+    max_photos: string;
+    max_videos: string;
+    storage_gb: string;
 }
 
 const emptyForm = (): FormState => ({
@@ -100,6 +117,11 @@ const emptyForm = (): FormState => ({
     currency_code: 'INR',
     price: '',
     trial_days: '0',
+    max_events: '',
+    max_guests_per_event: '',
+    max_photos: '',
+    max_videos: '',
+    storage_gb: '',
 });
 
 export function PlanWizardContent() {
@@ -121,7 +143,6 @@ export function PlanWizardContent() {
     const { data: existing, isLoading: loadingPlan } = useSubscriptionPlan(id ?? undefined);
     const { data: planTypes } = usePlanTypes({ limit: 200, is_active: 1 });
     const { data: planBadges } = usePlanBadges();
-    const { data: catalog } = useLimitCatalog();
     const { data: categories } = useEventCategories({ limit: 200, is_active: true });
 
     // The menus offered are the ones in the plan's category — a menu outside it
@@ -154,14 +175,15 @@ export function PlanWizardContent() {
             currency_code: existing.currency_code ?? 'INR',
             price: String(Number(existing.price ?? 0)),
             trial_days: String(existing.trial_days ?? 0),
+            max_events: existing.max_events ? String(existing.max_events) : '',
+            max_guests_per_event: existing.max_guests_per_event ? String(existing.max_guests_per_event) : '',
+            max_photos: existing.max_photos ? String(existing.max_photos) : '',
+            max_videos: existing.max_videos ? String(existing.max_videos) : '',
+            storage_gb: existing.storage_gb ? String(existing.storage_gb) : '',
         });
         const next: Record<number, MenuSelection> = {};
         (existing.planMenus ?? []).forEach((pm) => {
-            const limits: Record<string, string> = {};
-            Object.entries(pm.limits_json ?? {}).forEach(([k, v]) => {
-                limits[k] = v === null || v === undefined ? '' : String(v);
-            });
-            next[pm.menu_id] = { included: true, limits };
+            next[pm.menu_id] = { included: true };
         });
         setSelection(next);
         setLoadedId(id);
@@ -202,13 +224,6 @@ export function PlanWizardContent() {
         });
     };
 
-    const setLimit = (menuId: number, key: string, value: string) => {
-        setSelection((prev) => {
-            const current = prev[menuId] ?? EMPTY_SELECTION;
-            return { ...prev, [menuId]: { ...current, limits: { ...current.limits, [key]: value } } };
-        });
-    };
-
     /* ------------------------------------------------------- step validation */
 
     const validateStep = (target: number): boolean => {
@@ -234,6 +249,17 @@ export function PlanWizardContent() {
             toast.error('Please fill all mandatory fields.');
             return false;
         }
+
+        // Limits are optional (blank = unlimited), so a bad value is a format
+        // problem, reported on its own rather than as a missing field.
+        if (target >= 4) {
+            const bad = LIMIT_FIELDS.filter(({ key }) => form[key] !== '' && !/^[1-9]\d*$/.test(form[key]));
+            if (bad.length > 0) {
+                setErrors(Object.fromEntries(bad.map(({ key }) => [key, true])));
+                toast.error('Limits must be whole numbers of 1 or more, or blank for unlimited.');
+                return false;
+            }
+        }
         setErrors({});
         return true;
     };
@@ -258,23 +284,13 @@ export function PlanWizardContent() {
         price: Number(form.price || 0),
         trial_days: Number(form.trial_days || 0),
         is_active: form.is_active,
-        menus: selectedIds.map((menuId, index) => {
-            const sel = selection[menuId];
-            // Blank limit fields are dropped rather than stored as "" — a missing
-            // key means unlimited, which is what the form shows.
-            const limits = Object.entries(sel.limits ?? {}).reduce<Record<string, string | number>>(
-                (acc, [k, v]) => {
-                    if (v !== '' && v !== null && v !== undefined) acc[k] = v;
-                    return acc;
-                },
-                {}
-            );
-            return {
-                menu_id: menuId,
-                limits_json: Object.keys(limits).length > 0 ? limits : null,
-                sort_order: index,
-            };
-        }),
+        // Blank = unlimited, sent as null so a cleared limit is actually cleared.
+        max_events: limitValue(form.max_events),
+        max_guests_per_event: limitValue(form.max_guests_per_event),
+        max_photos: limitValue(form.max_photos),
+        max_videos: limitValue(form.max_videos),
+        storage_gb: limitValue(form.storage_gb),
+        menus: selectedIds.map((menuId, index) => ({ menu_id: menuId, sort_order: index })),
     });
 
     const createPlan = useCreateSubscriptionPlan((plan) => {
@@ -287,7 +303,7 @@ export function PlanWizardContent() {
     });
 
     const submit = () => {
-        if (!validateStep(3)) return;
+        if (!validateStep(4)) return;
         const payload = buildPayload();
         if (isEdit && id) updatePlan.mutate({ id: Number(id), data: payload });
         else createPlan.mutate(payload);
@@ -648,26 +664,47 @@ export function PlanWizardContent() {
 
                 {step === 4 && (
                     <WizardCard
-                        title="Plan Configuration"
-                        subtitle="Configure limits, quotas and other settings for the selected menus."
+                        title="Plan Limits"
+                        subtitle="How much a client on this plan can use. Leave a field blank for unlimited."
                     >
-                        {selectedMenus.length === 0 ? (
-                            <p className="py-8 text-center text-sm text-muted-foreground">
-                                No menus selected. Go back to Menu Selection to pick some.
-                            </p>
-                        ) : (
-                            <div className="space-y-2">
-                                {selectedMenus.map((m) => (
-                                    <MenuLimitsPanel
-                                        key={m.id}
-                                        menu={m}
-                                        fields={catalog?.[m.slug] ?? []}
-                                        values={selection[m.id]?.limits ?? {}}
-                                        onChange={(key, value) => setLimit(m.id, key, value)}
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                            {LIMIT_FIELDS.map(({ key, label, helper }) => (
+                                <Field key={key} label={label} helper={helper} error={errors[key]}>
+                                    <Input
+                                        type="number"
+                                        min={1}
+                                        step={1}
+                                        inputMode="numeric"
+                                        value={form[key]}
+                                        onChange={(e) => setField(key, e.target.value.replace(/[^\d]/g, ''))}
+                                        placeholder="Unlimited"
+                                        className={cn('h-10', errors[key] && 'border-destructive')}
                                     />
-                                ))}
-                            </div>
-                        )}
+                                </Field>
+                            ))}
+                            <Field label="Storage Limit" helper="Total storage for this client's uploads.">
+                                <Select
+                                    value={form.storage_gb || UNLIMITED}
+                                    onValueChange={(v) => setField('storage_gb', v === UNLIMITED ? '' : v)}
+                                >
+                                    <SelectTrigger className="h-10">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {STORAGE_OPTIONS.map((gb) => (
+                                            <SelectItem key={gb} value={String(gb)}>
+                                                {gb} GB
+                                            </SelectItem>
+                                        ))}
+                                        {/* A value saved outside the list stays selectable. */}
+                                        {form.storage_gb && !STORAGE_OPTIONS.includes(Number(form.storage_gb)) && (
+                                            <SelectItem value={form.storage_gb}>{form.storage_gb} GB</SelectItem>
+                                        )}
+                                        <SelectItem value={UNLIMITED}>Unlimited</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+                        </div>
                     </WizardCard>
                 )}
 
@@ -694,13 +731,17 @@ export function PlanWizardContent() {
                                     ['Event Category', categories?.data?.find((c) => String(c.id) === form.event_category_id)?.name ?? 'All Categories'],
                                     ['Total Menus', String(selectedIds.length)],
                                 ]} />
+                                <ReviewCard title="Plan Limits" onEdit={() => setStep(4)} rows={[
+                                    ...LIMIT_FIELDS.map(({ key, label }): [string, string] => [label, form[key] || 'Unlimited']),
+                                    ['Storage Limit', form.storage_gb ? `${form.storage_gb} GB` : 'Unlimited'],
+                                ]} />
                             </div>
                         </WizardCard>
 
                         <Card className="border-border bg-card shadow-xs">
                             <CardHeader className="border-b border-border bg-muted/40 px-4 py-3">
                                 <CardTitle className="text-xs font-bold uppercase tracking-wide text-foreground">
-                                    Included Menus &amp; Configuration Summary
+                                    Included Menus
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="p-4">
@@ -708,25 +749,17 @@ export function PlanWizardContent() {
                                     <p className="text-sm text-muted-foreground">No menus selected.</p>
                                 ) : (
                                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
-                                        {selectedMenus.map((m) => {
-                                            const limitCount = Object.values(selection[m.id]?.limits ?? {}).filter(
-                                                (v) => v !== '' && v !== null && v !== undefined
-                                            ).length;
-                                            return (
-                                                <div
-                                                    key={m.id}
-                                                    className="flex flex-col items-center gap-1.5 rounded-lg border border-border p-3 text-center"
-                                                >
-                                                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-muted/40">
-                                                        <DynamicIcon name={m.icon} color={m.color} size="h-4 w-4" />
-                                                    </span>
-                                                    <span className="break-all text-xs font-medium">{m.name}</span>
-                                                    <Badge variant="secondary" className="text-[10px]">
-                                                        {limitCount} Limit{limitCount === 1 ? '' : 's'}
-                                                    </Badge>
-                                                </div>
-                                            );
-                                        })}
+                                        {selectedMenus.map((m) => (
+                                            <div
+                                                key={m.id}
+                                                className="flex flex-col items-center gap-1.5 rounded-lg border border-border p-3 text-center"
+                                            >
+                                                <span className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-muted/40">
+                                                    <DynamicIcon name={m.icon} color={m.color} size="h-4 w-4" />
+                                                </span>
+                                                <span className="break-all text-xs font-medium">{m.name}</span>
+                                            </div>
+                                        ))}
                                     </div>
                                 )}
                             </CardContent>
@@ -998,78 +1031,6 @@ function Field({
             {children}
             {helper && (
                 <p className={cn('text-[11px]', error ? 'text-destructive' : 'text-muted-foreground')}>{helper}</p>
-            )}
-        </div>
-    );
-}
-
-function MenuLimitsPanel({
-    menu,
-    fields,
-    values,
-    onChange,
-}: {
-    menu: { id: number; name: string; icon: string | null; color: string | null };
-    fields: Array<{ key: string; label: string; type?: 'select'; options?: string[]; helper?: string }>;
-    values: Record<string, string>;
-    onChange: (key: string, value: string) => void;
-}) {
-    const [open, setOpen] = useState(true);
-
-    return (
-        <div className="rounded-lg border border-border">
-            <button
-                type="button"
-                onClick={() => setOpen((v) => !v)}
-                className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left"
-            >
-                <span className="flex items-center gap-2">
-                    <span className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-muted/40">
-                        <DynamicIcon name={menu.icon} color={menu.color} size="h-3.5 w-3.5" />
-                    </span>
-                    <span className="text-sm font-semibold">{menu.name}</span>
-                    {fields.length === 0 && (
-                        <span className="text-[11px] text-muted-foreground">no configurable limits</span>
-                    )}
-                </span>
-                <ChevronDown className={cn('h-4 w-4 shrink-0 transition-transform', open && 'rotate-180')} />
-            </button>
-
-            {open && fields.length > 0 && (
-                <div className="grid grid-cols-1 gap-4 border-t border-border p-3 md:grid-cols-3">
-                    {fields.map((f) => (
-                        <div key={f.key} className="space-y-1.5">
-                            <Label className="text-xs font-medium">
-                                {f.label} <span className="text-destructive">*</span>
-                            </Label>
-                            {f.type === 'select' ? (
-                                <Select value={values[f.key] ?? ''} onValueChange={(v) => onChange(f.key, v)}>
-                                    <SelectTrigger className="h-9">
-                                        <SelectValue placeholder="Unlimited" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {(f.options ?? []).map((o) => (
-                                            <SelectItem key={o} value={o}>
-                                                {o}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            ) : (
-                                <Input
-                                    type="number"
-                                    min={0}
-                                    value={values[f.key] ?? ''}
-                                    onChange={(e) => onChange(f.key, e.target.value)}
-                                    // Blank means unlimited — that is why it is not required.
-                                    placeholder="Unlimited"
-                                    className="h-9"
-                                />
-                            )}
-                            {f.helper && <p className="text-[10px] text-muted-foreground">{f.helper}</p>}
-                        </div>
-                    ))}
-                </div>
             )}
         </div>
     );

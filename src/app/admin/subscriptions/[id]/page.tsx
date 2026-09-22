@@ -2,7 +2,7 @@
 
 import { use, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Pencil, Info, Users, IndianRupee, Eye, Crown, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Pencil, Info, Users, IndianRupee, Eye, Crown, CheckCircle2, Gauge } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -175,6 +175,17 @@ export default function ViewSubscriptionPlanPage({ params }: { params: Promise<{
                                     <Row label="Trial Period" value={`${plan.trial_days} Days`} />
                                 </div>
                             </div>
+
+                            <div className="border-t border-border pt-5">
+                                <SectionHeading icon={<Gauge className="h-4 w-4" />} title="Plan Limits" />
+                                <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-5">
+                                    <Row label="Max Events" value={plan.max_events ?? 'Unlimited'} />
+                                    <Row label="Max Guests per Event" value={plan.max_guests_per_event ?? 'Unlimited'} />
+                                    <Row label="Max Images" value={plan.max_photos ?? 'Unlimited'} />
+                                    <Row label="Max Videos" value={plan.max_videos ?? 'Unlimited'} />
+                                    <Row label="Storage Limit" value={plan.storage_gb ? `${plan.storage_gb} GB` : 'Unlimited'} />
+                                </div>
+                            </div>
                         </CardContent>
                     </Card>
 
@@ -219,12 +230,10 @@ export default function ViewSubscriptionPlanPage({ params }: { params: Promise<{
                             ) : (
                                 <div className="grid grid-cols-3 gap-3 sm:grid-cols-5 lg:grid-cols-10">
                                     {visibleMenus.map((pm) => {
-                                        const limitCount = Object.keys(pm.limits_json ?? {}).length;
                                         return (
                                             <div
                                                 key={pm.menu_id}
                                                 className="flex flex-col items-center gap-1.5 rounded-lg border border-border p-2.5 text-center"
-                                                title={limitCount > 0 ? `${limitCount} limit(s) configured` : undefined}
                                             >
                                                 <span className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-primary/20 bg-primary/5">
                                                     <DynamicIcon name={pm.menu?.icon} color={pm.menu?.color} size="h-4 w-4" />

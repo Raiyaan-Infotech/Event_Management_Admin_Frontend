@@ -9,7 +9,6 @@ export type BillingCycle = 'monthly' | 'quarterly' | 'yearly' | 'lifetime';
 export interface PlanMenuRow {
     id?: number;
     menu_id: number;
-    limits_json?: Record<string, string | number | null> | null;
     sort_order?: number;
     menu?: {
         id: number;
@@ -29,6 +28,12 @@ export interface SubscriptionPlan {
     billing_cycle: BillingCycle;
     short_description: string | null;
     event_category_id: number | null;
+    /** Plan limits (wizard step 4). null = unlimited. No RSVP limit — the guest limit caps it. */
+    max_events: number | null;
+    max_guests_per_event: number | null;
+    max_photos: number | null;
+    max_videos: number | null;
+    storage_gb: number | null;
     currency_code: string;
     price: string | number;
     trial_days: number;
@@ -59,18 +64,6 @@ export interface SubscriptionPlan {
     updated_at?: string;
 }
 
-/** One limit field on a menu, as defined by the backend catalogue. */
-export interface LimitField {
-    key: string;
-    label: string;
-    type?: 'select';
-    options?: string[];
-    helper?: string;
-}
-
-/** menu slug -> its limit fields. */
-export type LimitCatalog = Record<string, LimitField[]>;
-
 export type SubscriptionPlanPayload = {
     name: string;
     plan_code: string;
@@ -79,6 +72,11 @@ export type SubscriptionPlanPayload = {
     billing_cycle: BillingCycle;
     short_description?: string | null;
     event_category_id?: number | null;
+    max_events?: number | null;
+    max_guests_per_event?: number | null;
+    max_photos?: number | null;
+    max_videos?: number | null;
+    storage_gb?: number | null;
     currency_code?: string;
     price?: number;
     trial_days?: number;
@@ -88,7 +86,6 @@ export type SubscriptionPlanPayload = {
     /** Omit entirely to leave the plan's menu selection untouched. */
     menus?: Array<{
         menu_id: number;
-        limits_json?: Record<string, string | number | null> | null;
         sort_order?: number;
     }>;
 };
@@ -118,10 +115,6 @@ const api = {
     getById: async (id: number | string): Promise<SubscriptionPlan> => {
         const response = await apiClient.get(`/subscription-plans/${id}`);
         return response.data.data?.subscriptionPlan ?? response.data.data;
-    },
-    getLimitCatalog: async (): Promise<LimitCatalog> => {
-        const response = await apiClient.get('/subscription-plans/limit-catalog');
-        return response.data.data?.catalog ?? {};
     },
     create: async (data: SubscriptionPlanPayload): Promise<SubscriptionPlan> => {
         const response = await apiClient.post('/subscription-plans', data);
@@ -184,15 +177,6 @@ export function useSubscriptionPlan(id: number | string | undefined) {
         queryKey: ['subscription-plans', 'detail', id],
         queryFn: () => api.getById(id!),
         enabled: !!id,
-    });
-}
-
-/** The catalogue is static config — no need to refetch it constantly. */
-export function useLimitCatalog() {
-    return useQuery({
-        queryKey: ['subscription-plans', 'limit-catalog'],
-        queryFn: api.getLimitCatalog,
-        staleTime: 5 * 60 * 1000,
     });
 }
 
