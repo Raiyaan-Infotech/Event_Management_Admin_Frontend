@@ -56,6 +56,7 @@ import { PageLoader } from '@/components/common/page-loader';
 import { PermissionGuard } from '@/components/guards/permission-guard';
 import { cn } from '@/lib/utils';
 import { useEventCategories } from '@/hooks/use-menu-management';
+import { useTemplateCategories } from '@/hooks/use-template-categories';
 import {
     useEventTemplates,
     useEventTemplateStats,
@@ -86,6 +87,7 @@ export default function TemplateListPage() {
     const [limit, setLimit] = useState(10);
     const [search, setSearch] = useState('');
     const [categoryId, setCategoryId] = useState(ALL);
+    const [templateCategoryId, setTemplateCategoryId] = useState(ALL);
     const [status, setStatus] = useState(ALL);
 
     const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -95,6 +97,7 @@ export default function TemplateListPage() {
         limit,
         search: search || undefined,
         event_category_id: categoryId === ALL ? undefined : categoryId,
+        template_category_id: templateCategoryId === ALL ? undefined : templateCategoryId,
         status: status === ALL ? undefined : status,
     });
 
@@ -105,6 +108,9 @@ export default function TemplateListPage() {
     // Filter dropdowns. limit:200 because a filter that only lists the first
     // page of options silently hides the rest.
     const { data: categories } = useEventCategories({ limit: 200, is_active: true });
+    // The DESIGN family (Elegant, Floral, Minimal, ...) — a different facet
+    // from Event Category (Wedding, Birthday, ...) above; see use-template-categories.ts.
+    const { data: templateCategories } = useTemplateCategories({ limit: 200, is_active: true });
     const updateStatus = useUpdateEventTemplateStatus();
     const updateFeatured = useUpdateEventTemplateFeatured();
     const duplicateTemplate = useDuplicateEventTemplate();
@@ -113,11 +119,12 @@ export default function TemplateListPage() {
     const templates = data?.data ?? [];
     const pagination = data?.pagination ?? null;
     const hasFilters =
-        !!search || categoryId !== ALL || status !== ALL;
+        !!search || categoryId !== ALL || templateCategoryId !== ALL || status !== ALL;
 
     const clearFilters = () => {
         setSearch('');
         setCategoryId(ALL);
+        setTemplateCategoryId(ALL);
         setStatus(ALL);
         setPage(1);
     };
@@ -226,7 +233,7 @@ export default function TemplateListPage() {
                 {/* Filters */}
                 <Card className="border-border bg-card shadow-xs">
                     <CardContent className="space-y-3 p-4">
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                             <div className="space-y-1.5">
                                 <Label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                                     Search
@@ -262,6 +269,31 @@ export default function TemplateListPage() {
                                     <SelectContent>
                                         <SelectItem value={ALL}>All Categories</SelectItem>
                                         {(categories?.data ?? []).map((c) => (
+                                            <SelectItem key={c.id} value={String(c.id)}>
+                                                {c.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <Label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                    Template Category
+                                </Label>
+                                <Select
+                                    value={templateCategoryId}
+                                    onValueChange={(v) => {
+                                        setTemplateCategoryId(v);
+                                        setPage(1);
+                                    }}
+                                >
+                                    <SelectTrigger className="h-10">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value={ALL}>All Template Categories</SelectItem>
+                                        {(templateCategories?.data ?? []).map((c) => (
                                             <SelectItem key={c.id} value={String(c.id)}>
                                                 {c.name}
                                             </SelectItem>
