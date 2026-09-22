@@ -10,6 +10,7 @@ import {
     RotateCcw,
     Save,
     Smartphone,
+    Star,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -45,6 +46,7 @@ interface FormState {
     event_category_id: string;
     active_website: boolean;
     active_mobile: boolean;
+    is_default: boolean;
     sort_order: number;
     icon: string;
     color: string;
@@ -57,6 +59,7 @@ const emptyForm = (): FormState => ({
     event_category_id: '',
     active_website: true,
     active_mobile: true,
+    is_default: false,
     sort_order: 1,
     icon: '',
     color: '#6E22FE',
@@ -75,7 +78,7 @@ export function MenuFormContent() {
 
     const { data: existing, isLoading: loadingMenu, refetch } = useEventMenu(id ?? undefined);
     // A menu is scoped by category only — no event type, religion or
-    // Website/Mobile type. Which platform it shows on is the PLAN's W/M switch.
+    // Website/Mobile type. Which platform it shows on is its Active switch below.
     const { data: categories, isLoading: loadingCategories } = useEventCategories({ limit: 200, is_active: true });
 
     /**
@@ -118,6 +121,7 @@ export function MenuFormContent() {
             event_category_id: record.event_category_id ? String(record.event_category_id) : '',
             active_website: !!record.active_website,
             active_mobile: !!record.active_mobile,
+            is_default: !!Number(record.is_default),
             sort_order: record.sort_order ?? 1,
             icon: record.icon ?? '',
             color: record.color ?? '#6E22FE',
@@ -160,6 +164,7 @@ export function MenuFormContent() {
             event_category_id: Number(form.event_category_id),
             active_website: form.active_website,
             active_mobile: form.active_mobile,
+            is_default: form.is_default,
             sort_order: Number(form.sort_order) || 0,
             icon: form.icon,
             color: form.color,
@@ -196,6 +201,7 @@ export function MenuFormContent() {
                 event_category_id: Number(form.event_category_id),
                 active_website: form.active_website,
                 active_mobile: form.active_mobile,
+                is_default: form.is_default,
                 sort_order: Number(form.sort_order) || 0,
                 icon: form.icon,
                 color: form.color,
@@ -350,6 +356,27 @@ export function MenuFormContent() {
                                 onWebsiteChange={(v) => setField('active_website', v)}
                                 onMobileChange={(v) => setField('active_mobile', v)}
                             />
+
+                            {/* Default vs add-on. A default menu starts ticked on
+                                every NEW plan (the admin can still untick it); an
+                                add-on is off until a plan adds it. */}
+                            <div className="rounded-lg border border-border bg-card p-4">
+                                <p className="text-sm font-semibold text-foreground">Plan Default</p>
+                                <p className="mb-3 text-xs text-muted-foreground">
+                                    Default menus come ticked on every new plan. The rest are add-on features.
+                                </p>
+                                <StatusRow
+                                    icon={<Star className="h-4 w-4" />}
+                                    title={form.is_default ? 'Default Menu' : 'Add-on Feature'}
+                                    subtitle={
+                                        form.is_default
+                                            ? 'New plans start with this menu included'
+                                            : 'Off on new plans until an admin adds it'
+                                    }
+                                    checked={form.is_default}
+                                    onChange={(v) => setField('is_default', v)}
+                                />
+                            </div>
                         </div>
 
                         {/* Row 3 — order, icon, colour */}

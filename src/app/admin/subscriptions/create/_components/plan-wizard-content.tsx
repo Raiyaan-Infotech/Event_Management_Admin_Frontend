@@ -77,7 +77,8 @@ const LIMIT_FIELDS = [
     { key: 'max_videos', label: 'Max Videos', helper: 'Videos per event gallery.' },
 ] as const;
 
-const STORAGE_OPTIONS = [1, 10, 50, 100, 500];
+const STORAGE_UNITS = ['MB', 'GB'] as const;
+const STORAGE_MAX = 100;
 const UNLIMITED = 'unlimited';
 
 const limitValue = (v: string): number | null => (v === '' ? null : Number(v));
@@ -102,7 +103,9 @@ interface FormState {
     max_guests_per_event: string;
     max_photos: string;
     max_videos: string;
-    storage_gb: string;
+    // A pair: '' + '' = unlimited
+    storage_limit: string;
+    storage_unit: '' | 'MB' | 'GB';
 }
 
 const emptyForm = (): FormState => ({
@@ -121,7 +124,8 @@ const emptyForm = (): FormState => ({
     max_guests_per_event: '',
     max_photos: '',
     max_videos: '',
-    storage_gb: '',
+    storage_limit: '',
+    storage_unit: '',
 });
 
 export function PlanWizardContent() {
@@ -179,7 +183,8 @@ export function PlanWizardContent() {
             max_guests_per_event: existing.max_guests_per_event ? String(existing.max_guests_per_event) : '',
             max_photos: existing.max_photos ? String(existing.max_photos) : '',
             max_videos: existing.max_videos ? String(existing.max_videos) : '',
-            storage_gb: existing.storage_gb ? String(existing.storage_gb) : '',
+            storage_limit: existing.storage_limit && existing.storage_unit ? String(existing.storage_limit) : '',
+            storage_unit: existing.storage_limit && existing.storage_unit ? existing.storage_unit : '',
         });
         const next: Record<number, MenuSelection> = {};
         (existing.planMenus ?? []).forEach((pm) => {
@@ -203,6 +208,45 @@ export function PlanWizardContent() {
         if (!q) return menus;
         return menus.filter((m) => m.name.toLowerCase().includes(q) || m.slug.toLowerCase().includes(q));
     }, [menus, menuSearch]);
+
+    /**
+     * A NEW plan starts with every default menu ticked (Menu Management's "Plan
+     * Default" switch) — once per category, since changing the category clears
+     * the selection. Editing an existing plan never re-ticks anything: what it
+     * saved is the truth, including defaults an admin chose to untick.
+     */
+    const [defaultsAppliedFor, setDefaultsAppliedFor] = useState<string | null>(null);
+    const categoryKey = form.event_category_id || 'all';
+    useEffect(() => {
+        if (isEdit || loadingMenus || !menusData || defaultsAppliedFor === categoryKey) return;
+        setSelection((prev) => {
+            const next = { ...prev };
+            menus.forEach((m) => {
+                if (Number(m.is_default) === 1 && !next[m.id]) next[m.id] = { included: true };
+            });
+            return next;
+        });
+        setDefaultsAppliedFor(categoryKey);
+    }, [isEdit, loadingMenus, menusData, menus, categoryKey, defaultsAppliedFor]);
+
+    const menuSections = useMemo(
+        () =>
+            [
+                {
+                    key: 'default',
+                    title: 'Default Menus',
+                    hint: 'Included on new plans by default — untick any this plan should not have.',
+                    rows: filteredMenus.filter((m) => Number(m.is_default) === 1),
+                },
+                {
+                    key: 'addon',
+                    title: 'Add-on Features',
+                    hint: 'Extras, off until you add them to this plan.',
+                    rows: filteredMenus.filter((m) => Number(m.is_default) !== 1),
+                },
+            ].filter((section) => section.rows.length > 0),
+        [filteredMenus]
+    );
 
     const toggleMenuIncluded = (menuId: number, checked: boolean) => {
         setSelection((prev) => ({
@@ -259,6 +303,12 @@ export function PlanWizardContent() {
                 toast.error('Limits must be whole numbers of 1 or more, or blank for unlimited.');
                 return false;
             }
+            const storage = Number(form.storage_limit);
+            if (form.storage_unit && (!/^\d+$/.test(form.storage_limit) || storage < 1 || storage > STORAGE_MAX)) {
+                setErrors({ storage_limit: true });
+                toast.error(`Storage Limit must be a whole number from 1 to ${STORAGE_MAX}, or Unlimited.`);
+                return false;
+            }
         }
         setErrors({});
         return true;
@@ -289,7 +339,9 @@ export function PlanWizardContent() {
         max_guests_per_event: limitValue(form.max_guests_per_event),
         max_photos: limitValue(form.max_photos),
         max_videos: limitValue(form.max_videos),
-        storage_gb: limitValue(form.storage_gb),
+        // Both or neither — see the step-4 validation.
+        storage_limit: form.storage_unit ? limitValue(form.storage_limit) : null,
+        storage_unit: form.storage_unit || null,
         menus: selectedIds.map((menuId, index) => ({ menu_id: menuId, sort_order: index })),
     });
 
@@ -570,7 +622,16 @@ export function PlanWizardContent() {
                                                     </td>
                                                 </tr>
                                             ) : (
-                                                filteredMenus.map((m) => {
+                                                menuSections.map((section) => [
+                                                    <tr key={`section-${section.key}`} className="border-t border-border bg-muted/30">
+                                                        <td colSpan={2} className="px-3 py-2">
+                                                            <span className="text-[11px] font-bold uppercase tracking-wide text-foreground">
+                                                                {section.title} ({section.rows.length})
+                                                            </span>
+                                                            <span className="ml-2 text-[11px] text-muted-foreground">{section.hint}</span>
+                                                        </td>
+                                                    </tr>,
+                                                    ...section.rows.map((m) => {
                                                     const sel = selection[m.id];
                                                     return (
                                                         <tr key={m.id} className="border-t border-border/50">
@@ -592,7 +653,8 @@ export function PlanWizardContent() {
                                                             </td>
                                                         </tr>
                                                     );
-                                                })
+                                                    }),
+                                                ])
                                             )}
                                         </tbody>
                                     </table>
@@ -682,27 +744,50 @@ export function PlanWizardContent() {
                                     />
                                 </Field>
                             ))}
-                            <Field label="Storage Limit" helper="Total storage for this client's uploads.">
-                                <Select
-                                    value={form.storage_gb || UNLIMITED}
-                                    onValueChange={(v) => setField('storage_gb', v === UNLIMITED ? '' : v)}
-                                >
-                                    <SelectTrigger className="h-10">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {STORAGE_OPTIONS.map((gb) => (
-                                            <SelectItem key={gb} value={String(gb)}>
-                                                {gb} GB
-                                            </SelectItem>
-                                        ))}
-                                        {/* A value saved outside the list stays selectable. */}
-                                        {form.storage_gb && !STORAGE_OPTIONS.includes(Number(form.storage_gb)) && (
-                                            <SelectItem value={form.storage_gb}>{form.storage_gb} GB</SelectItem>
-                                        )}
-                                        <SelectItem value={UNLIMITED}>Unlimited</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                            <Field
+                                label="Storage Limit"
+                                helper={`1 to ${STORAGE_MAX}, in MB or GB. Total storage for this client's uploads.`}
+                                error={errors.storage_limit}
+                            >
+                                <div className="flex gap-2">
+                                    <Input
+                                        type="number"
+                                        min={1}
+                                        max={STORAGE_MAX}
+                                        step={1}
+                                        inputMode="numeric"
+                                        value={form.storage_limit}
+                                        disabled={!form.storage_unit}
+                                        onChange={(e) =>
+                                            setField('storage_limit', e.target.value.replace(/[^\d]/g, '').slice(0, 3))
+                                        }
+                                        placeholder={form.storage_unit ? `1-${STORAGE_MAX}` : 'Unlimited'}
+                                        className={cn('h-10 min-w-0 flex-1', errors.storage_limit && 'border-destructive')}
+                                    />
+                                    <Select
+                                        value={form.storage_unit || UNLIMITED}
+                                        onValueChange={(v) => {
+                                            if (v === UNLIMITED) {
+                                                setField('storage_unit', '');
+                                                setField('storage_limit', '');
+                                            } else {
+                                                setField('storage_unit', v as 'MB' | 'GB');
+                                            }
+                                        }}
+                                    >
+                                        <SelectTrigger className="h-10 w-[120px] shrink-0">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {STORAGE_UNITS.map((u) => (
+                                                <SelectItem key={u} value={u}>
+                                                    {u}
+                                                </SelectItem>
+                                            ))}
+                                            <SelectItem value={UNLIMITED}>Unlimited</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                             </Field>
                         </div>
                     </WizardCard>
@@ -733,7 +818,7 @@ export function PlanWizardContent() {
                                 ]} />
                                 <ReviewCard title="Plan Limits" onEdit={() => setStep(4)} rows={[
                                     ...LIMIT_FIELDS.map(({ key, label }): [string, string] => [label, form[key] || 'Unlimited']),
-                                    ['Storage Limit', form.storage_gb ? `${form.storage_gb} GB` : 'Unlimited'],
+                                    ['Storage Limit', form.storage_unit && form.storage_limit ? `${form.storage_limit} ${form.storage_unit}` : 'Unlimited'],
                                 ]} />
                             </div>
                         </WizardCard>

@@ -33,7 +33,9 @@ export interface SubscriptionPlan {
     max_guests_per_event: number | null;
     max_photos: number | null;
     max_videos: number | null;
-    storage_gb: number | null;
+    /** 1-100 in storage_unit; both null = unlimited. */
+    storage_limit: number | null;
+    storage_unit: 'MB' | 'GB' | null;
     currency_code: string;
     price: string | number;
     trial_days: number;
@@ -76,7 +78,8 @@ export type SubscriptionPlanPayload = {
     max_guests_per_event?: number | null;
     max_photos?: number | null;
     max_videos?: number | null;
-    storage_gb?: number | null;
+    storage_limit?: number | null;
+    storage_unit?: 'MB' | 'GB' | null;
     currency_code?: string;
     price?: number;
     trial_days?: number;

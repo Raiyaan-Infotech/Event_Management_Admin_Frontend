@@ -118,6 +118,15 @@ export default function ViewMenuPage({ params }: { params: Promise<{ id: string 
                                         offText="Inactive"
                                     />
                                 </div>
+                                <div className="space-y-4">
+                                    <p className="text-sm font-semibold text-foreground">Plan Default</p>
+                                    <StateRow
+                                        label="New plans"
+                                        on={Number(menu.is_default) === 1}
+                                        onText="Default Menu"
+                                        offText="Add-on Feature"
+                                    />
+                                </div>
                             </div>
                         </SectionCard>
 

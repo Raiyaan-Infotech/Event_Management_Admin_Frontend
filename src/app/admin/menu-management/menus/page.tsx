@@ -232,6 +232,7 @@ export default function MenuListPage() {
                                         <TableHead className="min-w-[200px]">Menu Name</TableHead>
                                         <TableHead className="whitespace-nowrap text-center">Change Order</TableHead>
                                         <TableHead className="whitespace-nowrap">Event Category</TableHead>
+                                        <TableHead className="whitespace-nowrap text-center">Type</TableHead>
                                         <TableHead className="whitespace-nowrap text-center">Sort Order</TableHead>
                                         <TableHead className="text-center">Status</TableHead>
                                         <TableHead className="text-right">Action</TableHead>
@@ -241,13 +242,13 @@ export default function MenuListPage() {
                                 <TableBody>
                                     {isLoading ? (
                                         <TableRow>
-                                            <TableCell colSpan={7} className="py-16 text-center text-muted-foreground">
+                                            <TableCell colSpan={8} className="py-16 text-center text-muted-foreground">
                                                 Loading menus...
                                             </TableCell>
                                         </TableRow>
                                     ) : menus.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={7} className="py-16 text-center text-muted-foreground">
+                                            <TableCell colSpan={8} className="py-16 text-center text-muted-foreground">
                                                 {hasFilters
                                                     ? 'No menus match these filters.'
                                                     : 'No menus yet. Click "Add New Menu" to create your first one.'}
@@ -320,6 +321,21 @@ export default function MenuListPage() {
                                                             value={row.category?.name}
                                                             color={row.category?.color}
                                                         />
+                                                    </TableCell>
+
+                                                    <TableCell className="text-center">
+                                                        {/* Default = new plans start with it ticked. */}
+                                                        <Badge
+                                                            variant="outline"
+                                                            className={cn(
+                                                                'whitespace-nowrap text-[11px]',
+                                                                Number(row.is_default) === 1
+                                                                    ? 'border-primary/30 bg-primary/5 text-primary'
+                                                                    : 'border-border text-muted-foreground'
+                                                            )}
+                                                        >
+                                                            {Number(row.is_default) === 1 ? 'Default' : 'Add-on'}
+                                                        </Badge>
                                                     </TableCell>
 
                                                     <TableCell className="text-center text-sm font-semibold tabular-nums">

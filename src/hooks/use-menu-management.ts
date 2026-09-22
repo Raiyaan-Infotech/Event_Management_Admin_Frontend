@@ -59,6 +59,8 @@ export interface EventMenu {
     event_category_id: number | null;
     active_website: number;
     active_mobile: number;
+    /** 1 = default menu (new plans start with it ticked); 0 = add-on feature. */
+    is_default: number;
     icon: string | null;
     color: string | null;
     sort_order: number;
@@ -272,13 +274,14 @@ export type EventMenuPayload = {
     event_category_id?: number | null;
     active_website?: boolean | number;
     active_mobile?: boolean | number;
+    is_default?: boolean | number;
     icon?: string | null;
     color?: string | null;
     sort_order?: number;
     is_active?: boolean | number;
 };
 
-export type EventMenuToggleField = 'active_website' | 'active_mobile';
+export type EventMenuToggleField = 'active_website' | 'active_mobile' | 'is_default';
 
 const MENUS_KEY = ['event-menus'];
 
