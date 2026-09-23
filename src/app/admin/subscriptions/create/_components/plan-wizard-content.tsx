@@ -260,13 +260,20 @@ export function PlanWizardContent() {
                     key: 'default',
                     title: 'Default Menus',
                     hint: 'Included on new plans by default — untick any this plan should not have.',
-                    rows: filteredMenus.filter((m) => Number(m.is_default) === 1),
+                    // A locked menu belongs here whatever its is_default flag says:
+                    // it is on every plan and cannot be unticked, so listing it
+                    // under "Add-on Features" described the opposite of the truth.
+                    rows: filteredMenus.filter(
+                        (m) => Number(m.is_default) === 1 || isLockedMenu(m.slug)
+                    ),
                 },
                 {
                     key: 'addon',
                     title: 'Add-on Features',
                     hint: 'Extras, off until you add them to this plan.',
-                    rows: filteredMenus.filter((m) => Number(m.is_default) !== 1),
+                    rows: filteredMenus.filter(
+                        (m) => Number(m.is_default) !== 1 && !isLockedMenu(m.slug)
+                    ),
                 },
             ].filter((section) => section.rows.length > 0),
         [filteredMenus]
