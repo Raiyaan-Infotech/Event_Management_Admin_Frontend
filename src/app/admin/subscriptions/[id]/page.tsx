@@ -177,14 +177,14 @@ export default function ViewSubscriptionPlanPage({ params }: { params: Promise<{
                             </div>
 
                             <div className="border-t border-border pt-5">
-                                <SectionHeading icon={<Gauge className="h-4 w-4" />} title="Plan Limits" />
+                                <SectionHeading icon={<Gauge className="h-4 w-4" />} title="Plan Configuration" />
                                 <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-5">
                                     <Row label="Max Events" value={plan.max_events ?? 'Unlimited'} />
-                                    <Row label="Max Guests per Event" value={plan.max_guests_per_event ?? 'Unlimited'} />
-                                    <Row label="Max Images" value={plan.max_photos ?? 'Unlimited'} />
-                                    <Row label="Max Videos" value={plan.max_videos ?? 'Unlimited'} />
+                                    <Row label="Max Guest (Per Event)" value={plan.max_guests_per_event ?? 'Unlimited'} />
+                                    <Row label="Max Gallery Image" value={plan.max_photos ?? 'Unlimited'} />
+                                    <Row label="Max Gallery Videos" value={plan.max_videos ?? 'Unlimited'} />
                                     <Row
-                                        label="Storage Limit"
+                                        label="Max Gallery Storage"
                                         value={plan.storage_limit && plan.storage_unit ? `${plan.storage_limit} ${plan.storage_unit}` : 'Unlimited'}
                                     />
                                 </div>

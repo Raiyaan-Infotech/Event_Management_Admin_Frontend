@@ -106,14 +106,8 @@ export default function ViewMenuPage({ params }: { params: Promise<{ id: string 
                                 <div className="space-y-4">
                                     <p className="text-sm font-semibold text-foreground">Active Status</p>
                                     <StateRow
-                                        label="Website"
-                                        on={!!menu.active_website}
-                                        onText="Active"
-                                        offText="Inactive"
-                                    />
-                                    <StateRow
-                                        label="Mobile App"
-                                        on={!!menu.active_mobile}
+                                        label="Menu"
+                                        on={Number(menu.is_active) === 1}
                                         onText="Active"
                                         offText="Inactive"
                                     />

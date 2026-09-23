@@ -30,6 +30,7 @@ import { PageLoader } from '@/components/common/page-loader';
 import { PermissionGuard } from '@/components/guards/permission-guard';
 import { ConfirmResetDialog } from '@/components/common/confirm-reset-dialog';
 import { cn } from '@/lib/utils';
+import { isLockedMenu } from '@/lib/locked-menus';
 import { IconField, ColorField } from '../../../_components/icon-color-fields';
 import {
     useEventMenu,
@@ -44,8 +45,7 @@ interface FormState {
     description: string;
     remarks: string;
     event_category_id: string;
-    active_website: boolean;
-    active_mobile: boolean;
+    is_active: boolean;
     is_default: boolean;
     sort_order: number;
     icon: string;
@@ -57,8 +57,7 @@ const emptyForm = (): FormState => ({
     description: '',
     remarks: '',
     event_category_id: '',
-    active_website: true,
-    active_mobile: true,
+    is_active: true,
     is_default: false,
     sort_order: 1,
     icon: '',
@@ -77,6 +76,9 @@ export function MenuFormContent() {
     const [loadedId, setLoadedId] = useState<string | null>(null);
 
     const { data: existing, isLoading: loadingMenu, refetch } = useEventMenu(id ?? undefined);
+    // A new menu has no slug yet (the server derives it), so only an existing
+    // row can be one of the required menus.
+    const lockedMenu = isLockedMenu(existing?.slug);
     // A menu is scoped by category only — no event type, religion or
     // Website/Mobile type. Which platform it shows on is its Active switch below.
     const { data: categories, isLoading: loadingCategories } = useEventCategories({ limit: 200, is_active: true });
@@ -119,8 +121,7 @@ export function MenuFormContent() {
             description: record.description ?? '',
             remarks: record.remarks ?? '',
             event_category_id: record.event_category_id ? String(record.event_category_id) : '',
-            active_website: !!record.active_website,
-            active_mobile: !!record.active_mobile,
+            is_active: !!Number(record.is_active),
             is_default: !!Number(record.is_default),
             sort_order: record.sort_order ?? 1,
             icon: record.icon ?? '',
@@ -162,8 +163,7 @@ export function MenuFormContent() {
             description: form.description.trim() || null,
             remarks: form.remarks.trim() || null,
             event_category_id: Number(form.event_category_id),
-            active_website: form.active_website,
-            active_mobile: form.active_mobile,
+            is_active: form.is_active,
             is_default: form.is_default,
             sort_order: Number(form.sort_order) || 0,
             icon: form.icon,
@@ -199,8 +199,7 @@ export function MenuFormContent() {
                 description: form.description.trim() || null,
                 remarks: form.remarks.trim() || null,
                 event_category_id: Number(form.event_category_id),
-                active_website: form.active_website,
-                active_mobile: form.active_mobile,
+                is_active: form.is_active,
                 is_default: form.is_default,
                 sort_order: Number(form.sort_order) || 0,
                 icon: form.icon,
@@ -343,19 +342,22 @@ export function MenuFormContent() {
                             </div>
                         </div>
 
-                        {/* Row 2 — where the menu is active. Switching a platform
-                            off hides the menu there for every plan. */}
+                        {/* Row 2 — one Active/Inactive switch, not a per-platform
+                            split. Turning it off hides the menu everywhere. */}
                         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                            <StatusPanel
-                                title="Active / Inactive Status"
-                                subtitle="Activate or deactivate this menu in website and mobile app."
-                                websiteLabel="Menu will be active in website"
-                                mobileLabel="Menu will be active in mobile app"
-                                websiteValue={form.active_website}
-                                mobileValue={form.active_mobile}
-                                onWebsiteChange={(v) => setField('active_website', v)}
-                                onMobileChange={(v) => setField('active_mobile', v)}
-                            />
+                            <div className="rounded-lg border border-border bg-card p-4">
+                                <p className="text-sm font-semibold text-foreground">Active / Inactive Status</p>
+                                <p className="mb-3 text-xs text-muted-foreground">
+                                    Activate or deactivate this menu.
+                                </p>
+                                <StatusRow
+                                    icon={<Globe className="h-4 w-4" />}
+                                    title={form.is_active ? 'Active' : 'Inactive'}
+                                    subtitle={form.is_active ? 'Menu is active' : 'Menu is deactivated'}
+                                    checked={form.is_active}
+                                    onChange={(v) => setField('is_active', v)}
+                                />
+                            </div>
 
                             {/* Default vs add-on. A default menu starts ticked on
                                 every NEW plan (the admin can still untick it); an
@@ -363,17 +365,22 @@ export function MenuFormContent() {
                             <div className="rounded-lg border border-border bg-card p-4">
                                 <p className="text-sm font-semibold text-foreground">Plan Default</p>
                                 <p className="mb-3 text-xs text-muted-foreground">
-                                    Default menus come ticked on every new plan. The rest are add-on features.
+                                    {lockedMenu
+                                        ? 'This menu is required on every plan and cannot be made an add-on.'
+                                        : 'Default menus come ticked on every new plan. The rest are add-on features.'}
                                 </p>
                                 <StatusRow
                                     icon={<Star className="h-4 w-4" />}
                                     title={form.is_default ? 'Default Menu' : 'Add-on Feature'}
                                     subtitle={
-                                        form.is_default
-                                            ? 'New plans start with this menu included'
-                                            : 'Off on new plans until an admin adds it'
+                                        lockedMenu
+                                            ? 'Always included — cannot be removed from a plan'
+                                            : form.is_default
+                                                ? 'New plans start with this menu included'
+                                                : 'Off on new plans until an admin adds it'
                                     }
-                                    checked={form.is_default}
+                                    checked={lockedMenu || form.is_default}
+                                    disabled={lockedMenu}
                                     onChange={(v) => setField('is_default', v)}
                                 />
                             </div>
@@ -534,12 +541,14 @@ function StatusRow({
     subtitle,
     checked,
     onChange,
+    disabled = false,
 }: {
     icon: React.ReactNode;
     title: string;
     subtitle: string;
     checked: boolean;
     onChange: (value: boolean) => void;
+    disabled?: boolean;
 }) {
     return (
         <div className="flex items-center justify-between gap-3 py-3">
@@ -552,7 +561,7 @@ function StatusRow({
                     <p className="break-words text-xs text-muted-foreground">{subtitle}</p>
                 </div>
             </div>
-            <Switch checked={checked} onCheckedChange={onChange} />
+            <Switch checked={checked} onCheckedChange={onChange} disabled={disabled} />
         </div>
     );
 }

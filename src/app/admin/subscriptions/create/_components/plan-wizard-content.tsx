@@ -32,6 +32,7 @@ import { PageLoader } from '@/components/common/page-loader';
 import { PermissionGuard } from '@/components/guards/permission-guard';
 import { DynamicIcon } from '@/components/common/dynamic-icon';
 import { cn } from '@/lib/utils';
+import { isLockedMenu } from '@/lib/locked-menus';
 import { usePlanTypes } from '@/hooks/use-plan-types';
 import { usePlanBadges, badgeStyleProps, type BadgeStyle } from '@/hooks/use-plan-badges';
 import { useEventCategories, useEventMenus } from '@/hooks/use-menu-management';
@@ -72,9 +73,9 @@ const EMPTY_SELECTION: MenuSelection = { included: false };
  */
 const LIMIT_FIELDS = [
     { key: 'max_events', label: 'Max Events', helper: 'Events a client can create on this plan.' },
-    { key: 'max_guests_per_event', label: 'Max Guests per Event', helper: 'Also the RSVP limit — one answer per guest.' },
-    { key: 'max_photos', label: 'Max Images', helper: 'Images per event gallery.' },
-    { key: 'max_videos', label: 'Max Videos', helper: 'Videos per event gallery.' },
+    { key: 'max_guests_per_event', label: 'Max Guest (Per Event)', helper: 'Also the RSVP limit — one answer per guest.' },
+    { key: 'max_photos', label: 'Max Gallery Image', helper: 'Images per event gallery.' },
+    { key: 'max_videos', label: 'Max Gallery Videos', helper: 'Videos per event gallery.' },
 ] as const;
 
 const STORAGE_UNITS = ['MB', 'GB'] as const;
@@ -229,6 +230,21 @@ export function PlanWizardContent() {
         setDefaultsAppliedFor(categoryKey);
     }, [isEdit, loadingMenus, menusData, menus, categoryKey, defaultsAppliedFor]);
 
+    // Locked menus are ticked on every plan, new or existing — an older plan
+    // saved before they were locked gets them back the next time it is opened.
+    useEffect(() => {
+        if (loadingMenus || !menusData) return;
+        setSelection((prev) => {
+            const missing = menus.filter((m) => isLockedMenu(m.slug) && !prev[m.id]?.included);
+            if (missing.length === 0) return prev;
+            const next = { ...prev };
+            missing.forEach((m) => {
+                next[m.id] = { ...(next[m.id] ?? EMPTY_SELECTION), included: true };
+            });
+            return next;
+        });
+    }, [loadingMenus, menusData, menus]);
+
     const menuSections = useMemo(
         () =>
             [
@@ -249,6 +265,8 @@ export function PlanWizardContent() {
     );
 
     const toggleMenuIncluded = (menuId: number, checked: boolean) => {
+        const menu = menus.find((m) => m.id === menuId);
+        if (isLockedMenu(menu?.slug)) return;
         setSelection((prev) => ({
             ...prev,
             [menuId]: { ...(prev[menuId] ?? EMPTY_SELECTION), included: checked },
@@ -262,7 +280,10 @@ export function PlanWizardContent() {
         setSelection((prev) => {
             const next = { ...prev };
             filteredMenus.forEach((m) => {
-                next[m.id] = { ...(next[m.id] ?? EMPTY_SELECTION), included: checked };
+                next[m.id] = {
+                    ...(next[m.id] ?? EMPTY_SELECTION),
+                    included: isLockedMenu(m.slug) ? true : checked,
+                };
             });
             return next;
         });
@@ -306,7 +327,7 @@ export function PlanWizardContent() {
             const storage = Number(form.storage_limit);
             if (form.storage_unit && (!/^\d+$/.test(form.storage_limit) || storage < 1 || storage > STORAGE_MAX)) {
                 setErrors({ storage_limit: true });
-                toast.error(`Storage Limit must be a whole number from 1 to ${STORAGE_MAX}, or Unlimited.`);
+                toast.error(`Max Gallery Storage must be a whole number from 1 to ${STORAGE_MAX}, or Unlimited.`);
                 return false;
             }
         }
@@ -633,6 +654,7 @@ export function PlanWizardContent() {
                                                     </tr>,
                                                     ...section.rows.map((m) => {
                                                     const sel = selection[m.id];
+                                                    const locked = isLockedMenu(m.slug);
                                                     return (
                                                         <tr key={m.id} className="border-t border-border/50">
                                                             <td className="px-3 py-2">
@@ -642,12 +664,18 @@ export function PlanWizardContent() {
                                                                     </span>
                                                                     <span className="min-w-0">
                                                                         <span className="block break-all font-medium">{m.name}</span>
+                                                                        {locked && (
+                                                                            <span className="block text-[11px] text-muted-foreground">
+                                                                                Always included — cannot be removed
+                                                                            </span>
+                                                                        )}
                                                                     </span>
                                                                 </div>
                                                             </td>
                                                             <td className="px-3 py-2 text-center">
                                                                 <Checkbox
-                                                                    checked={!!sel?.included}
+                                                                    checked={locked || !!sel?.included}
+                                                                    disabled={locked}
                                                                     onCheckedChange={(c) => toggleMenuIncluded(m.id, c === true)}
                                                                 />
                                                             </td>
@@ -726,7 +754,7 @@ export function PlanWizardContent() {
 
                 {step === 4 && (
                     <WizardCard
-                        title="Plan Limits"
+                        title="Plan Configuration"
                         subtitle="How much a client on this plan can use. Leave a field blank for unlimited."
                     >
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -745,7 +773,7 @@ export function PlanWizardContent() {
                                 </Field>
                             ))}
                             <Field
-                                label="Storage Limit"
+                                label="Max Gallery Storage"
                                 helper={`1 to ${STORAGE_MAX}, in MB or GB. Total storage for this client's uploads.`}
                                 error={errors.storage_limit}
                             >
@@ -819,9 +847,9 @@ export function PlanWizardContent() {
                                     ['Event Category', categories?.data?.find((c) => String(c.id) === form.event_category_id)?.name ?? 'All Categories'],
                                     ['Total Menus', String(selectedIds.length)],
                                 ]} />
-                                <ReviewCard title="Plan Limits" onEdit={() => setStep(4)} rows={[
+                                <ReviewCard title="Plan Configuration" onEdit={() => setStep(4)} rows={[
                                     ...LIMIT_FIELDS.map(({ key, label }): [string, string] => [label, form[key] || 'Unlimited']),
-                                    ['Storage Limit', form.storage_unit && form.storage_limit ? `${form.storage_limit} ${form.storage_unit}` : 'Unlimited'],
+                                    ['Max Gallery Storage', form.storage_unit && form.storage_limit ? `${form.storage_limit} ${form.storage_unit}` : 'Unlimited'],
                                 ]} />
                             </div>
                         </WizardCard>

@@ -48,7 +48,7 @@ export interface EventMenu {
     slug: string;
     /** Core / Additional / Custom — drives the Manage Plan Menus sections. */
     /** 'portal' = a client-portal sidebar section; 'app' = a mobile app feature. Neither is an event feature. */
-    menu_group?: 'core' | 'additional' | 'custom' | 'portal' | 'app';
+    menu_group?: 'core' | 'addon';
     description?: string | null;
     remarks?: string | null;
     company_id?: number | null;
@@ -57,8 +57,6 @@ export interface EventMenu {
     updater?: { id: number; full_name: string } | null;
     /** A menu is scoped by category only (no event type / religion / menu type). */
     event_category_id: number | null;
-    active_website: number;
-    active_mobile: number;
     /** 1 = default menu (new plans start with it ticked); 0 = add-on feature. */
     is_default: number;
     icon: string | null;
@@ -272,8 +270,6 @@ export type EventMenuPayload = {
     description?: string | null;
     remarks?: string | null;
     event_category_id?: number | null;
-    active_website?: boolean | number;
-    active_mobile?: boolean | number;
     is_default?: boolean | number;
     icon?: string | null;
     color?: string | null;
@@ -281,7 +277,7 @@ export type EventMenuPayload = {
     is_active?: boolean | number;
 };
 
-export type EventMenuToggleField = 'active_website' | 'active_mobile' | 'is_default';
+export type EventMenuToggleField = 'is_active' | 'is_default';
 
 const MENUS_KEY = ['event-menus'];
 
