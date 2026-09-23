@@ -195,10 +195,18 @@ export function PlanWizardContent() {
         setLoadedId(id);
     }, [existing, id, loadedId]);
 
-    const selectedIds = useMemo(
-        () => Object.keys(selection).map(Number).filter((k) => selection[k]?.included),
-        [selection]
-    );
+    /*
+      Locked menus are unioned in here rather than trusted to arrive in
+      `selection`. The row draws itself ticked from `isLockedMenu` alone, so if
+      the state ever disagreed — an edit loading a plan saved before the lock
+      existed, for instance — the payload would omit a menu the screen was
+      showing as included, and the save DELETES grants missing from the payload.
+    */
+    const selectedIds = useMemo(() => {
+        const picked = Object.keys(selection).map(Number).filter((k) => selection[k]?.included);
+        const lockedIds = menus.filter((m) => isLockedMenu(m.slug)).map((m) => m.id);
+        return [...new Set([...picked, ...lockedIds])];
+    }, [selection, menus]);
     const selectedMenus = useMemo(
         () => menus.filter((m) => selectedIds.includes(m.id)),
         [menus, selectedIds]
