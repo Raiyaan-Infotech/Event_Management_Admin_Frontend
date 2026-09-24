@@ -802,23 +802,22 @@ export function PlanWizardContent() {
                                 error={errors.storage_limit}
                             >
                                 <div className="flex flex-nowrap items-center gap-2">
-                                    {/* One row: the amount and its unit are one value, and wrapping
-                                        them put the unit under the box it belongs to. `min-w-0` lets
-                                        the input shrink inside the narrow 3-column cell without
-                                        pushing the select onto a second line. */}
+                                    {/* One row. The amount is a plain text box (digits only) rather than
+                                        type="number": the browser's spinner arrows are ~20px wide and,
+                                        when the flex item shrank in this narrow cell, they were ALL that
+                                        was left of the box. A fixed width keeps room for three digits;
+                                        the unit select takes the remaining space. */}
                                     <Input
-                                        type="number"
-                                        min={1}
-                                        max={STORAGE_MAX}
-                                        step={1}
+                                        type="text"
                                         inputMode="numeric"
+                                        maxLength={3}
                                         value={form.storage_limit}
                                         disabled={!form.storage_unit}
                                         onChange={(e) =>
                                             setField('storage_limit', e.target.value.replace(/[^\d]/g, '').slice(0, 3))
                                         }
                                         placeholder={form.storage_unit ? `1-${STORAGE_MAX}` : 'Unlimited'}
-                                        className={cn('h-10 min-w-0 flex-1', errors.storage_limit && 'border-destructive')}
+                                        className={cn('h-10 w-20 shrink-0', errors.storage_limit && 'border-destructive')}
                                     />
                                     <Select
                                         value={form.storage_unit || UNLIMITED}
@@ -831,7 +830,7 @@ export function PlanWizardContent() {
                                             }
                                         }}
                                     >
-                                        <SelectTrigger className="h-10 w-[96px] shrink-0">
+                                        <SelectTrigger className="h-10 min-w-0 flex-1">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
