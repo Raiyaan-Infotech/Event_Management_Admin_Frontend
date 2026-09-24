@@ -73,7 +73,7 @@ const EMPTY_SELECTION: MenuSelection = { included: false };
  */
 const LIMIT_FIELDS = [
     { key: 'max_events', label: 'Max Events', helper: 'Events a client can create on this plan.' },
-    { key: 'max_guests_per_event', label: 'Max Guest (Per Event)', helper: 'Also the RSVP limit — one answer per guest.' },
+    { key: 'max_guests_per_event', label: 'Max Guests', helper: 'Total guests on the account. Also the RSVP limit per event.' },
     { key: 'max_photos', label: 'Max Gallery Image', helper: 'Images per event gallery.' },
     { key: 'max_videos', label: 'Max Gallery Videos', helper: 'Videos per event gallery.' },
 ] as const;

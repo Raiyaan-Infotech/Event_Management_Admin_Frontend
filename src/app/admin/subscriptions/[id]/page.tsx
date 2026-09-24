@@ -180,7 +180,7 @@ export default function ViewSubscriptionPlanPage({ params }: { params: Promise<{
                                 <SectionHeading icon={<Gauge className="h-4 w-4" />} title="Plan Configuration" />
                                 <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-5">
                                     <Row label="Max Events" value={plan.max_events ?? 'Unlimited'} />
-                                    <Row label="Max Guest (Per Event)" value={plan.max_guests_per_event ?? 'Unlimited'} />
+                                    <Row label="Max Guests" value={plan.max_guests_per_event ?? 'Unlimited'} />
                                     <Row label="Max Gallery Image" value={plan.max_photos ?? 'Unlimited'} />
                                     <Row label="Max Gallery Videos" value={plan.max_videos ?? 'Unlimited'} />
                                     <Row
