@@ -31,6 +31,8 @@ export interface SubscriptionPlan {
     /** Plan limits (wizard step 4). null = unlimited. No RSVP limit — the guest limit caps it. */
     max_events: number | null;
     max_guests_per_event: number | null;
+    /** RSVPs allowed per event — QR scanners included. NULL = unlimited. */
+    max_rsvp_per_event: number | null;
     max_photos: number | null;
     max_videos: number | null;
     /** 1-100 in storage_unit; both null = unlimited. */
@@ -76,6 +78,7 @@ export type SubscriptionPlanPayload = {
     event_category_id?: number | null;
     max_events?: number | null;
     max_guests_per_event?: number | null;
+    max_rsvp_per_event?: number | null;
     max_photos?: number | null;
     max_videos?: number | null;
     storage_limit?: number | null;

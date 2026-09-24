@@ -69,11 +69,16 @@ const EMPTY_SELECTION: MenuSelection = { included: false };
 
 /**
  * Step 4 — the plan's usage limits, one set per plan. Blank = unlimited.
- * No RSVP field: each guest answers once, so the guest limit caps RSVPs too.
+ *
+ * Guests and RSVPs are two different things and get two fields (§571):
+ * a GUEST is a phone-book contact on the account, an RSVP is one person
+ * attending one event — including someone who scanned the QR and was never
+ * in the phone book at all.
  */
 const LIMIT_FIELDS = [
     { key: 'max_events', label: 'Max Events', helper: 'Events a client can create on this plan.' },
-    { key: 'max_guests_per_event', label: 'Max Guests', helper: 'Total guests on the account. Also the RSVP limit per event.' },
+    { key: 'max_guests_per_event', label: 'Max Guests', helper: 'Contacts in the guest list, in total.' },
+    { key: 'max_rsvp_per_event', label: 'Max RSVP (Per Event)', helper: 'People who can attend one event, QR scanners included.' },
     { key: 'max_photos', label: 'Max Gallery Image', helper: 'Images per event gallery.' },
     { key: 'max_videos', label: 'Max Gallery Videos', helper: 'Videos per event gallery.' },
 ] as const;
@@ -102,6 +107,7 @@ interface FormState {
     // Step 4 — '' = unlimited
     max_events: string;
     max_guests_per_event: string;
+    max_rsvp_per_event: string;
     max_photos: string;
     max_videos: string;
     // A pair: '' + '' = unlimited
@@ -123,6 +129,7 @@ const emptyForm = (): FormState => ({
     trial_days: '0',
     max_events: '',
     max_guests_per_event: '',
+    max_rsvp_per_event: '',
     max_photos: '',
     max_videos: '',
     storage_limit: '',
@@ -182,6 +189,7 @@ export function PlanWizardContent() {
             trial_days: String(existing.trial_days ?? 0),
             max_events: existing.max_events ? String(existing.max_events) : '',
             max_guests_per_event: existing.max_guests_per_event ? String(existing.max_guests_per_event) : '',
+            max_rsvp_per_event: existing.max_rsvp_per_event ? String(existing.max_rsvp_per_event) : '',
             max_photos: existing.max_photos ? String(existing.max_photos) : '',
             max_videos: existing.max_videos ? String(existing.max_videos) : '',
             storage_limit: existing.storage_limit && existing.storage_unit ? String(existing.storage_limit) : '',
@@ -373,6 +381,7 @@ export function PlanWizardContent() {
         // Blank = unlimited, sent as null so a cleared limit is actually cleared.
         max_events: limitValue(form.max_events),
         max_guests_per_event: limitValue(form.max_guests_per_event),
+        max_rsvp_per_event: limitValue(form.max_rsvp_per_event),
         max_photos: limitValue(form.max_photos),
         max_videos: limitValue(form.max_videos),
         // Both or neither — see the step-4 validation.
@@ -792,10 +801,11 @@ export function PlanWizardContent() {
                                 helper={`1 to ${STORAGE_MAX}, in MB or GB. Total storage for this client's uploads.`}
                                 error={errors.storage_limit}
                             >
-                                <div className="flex flex-wrap gap-2">
-                                    {/* Fixed width, not flex-1 — in the wizard's 3-column grid this
-                                        field's column is narrow enough that a shrinking input collapsed
-                                        to just the spinner arrows, with no room left for the digits. */}
+                                <div className="flex flex-nowrap items-center gap-2">
+                                    {/* One row: the amount and its unit are one value, and wrapping
+                                        them put the unit under the box it belongs to. `min-w-0` lets
+                                        the input shrink inside the narrow 3-column cell without
+                                        pushing the select onto a second line. */}
                                     <Input
                                         type="number"
                                         min={1}
@@ -808,7 +818,7 @@ export function PlanWizardContent() {
                                             setField('storage_limit', e.target.value.replace(/[^\d]/g, '').slice(0, 3))
                                         }
                                         placeholder={form.storage_unit ? `1-${STORAGE_MAX}` : 'Unlimited'}
-                                        className={cn('h-10 w-24 shrink-0', errors.storage_limit && 'border-destructive')}
+                                        className={cn('h-10 min-w-0 flex-1', errors.storage_limit && 'border-destructive')}
                                     />
                                     <Select
                                         value={form.storage_unit || UNLIMITED}
@@ -821,7 +831,7 @@ export function PlanWizardContent() {
                                             }
                                         }}
                                     >
-                                        <SelectTrigger className="h-10 w-[120px] shrink-0">
+                                        <SelectTrigger className="h-10 w-[96px] shrink-0">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
