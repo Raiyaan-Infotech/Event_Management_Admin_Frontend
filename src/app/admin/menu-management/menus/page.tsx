@@ -66,6 +66,8 @@ export default function MenuListPage() {
     const [limit, setLimit] = useState(10);
     const [search, setSearch] = useState('');
     const [categoryId, setCategoryId] = useState(ALL);
+    /** Menu Type: '1' = Default (locked on every plan and event), '0' = Add-on. */
+    const [menuType, setMenuType] = useState(ALL);
 
     const [deleteId, setDeleteId] = useState<number | null>(null);
 
@@ -74,6 +76,7 @@ export default function MenuListPage() {
         limit,
         search: search || undefined,
         event_category_id: categoryId === ALL ? undefined : categoryId,
+        is_default: menuType === ALL ? undefined : menuType,
     });
 
     // Filter dropdowns. limit:200 because a filter that only lists the first
@@ -86,11 +89,12 @@ export default function MenuListPage() {
 
     const menus = data?.data ?? [];
     const pagination = data?.pagination ?? null;
-    const hasFilters = !!search || categoryId !== ALL;
+    const hasFilters = !!search || categoryId !== ALL || menuType !== ALL;
 
     const clearFilters = () => {
         setSearch('');
         setCategoryId(ALL);
+        setMenuType(ALL);
         setPage(1);
     };
 
@@ -156,7 +160,7 @@ export default function MenuListPage() {
                 {/* Filters */}
                 <Card className="border-border bg-card shadow-xs">
                     <CardContent className="space-y-3 p-4">
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-2">
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                             <div className="space-y-1.5">
                                 <Label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                                     Search
@@ -196,6 +200,28 @@ export default function MenuListPage() {
                                                 {c.name}
                                             </SelectItem>
                                         ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <Label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                    Menu Type
+                                </Label>
+                                <Select
+                                    value={menuType}
+                                    onValueChange={(v) => {
+                                        setMenuType(v);
+                                        setPage(1);
+                                    }}
+                                >
+                                    <SelectTrigger className="h-10">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value={ALL}>All</SelectItem>
+                                        <SelectItem value="1">Default</SelectItem>
+                                        <SelectItem value="0">Add-on</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
