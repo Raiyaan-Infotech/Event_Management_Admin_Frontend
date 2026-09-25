@@ -144,12 +144,15 @@ export default function NotificationTemplatesPage() {
         }
     };
 
-    const isBusy = isLoading || duplicateTemplate.isPending || deleteTemplate.isPending;
+    // The status switch saves too — without it in here, flipping Active/Inactive
+    // showed no loader at all while the request ran.
+    const isBusy =
+        isLoading || updateStatus.isPending || duplicateTemplate.isPending || deleteTemplate.isPending;
 
     return (
         <PermissionGuard permission="notification_templates.view">
             <div className="space-y-5">
-                <PageLoader open={isBusy} text="Loading..." />
+                <PageLoader open={isBusy} text={updateStatus.isPending ? "Updating status..." : "Loading..."} />
 
                 <div className="flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
