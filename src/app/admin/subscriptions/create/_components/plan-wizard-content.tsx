@@ -212,7 +212,7 @@ export function PlanWizardContent() {
     */
     const selectedIds = useMemo(() => {
         const picked = Object.keys(selection).map(Number).filter((k) => selection[k]?.included);
-        const lockedIds = menus.filter((m) => isLockedMenu(m.slug)).map((m) => m.id);
+        const lockedIds = menus.filter((m) => isLockedMenu(m)).map((m) => m.id);
         return [...new Set([...picked, ...lockedIds])];
     }, [selection, menus]);
     const selectedMenus = useMemo(
@@ -251,7 +251,7 @@ export function PlanWizardContent() {
     useEffect(() => {
         if (loadingMenus || !menusData) return;
         setSelection((prev) => {
-            const missing = menus.filter((m) => isLockedMenu(m.slug) && !prev[m.id]?.included);
+            const missing = menus.filter((m) => isLockedMenu(m) && !prev[m.id]?.included);
             if (missing.length === 0) return prev;
             const next = { ...prev };
             missing.forEach((m) => {
@@ -267,21 +267,14 @@ export function PlanWizardContent() {
                 {
                     key: 'default',
                     title: 'Default Menus',
-                    hint: 'Included on new plans by default — untick any this plan should not have.',
-                    // A locked menu belongs here whatever its is_default flag says:
-                    // it is on every plan and cannot be unticked, so listing it
-                    // under "Add-on Features" described the opposite of the truth.
-                    rows: filteredMenus.filter(
-                        (m) => Number(m.is_default) === 1 || isLockedMenu(m.slug)
-                    ),
+                    hint: 'On every plan — set in Menu Management, cannot be removed here.',
+                    rows: filteredMenus.filter((m) => isLockedMenu(m)),
                 },
                 {
                     key: 'addon',
                     title: 'Add-on Features',
                     hint: 'Extras, off until you add them to this plan.',
-                    rows: filteredMenus.filter(
-                        (m) => Number(m.is_default) !== 1 && !isLockedMenu(m.slug)
-                    ),
+                    rows: filteredMenus.filter((m) => !isLockedMenu(m)),
                 },
             ].filter((section) => section.rows.length > 0),
         [filteredMenus]
@@ -289,7 +282,7 @@ export function PlanWizardContent() {
 
     const toggleMenuIncluded = (menuId: number, checked: boolean) => {
         const menu = menus.find((m) => m.id === menuId);
-        if (isLockedMenu(menu?.slug)) return;
+        if (isLockedMenu(menu)) return;
         setSelection((prev) => ({
             ...prev,
             [menuId]: { ...(prev[menuId] ?? EMPTY_SELECTION), included: checked },
@@ -305,7 +298,7 @@ export function PlanWizardContent() {
             filteredMenus.forEach((m) => {
                 next[m.id] = {
                     ...(next[m.id] ?? EMPTY_SELECTION),
-                    included: isLockedMenu(m.slug) ? true : checked,
+                    included: isLockedMenu(m) ? true : checked,
                 };
             });
             return next;
@@ -678,7 +671,7 @@ export function PlanWizardContent() {
                                                     </tr>,
                                                     ...section.rows.map((m) => {
                                                     const sel = selection[m.id];
-                                                    const locked = isLockedMenu(m.slug);
+                                                    const locked = isLockedMenu(m);
                                                     return (
                                                         <tr key={m.id} className="border-t border-border/50">
                                                             <td className="px-3 py-2">

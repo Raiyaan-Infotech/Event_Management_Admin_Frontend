@@ -1,17 +1,11 @@
 /**
- * Menus every plan grants and every event gets. The plan wizard shows them
- * ticked and disabled, and Menu Management cannot flip them to Add-on: an
- * event missing one of these would be missing a core screen.
+ * A menu is locked when it is marked Default in Menu Management — read from the
+ * menu row, never from a slug list, so a menu added tomorrow is locked by
+ * ticking Default and needs no code change (2026-09-25).
+ *
+ * Locked means: every plan grants it (the plan wizard shows it ticked and
+ * disabled, and the backend adds it back on save) and no event can switch it
+ * off. Add-on menus are optional on the plan and switchable per event.
  */
-export const LOCKED_MENU_SLUGS = [
-    'splash-screens',
-    'event-invitation',
-    'participants',
-    'venue',
-    'rsvp',
-    'agenda',
-    'guests',
-] as const;
-
-export const isLockedMenu = (slug?: string | null): boolean =>
-    !!slug && (LOCKED_MENU_SLUGS as readonly string[]).includes(slug);
+export const isLockedMenu = (menu?: { is_default?: number | boolean | null } | null): boolean =>
+    Number(menu?.is_default) === 1;

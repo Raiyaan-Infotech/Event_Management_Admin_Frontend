@@ -30,7 +30,6 @@ import { PageLoader } from '@/components/common/page-loader';
 import { PermissionGuard } from '@/components/guards/permission-guard';
 import { ConfirmResetDialog } from '@/components/common/confirm-reset-dialog';
 import { cn } from '@/lib/utils';
-import { isLockedMenu } from '@/lib/locked-menus';
 import { IconField, ColorField } from '../../../_components/icon-color-fields';
 import {
     useEventMenu,
@@ -76,9 +75,6 @@ export function MenuFormContent() {
     const [loadedId, setLoadedId] = useState<string | null>(null);
 
     const { data: existing, isLoading: loadingMenu, refetch } = useEventMenu(id ?? undefined);
-    // A new menu has no slug yet (the server derives it), so only an existing
-    // row can be one of the required menus.
-    const lockedMenu = isLockedMenu(existing?.slug);
     // A menu is scoped by category only — no event type, religion or
     // Website/Mobile type. Which platform it shows on is its Active switch below.
     const { data: categories, isLoading: loadingCategories } = useEventCategories({ limit: 200, is_active: true });
@@ -359,28 +355,24 @@ export function MenuFormContent() {
                                 />
                             </div>
 
-                            {/* Default vs add-on. A default menu starts ticked on
-                                every NEW plan (the admin can still untick it); an
-                                add-on is off until a plan adds it. */}
+                            {/* Default vs add-on — the ONLY place that decides it.
+                                Default: every plan grants it and no event can
+                                switch it off. Add-on: optional on a plan,
+                                switchable per event. */}
                             <div className="rounded-lg border border-border bg-card p-4">
                                 <p className="text-sm font-semibold text-foreground">Plan Default</p>
                                 <p className="mb-3 text-xs text-muted-foreground">
-                                    {lockedMenu
-                                        ? 'This menu is required on every plan and cannot be made an add-on.'
-                                        : 'Default menus come ticked on every new plan. The rest are add-on features.'}
+                                    Default menus are on every plan and every event. Add-ons are chosen per plan and switched per event.
                                 </p>
                                 <StatusRow
                                     icon={<Star className="h-4 w-4" />}
                                     title={form.is_default ? 'Default Menu' : 'Add-on Feature'}
                                     subtitle={
-                                        lockedMenu
-                                            ? 'Always included — cannot be removed from a plan'
-                                            : form.is_default
-                                                ? 'New plans start with this menu included'
-                                                : 'Off on new plans until an admin adds it'
+                                        form.is_default
+                                            ? 'Always included — every plan, every event'
+                                            : 'Optional — plans add it, events can switch it off'
                                     }
-                                    checked={lockedMenu || form.is_default}
-                                    disabled={lockedMenu}
+                                    checked={form.is_default}
                                     onChange={(v) => setField('is_default', v)}
                                 />
                             </div>
