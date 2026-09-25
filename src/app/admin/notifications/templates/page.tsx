@@ -258,37 +258,41 @@ export default function NotificationTemplatesPage() {
                                     </SelectContent>
                                 </Select>
                             </div>
-                        </div>
 
-                        <div className="flex items-center justify-end gap-3">
-                            <div className="w-40 space-y-1.5">
-                                <Select
-                                    value={status}
-                                    onValueChange={(v) => {
-                                        setStatus(v);
-                                        setPage(1);
-                                    }}
+                            {/* Status + Reset share the row's last column — the
+                                grid is 5 wide and the fields above fill 4. */}
+                            <div className="flex items-end gap-2">
+                                <div className="min-w-0 flex-1 space-y-1.5">
+                                    <Label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                        Status
+                                    </Label>
+                                    <Select
+                                        value={status}
+                                        onValueChange={(v) => {
+                                            setStatus(v);
+                                            setPage(1);
+                                        }}
+                                    >
+                                        <SelectTrigger className="h-10">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value={ALL}>All Status</SelectItem>
+                                            <SelectItem value="active">Active</SelectItem>
+                                            <SelectItem value="inactive">Inactive</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={clearFilters}
+                                    disabled={!hasFilters}
+                                    className="h-10 shrink-0 gap-2 text-xs"
                                 >
-                                    <SelectTrigger className="h-9">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value={ALL}>All Status</SelectItem>
-                                        <SelectItem value="active">Active</SelectItem>
-                                        <SelectItem value="inactive">Inactive</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                                    <RotateCcw className="h-3.5 w-3.5" /> Reset
+                                </Button>
                             </div>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={clearFilters}
-                                disabled={!hasFilters}
-                                className="h-9 gap-2 text-xs"
-                            >
-                                <RotateCcw className="h-3.5 w-3.5" /> Reset
-                            </Button>
                         </div>
                     </CardContent>
                 </Card>
