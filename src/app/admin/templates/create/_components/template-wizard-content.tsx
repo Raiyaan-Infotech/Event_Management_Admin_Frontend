@@ -1363,10 +1363,18 @@ export function TemplateWizardContent() {
                                                         // The id is what saves; the slug
                                                         // is kept so the preview and any
                                                         // older reader still see a style.
+                                                        //
+                                                        // `layout_style` follows it: Step 2
+                                                        // used to ask for the same category
+                                                        // a second time (Jamal, 2026-10-05).
+                                                        // It decides which Step 2 fields and
+                                                        // gradient presets show; a category
+                                                        // with no bespoke set uses Classic's.
                                                         setForm((prev) => ({
                                                             ...prev,
                                                             template_category_id: s.value,
                                                             style: s.slug,
+                                                            layout_style: s.slug,
                                                         }));
                                                     }}
                                                     className={cn(
@@ -1475,44 +1483,6 @@ export function TemplateWizardContent() {
                                 subtitle="Choose the visual style and background for your template."
                             >
                                 <div className="space-y-1.5">
-                                    <Label className="text-xs font-semibold text-foreground">Layout Style</Label>
-                                    {/*
-                                      Reads the same live `styleOptions` (the
-                                      Template Categories table) as Step 1's
-                                      Template Style / Theme tiles — NOT the
-                                      hardcoded LAYOUT_STYLES array. The two used
-                                      to be independent lists (5 hardcoded here vs
-                                      however many categories exist there), so a
-                                      category like Royal or Floral was pickable
-                                      in Step 1 but absent here. Adding a category
-                                      in Template Categories now shows up here
-                                      immediately, no code change needed.
-
-                                      A category with no bespoke STEP2_FIELDS /
-                                      GRADIENT_PRESETS_BY_STYLE entry just falls
-                                      back to Classic's (see `layoutStyle` above)
-                                      until one is added for it.
-                                    */}
-                                    <div className="flex flex-wrap gap-2">
-                                        {styleOptions.map((s) => (
-                                            <button
-                                                key={s.value}
-                                                type="button"
-                                                onClick={() => setField('layout_style', s.slug)}
-                                                className={cn(
-                                                    'rounded-md border px-4 py-2 text-xs transition-colors',
-                                                    form.layout_style === s.slug
-                                                        ? 'border-primary bg-primary/5 font-semibold text-primary'
-                                                        : 'border-border text-muted-foreground hover:border-primary/40'
-                                                )}
-                                            >
-                                                {s.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div className="mt-4 space-y-1.5">
                                     <Label className="text-xs font-semibold text-foreground">Background Type</Label>
                                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                                         {BACKGROUND_TYPES.map((b) => (
@@ -2152,7 +2122,6 @@ export function TemplateWizardContent() {
                                         icon={Palette}
                                         onEdit={() => setStep(2)}
                                         rows={[
-                                            ['Layout Style', form.layout_style],
                                             ['Background Type', form.background_type],
                                             ['Orientation', `${form.orientation} (${form.dimension})`],
                                             [
