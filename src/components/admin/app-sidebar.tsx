@@ -51,6 +51,7 @@ import {
   UserRound,
   UtensilsCrossed,
   FileEdit,
+  Type,
 } from "lucide-react";
 import {
   Sidebar,
@@ -183,6 +184,15 @@ const menuItems: MenuItem[] = [
         href: "/admin/templates/decorations",
         icon: Sparkles,
         permission: "decorations.view",
+      },
+      {
+        // Fonts added for templates — an uploaded file or a link. Shown with
+        // the templates permission: a font exists only to be picked in the
+        // template wizard, so it has no permission of its own.
+        labelKey: "Fonts",
+        href: "/admin/templates/fonts",
+        icon: Type,
+        permission: "event_templates.view",
       },
     ],
   },

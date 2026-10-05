@@ -11,6 +11,7 @@ import {
     type ComponentKey,
     type EventTemplate,
 } from '@/hooks/use-event-templates';
+import { useLoadedTemplateFonts } from '@/hooks/use-template-fonts';
 
 /**
  * The wizard's Live Preview panel, and the detail page's artwork.
@@ -337,6 +338,9 @@ export function TemplatePreview({
     className?: string;
     caption?: string;
 }) {
+    // Fonts added under Templates → Fonts: declared here so a template that
+    // names one is drawn in it on the list, the detail page and the wizard.
+    useLoadedTemplateFonts();
     const [device, setDevice] = useState<'mobile' | 'web'>('mobile');
 
     /**

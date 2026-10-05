@@ -51,6 +51,48 @@ export const COMPONENT_LABELS: Record<ComponentKey, string> = {
 };
 
 /**
+ * What the wizard SHOWS for the eleven components (Jamal, 2026-10-05): the
+ * same eight switches the mobile app and the client portal offer, plus
+ * Decoration Elements, which only the admin decides.
+ *
+ * A group that covers two components reads on when either is on, sets both,
+ * and moves as one chip in Component Order. What is STORED is unchanged — the
+ * eleven keys — so nothing saved before this needs converting.
+ */
+export const COMPONENT_GROUPS: {
+    id: string;
+    label: string;
+    keys: ComponentKey[];
+    /** Step 4's line under the label. */
+    permissionHint: string;
+}[] = [
+    { id: 'photos', label: 'Event Photos', keys: ['event_photos'], permissionHint: 'Allow clients to add / change photos' },
+    { id: 'title_names', label: 'Title & Names', keys: ['event_title', 'host_names'], permissionHint: 'Allow clients to edit the title and host / couple names' },
+    { id: 'message', label: 'Invitation Message', keys: ['invitation_message'], permissionHint: 'Allow clients to edit invitation message' },
+    { id: 'date_time', label: 'Date & Time', keys: ['date_time'], permissionHint: 'Allow clients to edit date & time' },
+    { id: 'venue', label: 'Venue', keys: ['venue'], permissionHint: 'Allow clients to edit venue' },
+    { id: 'qr', label: 'Event QR Code', keys: ['event_qr_code'], permissionHint: 'Allow clients to show / hide QR code' },
+    { id: 'organizer_contact', label: 'Organizer & Contact', keys: ['organizer', 'contact_details'], permissionHint: 'Allow clients to edit organizer and contact details' },
+    { id: 'footer', label: 'Footer (Thanks / Note)', keys: ['footer_note'], permissionHint: 'Allow clients to edit footer text' },
+    { id: 'decorations', label: 'Decoration Elements', keys: ['decoration_elements'], permissionHint: 'Allow clients to change decorations' },
+];
+
+/**
+ * A stored component order (eleven keys) read as the groups, in the order
+ * they appear — a group sits where its first component is.
+ */
+export function groupsInOrder(order: readonly ComponentKey[]) {
+    const seen: typeof COMPONENT_GROUPS = [];
+    for (const key of order) {
+        const group = COMPONENT_GROUPS.find((g) => g.keys.includes(key));
+        if (group && !seen.includes(group)) seen.push(group);
+    }
+    // Anything the order left out goes last, so no group can vanish.
+    for (const group of COMPONENT_GROUPS) if (!seen.includes(group)) seen.push(group);
+    return seen;
+}
+
+/**
  * Step 4 covers the same components PLUS three whole-design aspects that are
  * not components in their own right — you cannot toggle "Colors" on in step 3,
  * because every template has colours.

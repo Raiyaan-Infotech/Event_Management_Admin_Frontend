@@ -58,8 +58,8 @@ import {
     defaultPermissions,
     normaliseOrder,
     COMPONENT_KEYS,
-    COMPONENT_LABELS,
-    PERMISSION_KEYS,
+    COMPONENT_GROUPS,
+    groupsInOrder,
     PERMISSION_LABELS,
     PERMISSION_HINTS,
     LAYOUT_STYLES,
@@ -94,6 +94,7 @@ import {
 } from '@/hooks/use-event-templates';
 import { TemplatePreview } from '../../_components/template-preview';
 import { ComponentOrderList } from './component-order-list';
+import { useLoadedTemplateFonts } from '@/hooks/use-template-fonts';
 
 /**
  * Step 2 fields that need the whole row rather than one grid cell.
@@ -399,11 +400,34 @@ export function TemplateWizardContent() {
         setErrors((prev) => (prev[key as string] ? { ...prev, [key as string]: false } : prev));
     };
 
-    const toggleComponent = (key: ComponentKey, on: boolean) =>
-        setForm((prev) => ({ ...prev, components: { ...prev.components, [key]: on ? 1 : 0 } }));
+    // A switch may cover two stored keys (Title & Names): it sets them all.
+    /**
+     * The font lists: the ten built in, then every active font added under
+     * Templates → Fonts (also declared on this page, so the live preview is
+     * drawn in it). A template being edited keeps a font that has since been
+     * deleted or switched off in the list, so opening it does not silently
+     * change its font.
+     */
+    const addedFonts = useLoadedTemplateFonts();
+    const fontChoices = Array.from(
+        new Set<string>([
+            ...FONT_OPTIONS,
+            ...addedFonts.map((f) => f.name),
+            ...[form.primary_font, form.secondary_font].filter(Boolean),
+        ])
+    );
 
-    const togglePermission = (key: PermissionKey, on: boolean) =>
-        setForm((prev) => ({ ...prev, permissions: { ...prev.permissions, [key]: on ? 1 : 0 } }));
+    const toggleComponents = (keys: ComponentKey[], on: boolean) =>
+        setForm((prev) => ({
+            ...prev,
+            components: { ...prev.components, ...Object.fromEntries(keys.map((k) => [k, on ? 1 : 0])) },
+        }));
+
+    const togglePermissions = (keys: PermissionKey[], on: boolean) =>
+        setForm((prev) => ({
+            ...prev,
+            permissions: { ...prev.permissions, ...Object.fromEntries(keys.map((k) => [k, on ? 1 : 0])) },
+        }));
 
     const addTag = () => {
         const value = tagDraft.trim();
@@ -1227,8 +1251,22 @@ export function TemplateWizardContent() {
         }
     };
 
-    const componentsOn = COMPONENT_KEYS.filter((k) => Number(form.components[k]));
-    const permissionsOn = PERMISSION_KEYS.filter((k) => Number(form.permissions[k]));
+    /**
+     * Step 4's rows: the three whole-design aspects, then the same groups
+     * Step 3 shows — one row per group, not per stored key.
+     */
+    const permissionRows: { id: string; label: string; hint: string; keys: PermissionKey[] }[] = [
+        ...(['background', 'colors', 'fonts'] as const).map((k) => ({
+            id: k, label: PERMISSION_LABELS[k], hint: PERMISSION_HINTS[k], keys: [k] as PermissionKey[],
+        })),
+        ...COMPONENT_GROUPS.map((g) => ({
+            id: g.id, label: g.label, hint: g.permissionHint, keys: g.keys as PermissionKey[],
+        })),
+    ];
+
+    const groupOn = (keys: ComponentKey[]) => keys.some((k) => Number(form.components[k]));
+    const componentsOn = groupsInOrder(form.component_order).filter((g) => groupOn(g.keys));
+    const permissionsOn = permissionRows.filter((r) => r.keys.some((k) => Number(form.permissions[k])));
 
     return (
         <PermissionGuard permission={isEdit ? 'event_templates.edit' : 'event_templates.create'}>
@@ -1625,9 +1663,9 @@ export function TemplateWizardContent() {
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                {FONT_OPTIONS.map((f) => (
+                                                {fontChoices.map((f) => (
                                                     <SelectItem key={f} value={f}>
-                                                        {f}
+                                                        <span style={{ fontFamily: `"${f}", inherit` }}>{f}</span>
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>
@@ -1643,9 +1681,9 @@ export function TemplateWizardContent() {
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                {FONT_OPTIONS.map((f) => (
+                                                {fontChoices.map((f) => (
                                                     <SelectItem key={f} value={f}>
-                                                        {f}
+                                                        <span style={{ fontFamily: `"${f}", inherit` }}>{f}</span>
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>
@@ -1730,24 +1768,24 @@ export function TemplateWizardContent() {
                                     </div>
 
                                     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                                        {COMPONENT_KEYS.map((key) => (
+                                        {COMPONENT_GROUPS.map((group) => (
                                             <div
-                                                key={key}
+                                                key={group.id}
                                                 className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2.5"
                                             >
                                                 <div className="min-w-0">
                                                     <div className="truncate text-sm font-medium text-foreground">
-                                                        {COMPONENT_LABELS[key]}
+                                                        {group.label}
                                                     </div>
-                                                    {key === 'event_qr_code' && (
+                                                    {group.id === 'qr' && (
                                                         <div className="truncate text-[11px] text-muted-foreground">
                                                             Clients will get QR code for this event
                                                         </div>
                                                     )}
                                                 </div>
                                                 <Switch
-                                                    checked={!!Number(form.components[key])}
-                                                    onCheckedChange={(v) => toggleComponent(key, v)}
+                                                    checked={groupOn(group.keys)}
+                                                    onCheckedChange={(v) => toggleComponents(group.keys, v)}
                                                 />
                                             </div>
                                         ))}
@@ -1786,22 +1824,22 @@ export function TemplateWizardContent() {
                                 </div>
 
                                 <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                                    {PERMISSION_KEYS.map((key) => (
+                                    {permissionRows.map((row) => (
                                         <div
-                                            key={key}
+                                            key={row.id}
                                             className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2.5"
                                         >
                                             <div className="min-w-0">
                                                 <div className="truncate text-sm font-medium text-foreground">
-                                                    {PERMISSION_LABELS[key]}
+                                                    {row.label}
                                                 </div>
                                                 <div className="truncate text-[11px] text-muted-foreground">
-                                                    {PERMISSION_HINTS[key]}
+                                                    {row.hint}
                                                 </div>
                                             </div>
                                             <Switch
-                                                checked={!!Number(form.permissions[key])}
-                                                onCheckedChange={(v) => togglePermission(key, v)}
+                                                checked={row.keys.some((k) => !!Number(form.permissions[k]))}
+                                                onCheckedChange={(v) => togglePermissions(row.keys, v)}
                                             />
                                         </div>
                                     ))}
@@ -2161,10 +2199,7 @@ export function TemplateWizardContent() {
                                                     </Badge>
                                                     {/* Rendered IN ORDER, because the order is the
                                                         thing step 3 was actually for. */}
-                                                    {form.component_order
-                                                        .filter((k) => Number(form.components[k]))
-                                                        .map((k) => COMPONENT_LABELS[k])
-                                                        .join(', ') || 'None'}
+                                                    {componentsOn.map((g) => g.label).join(', ') || 'None'}
                                                 </span>,
                                             ],
                                         ]}
@@ -2181,7 +2216,7 @@ export function TemplateWizardContent() {
                                                     <Badge variant="secondary" className="text-[10px]">
                                                         {permissionsOn.length}
                                                     </Badge>
-                                                    {permissionsOn.map((k) => PERMISSION_LABELS[k]).join(', ') ||
+                                                    {permissionsOn.map((r) => r.label).join(', ') ||
                                                         'Nothing — the template is fully locked'}
                                                 </span>,
                                             ],

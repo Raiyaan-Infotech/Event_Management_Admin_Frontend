@@ -19,7 +19,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { COMPONENT_LABELS, type ComponentKey } from '@/hooks/use-event-templates';
+import { groupsInOrder, type ComponentKey } from '@/hooks/use-event-templates';
 
 /**
  * Step 3's Component Order — drag and drop.
@@ -27,6 +27,10 @@ import { COMPONENT_LABELS, type ComponentKey } from '@/hooks/use-event-templates
  * The mockup showed a static numbered strip with no way to change it. This is
  * the same strip, made draggable, because "Arrange the order in which components
  * will appear" is not something a read-only list can do.
+ *
+ * The chips are the GROUPS the switches above show (Title & Names is one
+ * chip), not the eleven stored components: a pair moves together, and the
+ * stored order is rebuilt from the groups on every drop.
  *
  * Three decisions worth keeping:
  *
@@ -56,15 +60,18 @@ export function ComponentOrderList({
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
+    const groups = groupsInOrder(order);
+    const ids = groups.map((g) => g.id);
+
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
         if (!over || active.id === over.id) return;
 
-        const from = order.indexOf(active.id as ComponentKey);
-        const to = order.indexOf(over.id as ComponentKey);
+        const from = ids.indexOf(String(active.id));
+        const to = ids.indexOf(String(over.id));
         if (from === -1 || to === -1) return;
 
-        onChange(arrayMove(order, from, to));
+        onChange(arrayMove(groups, from, to).flatMap((g) => g.keys));
     };
 
     return (
@@ -73,15 +80,15 @@ export function ComponentOrderList({
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
         >
-            <SortableContext items={order} strategy={rectSortingStrategy}>
+            <SortableContext items={ids} strategy={rectSortingStrategy}>
                 <div className="flex flex-wrap gap-2">
-                    {order.map((key, index) => (
+                    {groups.map((group, index) => (
                         <SortableChip
-                            key={key}
-                            id={key}
+                            key={group.id}
+                            id={group.id}
                             index={index}
-                            label={COMPONENT_LABELS[key]}
-                            enabled={!!Number(components?.[key] ?? 1)}
+                            label={group.label}
+                            enabled={group.keys.some((k) => !!Number(components?.[k] ?? 1))}
                         />
                     ))}
                 </div>
@@ -96,7 +103,7 @@ function SortableChip({
     label,
     enabled,
 }: {
-    id: ComponentKey;
+    id: string;
     index: number;
     label: string;
     enabled: boolean;
