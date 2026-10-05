@@ -35,11 +35,12 @@ import {
     useEventTemplate,
     useDuplicateEventTemplate,
     useUpdateEventTemplateFeatured,
-    COMPONENT_LABELS,
-    PERMISSION_KEYS,
+    COMPONENT_GROUPS,
+    groupsInOrder,
     PERMISSION_LABELS,
     normaliseOrder,
     type ComponentKey,
+    type PermissionKey,
 } from '@/hooks/use-event-templates';
 import { TemplatePreview } from '../_components/template-preview';
 
@@ -86,8 +87,20 @@ export default function TemplateDetailPage({ params }: { params: Promise<{ id: s
 
     const active = !!Number(template.is_active);
     const featured = !!Number(template.is_featured);
-    const order = normaliseOrder(template.component_order);
     const on = (key: ComponentKey) => !!Number(template.components?.[key] ?? 1);
+    /**
+     * The NINE rows the wizard shows, in the template's order — not the eleven
+     * stored keys. Title & Names and Organizer & Contact are one row each, on
+     * when either of their two components is on, so this page and the wizard
+     * list the same things.
+     */
+    const groups = groupsInOrder(normaliseOrder(template.component_order));
+    const permissionRows: { id: string; label: string; keys: PermissionKey[] }[] = [
+        ...(['background', 'colors', 'fonts'] as const).map((k) => ({
+            id: k, label: PERMISSION_LABELS[k], keys: [k] as PermissionKey[],
+        })),
+        ...COMPONENT_GROUPS.map((g) => ({ id: g.id, label: g.label, keys: g.keys as PermissionKey[] })),
+    ];
 
     return (
         <PermissionGuard permission="event_templates.view">
@@ -250,12 +263,14 @@ export default function TemplateDetailPage({ params }: { params: Promise<{ id: s
                             {/* Listed in component_order, not alphabetically — the order is
                                 the design decision, so the detail page has to show it. */}
                             <ol className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-                                {order.map((key, i) => (
+                                {groups.map((group, i) => {
+                                    const shown = group.keys.some(on);
+                                    return (
                                     <li
-                                        key={key}
+                                        key={group.id}
                                         className={cn(
                                             'flex items-center gap-2 rounded-md border border-border px-2.5 py-1.5 text-xs',
-                                            !on(key) && 'opacity-60'
+                                            !shown && 'opacity-60'
                                         )}
                                     >
                                         <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded bg-muted text-[10px] font-bold">
@@ -264,32 +279,33 @@ export default function TemplateDetailPage({ params }: { params: Promise<{ id: s
                                         <span
                                             className={cn(
                                                 'min-w-0 flex-1 break-words font-medium text-foreground',
-                                                !on(key) && 'line-through'
+                                                !shown && 'line-through'
                                             )}
                                         >
-                                            {COMPONENT_LABELS[key]}
+                                            {group.label}
                                         </span>
-                                        {on(key) ? (
+                                        {shown ? (
                                             <Check className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
                                         ) : (
                                             <X className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                                         )}
                                     </li>
-                                ))}
+                                );
+                                })}
                             </ol>
                         </DetailCard>
 
                         <DetailCard title="Customization Permissions" icon={ShieldCheck}>
                             <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-                                {PERMISSION_KEYS.map((key) => {
-                                    const allowed = !!Number(template.permissions?.[key] ?? 1);
+                                {permissionRows.map((row) => {
+                                    const allowed = row.keys.some((k) => !!Number(template.permissions?.[k] ?? 1));
                                     return (
                                         <div
-                                            key={key}
+                                            key={row.id}
                                             className="flex items-center gap-2 rounded-md border border-border px-2.5 py-1.5 text-xs"
                                         >
                                             <span className="min-w-0 flex-1 break-words font-medium text-foreground">
-                                                {PERMISSION_LABELS[key]}
+                                                {row.label}
                                             </span>
                                             <Badge
                                                 variant="outline"
