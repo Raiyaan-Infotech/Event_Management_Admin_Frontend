@@ -30,7 +30,6 @@ export const COMPONENT_KEYS = [
     'event_photos',
     'contact_details',
     'invitation_message',
-    'social_icons',
     'footer_note',
     'decoration_elements',
 ] as const;
@@ -47,7 +46,6 @@ export const COMPONENT_LABELS: Record<ComponentKey, string> = {
     event_photos: 'Event Photos',
     contact_details: 'Contact Details',
     invitation_message: 'Invitation Message',
-    social_icons: 'Social Media Icons',
     footer_note: 'Footer (Thanks / Note)',
     decoration_elements: 'Decoration Elements',
 };
@@ -81,7 +79,6 @@ export const PERMISSION_HINTS: Record<PermissionKey, string> = {
     event_photos: 'Allow clients to add / change photos',
     contact_details: 'Allow clients to edit contact details',
     invitation_message: 'Allow clients to edit invitation message',
-    social_icons: 'Allow clients to show / hide social icons',
     footer_note: 'Allow clients to edit footer text',
     decoration_elements: 'Allow clients to change decorations',
 };

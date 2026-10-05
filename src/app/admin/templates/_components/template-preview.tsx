@@ -1,7 +1,7 @@
 'use client';
 
 import { useLayoutEffect, useRef, useState } from 'react';
-import { Eye, QrCode, MapPin, Phone, Share2, Camera, Sparkles } from 'lucide-react';
+import { Eye, QrCode, MapPin, Phone, Camera, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
@@ -617,19 +617,6 @@ export function TemplatePreview({
                 style={{ fontFamily: bodyFont, color: ink }}
             >
                 {SAMPLE.message}
-            </div>
-        ),
-        social_icons: (
-            <div className="flex items-center justify-center gap-1.5">
-                {[0, 1, 2].map((i) => (
-                    <span
-                        key={i}
-                        className="flex h-4 w-4 items-center justify-center rounded-full border"
-                        style={{ borderColor: accentLine }}
-                    >
-                        <Share2 className="h-2 w-2" style={{ color: accentLine }} />
-                    </span>
-                ))}
             </div>
         ),
         footer_note: (
