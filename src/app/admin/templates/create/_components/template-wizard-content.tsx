@@ -1930,89 +1930,93 @@ export function TemplateWizardContent() {
                                     />
 
                                     {/*
-                                      Border Color — only when a border is picked.
+                                      Border Color — always shown (Jamal, 2026-10-06:
+                                      hidden until a border was picked, it read as
+                                      "not added"). It applies to whichever border is
+                                      picked above; with none picked it does nothing yet.
                                       Empty means the border keeps the colours it was
                                       uploaded with; a colour draws the whole border in
                                       that one colour (so a border of several colours
                                       becomes a single-colour silhouette).
                                     */}
-                                    {form.frame_style_id ? (
-                                        <div className="space-y-1.5 sm:col-start-1">
-                                            <ColorField
-                                                label="Border Color"
-                                                optional
-                                                value={form.frame_color}
-                                                onChange={(v) => setField('frame_color', v)}
-                                            />
-                                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
+                                    <div className="space-y-1.5 sm:col-start-1">
+                                        <ColorField
+                                            label="Border Color"
+                                            optional
+                                            value={form.frame_color}
+                                            onChange={(v) => setField('frame_color', v)}
+                                        />
+                                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
+                                            <button
+                                                type="button"
+                                                onClick={() => setField('frame_color', form.secondary_color)}
+                                                className="font-medium text-primary hover:underline"
+                                            >
+                                                Match the text colour
+                                            </button>
+                                            {form.frame_color ? (
                                                 <button
                                                     type="button"
-                                                    onClick={() => setField('frame_color', form.secondary_color)}
-                                                    className="font-medium text-primary hover:underline"
+                                                    onClick={() => setField('frame_color', '')}
+                                                    className="font-medium text-destructive hover:underline"
                                                 >
-                                                    Match the text colour
+                                                    Use the border&rsquo;s own colours
                                                 </button>
-                                                {form.frame_color ? (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setField('frame_color', '')}
-                                                        className="font-medium text-destructive hover:underline"
-                                                    >
-                                                        Use the border&rsquo;s own colours
-                                                    </button>
-                                                ) : (
-                                                    <span className="text-muted-foreground">
-                                                        Empty = the border&rsquo;s own colours.
-                                                    </span>
-                                                )}
-                                            </div>
+                                            ) : (
+                                                <span className="text-muted-foreground">
+                                                    {form.frame_style_id
+                                                        ? 'Empty = the border’s own colours.'
+                                                        : 'Pick a border above — this colours it.'}
+                                                </span>
+                                            )}
                                         </div>
-                                    ) : null}
+                                    </div>
 
                                     {/* Decoration Color — the same control as Border Color,
-                                        for the decorations: empty keeps their own colours,
-                                        a colour draws them all in that one colour. */}
-                                    {form.decoration_ids.length > 0 ? (
-                                        <div className="space-y-1.5 sm:col-start-2">
-                                            <ColorField
-                                                label="Decoration Color"
-                                                optional
-                                                value={form.decoration_color}
-                                                onChange={(v) => setField('decoration_color', v)}
-                                            />
-                                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
-                                                {form.frame_color ? (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setField('decoration_color', form.frame_color)}
-                                                        className="font-medium text-primary hover:underline"
-                                                    >
-                                                        Same as the border
-                                                    </button>
-                                                ) : null}
+                                        for the decorations, and always shown like it: empty
+                                        keeps their own colours, a colour draws them all in
+                                        that one colour. */}
+                                    <div className="space-y-1.5 sm:col-start-2">
+                                        <ColorField
+                                            label="Decoration Color"
+                                            optional
+                                            value={form.decoration_color}
+                                            onChange={(v) => setField('decoration_color', v)}
+                                        />
+                                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
+                                            {form.frame_color ? (
                                                 <button
                                                     type="button"
-                                                    onClick={() => setField('decoration_color', form.secondary_color)}
+                                                    onClick={() => setField('decoration_color', form.frame_color)}
                                                     className="font-medium text-primary hover:underline"
                                                 >
-                                                    Match the text colour
+                                                    Same as the border
                                                 </button>
-                                                {form.decoration_color ? (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setField('decoration_color', '')}
-                                                        className="font-medium text-destructive hover:underline"
-                                                    >
-                                                        Use the decorations&rsquo; own colours
-                                                    </button>
-                                                ) : (
-                                                    <span className="text-muted-foreground">
-                                                        Empty = the decorations&rsquo; own colours.
-                                                    </span>
-                                                )}
-                                            </div>
+                                            ) : null}
+                                            <button
+                                                type="button"
+                                                onClick={() => setField('decoration_color', form.secondary_color)}
+                                                className="font-medium text-primary hover:underline"
+                                            >
+                                                Match the text colour
+                                            </button>
+                                            {form.decoration_color ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setField('decoration_color', '')}
+                                                    className="font-medium text-destructive hover:underline"
+                                                >
+                                                    Use the decorations&rsquo; own colours
+                                                </button>
+                                            ) : (
+                                                <span className="text-muted-foreground">
+                                                    {form.decoration_ids.length > 0
+                                                        ? 'Empty = the decorations’ own colours.'
+                                                        : 'Pick a decoration above — this colours it.'}
+                                                </span>
+                                            )}
                                         </div>
-                                    ) : null}
+                                    </div>
                                 </div>
 
                             </WizardCard>
