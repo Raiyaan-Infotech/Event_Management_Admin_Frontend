@@ -10,7 +10,6 @@ import {
     FileText,
     Palette,
     LayoutList,
-    ShieldCheck,
     Globe,
     ClipboardCheck,
     Save,
@@ -22,6 +21,7 @@ import {
     X,
     Info,
     Loader2,
+    Heart,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -60,8 +60,6 @@ import {
     COMPONENT_KEYS,
     COMPONENT_GROUPS,
     groupsInOrder,
-    PERMISSION_LABELS,
-    PERMISSION_HINTS,
     LAYOUT_STYLES,
     BACKGROUND_TYPES,
     GRADIENT_TYPES,
@@ -74,6 +72,9 @@ import {
     ARTWORK_STYLES,
     STEP2_FIELDS,
     GRADIENT_PRESETS_BY_STYLE,
+    STYLE_LOOK_FALLBACK,
+    styleLook,
+    type StyleLook,
     type GradientType,
     type GradientDirection,
     type ImageShape,
@@ -83,7 +84,6 @@ import {
     type LayoutStyle,
     type Step2Field,
     DIMENSIONS,
-    FONT_OPTIONS,
     type ComponentKey,
     type PermissionKey,
     type BackgroundType,
@@ -142,11 +142,16 @@ const formatBytes = (bytes: number) =>
         ? `${(bytes / (1024 * 1024)).toFixed(bytes % (1024 * 1024) === 0 ? 0 : 1)} MB`
         : `${Math.round(bytes / 1024)} KB`;
 
+/**
+ * Five steps. "Customization Permissions" was removed (Jamal, 2026-10-06):
+ * nothing ever read it — the client portal and the app let the host switch any
+ * section the template shows on or off and reorder them, whatever it said. A
+ * template is saved with every permission on.
+ */
 const STEPS = [
     { title: 'Basic Information', subtitle: 'Set template details', icon: FileText },
     { title: 'Design & Background', subtitle: 'Choose look & feel', icon: Palette },
     { title: 'Content & Components', subtitle: 'Select what to show', icon: LayoutList },
-    { title: 'Customization Permissions', subtitle: 'Client edit options', icon: ShieldCheck },
     { title: 'Publishing & Availability', subtitle: 'Publish & make available', icon: Globe },
     { title: 'Review & Save', subtitle: 'Final review & save', icon: ClipboardCheck },
 ] as const;
@@ -185,15 +190,19 @@ interface FormState {
     dimension: string;
     primary_font: string;
     secondary_font: string;
+    primary_font_size: number;
+    secondary_font_size: number;
     border_style: string;
     frame_style_id: number | null;
+    frame_color: string;
+    decoration_color: string;
     decoration_ids: number[];
     // step 3
     components: Record<ComponentKey, number>;
     component_order: ComponentKey[];
-    // step 4
+    // not on the form (the permissions step was removed); always saved all on
     permissions: Record<PermissionKey, number>;
-    // step 5 — no pricing. "Template Pricing" was removed from this form.
+    // step 4 — no pricing. "Template Pricing" was removed from this form.
     is_active: boolean;
     is_featured: boolean;
     available_for: Audience[];
@@ -253,8 +262,13 @@ const emptyForm = (): FormState => ({
     dimension: '1080x1920',
     primary_font: 'Playfair Display',
     secondary_font: 'Poppins',
+    primary_font_size: 100,
+    secondary_font_size: 100,
     border_style: '',
     frame_style_id: null,
+    // Empty = the frame keeps the colours it was uploaded with.
+    frame_color: '',
+    decoration_color: '',
     decoration_ids: [],
     components: defaultComponents(),
     component_order: [...COMPONENT_KEYS],
@@ -322,9 +336,105 @@ export function TemplateWizardContent() {
     );
     const plans = plansData?.data ?? [];
 
+    /**
+     * The frames Step 2 offers and the preview draws: the published catalogue,
+     * plus the frame this template was SAVED with when the catalogue does not
+     * hold it — a frame since unpublished or switched off, or a catalogue that
+     * was loaded before the frame existed. Without that the template opened
+     * with no frame ticked and none drawn, and saving it would have kept the
+     * frame while showing none.
+     */
+    const frameChoices = useMemo(() => {
+        const list = (framesData?.data ?? []).map((f) => ({
+            id: f.id,
+            name: f.name,
+            file_url: f.file_url,
+            template_category_id: f.template_category_id,
+        }));
+        const saved = existing?.frameStyle;
+        if (saved && !list.some((f) => f.id === saved.id)) {
+            list.unshift({
+                id: saved.id,
+                name: saved.name,
+                file_url: saved.file_url ?? null,
+                template_category_id: saved.template_category_id ?? null,
+            });
+        }
+        return list;
+    }, [framesData, existing]);
+
+    /** The same for decorations: the active catalogue plus this template's own. */
+    const decorationChoices = useMemo(() => {
+        const list = (decorationsData?.data ?? []).map((d) => ({
+            id: d.id,
+            name: d.name,
+            type: d.type as string,
+            file_url: d.file_url,
+            type_label: d.type_label as string | undefined,
+        }));
+        for (const saved of existing?.decorationItems ?? []) {
+            if (!list.some((d) => d.id === saved.id)) {
+                list.unshift({
+                    id: saved.id,
+                    name: saved.name,
+                    type: saved.type,
+                    file_url: saved.file_url ?? null,
+                    type_label: undefined,
+                });
+            }
+        }
+        return list;
+    }, [decorationsData, existing]);
+
+    /** The first frame filed under a template category — the style's own frame. */
+    const frameForCategory = (categoryId: string) =>
+        categoryId
+            ? (framesData?.data ?? []).find((f) => f.template_category_id === Number(categoryId)) ?? null
+            : null;
+
+    /**
+     * Picking a Template Style.
+     *
+     * The id is what saves; the slug keeps the legacy `style` column truthful,
+     * and `layout_style` follows it (it decides which Step 2 fields show — a
+     * category with no bespoke set uses Classic's).
+     *
+     * On a NEW template it also puts the style's look on the form: colours,
+     * gradient, fonts and the frame filed under that category. Only values
+     * still at a starting point are replaced — the defaults, or the look of the
+     * style picked before — so a colour typed in Step 2 survives a change of
+     * style. An existing template keeps what it was saved with.
+     */
+    const pickStyle = (option: { value: string; slug: string }) => {
+        setErrors((prev) => (prev.template_category_id ? { ...prev, template_category_id: false } : prev));
+        setForm((prev) => {
+            const next: FormState = {
+                ...prev,
+                template_category_id: option.value,
+                style: option.slug,
+                layout_style: option.slug,
+            };
+            if (isEdit) return next;
+
+            const before = prev.template_category_id ? styleLook(prev.style) : STYLE_LOOK_FALLBACK;
+            const after = styleLook(option.slug);
+            for (const key of Object.keys(after) as (keyof StyleLook)[]) {
+                if (prev[key] === before[key] || prev[key] === STYLE_LOOK_FALLBACK[key]) {
+                    next[key] = after[key];
+                }
+            }
+
+            const frameBefore = frameForCategory(prev.template_category_id)?.id ?? null;
+            if (prev.frame_style_id === null || prev.frame_style_id === frameBefore) {
+                next.frame_style_id = frameForCategory(option.value)?.id ?? null;
+            }
+            return next;
+        });
+    };
+
     // Both land back on the list. The wizard is a task, and the list is where you
     // see the thing you just made sitting among the others — the detail page
-    // only repeats what step 6 already showed you.
+    // only repeats what the Review step already showed you.
     const createTemplate = useCreateEventTemplate(() => router.push('/admin/templates'));
     const updateTemplate = useUpdateEventTemplate(() => router.push('/admin/templates'));
 
@@ -370,8 +480,12 @@ export function TemplateWizardContent() {
             dimension: existing.dimension ?? '1080x1920',
             primary_font: existing.primary_font ?? 'Playfair Display',
             secondary_font: existing.secondary_font ?? 'Poppins',
+            primary_font_size: Number(existing.primary_font_size ?? 100) || 100,
+            secondary_font_size: Number(existing.secondary_font_size ?? 100) || 100,
             border_style: existing.border_style ?? '',
             frame_style_id: existing.frame_style_id ?? null,
+            frame_color: existing.frame_color ?? '',
+            decoration_color: existing.decoration_color ?? '',
             decoration_ids: existing.decoration_ids ?? [],
             components: { ...defaultComponents(), ...(existing.components ?? {}) },
             component_order: normaliseOrder(existing.component_order),
@@ -402,16 +516,18 @@ export function TemplateWizardContent() {
 
     // A switch may cover two stored keys (Title & Names): it sets them all.
     /**
-     * The font lists: the ten built in, then every active font added under
-     * Templates → Fonts (also declared on this page, so the live preview is
-     * drawn in it). A template being edited keeps a font that has since been
-     * deleted or switched off in the list, so opening it does not silently
-     * change its font.
+     * The font lists come from Templates → Fonts and nowhere else (Jamal,
+     * 2026-10-06) — every active font there, declared on this page so the
+     * live preview is drawn in it. The wizard used to add ten of its own from
+     * a list in code; those ten are rows in the Fonts module now.
+     *
+     * A template being edited keeps the font it was saved with even if that
+     * font has since been deleted or switched off, so opening it does not
+     * silently change its font.
      */
     const addedFonts = useLoadedTemplateFonts();
     const fontChoices = Array.from(
         new Set<string>([
-            ...FONT_OPTIONS,
             ...addedFonts.map((f) => f.name),
             ...[form.primary_font, form.secondary_font].filter(Boolean),
         ])
@@ -421,12 +537,6 @@ export function TemplateWizardContent() {
         setForm((prev) => ({
             ...prev,
             components: { ...prev.components, ...Object.fromEntries(keys.map((k) => [k, on ? 1 : 0])) },
-        }));
-
-    const togglePermissions = (keys: PermissionKey[], on: boolean) =>
-        setForm((prev) => ({
-            ...prev,
-            permissions: { ...prev.permissions, ...Object.fromEntries(keys.map((k) => [k, on ? 1 : 0])) },
         }));
 
     const addTag = () => {
@@ -521,6 +631,8 @@ export function TemplateWizardContent() {
             name: !form.name.trim(),
             code: !form.code.trim(),
             event_category_id: !form.event_category_id,
+            // Marked `*` on the form; only enforceable when there is one to pick.
+            template_category_id: styleOptions.length > 0 && !form.template_category_id,
         };
         setErrors(next);
 
@@ -537,6 +649,20 @@ export function TemplateWizardContent() {
         if (target > step && !validateStep(1)) return;
         setStep(Math.min(Math.max(target, 1), STEPS.length));
     };
+
+    /**
+     * The sections as they are saved AND as the Live Preview draws them.
+     *
+     * Two of them have no switch on this form (see `componentGroups`) and
+     * follow the rest of the design instead:
+     *   - Event Photos: on for a Custom template only.
+     *   - Decoration Elements: on exactly when a decoration is picked.
+     */
+    const savedComponents = (): Record<ComponentKey, number> => ({
+        ...form.components,
+        event_photos: form.background_type === 'custom' ? 1 : 0,
+        decoration_elements: form.decoration_ids.length > 0 ? 1 : 0,
+    });
 
     const buildPayload = (status: 'draft' | 'published'): EventTemplatePayload => ({
         name: form.name.trim(),
@@ -573,13 +699,18 @@ export function TemplateWizardContent() {
         dimension: form.dimension || null,
         primary_font: form.primary_font || null,
         secondary_font: form.secondary_font || null,
+        primary_font_size: form.primary_font_size,
+        secondary_font_size: form.secondary_font_size,
         border_style: form.border_style || null,
         frame_style_id: form.frame_style_id,
+        frame_color: form.frame_color || null,
+        decoration_color: form.decoration_color || null,
         decoration_ids: form.decoration_ids,
 
-        components: form.components,
+        components: savedComponents(),
         component_order: form.component_order,
-        permissions: form.permissions,
+        // Step 4 is gone — every template is saved fully open.
+        permissions: defaultPermissions(),
 
         status,
         is_active: form.is_active,
@@ -634,15 +765,17 @@ export function TemplateWizardContent() {
             orientation: form.orientation,
             primary_font: form.primary_font,
             secondary_font: form.secondary_font,
+            primary_font_size: form.primary_font_size,
+            secondary_font_size: form.secondary_font_size,
+            frame_color: form.frame_color || null,
+            decoration_color: form.decoration_color || null,
             border_style: form.border_style,
             // Resolved from the live catalogues, not from the saved row: the
             // preview has to move the moment a tile is clicked, and the row does
             // not exist yet on create.
-            frameUrl:
-                (framesData?.data ?? []).find((f) => f.id === form.frame_style_id)?.file_url ??
-                null,
+            frameUrl: frameChoices.find((f) => f.id === form.frame_style_id)?.file_url ?? null,
             decorationItems: form.decoration_ids
-                .map((id) => (decorationsData?.data ?? []).find((d) => d.id === id))
+                .map((id) => decorationChoices.find((d) => d.id === id))
                 .filter(Boolean)
                 .map((d) => ({
                     id: d!.id,
@@ -650,13 +783,13 @@ export function TemplateWizardContent() {
                     type: d!.type,
                     file_url: d!.file_url,
                 })),
-            components: form.components,
+            components: savedComponents(),
             component_order: form.component_order,
         }),
         // The catalogues belong in here too: without them the preview keeps the
         // frame it resolved on first render and never picks one up once the
         // frame/decoration queries settle.
-        [form, framesData, decorationsData]
+        [form, frameChoices, decorationChoices]
     );
 
     const activeCategory = (categories?.data ?? []).find(
@@ -1118,17 +1251,21 @@ export function TemplateWizardContent() {
                                 >
                                     {/* The tile shows the shape itself, so the control
                                         is legible without reading the label. */}
-                                    <span
-                                        className={cn(
-                                            'h-7 w-7 border-2 border-current',
-                                            sh.value === 'circle' && 'rounded-full',
-                                            sh.value === 'rectangle' && 'h-5 w-8 rounded-sm',
-                                            sh.value === 'square' && 'rounded-sm',
-                                            sh.value === 'arch' && 'rounded-t-full rounded-b-sm',
-                                            sh.value === 'heart' &&
-                                                'rotate-45 rounded-bl-full border-l-0 border-b-0'
-                                        )}
-                                    />
+                                    {sh.value === 'heart' ? (
+                                        // A real heart: a box with two borders
+                                        // removed drew an arrowhead, not a heart.
+                                        <Heart className="h-7 w-7" strokeWidth={2} />
+                                    ) : (
+                                        <span
+                                            className={cn(
+                                                'h-7 w-7 border-2 border-current',
+                                                sh.value === 'circle' && 'rounded-full',
+                                                sh.value === 'rectangle' && 'h-5 w-8 rounded-sm',
+                                                sh.value === 'square' && 'rounded-sm',
+                                                sh.value === 'arch' && 'rounded-t-full rounded-b-sm'
+                                            )}
+                                        />
+                                    )}
                                     {sh.label}
                                 </button>
                             ))}
@@ -1252,21 +1389,78 @@ export function TemplateWizardContent() {
     };
 
     /**
-     * Step 4's rows: the three whole-design aspects, then the same groups
-     * Step 3 shows — one row per group, not per stored key.
+     * Event Photos is not offered on this form at all (Jamal, 2026-10-06 —
+     * first removed from Colour, then from every type): no switch in Step 3,
+     * no chip in Component Order, not counted in Review.
+     *
+     * What is saved is decided by the Background Type instead (`buildPayload`):
+     *   - Custom: ON. There the section is not a block of photo boxes — it is
+     *     what makes the client portal and the app draw the host's own picture
+     *     in the template's shape. Saved off, the host's upload would not show.
+     *   - Colour, Image, Gradient: OFF, so no photo boxes are drawn on a
+     *     client's card.
      */
-    const permissionRows: { id: string; label: string; hint: string; keys: PermissionKey[] }[] = [
-        ...(['background', 'colors', 'fonts'] as const).map((k) => ({
-            id: k, label: PERMISSION_LABELS[k], hint: PERMISSION_HINTS[k], keys: [k] as PermissionKey[],
-        })),
-        ...COMPONENT_GROUPS.map((g) => ({
-            id: g.id, label: g.label, hint: g.permissionHint, keys: g.keys as PermissionKey[],
-        })),
-    ];
+    //
+    // Decoration Elements has no switch either (Jamal, 2026-10-06): it is on
+    // exactly when the template HAS a decoration picked in Step 2, and off
+    // otherwise — off, so no placeholder rule is drawn on a card with none.
+    const NOT_OFFERED = ['photos', 'decorations'];
+    const componentGroups = COMPONENT_GROUPS.filter((g) => !NOT_OFFERED.includes(g.id));
+
+    /**
+     * The Review step's colour rows follow the Background Type, like Step 2 does: a
+     * template whose background is a picture has no "Primary Color" to review.
+     */
+    const colourChip = (value: string) => (
+        <span className="inline-flex items-center gap-1.5">
+            <span
+                className="inline-block h-3 w-3 rounded-sm border border-border"
+                style={{ backgroundColor: value }}
+            />
+            {value}
+        </span>
+    );
+    const designColourRows: Array<[string, React.ReactNode]> =
+        form.background_type === 'color'
+            ? [
+                  ['Background Color', colourChip(form.background_color)],
+                  ['Secondary Color', colourChip(form.secondary_color)],
+              ]
+            : form.background_type === 'gradient'
+              ? [
+                    [
+                        'Gradient',
+                        <span key="g" className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                            {[form.gradient_from, form.gradient_via, form.gradient_to]
+                                .filter(Boolean)
+                                .map((c, i) => (
+                                    <span key={i}>{colourChip(c)}</span>
+                                ))}
+                        </span>,
+                    ],
+                    ['Accent Color', colourChip(form.secondary_color)],
+                ]
+              : [
+                    [
+                        form.background_type === 'custom' ? 'Custom Background' : 'Background Image',
+                        form.background_image ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                                key="i"
+                                src={form.background_image}
+                                alt=""
+                                className="h-12 w-9 rounded-sm border border-border object-cover"
+                            />
+                        ) : (
+                            'Not uploaded'
+                        ),
+                    ],
+                ];
 
     const groupOn = (keys: ComponentKey[]) => keys.some((k) => Number(form.components[k]));
-    const componentsOn = groupsInOrder(form.component_order).filter((g) => groupOn(g.keys));
-    const permissionsOn = permissionRows.filter((r) => r.keys.some((k) => Number(form.permissions[k])));
+    const componentsOn = groupsInOrder(form.component_order).filter(
+        (g) => groupOn(g.keys) && !NOT_OFFERED.includes(g.id)
+    );
 
     return (
         <PermissionGuard permission={isEdit ? 'event_templates.edit' : 'event_templates.create'}>
@@ -1323,7 +1517,96 @@ export function TemplateWizardContent() {
                                 title="Basic Information"
                                 subtitle="Add basic details to help clients find and use this template."
                             >
-                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                {/*
+                                  One row of three, in the order they are
+                                  decided (Jamal, 2026-10-06): what the event is,
+                                  what the template looks like, and what kind of
+                                  background it has. The name comes after — it is
+                                  the last thing known. The Template Type picked
+                                  here decides which fields Step 2 shows.
+                                */}
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                                    <Field label="Event Category" required error={errors.event_category_id}>
+                                        <Select
+                                            value={form.event_category_id}
+                                            onValueChange={(v) => setField('event_category_id', v)}
+                                        >
+                                            <SelectTrigger
+                                                className={cn('h-10', errors.event_category_id && 'border-destructive')}
+                                            >
+                                                <SelectValue placeholder="Select category" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {(categories?.data ?? []).map((c) => (
+                                                    <SelectItem key={c.id} value={String(c.id)}>
+                                                        {c.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </Field>
+
+                                    {/*
+                                      Template Style / Theme — the real `template_categories`
+                                      table, as a plain dropdown beside the category (Jamal,
+                                      2026-10-06; the picture tiles were dropped). Picking one
+                                      still puts the style's look on the Live Preview — see
+                                      `pickStyle`.
+                                    */}
+                                    <Field
+                                        label="Template Style / Theme"
+                                        required
+                                        error={errors.template_category_id}
+                                        hint={
+                                            !categoriesLoading && styleOptions.length === 0
+                                                ? 'No template categories yet — add one under Templates → Categories.'
+                                                : undefined
+                                        }
+                                    >
+                                        <Select
+                                            value={form.template_category_id}
+                                            onValueChange={(v) => {
+                                                const option = styleOptions.find((s) => s.value === v);
+                                                if (option) pickStyle(option);
+                                            }}
+                                        >
+                                            <SelectTrigger
+                                                className={cn('h-10', errors.template_category_id && 'border-destructive')}
+                                            >
+                                                <SelectValue placeholder="Select style" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {styleOptions.map((s) => (
+                                                    <SelectItem key={s.value} value={s.value}>
+                                                        {s.label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </Field>
+
+                                    {/* The template's `background_type`. It used to be a
+                                        row of buttons at the top of Step 2. */}
+                                    <Field label="Template Type" required>
+                                        <Select
+                                            value={form.background_type}
+                                            onValueChange={(v) => setField('background_type', v as BackgroundType)}
+                                        >
+                                            <SelectTrigger className="h-10">
+                                                <SelectValue placeholder="Select type" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {BACKGROUND_TYPES.map((b) => (
+                                                    <SelectItem key={b.value} value={b.value}>
+                                                        {b.label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </Field>
+                                </div>
+
+                                <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
                                     <Field label="Template Name" required error={errors.name}>
                                         <Input
                                             value={form.name}
@@ -1354,104 +1637,6 @@ export function TemplateWizardContent() {
                                             className={cn('h-10 font-mono', errors.code && 'border-destructive')}
                                         />
                                     </Field>
-
-                                    <Field label="Event Category" required error={errors.event_category_id}>
-                                        <Select
-                                            value={form.event_category_id}
-                                            onValueChange={(v) => setField('event_category_id', v)}
-                                        >
-                                            <SelectTrigger
-                                                className={cn('h-10', errors.event_category_id && 'border-destructive')}
-                                            >
-                                                <SelectValue placeholder="Select category" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {(categories?.data ?? []).map((c) => (
-                                                    <SelectItem key={c.id} value={String(c.id)}>
-                                                        {c.name}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </Field>
-                                </div>
-
-                                {/*
-                                  Template Style / Theme — the reason
-                                  `template_categories` exists.
-
-                                  This was a hardcoded list of six adjectives that
-                                  referenced nothing. It is now the real category
-                                  table, which is also what a frame style is filed
-                                  under — so picking a style here is what makes
-                                  step 2 offer the frames that suit it.
-                                */}
-                                <div className="mt-4 space-y-1.5">
-                                    <Label className="text-xs font-semibold text-foreground">
-                                        Template Style / Theme <span className="text-destructive">*</span>
-                                    </Label>
-                                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-                                        {styleOptions.map((s) => {
-                                            const selected = form.template_category_id === s.value;
-                                            return (
-                                                <button
-                                                    key={s.value}
-                                                    type="button"
-                                                    onClick={() => {
-                                                        // The id is what saves; the slug
-                                                        // is kept so the preview and any
-                                                        // older reader still see a style.
-                                                        //
-                                                        // `layout_style` follows it: Step 2
-                                                        // used to ask for the same category
-                                                        // a second time (Jamal, 2026-10-05).
-                                                        // It decides which Step 2 fields and
-                                                        // gradient presets show; a category
-                                                        // with no bespoke set uses Classic's.
-                                                        setForm((prev) => ({
-                                                            ...prev,
-                                                            template_category_id: s.value,
-                                                            style: s.slug,
-                                                            layout_style: s.slug,
-                                                        }));
-                                                    }}
-                                                    className={cn(
-                                                        'flex flex-col items-center gap-1.5 rounded-lg border p-2 text-xs transition-colors',
-                                                        selected
-                                                            ? 'border-primary bg-primary/5 font-semibold text-primary'
-                                                            : 'border-border text-muted-foreground hover:border-primary/40'
-                                                    )}
-                                                >
-                                                    {/*
-                                                      A plain tinted swatch, not a gradient —
-                                                      this used to paint every tile with
-                                                      `linear-gradient(background_color,
-                                                      secondary_color)`, which are Step 2's
-                                                      colour fields and unrelated to which
-                                                      category this tile represents. Every
-                                                      tile rendered the identical (and, at
-                                                      the defaults, olive-green) gradient
-                                                      regardless of which one was selected.
-                                                    */}
-                                                    <span
-                                                        className={cn(
-                                                            'relative flex h-12 w-full items-center justify-center rounded-md border',
-                                                            selected
-                                                                ? 'border-primary/40 bg-primary/10'
-                                                                : 'border-border/60 bg-muted/30'
-                                                        )}
-                                                    >
-                                                        {selected ? (
-                                                            <span className="grid h-5 w-5 place-items-center rounded-full bg-primary">
-                                                                <Check className="h-3 w-3 text-primary-foreground" />
-                                                            </span>
-                                                        ) : null}
-                                                    </span>
-                                                    {s.label}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
                                 </div>
 
                                 <div className="mt-4 space-y-1.5">
@@ -1520,25 +1705,20 @@ export function TemplateWizardContent() {
                                 title="Design & Background"
                                 subtitle="Choose the visual style and background for your template."
                             >
-                                <div className="space-y-1.5">
-                                    <Label className="text-xs font-semibold text-foreground">Background Type</Label>
-                                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                                        {BACKGROUND_TYPES.map((b) => (
-                                            <button
-                                                key={b.value}
-                                                type="button"
-                                                onClick={() => setField('background_type', b.value)}
-                                                className={cn(
-                                                    'rounded-md border px-4 py-2 text-xs transition-colors',
-                                                    form.background_type === b.value
-                                                        ? 'border-primary bg-primary/5 font-semibold text-primary'
-                                                        : 'border-border text-muted-foreground hover:border-primary/40'
-                                                )}
-                                            >
-                                                {b.label}
-                                            </button>
-                                        ))}
-                                    </div>
+                                {/* The type is chosen in Step 1 now; this step shows the
+                                    fields for it, and says which one it is. */}
+                                <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs">
+                                    <span className="text-muted-foreground">Template Type</span>
+                                    <span className="font-semibold text-foreground">
+                                        {BACKGROUND_TYPES.find((b) => b.value === form.background_type)?.label}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setStep(1)}
+                                        className="ml-auto font-medium text-primary hover:underline"
+                                    >
+                                        Change
+                                    </button>
                                 </div>
 
                                 {/* An existing template can arrive with an image and a
@@ -1670,6 +1850,11 @@ export function TemplateWizardContent() {
                                                 ))}
                                             </SelectContent>
                                         </Select>
+                                        <FontSizeField
+                                            hint="Size of the names"
+                                            value={form.primary_font_size}
+                                            onChange={(v) => setField('primary_font_size', v)}
+                                        />
                                     </Field>
 
                                     <Field label="Secondary Font">
@@ -1688,6 +1873,11 @@ export function TemplateWizardContent() {
                                                 ))}
                                             </SelectContent>
                                         </Select>
+                                        <FontSizeField
+                                            hint="Size of every other line"
+                                            value={form.secondary_font_size}
+                                            onChange={(v) => setField('secondary_font_size', v)}
+                                        />
                                     </Field>
                                 </div>
 
@@ -1705,12 +1895,7 @@ export function TemplateWizardContent() {
                                     <ArtworkPicker
                                         label="Border / Frame Style"
                                         optional
-                                        items={(framesData?.data ?? []).map((f) => ({
-                                            id: f.id,
-                                            name: f.name,
-                                            file_url: f.file_url,
-                                            template_category_id: f.template_category_id,
-                                        }))}
+                                        items={frameChoices}
                                         isLoading={framesLoading}
                                         selectedId={form.frame_style_id}
                                         onSelect={(id) => setField('frame_style_id', id)}
@@ -1728,12 +1913,7 @@ export function TemplateWizardContent() {
                                         label="Decorations"
                                         optional
                                         multiple
-                                        items={(decorationsData?.data ?? []).map((d) => ({
-                                            id: d.id,
-                                            name: d.name,
-                                            file_url: d.file_url,
-                                            type_label: d.type_label,
-                                        }))}
+                                        items={decorationChoices}
                                         isLoading={decorationsLoading}
                                         selectedIds={form.decoration_ids}
                                         onToggle={(id) =>
@@ -1748,6 +1928,91 @@ export function TemplateWizardContent() {
                                         manageLabel="Manage decorations"
                                         emptyHint="No decorations have been uploaded yet."
                                     />
+
+                                    {/*
+                                      Border Color — only when a border is picked.
+                                      Empty means the border keeps the colours it was
+                                      uploaded with; a colour draws the whole border in
+                                      that one colour (so a border of several colours
+                                      becomes a single-colour silhouette).
+                                    */}
+                                    {form.frame_style_id ? (
+                                        <div className="space-y-1.5 sm:col-start-1">
+                                            <ColorField
+                                                label="Border Color"
+                                                optional
+                                                value={form.frame_color}
+                                                onChange={(v) => setField('frame_color', v)}
+                                            />
+                                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setField('frame_color', form.secondary_color)}
+                                                    className="font-medium text-primary hover:underline"
+                                                >
+                                                    Match the text colour
+                                                </button>
+                                                {form.frame_color ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setField('frame_color', '')}
+                                                        className="font-medium text-destructive hover:underline"
+                                                    >
+                                                        Use the border&rsquo;s own colours
+                                                    </button>
+                                                ) : (
+                                                    <span className="text-muted-foreground">
+                                                        Empty = the border&rsquo;s own colours.
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ) : null}
+
+                                    {/* Decoration Color — the same control as Border Color,
+                                        for the decorations: empty keeps their own colours,
+                                        a colour draws them all in that one colour. */}
+                                    {form.decoration_ids.length > 0 ? (
+                                        <div className="space-y-1.5 sm:col-start-2">
+                                            <ColorField
+                                                label="Decoration Color"
+                                                optional
+                                                value={form.decoration_color}
+                                                onChange={(v) => setField('decoration_color', v)}
+                                            />
+                                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
+                                                {form.frame_color ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setField('decoration_color', form.frame_color)}
+                                                        className="font-medium text-primary hover:underline"
+                                                    >
+                                                        Same as the border
+                                                    </button>
+                                                ) : null}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setField('decoration_color', form.secondary_color)}
+                                                    className="font-medium text-primary hover:underline"
+                                                >
+                                                    Match the text colour
+                                                </button>
+                                                {form.decoration_color ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setField('decoration_color', '')}
+                                                        className="font-medium text-destructive hover:underline"
+                                                    >
+                                                        Use the decorations&rsquo; own colours
+                                                    </button>
+                                                ) : (
+                                                    <span className="text-muted-foreground">
+                                                        Empty = the decorations&rsquo; own colours.
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ) : null}
                                 </div>
 
                             </WizardCard>
@@ -1768,7 +2033,7 @@ export function TemplateWizardContent() {
                                     </div>
 
                                     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                                        {COMPONENT_GROUPS.map((group) => (
+                                        {componentGroups.map((group) => (
                                             <div
                                                 key={group.id}
                                                 className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2.5"
@@ -1803,6 +2068,7 @@ export function TemplateWizardContent() {
                                         <ComponentOrderList
                                             order={form.component_order}
                                             components={form.components}
+                                            hiddenIds={NOT_OFFERED}
                                             onChange={(next) => setField('component_order', next)}
                                         />
                                     </div>
@@ -1813,54 +2079,6 @@ export function TemplateWizardContent() {
                         {step === 4 && (
                             <WizardCard
                                 index={4}
-                                title="Customization Permissions"
-                                subtitle="Choose what clients are allowed to customize after selecting this template."
-                            >
-                                <div className="flex items-center gap-1.5">
-                                    <Label className="text-xs font-semibold text-foreground">
-                                        Allow Clients to Customize
-                                    </Label>
-                                    <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                                </div>
-
-                                <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                                    {permissionRows.map((row) => (
-                                        <div
-                                            key={row.id}
-                                            className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2.5"
-                                        >
-                                            <div className="min-w-0">
-                                                <div className="truncate text-sm font-medium text-foreground">
-                                                    {row.label}
-                                                </div>
-                                                <div className="truncate text-[11px] text-muted-foreground">
-                                                    {row.hint}
-                                                </div>
-                                            </div>
-                                            <Switch
-                                                checked={row.keys.some((k) => !!Number(form.permissions[k]))}
-                                                onCheckedChange={(v) => togglePermissions(row.keys, v)}
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <div className="mt-4 flex items-start gap-2 rounded-lg border border-border bg-muted/40 p-3">
-                                    <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                                    <div className="text-xs text-muted-foreground">
-                                        <span className="font-semibold text-foreground">Note</span>
-                                        <p>
-                                            Items disabled here will be locked for clients and cannot be edited or
-                                            changed.
-                                        </p>
-                                    </div>
-                                </div>
-                            </WizardCard>
-                        )}
-
-                        {step === 5 && (
-                            <WizardCard
-                                index={5}
                                 title="Publishing & Availability"
                                 subtitle="Manage the status and availability of this template."
                             >
@@ -1897,13 +2115,18 @@ export function TemplateWizardContent() {
                                         </div>
 
                                         <div className="space-y-1.5">
-                                            <Label className="text-xs font-semibold text-foreground">
-                                                Featured Template
-                                            </Label>
-                                            <Switch
-                                                checked={form.is_featured}
-                                                onCheckedChange={(v) => setField('is_featured', v)}
-                                            />
+                                            {/* One row, centred on each other: the switch is an
+                                                inline element, so left on its own it sat beside
+                                                the label on the text baseline, half a line low. */}
+                                            <div className="flex items-center gap-3">
+                                                <Label className="text-xs font-semibold text-foreground">
+                                                    Featured Template
+                                                </Label>
+                                                <Switch
+                                                    checked={form.is_featured}
+                                                    onCheckedChange={(v) => setField('is_featured', v)}
+                                                />
+                                            </div>
                                             <p className="text-[11px] text-muted-foreground">
                                                 Show this template in featured section for clients.
                                             </p>
@@ -2071,13 +2294,15 @@ export function TemplateWizardContent() {
                                         </Field>
 
                                         <div className="space-y-1.5">
-                                            <Label className="text-xs font-semibold text-foreground">
-                                                Display on Homepage
-                                            </Label>
-                                            <Switch
-                                                checked={form.show_on_homepage}
-                                                onCheckedChange={(v) => setField('show_on_homepage', v)}
-                                            />
+                                            <div className="flex items-center gap-3">
+                                                <Label className="text-xs font-semibold text-foreground">
+                                                    Display on Homepage
+                                                </Label>
+                                                <Switch
+                                                    checked={form.show_on_homepage}
+                                                    onCheckedChange={(v) => setField('show_on_homepage', v)}
+                                                />
+                                            </div>
                                             <p className="text-[11px] text-muted-foreground">
                                                 Show this template on client homepage.
                                             </p>
@@ -2136,9 +2361,9 @@ export function TemplateWizardContent() {
                             </WizardCard>
                         )}
 
-                        {step === 6 && (
+                        {step === 5 && (
                             <WizardCard
-                                index={6}
+                                index={5}
                                 title="Review & Save"
                                 subtitle="Review all template details before saving and publishing."
                             >
@@ -2162,26 +2387,7 @@ export function TemplateWizardContent() {
                                         rows={[
                                             ['Background Type', form.background_type],
                                             ['Orientation', `${form.orientation} (${form.dimension})`],
-                                            [
-                                                'Primary Color',
-                                                <span key="p" className="inline-flex items-center gap-1.5">
-                                                    <span
-                                                        className="inline-block h-3 w-3 rounded-sm border border-border"
-                                                        style={{ backgroundColor: form.background_color }}
-                                                    />
-                                                    {form.background_color}
-                                                </span>,
-                                            ],
-                                            [
-                                                'Secondary Color',
-                                                <span key="s" className="inline-flex items-center gap-1.5">
-                                                    <span
-                                                        className="inline-block h-3 w-3 rounded-sm border border-border"
-                                                        style={{ backgroundColor: form.secondary_color }}
-                                                    />
-                                                    {form.secondary_color}
-                                                </span>,
-                                            ],
+                                            ...designColourRows,
                                             ['Fonts', `${form.primary_font} · ${form.secondary_font}`],
                                         ]}
                                     />
@@ -2206,27 +2412,9 @@ export function TemplateWizardContent() {
                                     />
 
                                     <ReviewSection
-                                        title="Customization Permissions"
-                                        icon={ShieldCheck}
-                                        onEdit={() => setStep(4)}
-                                        rows={[
-                                            [
-                                                'Clients Can Customize',
-                                                <span key="p" className="flex flex-wrap items-center gap-1">
-                                                    <Badge variant="secondary" className="text-[10px]">
-                                                        {permissionsOn.length}
-                                                    </Badge>
-                                                    {permissionsOn.map((r) => r.label).join(', ') ||
-                                                        'Nothing — the template is fully locked'}
-                                                </span>,
-                                            ],
-                                        ]}
-                                    />
-
-                                    <ReviewSection
                                         title="Publishing & Availability"
                                         icon={Globe}
-                                        onEdit={() => setStep(5)}
+                                        onEdit={() => setStep(4)}
                                         rows={[
                                             [
                                                 'Status',
@@ -2383,6 +2571,32 @@ function StepBar({ step, onStepClick }: { step: number; onStepClick: (target: nu
     );
 }
 
+/**
+ * A font's size as a percentage of the card's standard size. 100 is what the
+ * card has always drawn; the range is the one the backend keeps (60-160).
+ */
+function FontSizeField({
+    value: given,
+    hint,
+    onChange,
+}: {
+    value: number | null | undefined;
+    hint: string;
+    onChange: (value: number) => void;
+}) {
+    // Same guard as ColorField: a missing size is the standard 100%.
+    const value = Number(given) || 100;
+    return (
+        <div className="flex items-center gap-3 pt-1">
+            <span className="w-32 shrink-0 text-[11px] text-muted-foreground">{hint}</span>
+            <Slider value={[value]} min={60} max={160} step={5} onValueChange={([v]) => onChange(v)} />
+            <div className="flex h-8 w-16 shrink-0 items-center justify-center rounded-md border border-border text-xs font-semibold">
+                {value} %
+            </div>
+        </div>
+    );
+}
+
 function WizardCard({
     index,
     title,
@@ -2449,15 +2663,19 @@ function Field({
  */
 function ColorField({
     label,
-    value,
+    value: given,
     optional,
     onChange,
 }: {
     label: string;
-    value: string;
+    value: string | null | undefined;
     optional?: boolean;
     onChange: (value: string) => void;
 }) {
+    // Never undefined: an input that starts without a value and gets one later
+    // is switched from uncontrolled to controlled, which React reports. That
+    // happened for Border Color when the form in memory was older than the field.
+    const value = given ?? '';
     return (
         <div className="space-y-1.5">
             <Label className="text-xs font-semibold text-foreground">

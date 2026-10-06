@@ -50,17 +50,22 @@ export function ComponentOrderList({
     order,
     components,
     onChange,
+    hiddenIds = [],
 }: {
     order: ComponentKey[];
     components: Record<ComponentKey, number>;
     onChange: (next: ComponentKey[]) => void;
+    /** Groups this template's type does not offer — no chip; they stay last. */
+    hiddenIds?: string[];
 }) {
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
-    const groups = groupsInOrder(order);
+    const allGroups = groupsInOrder(order);
+    const groups = allGroups.filter((g) => !hiddenIds.includes(g.id));
+    const hidden = allGroups.filter((g) => hiddenIds.includes(g.id));
     const ids = groups.map((g) => g.id);
 
     const handleDragEnd = (event: DragEndEvent) => {
@@ -71,7 +76,7 @@ export function ComponentOrderList({
         const to = ids.indexOf(String(over.id));
         if (from === -1 || to === -1) return;
 
-        onChange(arrayMove(groups, from, to).flatMap((g) => g.keys));
+        onChange([...arrayMove(groups, from, to), ...hidden].flatMap((g) => g.keys));
     };
 
     return (

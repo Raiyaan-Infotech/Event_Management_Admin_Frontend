@@ -337,9 +337,12 @@ export type Step2Field =
 export const STEP2_FIELDS: Record<LayoutStyle, Record<BackgroundType, Step2Field[]>> = {
     classic: {
         color: ['bg_colors', 'overlay'],
-        image: ['image_upload', 'overlay', 'bg_colors'],
+        // No colour fields on Image or Custom (Jamal, 2026-10-06): the picture
+        // IS the background, like the other four styles' tabs. The accent the
+        // words are drawn in comes from the style picked in Step 1.
+        image: ['image_upload', 'overlay'],
         gradient: ['gradient_type', 'gradient_direction', 'gradient_2', 'accent_color', 'overlay', 'gradient_presets'],
-        custom: ['image_upload', 'shape', 'corner_radius', 'overlay', 'primary_colors'],
+        custom: ['image_upload', 'shape', 'corner_radius', 'overlay'],
     },
     elegant: {
         color: ['bg_colors', 'overlay'],
@@ -368,9 +371,10 @@ export const STEP2_FIELDS: Record<LayoutStyle, Record<BackgroundType, Step2Field
      */
     modern: {
         // Modern's Colour tab is its own thing: a swatch row instead of a plain
-        // hex pair, a position control, and the overlay as a switch rather than
-        // a bare slider. It is the only Colour tab that differs from the others.
-        color: ['bg_color_presets', 'bg_position_grid', 'overlay_toggle'],
+        // hex pair, and the overlay as a switch rather than a bare slider.
+        // No position control: a flat colour has nothing to position, and its
+        // thumbnail drew a leftover image on the Colour tab.
+        color: ['bg_color_presets', 'overlay_toggle'],
         // Grid, not the dropdown the other styles use — Modern's screens put the
         // compass beside the thumbnail on both the Image and Custom tabs.
         image: ['image_upload', 'image_position_grid', 'image_scale', 'image_overlay'],
@@ -419,6 +423,76 @@ export const GRADIENT_PRESETS_BY_STYLE: Record<LayoutStyle, readonly { from: str
         { from: '#FFF4D6', to: '#F0C674' },
     ],
 };
+
+/**
+ * What a Template Style LOOKS like — its starting colours, gradient and fonts.
+ *
+ * `template_categories` stores a name and a slug and nothing visual, so Step 1's
+ * style tiles had nothing to draw and picking one changed nothing on the
+ * preview. This is the missing half: the tile draws this look, and picking a
+ * style on a NEW template fills Step 2 with it (every value stays editable).
+ *
+ * Same palettes as the sample templates seeder, so "Classic" here is the
+ * Classic the clients already see. Fonts are from the ten built in, so a look
+ * never names a font the database may not have. A category whose slug is not
+ * listed uses `STYLE_LOOK_FALLBACK`.
+ */
+export interface StyleLook {
+    background_color: string;
+    secondary_color: string;
+    gradient_from: string;
+    gradient_via: string;
+    gradient_to: string;
+    primary_font: string;
+    secondary_font: string;
+}
+
+export const STYLE_LOOK_FALLBACK: StyleLook = {
+    background_color: '#FFF7F0', secondary_color: '#88860B',
+    gradient_from: '#FFF7F0', gradient_via: '', gradient_to: '#F3E8DA',
+    primary_font: 'Playfair Display', secondary_font: 'Poppins',
+};
+
+export const STYLE_LOOKS: Record<string, StyleLook> = {
+    classic: {
+        background_color: '#FFF8EF', secondary_color: '#9C6B1F',
+        gradient_from: '#FCE8D5', gradient_via: '', gradient_to: '#F6D9E4',
+        primary_font: 'Playfair Display', secondary_font: 'Lora',
+    },
+    royal: {
+        background_color: '#14213D', secondary_color: '#E0B03A',
+        gradient_from: '#0B1736', gradient_via: '#3B2A6B', gradient_to: '#7A1F3D',
+        primary_font: 'Great Vibes', secondary_font: 'Cinzel',
+    },
+    minimal: {
+        background_color: '#FAFAF7', secondary_color: '#2F3A4A',
+        gradient_from: '#F4F1EA', gradient_via: '', gradient_to: '#E3ECF2',
+        primary_font: 'Cormorant Garamond', secondary_font: 'Inter',
+    },
+    elegant: {
+        background_color: '#2B1B3D', secondary_color: '#D9B26A',
+        gradient_from: '#3A1F5C', gradient_via: '#7B3FA0', gradient_to: '#E7A977',
+        primary_font: 'Great Vibes', secondary_font: 'Cormorant Garamond',
+    },
+    traditional: {
+        background_color: '#7A1220', secondary_color: '#E6BE5A',
+        gradient_from: '#7A1220', gradient_via: '#B5451F', gradient_to: '#F2C66B',
+        primary_font: 'Dancing Script', secondary_font: 'Marcellus',
+    },
+    floral: {
+        background_color: '#FFF1F3', secondary_color: '#B4536B',
+        gradient_from: '#FFE4EA', gradient_via: '', gradient_to: '#E6F3E6',
+        primary_font: 'Dancing Script', secondary_font: 'Poppins',
+    },
+    modern: {
+        background_color: '#1F2937', secondary_color: '#F5B94A',
+        gradient_from: '#111827', gradient_via: '', gradient_to: '#3B4A63',
+        primary_font: 'Montserrat', secondary_font: 'Inter',
+    },
+};
+
+export const styleLook = (slug: string | null | undefined): StyleLook =>
+    STYLE_LOOKS[String(slug ?? '').toLowerCase()] ?? STYLE_LOOK_FALLBACK;
 
 export type GradientType = 'linear' | 'radial';
 export type GradientDirection = (typeof GRADIENT_DIRECTIONS)[number]['value'];
@@ -490,10 +564,20 @@ export interface EventTemplate {
     dimension: string | null;
     primary_font: string | null;
     secondary_font: string | null;
+    /**
+     * Font sizes as a percentage of the renderer's standard size (60-160,
+     * 100 = unchanged). Primary draws the names, Secondary every other line.
+     */
+    primary_font_size?: number | null;
+    secondary_font_size?: number | null;
     /** CSS fallback — used only when no `frame_style_id` is chosen. */
     border_style: string | null;
     /** Step 2's Border / Frame Style — real uploaded artwork. */
     frame_style_id: number | null;
+    /** Draw the frame in this one colour; null = the frame's own colours. */
+    frame_color?: string | null;
+    /** Draw the decorations in this one colour; null = their own colours. */
+    decoration_color?: string | null;
     /** Step 2's Decorations — ids into `decorations`, in display order. */
     decoration_ids: number[];
 

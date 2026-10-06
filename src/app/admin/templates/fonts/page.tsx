@@ -38,7 +38,6 @@ import {
     formatFontSize,
     type TemplateFont,
 } from '@/hooks/use-template-fonts';
-import { FONT_OPTIONS } from '@/hooks/use-event-templates';
 
 type Mode = 'upload' | 'link';
 
@@ -84,7 +83,6 @@ export default function TemplateFontsPage() {
 
     const nameMissing = !name.trim();
     const sourceMissing = mode === 'upload' ? !file : !link.trim();
-    const builtIn = (FONT_OPTIONS as readonly string[]).some((f) => f.toLowerCase() === name.trim().toLowerCase());
 
     const pickFile = (picked: File | null) => {
         if (!picked) return;
@@ -106,10 +104,6 @@ export default function TemplateFontsPage() {
             toast.error('Please fill all mandatory fields.');
             return;
         }
-        if (builtIn) {
-            toast.error(`"${name.trim()}" is already one of the built-in fonts.`);
-            return;
-        }
         createFont.mutate(mode === 'upload' ? { name: name.trim(), file } : { name: name.trim(), link_url: link.trim() });
     };
 
@@ -120,8 +114,8 @@ export default function TemplateFontsPage() {
             <div>
                 <h1 className="text-xl font-bold tracking-tight text-foreground">Fonts</h1>
                 <p className="mt-1 text-sm text-muted-foreground">
-                    Add fonts for invitation templates. They appear in the template wizard&rsquo;s font lists
-                    beside the {FONT_OPTIONS.length} built in.
+                    The fonts for invitation templates. The template wizard&rsquo;s font lists show the
+                    active fonts on this page, and nothing else.
                 </p>
             </div>
 
@@ -247,7 +241,7 @@ export default function TemplateFontsPage() {
                             <Type className="h-7 w-7 text-muted-foreground/40" />
                             <p className="text-sm font-medium text-foreground">No fonts added yet</p>
                             <p className="max-w-sm text-xs text-muted-foreground">
-                                The template wizard offers its built-in fonts until one is added here.
+                                The template wizard has no fonts to offer until one is added here.
                             </p>
                         </div>
                     ) : (

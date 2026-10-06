@@ -13,7 +13,6 @@ import {
     FileText,
     Palette,
     LayoutList,
-    ShieldCheck,
     Globe,
     Download,
     Loader2,
@@ -37,10 +36,8 @@ import {
     useUpdateEventTemplateFeatured,
     COMPONENT_GROUPS,
     groupsInOrder,
-    PERMISSION_LABELS,
     normaliseOrder,
     type ComponentKey,
-    type PermissionKey,
 } from '@/hooks/use-event-templates';
 import { TemplatePreview } from '../_components/template-preview';
 
@@ -94,13 +91,11 @@ export default function TemplateDetailPage({ params }: { params: Promise<{ id: s
      * when either of their two components is on, so this page and the wizard
      * list the same things.
      */
-    const groups = groupsInOrder(normaliseOrder(template.component_order));
-    const permissionRows: { id: string; label: string; keys: PermissionKey[] }[] = [
-        ...(['background', 'colors', 'fonts'] as const).map((k) => ({
-            id: k, label: PERMISSION_LABELS[k], keys: [k] as PermissionKey[],
-        })),
-        ...COMPONENT_GROUPS.map((g) => ({ id: g.id, label: g.label, keys: g.keys as PermissionKey[] })),
-    ];
+    // Event Photos and Decoration Elements are not rows here: the wizard no
+    // longer offers either as a switch.
+    const groups = groupsInOrder(normaliseOrder(template.component_order)).filter(
+        (g) => g.id !== 'photos' && g.id !== 'decorations'
+    );
 
     return (
         <PermissionGuard permission="event_templates.view">
@@ -232,14 +227,17 @@ export default function TemplateDetailPage({ params }: { params: Promise<{ id: s
                                     ['Background Type', template.background_type],
                                     ['Orientation', `${template.orientation} (${template.dimension ?? '—'})`],
                                     ['Overlay', `${template.overlay_opacity}%`],
-                                    [
-                                        'Background Color',
-                                        <Swatch key="bg" value={template.background_color} />,
-                                    ],
-                                    [
-                                        'Secondary Color',
-                                        <Swatch key="sc" value={template.secondary_color} />,
-                                    ],
+                                    // Colour rows only where the background IS a
+                                    // colour — an Image / Custom template's
+                                    // background is its picture.
+                                    ...((template.background_type === 'color'
+                                        ? [
+                                              ['Background Color', <Swatch key="bg" value={template.background_color} />],
+                                              ['Secondary Color', <Swatch key="sc" value={template.secondary_color} />],
+                                          ]
+                                        : template.background_type === 'gradient'
+                                          ? [['Accent Color', <Swatch key="sc" value={template.secondary_color} />]]
+                                          : []) as Array<[string, React.ReactNode]>),
                                     ['Primary Font', template.primary_font ?? '—'],
                                     ['Secondary Font', template.secondary_font ?? '—'],
                                     // The real artwork, falling back to the CSS border only
@@ -293,35 +291,6 @@ export default function TemplateDetailPage({ params }: { params: Promise<{ id: s
                                 );
                                 })}
                             </ol>
-                        </DetailCard>
-
-                        <DetailCard title="Customization Permissions" icon={ShieldCheck}>
-                            <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-                                {permissionRows.map((row) => {
-                                    const allowed = row.keys.some((k) => !!Number(template.permissions?.[k] ?? 1));
-                                    return (
-                                        <div
-                                            key={row.id}
-                                            className="flex items-center gap-2 rounded-md border border-border px-2.5 py-1.5 text-xs"
-                                        >
-                                            <span className="min-w-0 flex-1 break-words font-medium text-foreground">
-                                                {row.label}
-                                            </span>
-                                            <Badge
-                                                variant="outline"
-                                                className={cn(
-                                                    'shrink-0 text-[10px] font-semibold',
-                                                    allowed
-                                                        ? 'border-emerald-300 text-emerald-700'
-                                                        : 'border-border text-muted-foreground'
-                                                )}
-                                            >
-                                                {allowed ? 'Editable' : 'Locked'}
-                                            </Badge>
-                                        </div>
-                                    );
-                                })}
-                            </div>
                         </DetailCard>
 
                         <DetailCard title="Publishing & Availability" icon={Globe}>

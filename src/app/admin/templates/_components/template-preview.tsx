@@ -1,7 +1,7 @@
 'use client';
 
-import { useLayoutEffect, useRef, useState } from 'react';
-import { Eye, QrCode, MapPin, Phone, Camera, Sparkles } from 'lucide-react';
+import { useId, useLayoutEffect, useRef, useState } from 'react';
+import { Eye, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
@@ -32,6 +32,7 @@ export type PreviewTemplate = Pick<
     | 'gradient_type' | 'gradient_direction' | 'image_shape' | 'corner_radius'
     | 'gradient_via' | 'image_position' | 'image_scale' | 'background_position'
     | 'image_size' | 'overlay_enabled' | 'overlay_color'
+    | 'primary_font_size' | 'secondary_font_size' | 'frame_color' | 'decoration_color'
 > & {
     /**
      * The chosen Frame Style's artwork, drawn OVER the whole card.
@@ -49,6 +50,17 @@ export type PreviewTemplate = Pick<
      * reusing it would make the whole row unassignable to this type.
      */
     decorationItems?: Array<{ id: number; name: string; type: string; file_url: string | null }>;
+};
+
+/**
+ * The sample QR code: a REAL one (it encodes a sample invitation link), as
+ * its 29 x 29 modules in one SVG path. The preview used to draw an icon
+ * of a QR code, which read as a cartoon next to the rest of the card. A
+ * template has no event, so this stands in for the code the event will get.
+ */
+const SAMPLE_QR = {
+    size: 29,
+    path: 'M0 0h7v1h-7zM12 0h1v1h-1zM14 0h2v1h-2zM19 0h1v1h-1zM22 0h7v1h-7zM0 1h1v1h-1zM6 1h1v1h-1zM8 1h1v1h-1zM10 1h6v1h-6zM17 1h1v1h-1zM19 1h1v1h-1zM22 1h1v1h-1zM28 1h1v1h-1zM0 2h1v1h-1zM2 2h3v1h-3zM6 2h1v1h-1zM10 2h1v1h-1zM18 2h1v1h-1zM20 2h1v1h-1zM22 2h1v1h-1zM24 2h3v1h-3zM28 2h1v1h-1zM0 3h1v1h-1zM2 3h3v1h-3zM6 3h1v1h-1zM9 3h2v1h-2zM12 3h2v1h-2zM19 3h2v1h-2zM22 3h1v1h-1zM24 3h3v1h-3zM28 3h1v1h-1zM0 4h1v1h-1zM2 4h3v1h-3zM6 4h1v1h-1zM8 4h1v1h-1zM10 4h2v1h-2zM13 4h3v1h-3zM17 4h3v1h-3zM22 4h1v1h-1zM24 4h3v1h-3zM28 4h1v1h-1zM0 5h1v1h-1zM6 5h1v1h-1zM9 5h1v1h-1zM12 5h1v1h-1zM14 5h2v1h-2zM18 5h3v1h-3zM22 5h1v1h-1zM28 5h1v1h-1zM0 6h7v1h-7zM8 6h1v1h-1zM10 6h1v1h-1zM12 6h1v1h-1zM14 6h1v1h-1zM16 6h1v1h-1zM18 6h1v1h-1zM20 6h1v1h-1zM22 6h7v1h-7zM11 7h1v1h-1zM15 7h1v1h-1zM17 7h3v1h-3zM0 8h1v1h-1zM2 8h1v1h-1zM4 8h1v1h-1zM6 8h1v1h-1zM9 8h3v1h-3zM17 8h1v1h-1zM20 8h1v1h-1zM24 8h1v1h-1zM27 8h1v1h-1zM3 9h2v1h-2zM7 9h1v1h-1zM9 9h5v1h-5zM16 9h1v1h-1zM20 9h1v1h-1zM22 9h1v1h-1zM25 9h1v1h-1zM28 9h1v1h-1zM0 10h2v1h-2zM3 10h1v1h-1zM6 10h1v1h-1zM8 10h3v1h-3zM14 10h1v1h-1zM18 10h1v1h-1zM20 10h3v1h-3zM26 10h3v1h-3zM2 11h1v1h-1zM5 11h1v1h-1zM7 11h2v1h-2zM12 11h7v1h-7zM20 11h2v1h-2zM24 11h1v1h-1zM27 11h1v1h-1zM3 12h2v1h-2zM6 12h2v1h-2zM9 12h1v1h-1zM12 12h1v1h-1zM14 12h4v1h-4zM19 12h4v1h-4zM25 12h1v1h-1zM27 12h2v1h-2zM1 13h2v1h-2zM7 13h2v1h-2zM10 13h1v1h-1zM12 13h1v1h-1zM14 13h1v1h-1zM16 13h1v1h-1zM21 13h2v1h-2zM25 13h1v1h-1zM28 13h1v1h-1zM1 14h2v1h-2zM4 14h6v1h-6zM13 14h1v1h-1zM17 14h1v1h-1zM23 14h3v1h-3zM27 14h2v1h-2zM0 15h4v1h-4zM5 15h1v1h-1zM8 15h2v1h-2zM12 15h1v1h-1zM15 15h1v1h-1zM17 15h1v1h-1zM19 15h2v1h-2zM25 15h1v1h-1zM27 15h1v1h-1zM0 16h2v1h-2zM3 16h1v1h-1zM6 16h3v1h-3zM11 16h2v1h-2zM16 16h2v1h-2zM20 16h3v1h-3zM25 16h1v1h-1zM27 16h2v1h-2zM5 17h1v1h-1zM7 17h1v1h-1zM12 17h2v1h-2zM16 17h3v1h-3zM20 17h3v1h-3zM25 17h2v1h-2zM28 17h1v1h-1zM0 18h1v1h-1zM6 18h1v1h-1zM10 18h2v1h-2zM14 18h1v1h-1zM17 18h1v1h-1zM20 18h2v1h-2zM27 18h2v1h-2zM1 19h5v1h-5zM9 19h1v1h-1zM11 19h4v1h-4zM17 19h1v1h-1zM19 19h4v1h-4zM25 19h1v1h-1zM27 19h1v1h-1zM0 20h1v1h-1zM3 20h1v1h-1zM6 20h1v1h-1zM8 20h1v1h-1zM10 20h1v1h-1zM14 20h1v1h-1zM17 20h1v1h-1zM20 20h5v1h-5zM8 21h2v1h-2zM12 21h1v1h-1zM14 21h1v1h-1zM16 21h1v1h-1zM20 21h1v1h-1zM24 21h1v1h-1zM26 21h3v1h-3zM0 22h7v1h-7zM11 22h1v1h-1zM13 22h1v1h-1zM18 22h3v1h-3zM22 22h1v1h-1zM24 22h2v1h-2zM27 22h2v1h-2zM0 23h1v1h-1zM6 23h1v1h-1zM10 23h2v1h-2zM16 23h3v1h-3zM20 23h1v1h-1zM24 23h2v1h-2zM0 24h1v1h-1zM2 24h3v1h-3zM6 24h1v1h-1zM8 24h3v1h-3zM12 24h1v1h-1zM15 24h3v1h-3zM20 24h5v1h-5zM27 24h2v1h-2zM0 25h1v1h-1zM2 25h3v1h-3zM6 25h1v1h-1zM10 25h2v1h-2zM13 25h1v1h-1zM17 25h2v1h-2zM24 25h1v1h-1zM26 25h3v1h-3zM0 26h1v1h-1zM2 26h3v1h-3zM6 26h1v1h-1zM8 26h2v1h-2zM11 26h3v1h-3zM21 26h1v1h-1zM23 26h3v1h-3zM28 26h1v1h-1zM0 27h1v1h-1zM6 27h1v1h-1zM9 27h1v1h-1zM11 27h2v1h-2zM14 27h4v1h-4zM19 27h2v1h-2zM27 27h1v1h-1zM0 28h7v1h-7zM8 28h5v1h-5zM14 28h1v1h-1zM16 28h2v1h-2zM19 28h2v1h-2zM23 28h2v1h-2zM27 28h2v1h-2z',
 };
 
 const SAMPLE = {
@@ -333,10 +345,17 @@ export function TemplatePreview({
     template,
     className,
     caption,
+    bare = false,
 }: {
     template: PreviewTemplate;
     className?: string;
     caption?: string;
+    /**
+     * The card alone — no "Live Preview" header, no Mobile / Web toggle, no
+     * captions. For a thumbnail: the caller scales the 248px card down, so a
+     * list row shows the SAME drawing as the wizard, not a stand-in.
+     */
+    bare?: boolean;
 }) {
     // Fonts added under Templates → Fonts: declared here so a template that
     // names one is drawn in it on the list, the detail page and the wizard.
@@ -365,7 +384,14 @@ export function TemplatePreview({
     const [fit, setFit] = useState(1);
 
     const order = normaliseOrder(template.component_order);
-    const on = (key: ComponentKey) => !!Number(template.components?.[key] ?? 1);
+    /**
+     * The Event Photos sample — three camera icons in boxes — is never drawn
+     * (Jamal, 2026-10-06, removed in two steps: first on Colour / Gradient,
+     * then everywhere). A template has no photographs to show, and the icons
+     * read as a fault on the card. The switch and the stored value are
+     * untouched; this is the preview only.
+     */
+    const on = (key: ComponentKey) => key !== 'event_photos' && !!Number(template.components?.[key] ?? 1);
 
     const accent = hex(template.secondary_color, '#8A6A3B');
     const headingFont = template.primary_font || 'Playfair Display';
@@ -408,9 +434,31 @@ export function TemplatePreview({
 
     // Frame values clear the deepest rule with room to spare, so a descender or
     // an italic overhang does not touch it.
-    const safeX = frameUrl ? 11 : 6;
-    const safeTop = Math.max(frameUrl ? 9 : 4, hasTopArt ? 10 : 0);
-    const safeBottom = Math.max(frameUrl ? 9 : 4, hasBottomArt ? 10 : 0);
+    /**
+     * A Custom template masks the card to a SHAPE, and the words have to stay
+     * inside it (Jamal, 2026-10-06: on Heart the text ran outside the shape and
+     * was cut off). The rectangle that fits inside each shape, as insets:
+     *   heart  — widest a third of the way down, a point at the foot;
+     *   circle — the square inside it;
+     *   arch   — the curve takes the top corners.
+     * Rectangle and square need nothing extra. Same numbers in the admin
+     * preview and the client portal card.
+     */
+    const shapeBox =
+        template.background_type === 'custom'
+            ? ({
+                  heart: { x: 15, top: 16, bottom: 13 },
+                  circle: { x: 17, top: 17, bottom: 17 },
+                  arch: { x: 11, top: 17, bottom: 6 },
+              } as Record<string, { x: number; top: number; bottom: number }>)[template.image_shape ?? ''] ?? null
+            : null;
+    // A shape leaves less room, so its card may shrink further before giving up.
+    const minFit = shapeBox ? 0.3 : 0.45;
+    const safeX = Math.max(frameUrl ? 11 : 6, shapeBox?.x ?? 0);
+    // 13, not 9 (2026-10-06): many frames carry corner fans, an arch or a
+    // head / foot ornament deeper than their rule, and the words ran into them.
+    const safeTop = Math.max(frameUrl ? 13 : 4, hasTopArt ? 10 : 0, shapeBox?.top ?? 0);
+    const safeBottom = Math.max(frameUrl ? 13 : 4, hasBottomArt ? 10 : 0, shapeBox?.bottom ?? 0);
 
     // The overlay is a separate layer rather than a filter on the background:
     // a filter would wash out the text sitting on top of it too.
@@ -493,10 +541,28 @@ export function TemplatePreview({
      * property of the colour, not a bug to code around — the Overlay / Shade
      * control is the thing that fixes it, which is what it is for.
      */
+    const plainInk = [INK_DARK, INK_LIGHT]
+        .map((candidate) => ({ candidate, ratio: contrastRatio(candidate, effective) }))
+        .sort((a, b) => b.ratio - a.ratio)[0].candidate;
+
+    /**
+     * The words follow the Secondary Color (Jamal, 2026-10-06).
+     *
+     * The names, date and venue were always one of the two fixed inks above,
+     * so changing both colours in Step 2 moved the small trim and left every
+     * line of real text the same brown — it read as hardcoded. They are now
+     * the picked colour, in a shade strong enough to read (7:1, hue kept).
+     *
+     * The fixed ink stays as the fallback: no colour picked, or a colour that
+     * cannot be made readable on this backdrop.
+     *
+     * The client portal's `invitation-card.tsx` and the app's `designInk` use
+     * the same rule — change all three together.
+     */
+    const pickedAccent = rgbTriple(template.secondary_color);
+    const tintedInk = pickedAccent ? readableOn(pickedAccent, effective, 7) : null;
     const ink = toHexString(
-        [INK_DARK, INK_LIGHT]
-            .map((candidate) => ({ candidate, ratio: contrastRatio(candidate, effective) }))
-            .sort((a, b) => b.ratio - a.ratio)[0].candidate
+        tintedInk && contrastRatio(tintedInk, effective) >= 4.5 ? tintedInk : plainInk
     );
 
     /**
@@ -522,9 +588,15 @@ export function TemplatePreview({
     // drawn on a 9:16 box and both come out as ovals.
     const forcedSquare =
         template.background_type === 'custom' &&
-        (template.image_shape === 'square' || template.image_shape === 'circle');
+        (template.image_shape === 'square' || template.image_shape === 'circle' || template.image_shape === 'heart');
 
-    const frameSize = forcedSquare
+    // The heart gets a larger card than the other square shapes: so much of a
+    // heart's box is outside the shape that the words have little room left.
+    const isHeart = template.background_type === 'custom' && template.image_shape === 'heart';
+
+    const frameSize = isHeart
+        ? 'w-[340px] max-w-full aspect-square'
+        : forcedSquare
         ? 'w-[300px] aspect-square'
         : device === 'web'
             ? 'w-full max-w-[520px] aspect-[16/10]'
@@ -532,18 +604,54 @@ export function TemplatePreview({
                 ? 'w-full max-w-[420px] aspect-[16/10]'
                 : 'w-[248px] aspect-[9/16]';
 
+    const dividerArt = placed('divider')[0] ?? null;
+
+    /** The frame in one colour, when the template names one. */
+    const frameTint = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(template.frame_color ?? '')
+        ? (template.frame_color as string)
+        : null;
+    const frameTintId = `frame-tint-${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
+
+    // Decoration Color: the decorations in one colour, the same way as the frame.
+    const decorationTint = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(template.decoration_color ?? '')
+        ? (template.decoration_color as string)
+        : null;
+    const decorationTintId = `${frameTintId}-decor`;
+    const decoStyle = decorationTint ? { filter: `url(#${decorationTintId})` } : undefined;
+
+    /**
+     * Font sizes: a percentage of the standard size, per block. The names take
+     * the Primary Font's size, every other line of words the Secondary Font's.
+     * The QR code and the decoration row are not text and keep their size.
+     * `zoom`, not a transform: it resizes the block's layout box too, so the
+     * card's fit-to-height still measures the real height.
+     */
+    const pct = (value: number | null | undefined) => Math.min(Math.max(Number(value) || 100, 60), 160) / 100;
+    const blockZoom = (key: ComponentKey) =>
+        key === 'host_names'
+            ? pct(template.primary_font_size)
+            : key === 'event_qr_code' || key === 'decoration_elements'
+              ? 1
+              : pct(template.secondary_font_size);
+
     /** One block per component, rendered in `component_order`. */
+    /**
+     * Type sizes (raised 2026-10-06 — Jamal: "some text is so small"). The
+     * small lines were 7-8px on a 248px card, below what reads on a laptop.
+     * Everything is now 8.5px or more and the names lead at 32px; a card with
+     * too much on it still scales down as one piece (see `fit`).
+     */
     const blocks: Record<ComponentKey, React.ReactNode> = {
         event_title: (
             <div className="text-center">
                 <div
-                    className="text-[8px] font-semibold uppercase tracking-[0.22em]"
+                    className="text-[9.5px] font-semibold uppercase tracking-[0.22em]"
                     style={{ color: accentInk, fontFamily: bodyFont }}
                 >
                     {SAMPLE.invite_line}
                 </div>
                 <div
-                    className="text-[8px] font-semibold uppercase tracking-[0.22em]"
+                    className="text-[9.5px] font-semibold uppercase tracking-[0.22em]"
                     style={{ color: accentInk, fontFamily: bodyFont }}
                 >
                     {SAMPLE.occasion}
@@ -552,25 +660,24 @@ export function TemplatePreview({
         ),
         host_names: (
             <div className="text-center leading-none" style={{ fontFamily: headingFont, color: ink }}>
-                <div className="text-[26px] italic">{SAMPLE.hosts[0]}</div>
-                <div className="my-0.5 text-[11px]" style={{ color: accentInk }}>
+                <div className="text-[32px] italic">{SAMPLE.hosts[0]}</div>
+                <div className="my-0.5 text-[13px]" style={{ color: accentInk }}>
                     &amp;
                 </div>
-                <div className="text-[26px] italic">{SAMPLE.hosts[1]}</div>
+                <div className="text-[32px] italic">{SAMPLE.hosts[1]}</div>
             </div>
         ),
         date_time: (
             <div className="text-center" style={{ fontFamily: bodyFont, color: ink }}>
-                <div className="text-[11px] font-bold tracking-[0.14em]">{SAMPLE.date}</div>
-                <div className="text-[8px] tracking-[0.12em] opacity-80">{SAMPLE.time}</div>
+                <div className="text-[13.5px] font-bold tracking-[0.14em]">{SAMPLE.date}</div>
+                <div className="text-[9.5px] tracking-[0.12em] opacity-80">{SAMPLE.time}</div>
             </div>
         ),
         venue: (
             <div className="text-center" style={{ fontFamily: bodyFont, color: ink }}>
-                <div className="text-[10px] font-semibold">{SAMPLE.venue_name}</div>
-                <div className="flex items-center justify-center gap-1 text-[8px] opacity-80">
-                    <MapPin className="h-2.5 w-2.5" /> {SAMPLE.venue_city}
-                </div>
+                <div className="text-[12px] font-semibold">{SAMPLE.venue_name}</div>
+                {/* Words only — no location pin, no phone icon (Jamal, 2026-10-06). */}
+                <div className="text-[9.5px] opacity-80">{SAMPLE.venue_city}</div>
             </div>
         ),
         event_qr_code: (
@@ -579,45 +686,36 @@ export function TemplatePreview({
                     className="flex h-14 w-14 items-center justify-center rounded-sm border bg-white"
                     style={{ borderColor: accentLine }}
                 >
-                    <QrCode className="h-11 w-11" style={{ color: ink }} />
+                    {/* Black on white whatever the card's colours are — a tinted
+                        or inverted code does not scan. Two modules of quiet
+                        zone, inside the white box. */}
+                    <svg
+                        viewBox={`-2 -2 ${SAMPLE_QR.size + 4} ${SAMPLE_QR.size + 4}`}
+                        className="h-full w-full"
+                        shapeRendering="crispEdges"
+                        aria-label="Sample QR code"
+                    >
+                        <path d={SAMPLE_QR.path} fill="#111111" />
+                    </svg>
                 </div>
-                <div
-                    className="rounded-sm border px-1.5 py-px text-[6px] font-semibold"
-                    style={{ borderColor: accentLine, color: accentInk, fontFamily: bodyFont }}
-                >
-                    Event QR Code
-                </div>
+                {/* No "Event QR Code" label under it (Jamal, 2026-10-06). */}
             </div>
         ),
         organizer: (
-            <div className="text-center text-[8px] opacity-80" style={{ fontFamily: bodyFont, color: ink }}>
+            <div className="text-center text-[9.5px] opacity-80" style={{ fontFamily: bodyFont, color: ink }}>
                 {SAMPLE.organizer}
             </div>
         ),
-        event_photos: (
-            <div className="flex items-center justify-center gap-1">
-                {[0, 1, 2].map((i) => (
-                    <span
-                        key={i}
-                        className="flex h-7 w-7 items-center justify-center rounded-sm border bg-white/60"
-                        style={{ borderColor: accentLine }}
-                    >
-                        <Camera className="h-3 w-3" style={{ color: accentLine }} />
-                    </span>
-                ))}
-            </div>
-        ),
+        // Never drawn — see `on`.
+        event_photos: null,
         contact_details: (
-            <div
-                className="flex items-center justify-center gap-1 text-[8px] opacity-80"
-                style={{ fontFamily: bodyFont, color: ink }}
-            >
-                <Phone className="h-2.5 w-2.5" /> {SAMPLE.contact}
+            <div className="text-center text-[9.5px] opacity-80" style={{ fontFamily: bodyFont, color: ink }}>
+                {SAMPLE.contact}
             </div>
         ),
         invitation_message: (
             <div
-                className="px-3 text-center text-[8px] italic leading-snug opacity-90"
+                className="px-3 text-center text-[9.5px] italic leading-snug opacity-90"
                 style={{ fontFamily: bodyFont, color: ink }}
             >
                 {SAMPLE.message}
@@ -625,13 +723,21 @@ export function TemplatePreview({
         ),
         footer_note: (
             <div
-                className="text-center text-[7px] tracking-wide opacity-70"
+                className="text-center text-[8.5px] tracking-wide opacity-80"
                 style={{ fontFamily: bodyFont, color: ink }}
             >
                 {SAMPLE.footer}
             </div>
         ),
-        decoration_elements: (
+        /**
+         * A chosen divider decoration is this row: its own line between two
+         * sections, with the same gap as any other, placed by Component Order.
+         * With no divider chosen the row is the plain rule it always was.
+         */
+        decoration_elements: dividerArt ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img src={dividerArt.file_url!} alt="" style={decoStyle} data-tint={decorationTint ?? undefined} className="pointer-events-none mx-auto block w-24 opacity-80" />
+        ) : (
             <div className="flex items-center justify-center gap-1.5" style={{ color: accentLine }}>
                 <Sparkles className="h-3 w-3" />
                 <span className="h-px w-8" style={{ backgroundColor: accentLine }} />
@@ -640,6 +746,17 @@ export function TemplatePreview({
         ),
     };
 
+    // The divider is the Decoration Elements row, so that switch shows and
+    // hides it — the client has the same switch.
+    /**
+     * On a Heart EVERY section that is switched on is drawn, the QR code
+     * included (Jamal, 2026-10-06 — an earlier version drew four rows only).
+     * They fit because the column is scaled as one piece, and because the
+     * text box below is the tallest that stays inside the shape: a heart
+     * narrows toward its point, and the rows are centred, so the lower ones
+     * have less width but still sit inside it. With many sections on, the
+     * words are small — that is the price of the shape, not a fault.
+     */
     const visible = order.filter(on);
 
     /**
@@ -664,7 +781,7 @@ export function TemplatePreview({
             const ratio = Math.min(availH / naturalH, availW / naturalW, 1);
             // Never shrink past legibility. Below this the preview stops being
             // useful and the honest answer is that too much is switched on.
-            setFit(Math.max(ratio, 0.45));
+            setFit(Math.max(ratio, minFit));
         };
 
         measure();
@@ -684,14 +801,16 @@ export function TemplatePreview({
         template.orientation,
         template.primary_font,
         template.secondary_font,
+        template.primary_font_size,
+        template.secondary_font_size,
         safeX,
         safeTop,
         safeBottom,
     ]);
 
     return (
-        <div className={cn('space-y-3', className)}>
-            <div className="flex items-center justify-between gap-2">
+        <div className={cn(!bare && 'space-y-3', className)}>
+            <div className={bare ? 'hidden' : 'flex items-center justify-between gap-2'}>
                 <div className="flex items-center gap-2">
                     <Eye className="h-4 w-4 text-primary" />
                     <span className="text-sm font-bold text-foreground">Live Preview</span>
@@ -720,9 +839,9 @@ export function TemplatePreview({
             <svg width="0" height="0" aria-hidden className="absolute">
                 <defs>
                     <clipPath id="tplHeartClip" clipPathUnits="objectBoundingBox">
-                        <path d="M0.5,0.9 C0.5,0.9 0.04,0.62 0.04,0.33 C0.04,0.14 0.18,0.04 0.31,0.04
-                                 C0.41,0.04 0.47,0.1 0.5,0.17 C0.53,0.1 0.59,0.04 0.69,0.04
-                                 C0.82,0.04 0.96,0.14 0.96,0.33 C0.96,0.62 0.5,0.9 0.5,0.9 Z" />
+                        <path d="M0.5,0.97 C0.22,0.76 0.01,0.56 0.01,0.31 C0.01,0.14 0.14,0.03 0.28,0.03
+                                 C0.38,0.03 0.46,0.08 0.5,0.16 C0.54,0.08 0.62,0.03 0.72,0.03
+                                 C0.86,0.03 0.99,0.14 0.99,0.31 C0.99,0.56 0.78,0.76 0.5,0.97 Z" />
                     </clipPath>
                 </defs>
             </svg>
@@ -755,17 +874,17 @@ export function TemplatePreview({
                         the couple's names is not a decoration. */}
                     {placed('motif').slice(0, 1).map((d) => (
                         /* eslint-disable-next-line @next/next/no-img-element */
-                        <img key={d.id} src={d.file_url!} alt=""
+                        <img key={d.id} src={d.file_url!} alt="" style={decoStyle} data-tint={decorationTint ?? undefined}
                             className="pointer-events-none absolute left-1/2 top-1/2 w-2/3 -translate-x-1/2 -translate-y-1/2 opacity-20" />
                     ))}
                     {placed('top').slice(0, 1).map((d) => (
                         /* eslint-disable-next-line @next/next/no-img-element */
-                        <img key={d.id} src={d.file_url!} alt=""
+                        <img key={d.id} src={d.file_url!} alt="" style={decoStyle} data-tint={decorationTint ?? undefined}
                             className="pointer-events-none absolute inset-x-0 top-0 w-full" />
                     ))}
                     {placed('bottom').slice(0, 1).map((d) => (
                         /* eslint-disable-next-line @next/next/no-img-element */
-                        <img key={d.id} src={d.file_url!} alt=""
+                        <img key={d.id} src={d.file_url!} alt="" style={decoStyle} data-tint={decorationTint ?? undefined}
                             className="pointer-events-none absolute inset-x-0 bottom-0 w-full" />
                     ))}
                     {/* Up to four corners, mirrored so one uploaded corner fills
@@ -778,13 +897,13 @@ export function TemplatePreview({
                             'right-0 bottom-0 -scale-100',
                         ] as const).map((pos) => (
                             /* eslint-disable-next-line @next/next/no-img-element */
-                            <img key={`${d.id}-${pos}`} src={d.file_url!} alt=""
+                            <img key={`${d.id}-${pos}`} src={d.file_url!} alt="" style={decoStyle} data-tint={decorationTint ?? undefined}
                                 className={cn('pointer-events-none absolute w-2/5', pos)} />
                         ))
                     )}
                     {placed('ornament').slice(0, 1).map((d) => (
                         /* eslint-disable-next-line @next/next/no-img-element */
-                        <img key={d.id} src={d.file_url!} alt=""
+                        <img key={d.id} src={d.file_url!} alt="" style={decoStyle} data-tint={decorationTint ?? undefined}
                             className="pointer-events-none absolute inset-x-0 top-0 mx-auto w-3/5" />
                     ))}
                     {/*
@@ -799,19 +918,46 @@ export function TemplatePreview({
                       either side of the content, which is exactly how it looked
                       when it was first drawn that way.
                     */}
-                    {placed('divider').slice(0, 1).map((d) => (
-                        /* eslint-disable-next-line @next/next/no-img-element */
-                        <img key={d.id} src={d.file_url!} alt=""
-                            className="pointer-events-none absolute left-1/2 top-1/2 w-2/5 -translate-x-1/2 -translate-y-1/2 opacity-70" />
-                    ))}
+                    {/* The divider is NOT drawn here any more (Jamal, 2026-10-06):
+                        pinned to the centre of the card it ran straight through
+                        whichever line of text happened to be there. It is a row
+                        of the content now — see `decoration_elements` in `blocks`. */}
 
                     {/* The frame is drawn LAST, over the content: it occupies the
                         margin, and a border under the text would be half-hidden by
                         whatever component happens to reach the edge. */}
+                    {/*
+                      Border Color: an SVG filter floods the frame's own shape
+                      with the one colour. A filter, not a CSS mask — a mask
+                      needs the image served with CORS headers, which the CDN
+                      may not send, and then draws nothing at all.
+                    */}
+                    {decorationTint ? (
+                        <svg width="0" height="0" aria-hidden className="absolute">
+                            <defs>
+                                <filter id={decorationTintId} colorInterpolationFilters="sRGB">
+                                    <feFlood floodColor={decorationTint} result="colour" />
+                                    <feComposite in="colour" in2="SourceAlpha" operator="in" />
+                                </filter>
+                            </defs>
+                        </svg>
+                    ) : null}
+                    {frameUrl && frameTint ? (
+                        <svg width="0" height="0" aria-hidden className="absolute">
+                            <defs>
+                                <filter id={frameTintId} colorInterpolationFilters="sRGB">
+                                    <feFlood floodColor={frameTint} result="colour" />
+                                    <feComposite in="colour" in2="SourceAlpha" operator="in" />
+                                </filter>
+                            </defs>
+                        </svg>
+                    ) : null}
                     {frameUrl ? (
                         /* eslint-disable-next-line @next/next/no-img-element */
                         <img src={frameUrl} alt=""
-                            className="pointer-events-none absolute inset-0 z-10 h-full w-full object-fill" />
+                            className="pointer-events-none absolute inset-0 z-10 h-full w-full object-fill"
+                            style={frameTint ? { filter: `url(#${frameTintId})` } : undefined}
+                    data-tint={frameTint ?? undefined} />
                     ) : null}
 
                     {/* The safe area — see the note on safeX/safeTop above. It
@@ -831,29 +977,40 @@ export function TemplatePreview({
                             is applied here so the measurement never chases its
                             own result. `w-full` keeps the natural width equal to
                             the safe area, so only genuine overflow shrinks it. */}
+                        {/* The sections are spread down the card, not bunched in the
+                            middle: a card with seven sections left the top and bottom
+                            thirds empty. `min-height` only matters while the content is
+                            SHORTER than the card — a taller one still scales to fit.
+                            Admin preview and client portal use the same numbers. */}
                         <div
                             ref={contentRef}
-                            className="flex w-full flex-col items-center justify-center gap-1.5"
-                            style={{ transform: `scale(${fit})`, transformOrigin: 'center center' }}
+                            className="flex w-full flex-col items-center justify-evenly gap-1.5"
+                            style={{ minHeight: '86%', transform: `scale(${fit})`, transformOrigin: 'center center' }}
                         >
                             {visible.length === 0 ? (
                                 <div className="px-4 text-center text-[10px] text-muted-foreground">
                                     Every component is switched off, so this invitation would render empty.
                                 </div>
                             ) : (
-                                visible.map((key) => <div key={key}>{blocks[key]}</div>)
+                                visible.map((key) => (
+                                    <div key={key} style={{ zoom: blockZoom(key) }}>
+                                        {blocks[key]}
+                                    </div>
+                                ))
                             )}
                         </div>
                     </div>
                 </div>
             </div>
 
-            <p className="text-center text-[11px] leading-snug text-muted-foreground">
-                {caption ??
-                    `This is a preview of how the template will look on ${device === 'web' ? 'web' : 'mobile'}.`}
-            </p>
+            {!bare && (
+                <p className="text-center text-[11px] leading-snug text-muted-foreground">
+                    {caption ??
+                        `This is a preview of how the template will look on ${device === 'web' ? 'web' : 'mobile'}.`}
+                </p>
+            )}
 
-            {visible.length > 0 && (
+            {!bare && visible.length > 0 && (
                 <p className="text-center text-[10px] text-muted-foreground">
                     Showing {visible.length} of {order.length} components ·{' '}
                     {order.filter((k) => !on(k)).length > 0

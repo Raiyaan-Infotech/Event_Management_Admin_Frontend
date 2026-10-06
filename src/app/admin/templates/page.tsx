@@ -19,7 +19,6 @@ import {
     CheckCircle2,
     XCircle,
     Sparkles,
-    ImageIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -55,6 +54,7 @@ import { DeleteDialog } from '@/components/common/delete-dialog';
 import { PageLoader } from '@/components/common/page-loader';
 import { PermissionGuard } from '@/components/guards/permission-guard';
 import { cn } from '@/lib/utils';
+import { TemplatePreview } from './_components/template-preview';
 import { useEventCategories } from '@/hooks/use-menu-management';
 import { useTemplateCategories } from '@/hooks/use-template-categories';
 import {
@@ -401,14 +401,16 @@ export default function TemplateListPage() {
 
                                                     <TableCell>
                                                         <div className="flex items-center gap-2.5">
-                                                            <span
-                                                                className="inline-flex h-11 w-9 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border bg-muted/40"
-                                                                style={
-                                                                    row.background_color
-                                                                        ? { backgroundColor: row.background_color }
-                                                                        : undefined
-                                                                }
-                                                            >
+                                                            {/*
+                                                              The template itself, small: the same
+                                                              card the wizard's Live Preview draws
+                                                              (background, shade, border, words),
+                                                              scaled from 248px to 54px. It used to
+                                                              be a square of the background colour
+                                                              with an image icon on it. An uploaded
+                                                              gallery thumbnail still wins.
+                                                            */}
+                                                            <span className="relative block h-24 w-[54px] shrink-0 overflow-hidden rounded-md border border-border bg-muted/40">
                                                                 {row.thumbnail ? (
                                                                     // eslint-disable-next-line @next/next/no-img-element
                                                                     <img
@@ -417,7 +419,20 @@ export default function TemplateListPage() {
                                                                         className="h-full w-full object-cover"
                                                                     />
                                                                 ) : (
-                                                                    <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                                                                    <span
+                                                                        className="pointer-events-none absolute left-0 top-0 block w-[248px] origin-top-left"
+                                                                        style={{ transform: 'scale(0.2177)' }}
+                                                                        aria-hidden
+                                                                    >
+                                                                        <TemplatePreview
+                                                                            bare
+                                                                            template={{
+                                                                                ...row,
+                                                                                frameUrl: row.frameStyle?.file_url ?? null,
+                                                                                decorationItems: row.decorationItems ?? [],
+                                                                            }}
+                                                                        />
+                                                                    </span>
                                                                 )}
                                                             </span>
                                                             {/* break-all, never truncate: the table is
