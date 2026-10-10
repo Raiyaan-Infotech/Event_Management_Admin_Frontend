@@ -71,9 +71,9 @@ const SAMPLE = {
     time: 'SUNDAY, 06:00 PM',
     venue_name: 'The Grand Palace',
     venue_city: 'Chennai, Tamil Nadu',
-    organizer: 'Hosted by the Verma family',
+    organizer: 'Jamal',
     message: 'Together with our families, we request the honour of your presence.',
-    contact: '+91 98765 43210',
+    contact: '988699435',
     footer: 'Thank you for being part of our story.',
 };
 
@@ -391,7 +391,13 @@ export function TemplatePreview({
      * read as a fault on the card. The switch and the stored value are
      * untouched; this is the preview only.
      */
-    const on = (key: ComponentKey) => key !== 'event_photos' && !!Number(template.components?.[key] ?? 1);
+    const on = (key: ComponentKey) => {
+        if (key === 'event_photos') return false;
+        // Organizer & contact details are rendered together as the unified Contact Us box.
+        // If organizer is already enabled, skip contact_details so it doesn't leave an empty spacer.
+        if (key === 'contact_details' && !!Number(template.components?.organizer ?? 1)) return false;
+        return !!Number(template.components?.[key] ?? 1);
+    };
 
     const accent = hex(template.secondary_color, '#8A6A3B');
     const headingFont = template.primary_font || 'Playfair Display';
@@ -702,15 +708,65 @@ export function TemplatePreview({
             </div>
         ),
         organizer: (
-            <div className="text-center text-[9.5px] opacity-80" style={{ fontFamily: bodyFont, color: ink }}>
-                {SAMPLE.organizer}
+            <div
+                className="mx-auto flex flex-col items-center rounded-lg px-3.5 py-1.5 text-center shadow-xs"
+                style={{
+                    backgroundColor: `rgba(${accentRgb[0]}, ${accentRgb[1]}, ${accentRgb[2]}, 0.08)`,
+                    border: `1.5px solid rgba(${accentRgb[0]}, ${accentRgb[1]}, ${accentRgb[2]}, 0.45)`,
+                    boxShadow: `0 2px 8px rgba(${accentRgb[0]}, ${accentRgb[1]}, ${accentRgb[2]}, 0.12)`,
+                    minWidth: '150px',
+                }}
+            >
+                <div
+                    className="text-[9px] font-bold uppercase tracking-[0.14em]"
+                    style={{ fontFamily: bodyFont, color: accentInk }}
+                >
+                    Contact Us
+                </div>
+                <div
+                    className="mt-0.5 text-[11px] font-semibold"
+                    style={{ fontFamily: bodyFont, color: ink }}
+                >
+                    {SAMPLE.organizer}
+                </div>
+                <div
+                    className="mt-0.5 text-[9.5px] tracking-wide opacity-80"
+                    style={{ fontFamily: bodyFont, color: ink }}
+                >
+                    {SAMPLE.contact}
+                </div>
             </div>
         ),
         // Never drawn — see `on`.
         event_photos: null,
         contact_details: (
-            <div className="text-center text-[9.5px] opacity-80" style={{ fontFamily: bodyFont, color: ink }}>
-                {SAMPLE.contact}
+            <div
+                className="mx-auto flex flex-col items-center rounded-lg px-3.5 py-1.5 text-center shadow-xs"
+                style={{
+                    backgroundColor: `rgba(${accentRgb[0]}, ${accentRgb[1]}, ${accentRgb[2]}, 0.08)`,
+                    border: `1.5px solid rgba(${accentRgb[0]}, ${accentRgb[1]}, ${accentRgb[2]}, 0.45)`,
+                    boxShadow: `0 2px 8px rgba(${accentRgb[0]}, ${accentRgb[1]}, ${accentRgb[2]}, 0.12)`,
+                    minWidth: '150px',
+                }}
+            >
+                <div
+                    className="text-[9px] font-bold uppercase tracking-[0.14em]"
+                    style={{ fontFamily: bodyFont, color: accentInk }}
+                >
+                    Contact Us
+                </div>
+                <div
+                    className="mt-0.5 text-[11px] font-semibold"
+                    style={{ fontFamily: bodyFont, color: ink }}
+                >
+                    {SAMPLE.organizer}
+                </div>
+                <div
+                    className="mt-0.5 text-[9.5px] tracking-wide opacity-80"
+                    style={{ fontFamily: bodyFont, color: ink }}
+                >
+                    {SAMPLE.contact}
+                </div>
             </div>
         ),
         invitation_message: (
@@ -1012,9 +1068,9 @@ export function TemplatePreview({
 
             {!bare && visible.length > 0 && (
                 <p className="text-center text-[10px] text-muted-foreground">
-                    Showing {visible.length} of {order.length} components ·{' '}
-                    {order.filter((k) => !on(k)).length > 0
-                        ? `${order.filter((k) => !on(k)).map((k) => COMPONENT_LABELS[k]).join(', ')} hidden`
+                    Showing {visible.length} components ·{' '}
+                    {order.filter((k) => !on(k) && k !== 'event_photos' && k !== 'contact_details').length > 0
+                        ? `${order.filter((k) => !on(k) && k !== 'event_photos' && k !== 'contact_details').map((k) => COMPONENT_LABELS[k]).join(', ')} hidden`
                         : 'all components on'}
                 </p>
             )}

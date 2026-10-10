@@ -2051,6 +2051,11 @@ export function TemplateWizardContent() {
                                                             Clients will get QR code for this event
                                                         </div>
                                                     )}
+                                                    {group.id === 'organizer_contact' && (
+                                                        <div className="truncate text-[11px] text-muted-foreground">
+                                                            Highlighted Contact Us box with organizer name & phone
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 <Switch
                                                     checked={groupOn(group.keys)}
