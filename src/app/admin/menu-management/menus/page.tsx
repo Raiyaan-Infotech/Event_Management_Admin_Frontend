@@ -365,6 +365,14 @@ export default function MenuListPage() {
                                                         >
                                                             {Number(row.is_default) === 1 ? 'Default' : 'Add-on'}
                                                         </Badge>
+                                                        {row.menu_group === 'quick_action' && (
+                                                            <Badge
+                                                                variant="outline"
+                                                                className="ml-1 whitespace-nowrap border-amber-300 bg-amber-50 text-[11px] text-amber-700"
+                                                            >
+                                                                Home Quick Action
+                                                            </Badge>
+                                                        )}
                                                     </TableCell>
 
                                                     <TableCell className="text-center text-sm font-semibold tabular-nums">

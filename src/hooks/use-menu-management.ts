@@ -48,7 +48,7 @@ export interface EventMenu {
     slug: string;
     /** Core / Additional / Custom — drives the Manage Plan Menus sections. */
     /** 'portal' = a client-portal sidebar section; 'app' = a mobile app feature. Neither is an event feature. */
-    menu_group?: 'core' | 'addon';
+    menu_group?: 'core' | 'addon' | 'quick_action';
     description?: string | null;
     remarks?: string | null;
     company_id?: number | null;
@@ -271,6 +271,8 @@ export type EventMenuPayload = {
     remarks?: string | null;
     event_category_id?: number | null;
     is_default?: boolean | number;
+    /** 'quick_action' = Home Quick Actions only, never an event menu. */
+    menu_group?: 'core' | 'addon' | 'quick_action';
     icon?: string | null;
     color?: string | null;
     sort_order?: number;

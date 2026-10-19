@@ -11,6 +11,7 @@ import {
     Save,
     Smartphone,
     Star,
+    Zap,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -46,6 +47,8 @@ interface FormState {
     event_category_id: string;
     is_active: boolean;
     is_default: boolean;
+    /** Home Quick Action: offered on the app's Home, never an event tile. */
+    quick_action: boolean;
     sort_order: number;
     icon: string;
     color: string;
@@ -58,10 +61,18 @@ const emptyForm = (): FormState => ({
     event_category_id: '',
     is_active: true,
     is_default: false,
+    quick_action: false,
     sort_order: 1,
     icon: '',
     color: '#6E22FE',
 });
+
+/**
+ * `menu_group`: Home Quick Action wins; otherwise the label follows Default
+ * (core) / Add-on (addon), as it always has.
+ */
+const menuGroupOf = (form: FormState): 'core' | 'addon' | 'quick_action' =>
+    form.quick_action ? 'quick_action' : form.is_default ? 'core' : 'addon';
 
 export function MenuFormContent() {
     const router = useRouter();
@@ -119,6 +130,7 @@ export function MenuFormContent() {
             event_category_id: record.event_category_id ? String(record.event_category_id) : '',
             is_active: !!Number(record.is_active),
             is_default: !!Number(record.is_default),
+            quick_action: record.menu_group === 'quick_action',
             sort_order: record.sort_order ?? 1,
             icon: record.icon ?? '',
             color: record.color ?? '#6E22FE',
@@ -161,6 +173,7 @@ export function MenuFormContent() {
             event_category_id: Number(form.event_category_id),
             is_active: form.is_active,
             is_default: form.is_default,
+            menu_group: menuGroupOf(form),
             sort_order: Number(form.sort_order) || 0,
             icon: form.icon,
             color: form.color,
@@ -197,6 +210,7 @@ export function MenuFormContent() {
                 event_category_id: Number(form.event_category_id),
                 is_active: form.is_active,
                 is_default: form.is_default,
+                menu_group: menuGroupOf(form),
                 sort_order: Number(form.sort_order) || 0,
                 icon: form.icon,
                 color: form.color,
@@ -376,6 +390,27 @@ export function MenuFormContent() {
                                     onChange={(v) => setField('is_default', v)}
                                 />
                             </div>
+                        </div>
+
+                        {/* Home Quick Action — a menu for the app's Home Quick
+                            Actions only (QR Code, Notifications, My Plan...).
+                            Granted per plan like any menu, never an event tile. */}
+                        <div className="rounded-lg border border-border bg-card p-4">
+                            <p className="text-sm font-semibold text-foreground">Home Quick Action</p>
+                            <p className="mb-3 text-xs text-muted-foreground">
+                                On: the organizer can add it to Quick Actions on the app&apos;s Home. It is not shown as a menu inside events.
+                            </p>
+                            <StatusRow
+                                icon={<Zap className="h-4 w-4" />}
+                                title={form.quick_action ? 'Home Quick Action' : 'Event Menu'}
+                                subtitle={
+                                    form.quick_action
+                                        ? 'Offered on Home Quick Actions only'
+                                        : 'Shown inside events (and on Home Quick Actions)'
+                                }
+                                checked={form.quick_action}
+                                onChange={(v) => setField('quick_action', v)}
+                            />
                         </div>
 
                         {/* Row 3 — order, icon, colour */}
