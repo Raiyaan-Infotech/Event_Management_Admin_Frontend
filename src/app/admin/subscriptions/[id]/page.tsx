@@ -182,10 +182,10 @@ export default function ViewSubscriptionPlanPage({ params }: { params: Promise<{
                                     <Row label="Max Events" value={plan.max_events ?? 'Unlimited'} />
                                     <Row label="Max Guests" value={plan.max_guests_per_event ?? 'Unlimited'} />
                                     <Row label="Max RSVP (Per Event)" value={plan.max_rsvp_per_event ?? 'Unlimited'} />
-                                    <Row label="Max Gallery Image" value={plan.max_photos ?? 'Unlimited'} />
-                                    <Row label="Max Gallery Videos" value={plan.max_videos ?? 'Unlimited'} />
+                                    <Row label="Max Photos" value={plan.max_photos ?? 'Unlimited'} />
+                                    <Row label="Max Videos" value={plan.max_videos ?? 'Unlimited'} />
                                     <Row
-                                        label="Max Gallery Storage"
+                                        label="Max Storage"
                                         value={plan.storage_limit && plan.storage_unit ? `${plan.storage_limit} ${plan.storage_unit}` : 'Unlimited'}
                                     />
                                 </div>

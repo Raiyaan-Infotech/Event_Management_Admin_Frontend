@@ -79,8 +79,8 @@ const LIMIT_FIELDS = [
     { key: 'max_events', label: 'Max Events', helper: 'Events a client can create on this plan.' },
     { key: 'max_guests_per_event', label: 'Max Guests', helper: 'Contacts in the guest list, in total.' },
     { key: 'max_rsvp_per_event', label: 'Max RSVP (Per Event)', helper: 'Same as max participants' },
-    { key: 'max_photos', label: 'Max Gallery Image', helper: 'Images per event gallery.' },
-    { key: 'max_videos', label: 'Max Gallery Videos', helper: 'Videos per event gallery.' },
+    { key: 'max_photos', label: 'Max Photos', helper: 'Photos per event — gallery and Wed Wishes together.' },
+    { key: 'max_videos', label: 'Max Videos', helper: 'Videos per event — gallery and Wed Wishes together.' },
 ] as const;
 
 const STORAGE_UNITS = ['MB', 'GB'] as const;
@@ -343,7 +343,7 @@ export function PlanWizardContent() {
             const storage = Number(form.storage_limit);
             if (form.storage_unit && (!/^\d+$/.test(form.storage_limit) || storage < 1 || storage > STORAGE_MAX)) {
                 setErrors({ storage_limit: true });
-                toast.error(`Max Gallery Storage must be a whole number from 1 to ${STORAGE_MAX}, or Unlimited.`);
+                toast.error(`Max Storage must be a whole number from 1 to ${STORAGE_MAX}, or Unlimited.`);
                 return false;
             }
         }
@@ -790,7 +790,7 @@ export function PlanWizardContent() {
                                 </Field>
                             ))}
                             <Field
-                                label="Max Gallery Storage"
+                                label="Max Storage"
                                 helper={`1 to ${STORAGE_MAX}, in MB or GB. Total storage for this client's uploads.`}
                                 error={errors.storage_limit}
                             >
@@ -866,7 +866,7 @@ export function PlanWizardContent() {
                                 ]} />
                                 <ReviewCard title="Plan Configuration" onEdit={() => setStep(4)} rows={[
                                     ...LIMIT_FIELDS.map(({ key, label }): [string, string] => [label, form[key] || 'Unlimited']),
-                                    ['Max Gallery Storage', form.storage_unit && form.storage_limit ? `${form.storage_limit} ${form.storage_unit}` : 'Unlimited'],
+                                    ['Max Storage', form.storage_unit && form.storage_limit ? `${form.storage_limit} ${form.storage_unit}` : 'Unlimited'],
                                 ]} />
                             </div>
                         </WizardCard>
