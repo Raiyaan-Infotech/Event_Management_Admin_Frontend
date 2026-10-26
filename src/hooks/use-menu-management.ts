@@ -51,6 +51,8 @@ export interface EventMenu {
     menu_group?: 'core' | 'addon' | 'quick_action';
     description?: string | null;
     remarks?: string | null;
+    /** Contact Person menu (slug contact-us) only: the app's Responsibilities list. */
+    responsibilities?: string[] | null;
     company_id?: number | null;
     /** Detail read only — the list does not join these. */
     creator?: { id: number; full_name: string } | null;
@@ -269,6 +271,8 @@ export type EventMenuPayload = {
     name: string;
     description?: string | null;
     remarks?: string | null;
+    /** What the menu covers; the Contact Person menu's list shows in the app. */
+    responsibilities?: string[] | null;
     event_category_id?: number | null;
     is_default?: boolean | number;
     /** 'quick_action' = Home Quick Actions only, never an event menu. */
