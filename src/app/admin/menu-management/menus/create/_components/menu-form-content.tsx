@@ -12,7 +12,6 @@ import {
     X,
     Smartphone,
     Star,
-    Zap,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -419,26 +418,11 @@ export function MenuFormContent() {
                             </div>
                         </div>
 
-                        {/* Home Quick Action — a menu for the app's Home Quick
-                            Actions only (QR Code, Notifications, My Plan...).
-                            Granted per plan like any menu, never an event tile. */}
-                        <div className="rounded-lg border border-border bg-card p-4">
-                            <p className="text-sm font-semibold text-foreground">Home Quick Action</p>
-                            <p className="mb-3 text-xs text-muted-foreground">
-                                On: the organizer can add it to Quick Actions on the app&apos;s Home. It is not shown as a menu inside events.
-                            </p>
-                            <StatusRow
-                                icon={<Zap className="h-4 w-4" />}
-                                title={form.quick_action ? 'Home Quick Action' : 'Event Menu'}
-                                subtitle={
-                                    form.quick_action
-                                        ? 'Offered on Home Quick Actions only'
-                                        : 'Shown inside events (and on Home Quick Actions)'
-                                }
-                                checked={form.quick_action}
-                                onChange={(v) => setField('quick_action', v)}
-                            />
-                        </div>
+                        {/* The "Home Quick Action" switch was removed (Jamal,
+                            2026-10-26): every plan menu can be a Quick Action
+                            / Quick View tile. An existing Home-only menu (QR
+                            Code, My Plan…) keeps its group — form.quick_action
+                            is still read from the record and saved back. */}
 
                         {/* Row 3 — order, icon, colour */}
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
