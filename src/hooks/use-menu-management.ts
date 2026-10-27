@@ -51,8 +51,6 @@ export interface EventMenu {
     menu_group?: 'core' | 'addon' | 'quick_action';
     description?: string | null;
     remarks?: string | null;
-    /** Contact Person menu (slug contact-us) only: the app's Responsibilities list. */
-    responsibilities?: string[] | null;
     company_id?: number | null;
     /** Detail read only — the list does not join these. */
     creator?: { id: number; full_name: string } | null;
@@ -265,14 +263,30 @@ export const useUpdateGuestFoodPreferenceOption = guestFoodHooks.useUpdate;
 export const useUpdateGuestFoodPreferenceOptionStatus = guestFoodHooks.useUpdateStatus;
 export const useDeleteGuestFoodPreferenceOption = guestFoodHooks.useDelete;
 
+/**
+ * Menu Management → Responsibilities (Jamal, 2026-10-27): the Contact Person
+ * responsibilities (label name + description) per event category. Was a field
+ * on the Menu form; the app's Contact Person profile reads this list.
+ */
+const responsibilityHooks = createTaxonomyHooks<GuestOption>({
+    path: '/event-responsibilities',
+    queryKey: 'event-responsibilities',
+    resourceKey: 'responsibility',
+    label: 'Responsibility',
+});
+
+export const useResponsibilities = responsibilityHooks.useList;
+export const useCreateResponsibility = responsibilityHooks.useCreate;
+export const useUpdateResponsibility = responsibilityHooks.useUpdate;
+export const useUpdateResponsibilityStatus = responsibilityHooks.useUpdateStatus;
+export const useDeleteResponsibility = responsibilityHooks.useDelete;
+
 /* ------------------------------------------------------------- event menus -- */
 
 export type EventMenuPayload = {
     name: string;
     description?: string | null;
     remarks?: string | null;
-    /** What the menu covers; the Contact Person menu's list shows in the app. */
-    responsibilities?: string[] | null;
     event_category_id?: number | null;
     is_default?: boolean | number;
     /** 'quick_action' = Home Quick Actions only, never an event menu. */

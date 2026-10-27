@@ -143,13 +143,6 @@ export default function ViewMenuPage({ params }: { params: Promise<{ id: string 
                                     value={menu.company_id ? `Tenant #${menu.company_id}` : 'All Tenants'}
                                 />
                                 <Row label="Remarks" value={menu.remarks || '—'} wide />
-                                {(
-                                    <Row
-                                        label="Responsibilities"
-                                        value={menu.responsibilities?.length ? menu.responsibilities.join(', ') : '—'}
-                                        wide
-                                    />
-                                )}
                             </div>
                         </SectionCard>
                     </div>

@@ -44,8 +44,6 @@ interface FormState {
     name: string;
     description: string;
     remarks: string;
-    /** Contact Person menu only — shown on the app's Contact Person page. */
-    responsibilities: string[];
     event_category_id: string;
     is_active: boolean;
     is_default: boolean;
@@ -60,7 +58,6 @@ const emptyForm = (): FormState => ({
     name: '',
     description: '',
     remarks: '',
-    responsibilities: [],
     event_category_id: '',
     is_active: true,
     is_default: false,
@@ -87,7 +84,6 @@ export function MenuFormContent() {
     const [errors, setErrors] = useState<Record<string, boolean>>({});
     const [resetOpen, setResetOpen] = useState(false);
     const [loadedId, setLoadedId] = useState<string | null>(null);
-    const [respInput, setRespInput] = useState('');
 
     const { data: existing, isLoading: loadingMenu, refetch } = useEventMenu(id ?? undefined);
     // A menu is scoped by category only — no event type, religion or
@@ -99,24 +95,6 @@ export function MenuFormContent() {
      * also dragged "Save & Add Another" onto the edit form the moment it saved.
      * Each button now says where it goes at its own call site.
      */
-    // Every menu can carry a Responsibilities list (Jamal, 2026-10-26); the
-    // app shows the Contact Person menu's on its Contact Person page.
-
-    const addResponsibility = () => {
-        const name = respInput.trim().slice(0, 60);
-        if (!name) return;
-        if (form.responsibilities.some((r) => r.toLowerCase() === name.toLowerCase())) {
-            toast.error('This responsibility is already added.');
-            return;
-        }
-        if (form.responsibilities.length >= 20) {
-            toast.error('Please add up to 20 responsibilities.');
-            return;
-        }
-        setForm((prev) => ({ ...prev, responsibilities: [...prev.responsibilities, name] }));
-        setRespInput('');
-    };
-
     const createMenu = useCreateEventMenu();
     const updateMenu = useUpdateEventMenu();
 
@@ -149,7 +127,6 @@ export function MenuFormContent() {
             name: record.name ?? '',
             description: record.description ?? '',
             remarks: record.remarks ?? '',
-            responsibilities: Array.isArray(record.responsibilities) ? record.responsibilities : [],
             event_category_id: record.event_category_id ? String(record.event_category_id) : '',
             is_active: !!Number(record.is_active),
             is_default: !!Number(record.is_default),
@@ -193,8 +170,7 @@ export function MenuFormContent() {
             name: form.name.trim(),
             description: form.description.trim() || null,
             remarks: form.remarks.trim() || null,
-            responsibilities: form.responsibilities,
-            event_category_id: Number(form.event_category_id),
+                        event_category_id: Number(form.event_category_id),
             is_active: form.is_active,
             is_default: form.is_default,
             menu_group: menuGroupOf(form),
@@ -231,8 +207,7 @@ export function MenuFormContent() {
                 name: form.name.trim(),
                 description: form.description.trim() || null,
                 remarks: form.remarks.trim() || null,
-                responsibilities: form.responsibilities,
-                event_category_id: Number(form.event_category_id),
+                                event_category_id: Number(form.event_category_id),
                 is_active: form.is_active,
                 is_default: form.is_default,
                 menu_group: menuGroupOf(form),
@@ -252,7 +227,6 @@ export function MenuFormContent() {
                         icon: '',
                         description: '',
                         remarks: '',
-                        responsibilities: [],
                         sort_order: (Number(prev.sort_order) || 0) + 1,
                     }));
                     setErrors({});
@@ -495,58 +469,6 @@ export function MenuFormContent() {
                                 </p>
                             </div>
                         </div>
-                        {(
-                            <div className="space-y-1.5">
-                                <Label className="text-sm font-medium">Responsibilities</Label>
-                                <div className="flex gap-2">
-                                    <Input
-                                        value={respInput}
-                                        maxLength={60}
-                                        onChange={(e) => setRespInput(e.target.value)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                                e.preventDefault();
-                                                addResponsibility();
-                                            }
-                                        }}
-                                        placeholder="e.g. Guest Help Desk"
-                                        className="h-9 text-sm"
-                                    />
-                                    <Button type="button" variant="outline" onClick={addResponsibility} className="h-9 gap-1">
-                                        <Plus className="h-4 w-4" />
-                                        Add
-                                    </Button>
-                                </div>
-                                {form.responsibilities.length > 0 && (
-                                    <div className="flex flex-wrap gap-2 pt-1">
-                                        {form.responsibilities.map((r) => (
-                                            <span
-                                                key={r}
-                                                className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-3 py-1 text-xs"
-                                            >
-                                                {r}
-                                                <button
-                                                    type="button"
-                                                    aria-label={'Remove ' + r}
-                                                    onClick={() =>
-                                                        setForm((prev) => ({
-                                                            ...prev,
-                                                            responsibilities: prev.responsibilities.filter((x) => x !== r),
-                                                        }))
-                                                    }
-                                                    className="text-muted-foreground hover:text-foreground"
-                                                >
-                                                    <X className="h-3 w-3" />
-                                                </button>
-                                            </span>
-                                        ))}
-                                    </div>
-                                )}
-                                <p className="text-[11px] text-muted-foreground">
-                                    What this menu covers. The Contact Person menu&apos;s list shows on the app&apos;s Contact Person page. Press Enter or Add for each one; up to 20.
-                                </p>
-                            </div>
-                        )}
                     </CardContent>
                 </Card>
 

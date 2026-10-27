@@ -52,6 +52,7 @@ import {
   UtensilsCrossed,
   FileEdit,
   Type,
+  ClipboardList,
 } from "lucide-react";
 import {
   Sidebar,
@@ -143,6 +144,8 @@ const menuItems: MenuItem[] = [
       // three above, and are edited the same way.
       { labelKey: "nav.guest_relationships", href: "/admin/menu-management/guest-relationships", icon: Users, permission: "guest_relationship_options.view" },
       { labelKey: "nav.guest_food_preferences", href: "/admin/menu-management/guest-food-preferences", icon: UtensilsCrossed, permission: "guest_food_preference_options.view" },
+      // Contact Person responsibilities per event category (2026-10-27).
+      { labelKey: "Responsibilities", href: "/admin/menu-management/responsibilities", icon: ClipboardList, permission: "event_responsibilities.view" },
     ],
   },
   {
