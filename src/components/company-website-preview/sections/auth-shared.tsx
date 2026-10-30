@@ -633,10 +633,13 @@ export function SocialButtons({
     primaryText,
     labelFor,
     onSelect,
+    only,
 }: {
     primaryText: string;
     labelFor: (provider: AuthProvider, fallback: string) => string;
     onSelect: (provider: AuthProvider) => void;
+    /** Show just these providers (the login card shows Google only). */
+    only?: AuthProvider[];
 }) {
     const providers: { key: AuthProvider; label: string; Mark: (props: { className?: string }) => React.JSX.Element }[] = [
         { key: 'google', label: 'Continue with Google', Mark: GoogleMark },
@@ -645,7 +648,7 @@ export function SocialButtons({
 
     return (
         <div className="flex flex-col gap-2.5">
-            {providers.map(({ key, label, Mark }) => (
+            {providers.filter(({ key }) => !only || only.includes(key)).map(({ key, label, Mark }) => (
                 <button
                     key={key}
                     type="button"

@@ -33,8 +33,8 @@
 
 import * as React from 'react';
 import { toast } from 'sonner';
-import { loginWebsiteClient } from '@/lib/website-client-auth';
-import { Mail, Lock, Eye, EyeOff, Send, ShieldCheck, Star, Sparkles, Users, LineChart } from 'lucide-react';
+import { loginWebsiteClient, requestLoginOtp, verifyLoginOtp } from '@/lib/website-client-auth';
+import { Mail, Lock, Eye, EyeOff, Send, ShieldCheck, Star, Sparkles, Users, LineChart, KeyRound, Smartphone } from 'lucide-react';
 import type { ThemeColors } from './preview-shared';
 import {
     tintOf,
@@ -289,6 +289,89 @@ export function LoginSection({
     // Held true across the navigation so the overlay does not flash off.
     const [redirecting, setRedirecting] = React.useState(false);
 
+    // ── Mobile | Email ───────────────────────────────────────────────────────
+    // Mobile signs in with a one-time code (no password); Email with a password.
+    const [method, setMethod] = React.useState<'mobile' | 'email'>('mobile');
+    const [sendingOtp, setSendingOtp] = React.useState(false);
+    const [resendIn, setResendIn] = React.useState(0);
+    const otpRef = React.useRef<HTMLDivElement>(null);
+
+    React.useEffect(() => {
+        if (resendIn <= 0) return;
+        const id = window.setTimeout(() => setResendIn((left) => left - 1), 1000);
+        return () => window.clearTimeout(id);
+    }, [resendIn]);
+
+    const switchMethod = (next: 'mobile' | 'email') => {
+        setMethod(next);
+        setMobileError(false);
+    };
+
+    const changeMobile = (value: string) => {
+        setMobile(value);
+        // A new number needs a new code.
+        if (otpSent) {
+            setOtpSent(false);
+            setOtp('');
+        }
+    };
+
+    const handleSendOtp = async () => {
+        if (sendingOtp) return;
+        if (mobile.trim().length < 6) {
+            setMobileError(true);
+            toast.error('Please enter your mobile number.');
+            return;
+        }
+        setMobileError(false);
+        setSendingOtp(true);
+        const result = await requestLoginOtp({ mobile: mobile.trim(), dial_code: dialCode });
+        setSendingOtp(false);
+        if (!result.ok) {
+            toast.error(result.message);
+            return;
+        }
+        setOtp('');
+        setOtpSent(true);
+        setResendIn(30);
+        if (result.devCode) {
+            toast.warning(`Use verification code ${result.devCode}. The code was not delivered.`);
+        } else if (result.delivered === false) {
+            toast.warning("We couldn't send your verification code. Please try again.");
+        } else {
+            toast.success(result.message);
+        }
+        // Point the visitor straight at the code boxes.
+        window.setTimeout(() => {
+            otpRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            otpRef.current?.querySelector('input')?.focus();
+        }, 50);
+    };
+
+    const handleVerifyOtp = async (event: React.FormEvent) => {
+        event.preventDefault();
+        if (!otpSent) {
+            await handleSendOtp();
+            return;
+        }
+        if (submitting) return;
+        if (otp.trim().length < 6) {
+            toast.error('Please enter the 6-digit verification code.');
+            return;
+        }
+        setSubmitting(true);
+        const result = await verifyLoginOtp({ mobile: mobile.trim(), otp: otp.trim() });
+        setSubmitting(false);
+        if (!result.ok) {
+            toast.error(result.message);
+            setOtp('');
+            return;
+        }
+        toast.success(result.message || 'Login successful');
+        setRedirecting(true);
+        window.location.assign(CLIENT_PORTAL_URL);
+    };
+
     // Verifies the credentials and stops there — no token comes back and there
     // is nowhere to redirect to, so the toast IS the outcome. Goes through
     // `website-client-auth`, NOT the shared apiClient, whose 401 handler would
@@ -302,24 +385,10 @@ export function LoginSection({
             return;
         }
 
-        // Mobile is MANDATORY on this form. The server verifies it against the
-        // account when present, so requiring it here makes it a real second
-        // factor rather than an optional box people skip.
-        if (mobile.trim().length < 6) {
-            setMobileError(true);
-            toast.error('Please enter your mobile number.');
-            return;
-        }
-        setMobileError(false);
-
         setSubmitting(true);
         const result = await loginWebsiteClient({
             email: email.trim(),
             password,
-            dial_code: dialCode,
-            // Always sent now — the field is mandatory, so the server always
-            // has a number to verify against the account.
-            mobile: mobile.trim(),
         });
         setSubmitting(false);
 
@@ -477,7 +546,96 @@ export function LoginSection({
                                 </a>
                             </p>
 
-                            <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
+                            {/* Mobile | Email */}
+                            <div className="mt-6 grid grid-cols-2 gap-2 rounded-xl border border-slate-200 p-1">
+                                {(['mobile', 'email'] as const).map((key) => {
+                                    const active = method === key;
+                                    const Icon = key === 'mobile' ? Smartphone : Mail;
+                                    return (
+                                        <button
+                                            key={key}
+                                            type="button"
+                                            onClick={() => switchMethod(key)}
+                                            aria-pressed={active}
+                                            className="flex h-10 min-w-0 items-center justify-center gap-2 rounded-lg text-[13px] font-bold transition"
+                                            style={active ? { backgroundColor: primary, color: '#FFFFFF' } : { color: theme.primaryText }}
+                                        >
+                                            <Icon className="h-4 w-4 shrink-0" />
+                                            {key === 'mobile' ? t('login.tab_mobile', 'Mobile') : t('login.tab_email', 'Email')}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {method === 'mobile' ? (
+                                <form onSubmit={handleVerifyOtp} className="mt-5 flex flex-col gap-4">
+                                    <MobileNumberField
+                                        id="login-mobile"
+                                        primary={primary}
+                                        label={t('login.mobile_label', 'Mobile Number')}
+                                        placeholder={t('login.mobile_placeholder', 'Enter your mobile number')}
+                                        value={mobile}
+                                        onChange={changeMobile}
+                                        dialCode={dialCode}
+                                        onDialCodeChange={setDialCode}
+                                        required
+                                        error={mobileError}
+                                    />
+
+                                    {otpSent && (
+                                        <div ref={otpRef} className="min-w-0 rounded-lg border border-slate-200 p-3">
+                                            <p className="mb-2 text-[12.5px] font-bold" style={{ color: theme.primaryText }}>
+                                                {t('login.otp_label', 'Enter OTP')}
+                                            </p>
+                                            <OtpInput primary={primary} value={otp} onChange={setOtp} />
+                                            <div className="mt-2.5 flex min-w-0 flex-wrap items-center justify-between gap-2 text-[11.5px]" style={{ color: theme.secondaryText }}>
+                                                <span className="min-w-0 break-words">
+                                                    {t('login.otp_sent_to', 'Sent to')}{' '}
+                                                    <span className="font-semibold">{dialCode} {mobile}</span>
+                                                </span>
+                                                {resendIn > 0 ? (
+                                                    <span>{t('login.resend_in', 'Resend in')} {resendIn}s</span>
+                                                ) : (
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleSendOtp}
+                                                        disabled={sendingOtp}
+                                                        className="font-semibold hover:underline disabled:opacity-60"
+                                                        style={{ color: primary }}
+                                                    >
+                                                        {t('login.resend_otp', 'Resend OTP')}
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <button
+                                        type="submit"
+                                        disabled={sendingOtp || submitting || redirecting || (otpSent && otp.length < 6)}
+                                        className="flex h-11 w-full items-center justify-center gap-2 rounded-lg text-[13.5px] font-bold text-white shadow-sm transition hover:opacity-90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70"
+                                        style={{ backgroundColor: primary }}
+                                    >
+                                        {sendingOtp || submitting || redirecting ? (
+                                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                                        ) : otpSent ? (
+                                            <KeyRound className="h-4 w-4" />
+                                        ) : (
+                                            <Send className="h-4 w-4" />
+                                        )}
+                                        {redirecting
+                                            ? t('login.redirecting', 'Taking you to your dashboard...')
+                                            : sendingOtp
+                                                ? t('login.sending_otp', 'Sending OTP...')
+                                                : submitting
+                                                    ? t('login.verifying', 'Verifying...')
+                                                    : otpSent
+                                                        ? t('login.verify_login', 'Verify & Log In')
+                                                        : t('login.send_otp', 'Send OTP')}
+                                    </button>
+                                </form>
+                            ) : (
+                            <form onSubmit={handleSubmit} className="mt-5 flex flex-col gap-4">
                                 {/* Email */}
                                 <div>
                                     <label
@@ -536,46 +694,6 @@ export function LoginSection({
                                     </div>
                                 </div>
 
-                                {/* Mobile number + OTP. The OTP block only appears once the
-                                    number has been sent, so the form is not cluttered with
-                                    six empty boxes before there is anything to type into them. */}
-                                <MobileNumberField
-                                    id="login-mobile"
-                                    primary={primary}
-                                    label={t('login.mobile_label', 'Mobile Number')}
-                                    placeholder={t('login.mobile_placeholder', 'Enter your mobile number')}
-                                    value={mobile}
-                                    onChange={setMobile}
-                                    dialCode={dialCode}
-                                    onDialCodeChange={setDialCode}
-                                    required
-                                    error={mobileError}
-                                />
-
-                                {otpSent ? (
-                                    <div className="min-w-0 rounded-lg border border-slate-200 p-3">
-                                        <p className="mb-2 text-[12.5px] font-bold" style={{ color: theme.primaryText }}>
-                                            {t('login.otp_label', 'Enter OTP')}
-                                        </p>
-                                        <OtpInput primary={primary} value={otp} onChange={setOtp} />
-                                        <p className="mt-2.5 text-center text-[11.5px]" style={{ color: theme.secondaryText }}>
-                                            {t('login.otp_sent_to', 'Sent to')}{' '}
-                                            <span className="font-semibold">{dialCode} {mobile}</span>
-                                        </p>
-                                    </div>
-                                ) : (
-                                    <button
-                                        type="button"
-                                        disabled={mobile.length < 6}
-                                        onClick={() => setOtpSent(true)}
-                                        className="flex h-10 w-full items-center justify-center gap-2 rounded-lg border text-[12.5px] font-bold transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                                        style={{ borderColor: tint(35), color: primary }}
-                                    >
-                                        <Send className="h-3.5 w-3.5" />
-                                        {t('login.send_otp', 'Send OTP')}
-                                    </button>
-                                )}
-
                                 <div className="text-right">
                                     <a
                                         href="/forgot-password"
@@ -605,6 +723,7 @@ export function LoginSection({
                                             : t('login.submit', 'Log In')}
                                 </button>
                             </form>
+                            )}
 
                             {/* Divider */}
                             <div className="my-5 flex items-center gap-3">
@@ -619,7 +738,8 @@ export function LoginSection({
                                 request. Each opens the shared provider flow. */}
                             <SocialButtons
                                 primaryText={theme.primaryText}
-                                labelFor={(key, fallback) => t(`login.continue_with_${key}`, fallback)}
+                                only={['google']}
+                                labelFor={(key) => t(`login.login_with_${key}`, 'Login with Google')}
                                 onSelect={(provider) => {
                                     setActiveProvider(provider);
                                     startSocialAuth(provider);

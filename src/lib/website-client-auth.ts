@@ -80,3 +80,65 @@ export const registerWebsiteClient = (payload: RegisterPayload) =>
  */
 export const loginWebsiteClient = (payload: LoginPayload) =>
     post('/public/website-clients/login', payload, 'Invalid email or password.');
+
+
+// ── Mobile number sign-in (one-time code) ───────────────────────────────────
+
+export interface OtpRequestResult {
+    ok: boolean;
+    message: string;
+    /** Was the code actually sent (WhatsApp / SMS)? */
+    delivered?: boolean;
+    /** Local/dev only: the code itself when it could not be delivered. */
+    devCode?: string;
+}
+
+async function readJson(response: Response): Promise<any> {
+    try {
+        return await response.json();
+    } catch {
+        return null;
+    }
+}
+
+/** Step 1: send a one-time code to the account's mobile number. */
+export async function requestLoginOtp(payload: { mobile: string; dial_code?: string }): Promise<OtpRequestResult> {
+    try {
+        const response = await fetch(`${API_BASE}/public/website-clients/login/otp/request`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        const body = await readJson(response);
+        if (!response.ok || !body?.success) {
+            return { ok: false, message: body?.message || 'Could not send the code. Please try again.' };
+        }
+        return {
+            ok: true,
+            message: body.message || 'Verification code sent.',
+            delivered: body.data?.delivered,
+            devCode: body.data?.dev_code,
+        };
+    } catch {
+        return { ok: false, message: 'Could not reach the server. Please try again.' };
+    }
+}
+
+/** Step 2: check the code. Success sets the session cookie, like the email login. */
+export async function verifyLoginOtp(payload: { mobile: string; otp: string }): Promise<{ ok: boolean; message: string }> {
+    try {
+        const response = await fetch(`${API_BASE}/public/website-clients/login/otp/verify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(payload),
+        });
+        const body = await readJson(response);
+        if (!response.ok || !body?.success) {
+            return { ok: false, message: body?.message || 'That code is not right. Please try again.' };
+        }
+        return { ok: true, message: body.message || 'Login successful' };
+    } catch {
+        return { ok: false, message: 'Could not reach the server. Please try again.' };
+    }
+}
